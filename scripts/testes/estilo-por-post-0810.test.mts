@@ -265,12 +265,13 @@ test("a tela incentiva criar e compartilhar, com a biblioteca como alternativa",
   assert.ok(criar.includes("O seu estilo vira um modelo na biblioteca de todos."));
   assert.ok(criar.includes("nunca as suas fotos, o seu nome, a sua marca ou os seus dados"));
   assert.ok(criar.includes("const [soNoMeuProjeto, setSoNoMeuProjeto] = useState(false);"), "compartilhar é o padrão");
+  // 08/10, à noite (o estilo mestre): as três portas de toda peça visual, na
+  // mesma ordem em todo lugar (estilo mestre, biblioteca, criar), num
+  // componente só. A regra inteira está em scripts/testes/estilo-mestre-0810.test.mts.
   for (const arquivo of ["components/estilo-dos-posts/estilo-dos-posts.tsx", "components/estilo-dos-posts/modelos-dos-posts.tsx"]) {
     const tela = fonte(arquivo);
-    const criarAqui = tela.indexOf('"Crie o seu estilo, falando ou escrevendo"');
-    const biblioteca = tela.indexOf('"Ou escolha da biblioteca"');
-    assert.ok(criarAqui > 0 && criarAqui < biblioteca, `${arquivo}: criar vem primeiro`);
-    assert.ok(/useState<[^>]*>\("criar"\)/.test(tela), `${arquivo}: abre em criar`);
+    assert.ok(tela.includes("<OpcoesDeEstilo"), `${arquivo}: as três portas de sempre`);
+    assert.ok(tela.includes('porta === "criar"') && tela.includes("<CriarEstilo"), `${arquivo}: criar continua a um toque`);
   }
 });
 
@@ -288,7 +289,8 @@ test("cada tipo de post pede a sua escolha: modelo, estilo de edição ou só a 
   assert.equal(oQueOPostPede("image"), "modelo");
   assert.equal(oQueOPostPede("short"), "edicao");
   assert.equal(oQueOPostPede("infographic"), "marca");
-  assert.equal(oQueOPostPede("video"), "marca");
+  // 08/10, à noite: o vídeo por IA ganhou as três portas (estilo mestre, biblioteca, criar).
+  assert.equal(oQueOPostPede("video"), "video-ia");
   assert.equal(oQueOPostPede("text"), null);
   assert.equal(oQueOPostPede("thread"), null);
 });
@@ -310,18 +312,20 @@ test("sem a escolha de cada dia visual, a campanha não gera", () => {
 });
 
 test("a escolha vem preenchida com o último usado em cada tipo, e a pessoa troca", () => {
+  // 08/10, à noite: o padrão de todo post é o estilo mestre (scripts/testes/estilo-mestre-0810.test.mts).
+  // A regra do último usado continua quando o dono escolheu um estilo próprio para os posts ("por-post").
   const ultimos = { carousel: { designId: "cmcarrossel", nome: "Carrossel de sempre" }, image: { catalogoId: "foto-inteira-degrade", nome: "Foto inteira" }, short: { estiloId: "vox", nome: "Explicativo editorial" } };
-  const preenchido = preencherModelos(SEMANA, {}, { ultimos, padraoDaImagem: { designId: "cmestilo", nome: "Estilo do projeto" }, padraoDaEdicao: { estiloId: "hormozi", nome: "Hormozi" } });
+  const preenchido = preencherModelos(SEMANA, {}, { ultimos, padraoDaImagem: { designId: "cmestilo", nome: "Estilo do projeto" }, padraoDaEdicao: { estiloId: "hormozi", nome: "Hormozi" }, modo: "por-post" });
   assert.equal(preenchido["3"].designId, "cmcarrossel", "o carrossel vem com o último carrossel");
   assert.equal(preenchido["4"].catalogoId, "foto-inteira-degrade", "a foto vem com a última foto");
   assert.equal(preenchido["5"].estiloId, "vox", "o vídeo curto vem com o último estilo de edição");
   assert.equal(preenchido["6"].marca, true, "o infográfico sai na marca");
   assert.deepEqual(postsSemModelo(SEMANA, preenchido), []);
-  // Sem último, o estilo do projeto; sem nada, a pessoa escolhe.
-  const semUltimo = preencherModelos(SEMANA, {}, { padraoDaImagem: { designId: "cmestilo", nome: "Estilo do projeto" } });
+  // Sem último, o estilo do projeto; sem nada, o estilo mestre (08/10, à noite: nada fica sem escolha).
+  const semUltimo = preencherModelos(SEMANA, {}, { padraoDaImagem: { designId: "cmestilo", nome: "Estilo do projeto" }, modo: "por-post" });
   assert.equal(semUltimo["3"].designId, "cmestilo");
-  assert.equal(semUltimo["5"], undefined, "sem estilo de edição conhecido, falta escolher");
-  assert.deepEqual(postsSemModelo(SEMANA, preencherModelos(SEMANA, {}, {})).map((p) => p.chave), ["3", "4", "5"]);
+  assert.equal(semUltimo["5"]?.mestre, true, "sem estilo de edição conhecido, o mestre");
+  assert.deepEqual(postsSemModelo(SEMANA, preencherModelos(SEMANA, {}, {})), [], "no padrão, tudo no estilo mestre");
   // O que a pessoa já escolheu não é trocado pelo preenchimento.
   const meu = preencherModelos(SEMANA, { "3": { designId: "cmmeu", nome: "Meu" } }, { ultimos });
   assert.equal(meu["3"].designId, "cmmeu");
@@ -501,9 +505,11 @@ test("revisão: salvar o mesmo comando de vídeo (só letra ou cores) não paga 
 
 test("revisão: o Voltar do passo dos modelos desfaz o pulo, como o do envio", () => {
   const jornada = fonte("components/posts/jornada-da-campanha.tsx");
-  assert.ok(/if \(passo === PASSO_DOS_POSTS && pulaParaOEnvio\) \{\s*setPasso\(0\);/.test(jornada));
-  // Sair do passo da semana grava o que ficou na tela (o planejador grava com atraso).
-  assert.ok(/if \(passo === PASSO_DOS_POSTS - 1\) \{\s*salvarSemana\(semanaAtual\);/.test(jornada));
+  // 08/10, à noite: o pulo parte do passo do estilo mestre, e a volta leva a ele.
+  assert.ok(/if \(passo === PASSO_DOS_POSTS && pulaParaOEnvio\) \{\s*setPasso\(1\);/.test(jornada));
+  // Sair do passo da semana grava o que ficou na tela (o planejador grava com atraso), já no mestre quando todas as peças seguem ele.
+  assert.ok(/if \(passo === PASSO_DOS_POSTS - 1\) \{\s*fecharASemana\(\);/.test(jornada));
+  assert.ok(/function fecharASemana\(\): void \{[\s\S]{0,500}salvarSemana\(nova\);/.test(jornada));
   assert.ok(!jornada.includes("ultimaSalva.current = JSON.stringify(planoParaGravar(s));"), "o aviso do planejador não marca como gravado o que talvez não foi");
 });
 

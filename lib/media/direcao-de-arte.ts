@@ -413,6 +413,8 @@ export interface DirecaoDaPeca {
   paleta: string;
   /** estilo + paleta: o que a imagem livre e o carrossel recebem inteiro. */
   styleHint: string;
+  /** O mundo do cliente ("CLIENT'S WORLD: ..."), para quem troca o estilo e mantém o resto (o vídeo por IA, 08/10). */
+  mundo: string;
   origem: OrigemDaDirecao;
   /** O que vai para `Post.metadata.visualStyle` (memória da rotação). */
   visualStyle: string;
@@ -529,6 +531,7 @@ export async function direcaoDaPeca(opcoes: {
     estilo,
     paleta,
     styleHint: `${estilo.prompt} ${paleta} ${mundo}`,
+    mundo,
     origem,
     // "proprio" continua sendo o rótulo do estilo próprio sozinho, como já
     // gravado nos posts desde 21/09.

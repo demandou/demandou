@@ -103,6 +103,7 @@ import { dependenciasDaGeracao } from "@/lib/media/jornada/geracao-servidor";
 import { contextoDoProjeto, jevDaJornada, redatorDaJornada } from "@/lib/media/jornada/servidor";
 import type { EdicaoDaJornada } from "@/lib/media/jornada/montagem";
 import type { DirecaoDaEdicao } from "@/lib/media/jornada/direcao";
+import type { CenarioDoVideo } from "@/lib/media/cenario-do-video";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import { lerVideo as lerVideoParaLeitura, leituraVisaoLigada, medirNoWorker, type RespostaDaMedicao } from "@/lib/media/leitura-do-video";
 import {
@@ -350,6 +351,12 @@ export type EstadoDaJornadaNaMontagem = {
   direcao?: DirecaoDaEdicao | null;
   /** As mídias desta edição, por elemento (o ajuste do card mantém as que o pedido não tocou). */
   midias?: Record<string, MidiaDaJornadaGravada>;
+  /**
+   * O CENÁRIO que o cliente escolheu (08/10): "original" ou "trocar". Gravado
+   * aqui e mandado ao worker para o editor novo ler sem migração; a montagem
+   * de hoje nunca troca o fundo, com qualquer valor.
+   */
+  cenario?: CenarioDoVideo;
 };
 
 /** Uma mídia da jornada como fica gravada (07/10): o que foi pedido, a quem, em que qualidade e por quanto, mesmo quando falhou. */
@@ -2210,6 +2217,8 @@ async function gerarEMontarPelaJornada(v: VideoDoCompleto, lido: MontagemDoCompl
       escolhas: m.escolhas,
       // A direção visual da edição (08/10): os cortes do mesmo vídeo usam esta.
       direcao: m.direcao,
+      // O cenário escolhido (08/10), o do plano aprovado (ou o de agora, em plano antigo): o editor de hoje não troca o fundo.
+      cenario: rj?.plano?.cenario ?? contexto.cenario ?? "original",
       custoUsd: m.custoUsd.geracao,
       tempos: m.tempos,
       // O REGISTRO DE CADA ELEMENTO (07/10, pedido do Bruno): prompt, modelo, qualidade e custo, inclusive o que falhou.
@@ -2245,6 +2254,8 @@ async function enviarPelaJornada(v: VideoDoCompleto, estado: MontagemDoCompleto,
       escala: 1,
       abertura: null,
       guardaDaFala: null,
+      // O cenário escolhido (08/10), para o editor novo; o worker de hoje não lê e não troca o fundo.
+      cenario: j.cenario ?? "original",
       trilha: j.trilha && v.videoMusicUrl ? { url: v.videoMusicUrl, volume: 0.12, abaixar: true } : null,
       callbackUrl: `${app}/api/videos/${v.id}/montar-completo-callback`,
       retorno: { desde: tomado.desde },

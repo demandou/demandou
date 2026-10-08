@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Check, Images, Library, Loader2, Palette, Pencil, Sparkles, Wand2 } from "lucide-react";
+import { Check, Images, Loader2, Palette, Pencil, Sparkles } from "lucide-react";
 import { GaleriaDaBiblioteca } from "@/components/biblioteca-de-design/galeria-da-biblioteca";
 import { CriarEstilo } from "@/components/estilo-dos-posts/criar-estilo";
+import { OpcoesDeEstilo } from "@/components/estilo-dos-posts/opcoes-de-estilo";
+import { OPCOES_DE_ESTILO, type OpcaoDeEstilo } from "@/lib/estilo-dos-posts/estilo-mestre";
 import { BotaoDescartar, Descartavel } from "@/components/ui/descartar";
 import { chaveDasArtesEsperando } from "@/lib/avisos/chaves";
 import type { DesignDaGaleria } from "@/lib/biblioteca-de-design/tipos";
@@ -36,9 +38,16 @@ import { resumoDoEstilo, type EstadoDoEstiloDosPosts } from "@/lib/estilo-dos-po
  * na janela da campanha (antes de gerar), na jornada do vídeo (antes de
  * enviar) e em Configurações. `aoAprovar` avisa quem chama, que segue
  * (a campanha gera, a jornada vai para o envio).
+ *
+ * 08/10, à noite, O ESTILO MESTRE: as portas viraram as três de toda peça
+ * visual, na mesma ordem e com o mesmo texto da escolha por post
+ * (components/estilo-dos-posts/opcoes-de-estilo.tsx): o ESTILO MESTRE (o
+ * padrão: os posts seguem o estilo do vídeo, e toda arte sai com o mesmo
+ * design), DA BIBLIOTECA e CRIAR O MEU. Escolher da biblioteca ou criar aqui
+ * faz desse estilo o padrão de cada post; "Seguir o estilo mestre" volta.
  */
 
-type Porta = "criar" | "biblioteca";
+type Porta = OpcaoDeEstilo;
 
 export function EstiloDosPosts({
   projectId,
@@ -66,7 +75,10 @@ export function EstiloDosPosts({
   const [estado, setEstado] = useState<EstadoDoEstiloDosPosts | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aberto, setAberto] = useState(sempreAberto);
-  const [porta, setPorta] = useState<Porta>("criar");
+  const [porta, setPorta] = useState<Porta>("mestre");
+  // A porta abre na escolha de agora, quando o estado chega (uma vez).
+  const portaInicial = useRef(false);
+  const [voltandoAoMestre, setVoltandoAoMestre] = useState(false);
   const [gerando, setGerando] = useState(false);
   const [reaprovando, setReaprovando] = useState(false);
   // Quem chama recria a função a cada desenho; a leitura não deve repetir por isso.
@@ -82,6 +94,10 @@ export function EstiloDosPosts({
       if (!r.ok) throw new Error(d.error || "Não consegui ler o estilo dos posts.");
       setEstado(d);
       setErro(null);
+      if (!portaInicial.current) {
+        portaInicial.current = true;
+        setPorta(d.modo === "por-post" ? "criar" : "mestre");
+      }
       aoLerAtual.current?.(d);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não consegui ler o estilo dos posts.");
@@ -131,6 +147,22 @@ export function EstiloDosPosts({
     }
   }
 
+  /** O dono volta os posts do projeto para o estilo mestre (o padrão). */
+  async function seguirOMestre() {
+    setVoltandoAoMestre(true);
+    try {
+      const r = await fetch(`/api/projects/${projectId}/estilo-dos-posts/mestre`, { method: "PUT" });
+      const j = (await r.json().catch(() => ({}))) as { estado?: EstadoDoEstiloDosPosts; error?: string };
+      if (!r.ok || !j.estado) throw new Error(j.error || "Não consegui voltar ao estilo mestre.");
+      setEstado(j.estado);
+      toast.success("Pronto: os posts seguem o estilo mestre, o do vídeo. Toda arte sai com o mesmo design.", { id: "estilo-dos-posts", duration: 6000 });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não consegui voltar ao estilo mestre.", { id: "estilo-dos-posts" });
+    } finally {
+      setVoltandoAoMestre(false);
+    }
+  }
+
   /** As artes de campanhas antigas que esperavam o estilo: o mesmo "gerar" de Modelos de arte. */
   async function gerarAsQueEsperavam() {
     setGerando(true);
@@ -155,7 +187,9 @@ export function EstiloDosPosts({
     );
   }
 
-  const mostrarPortas = estado.podeMudar && (aberto || !estado.aprovada);
+  // O estilo mestre é uma escolha (o padrão): com ele, nada "falta escolher".
+  const noMestre = estado.modo === "mestre";
+  const mostrarPortas = estado.podeMudar && (aberto || (!noMestre && !estado.aprovada));
 
   return (
     <section className="space-y-3 rounded-xl border p-4" style={{ borderColor: estado.aprovada ? "var(--brand, #f97316)" : "rgba(234,88,12,0.45)", background: "var(--bg-surface)" }} aria-labelledby={`estilo-dos-posts-${projectId}`}>
@@ -166,14 +200,18 @@ export function EstiloDosPosts({
             {titulo}
             <span
               className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-              style={estado.aprovada ? { background: "rgba(34,197,94,0.15)", color: "#16a34a" } : { background: "rgba(249,115,22,0.15)", color: "#ea580c" }}
+              style={noMestre || estado.aprovada ? { background: "rgba(34,197,94,0.15)", color: "#16a34a" } : { background: "rgba(249,115,22,0.15)", color: "#ea580c" }}
             >
-              {estado.aprovada ? "Aprovado" : "Falta escolher"}
+              {noMestre ? OPCOES_DE_ESTILO[0].rotulo : estado.aprovada ? "Aprovado" : "Falta escolher"}
             </span>
           </h3>
           <p className="mt-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
             {resumoDoEstilo(estado)}
-            {estado.design?.descricao ? <span style={{ color: "var(--text-muted)" }}> {estado.design.descricao}</span> : null}
+            {noMestre ? (
+              estado.mestre?.design ? <span style={{ color: "var(--text-muted)" }}> As artes saem no design &ldquo;{estado.mestre.design.nome}&rdquo;{estado.mestre.design.descricao ? `: ${estado.mestre.design.descricao}` : "."}</span> : null
+            ) : estado.design?.descricao ? (
+              <span style={{ color: "var(--text-muted)" }}> {estado.design.descricao}</span>
+            ) : null}
           </p>
           {explicacao && (
             <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
@@ -181,20 +219,20 @@ export function EstiloDosPosts({
             </p>
           )}
         </div>
-        {estado.aprovada && estado.podeMudar && !sempreAberto && (
+        {(estado.aprovada || noMestre) && estado.podeMudar && !sempreAberto && (
           <button type="button" onClick={() => setAberto((v) => !v)} className="inline-flex shrink-0 items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold" style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}>
             <Pencil className="h-3.5 w-3.5" /> {aberto ? "Fechar" : "Mudar o estilo"}
           </button>
         )}
       </div>
 
-      {!estado.podeMudar && !estado.aprovada && (
+      {!estado.podeMudar && !estado.aprovada && !noMestre && (
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
           Só o dono da conta escolhe o estilo dos posts. Peça para ele escrever como quer ou escolher um da biblioteca.
         </p>
       )}
 
-      {estado.podeMudar && !estado.aprovada && estado.design && (
+      {estado.podeMudar && !estado.aprovada && estado.design && !noMestre && (
         <button
           type="button"
           onClick={() => void usarDeNovo()}
@@ -227,35 +265,29 @@ export function EstiloDosPosts({
 
       {mostrarPortas && (
         <>
-          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Como chegar ao estilo">
-            {(
-              [
-                ["criar", "Crie o seu estilo, falando ou escrevendo", Wand2],
-                ["biblioteca", "Ou escolha da biblioteca", Library],
-              ] as const
-            ).map(([id, rotulo, Icone]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={porta === id}
-                onClick={() => setPorta(id)}
-                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
-                style={porta === id ? { borderColor: "#f97316", background: "rgba(249,115,22,0.10)", color: "var(--text-primary)" } : { borderColor: "var(--border)", color: "var(--text-muted)" }}
-              >
-                <Icone className="h-3.5 w-3.5" /> {rotulo}
-              </button>
-            ))}
-          </div>
+          {/* As três portas de toda peça visual (08/10, à noite), na mesma ordem em todo lugar. */}
+          <OpcoesDeEstilo rotulo="Como chegar ao estilo dos posts" valor={porta} aoMudar={setPorta} />
 
-          {porta === "criar" ? (
-            <CriarEstilo
-              projectId={projectId}
-              aoCriar={(r) => {
-                if (r.estado) aprovado(r.estado);
-              }}
-            />
-          ) : (
+          {porta === "mestre" && (
+            <div className="space-y-2 rounded-lg border p-3 text-xs" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)" }}>
+              <p>
+                <Sparkles className="mr-1 inline h-3.5 w-3.5 -mt-0.5 text-orange-500" />
+                O estilo mestre é o estilo do vídeo{estado.mestre?.nome ? ` (${estado.mestre.nome})` : ""}. A IA cria cada arte a partir dele, nas cores e na letra da sua marca, e o carrossel, a foto e o vídeo por IA saem com o mesmo design.
+                {estado.mestre?.design ? ` Hoje, o design das artes é "${estado.mestre.design.nome}".` : " O design das artes sai dele na primeira arte, uma vez por mudança do estilo do vídeo."}
+              </p>
+              {noMestre ? (
+                <p className="flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
+                  <Check className="h-3.5 w-3.5 text-green-600" /> Os seus posts já seguem o estilo mestre.
+                </p>
+              ) : (
+                <button type="button" onClick={() => void seguirOMestre()} disabled={voltandoAoMestre} className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 font-semibold text-white disabled:opacity-50">
+                  {voltandoAoMestre ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} Seguir o estilo mestre
+                </button>
+              )}
+            </div>
+          )}
+
+          {porta === "biblioteca" && (
             <GaleriaDaBiblioteca
               projectId={projectId}
               tipoFixo="imagem"
@@ -263,6 +295,15 @@ export function EstiloDosPosts({
               aoEscolher={escolher}
               titulo="Estilos da biblioteca"
               descricao="Do mais usado ao menos: os modelos do nosso book e os estilos que outros clientes escreveram. Toque em Usar este e ele vira o estilo dos seus posts."
+            />
+          )}
+
+          {porta === "criar" && (
+            <CriarEstilo
+              projectId={projectId}
+              aoCriar={(r) => {
+                if (r.estado) aprovado(r.estado);
+              }}
             />
           )}
         </>

@@ -30,6 +30,10 @@ import type { EstadoDoEstiloDosPosts } from "@/lib/estilo-dos-posts/tipos";
  * modelos-dos-posts.tsx). O modelo é criado e vai para quem chamou, sem virar
  * o estilo do projeto. Sem ele (o passo Estilo dos posts), o dono aprova o
  * modelo como o estilo do projeto.
+ *
+ * `tipo: "video"` (08/10, à noite): o estilo de um vídeo por IA criado a
+ * partir de uma ideia (só para o post). O pedido vira um design de VÍDEO na
+ * biblioteca, pelo mesmo caminho, e o vídeo daquele dia sai nessa linguagem.
  */
 
 type Mensagem = { de: "cliente" | "squad"; texto: string; falada?: boolean };
@@ -54,18 +58,32 @@ const EXEMPLOS = [
   "Colagem de papel com recortes, estilo revista",
 ];
 
+/** O vídeo por IA (08/10, à noite): a ideia do estilo das cenas, sem a cena. */
+const BOAS_VINDAS_DO_VIDEO =
+  "Como você quer que o vídeo por IA fique? Fale ou escreva do jeito que vier: a luz, as cores, a textura, se é animação, documentário, cinema, algo que você viu e gostou. Eu monto o estilo, e a IA cria as cenas do vídeo nele.";
+
+const EXEMPLOS_DO_VIDEO = [
+  "Cinema escuro e quente, câmera lenta, a cor da marca só nos detalhes",
+  "Animação 2D limpa, cores claras, traço editorial",
+  "Documentário com luz natural e câmera na mão",
+];
+
 export type EstiloCriado = { design: DesignDaGaleria; aprovado?: boolean; efeito?: string; estado?: EstadoDoEstiloDosPosts };
 
 export function CriarEstilo({
   projectId,
   paraOPost = false,
+  tipo = "imagem",
   aoCriar,
 }: {
   projectId: string;
   paraOPost?: boolean;
+  /** "video": o estilo de um vídeo por IA, só para o post (08/10, à noite). */
+  tipo?: "imagem" | "video";
   aoCriar?: (r: EstiloCriado) => void;
 }) {
-  const [conversa, setConversa] = useState<Mensagem[]>([{ de: "squad", texto: BOAS_VINDAS }]);
+  const doVideo = tipo === "video";
+  const [conversa, setConversa] = useState<Mensagem[]>([{ de: "squad", texto: doVideo ? BOAS_VINDAS_DO_VIDEO : BOAS_VINDAS }]);
   const [texto, setTexto] = useState("");
   const [soNoMeuProjeto, setSoNoMeuProjeto] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -117,7 +135,7 @@ export function CriarEstilo({
       const r = await fetch(`/api/projects/${projectId}/estilo-dos-posts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversa: doCliente, soNoMeuProjeto: soNoMeuProjetoAtual.current, paraOPost }),
+        body: JSON.stringify({ conversa: doCliente, soNoMeuProjeto: soNoMeuProjetoAtual.current, paraOPost: paraOPost || doVideo, ...(doVideo ? { tipo: "video" } : {}) }),
       });
       const d = (await r.json().catch(() => ({}))) as { design?: DesignDaGaleria; aprovado?: boolean; efeito?: string; estado?: EstadoDoEstiloDosPosts; error?: string };
       if (!r.ok || !d.design) throw new Error(d.error || "Não consegui registrar o estilo.");
@@ -207,7 +225,7 @@ export function CriarEstilo({
       </div>
       {!jaTemPedido && (
         <div className="flex flex-wrap gap-1.5">
-          {EXEMPLOS.map((ex) => (
+          {(doVideo ? EXEMPLOS_DO_VIDEO : EXEMPLOS).map((ex) => (
             <button key={ex} type="button" onClick={() => setTexto(ex)} className="rounded-full border px-2.5 py-1 text-[11px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
               {ex}
             </button>
@@ -238,7 +256,7 @@ export function CriarEstilo({
           }}
           rows={2}
           maxLength={600}
-          placeholder={gravando ? "Gravando: fale como você quer e toque em Parar" : jaTemPedido ? "Quer ajustar? Ex.: mais escuro, sem pessoa, mais colorido" : "Ou escreva como você quer os seus posts"}
+          placeholder={gravando ? "Gravando: fale como você quer e toque em Parar" : jaTemPedido ? "Quer ajustar? Ex.: mais escuro, sem pessoa, mais colorido" : doVideo ? "Ou escreva como você quer o vídeo" : "Ou escreva como você quer os seus posts"}
           aria-label="Como você quer os seus posts"
           className="min-w-0 flex-1 resize-y rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
           style={{ borderColor: "var(--border)", background: "var(--bg-input)", color: "var(--text-primary)" }}

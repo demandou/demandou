@@ -48,7 +48,7 @@ export function StepMateriais({ projectId }: { projectId: string }) {
       <EstiloDosPosts
         projectId={projectId}
         sempreAberto
-        explicacao="Fale ou escreva do seu jeito, ou escolha um estilo da biblioteca. Na campanha, cada post escolhe o seu modelo antes de gerar, e este estilo vem como sugestão até você usar outro."
+        explicacao="O padrão é o estilo mestre: as artes seguem o estilo do vídeo, todas com o mesmo design. Se preferir, escolha um estilo da biblioteca ou crie o seu, falando ou escrevendo. Na campanha, cada post ainda pode trocar."
       />
     </div>
   );

@@ -8,11 +8,13 @@ import {
   MOVIMENTOS_DE_CAMERA,
   EFEITOS,
   LOOKS,
+  escolhaDoPatch,
+  escolhaDoPut,
   estiloDoCatalogo,
   normalizarEscolha,
 } from "@/lib/media/catalogo-de-estilos";
 import { coresDaMarca, familiaDaLinguagem } from "@/lib/media/capa-composta";
-import { LEGENDA_AUTOMATICA, normalizarLegenda } from "@/lib/media/legenda-escolhida";
+import { LEGENDA_AUTOMATICA } from "@/lib/media/legenda-escolhida";
 
 /**
  * O estilo de edição do projeto, em camadas (29/09).
@@ -32,6 +34,11 @@ import { LEGENDA_AUTOMATICA, normalizarLegenda } from "@/lib/media/legenda-escol
  * estava, e não a do corpo: a tela de roteiro também muda a legenda, e um PUT
  * atrasado do catálogo, com a escolha que ele carregou antes, desfaria a
  * troca sem ninguém ver. Cada campo tem um só caminho de escrita.
+ *
+ * PATCH { cenario } (08/10): "original" (manter o cenário da gravação) ou
+ * "trocar" (trocar o fundo). Pela mesma regra da legenda, o PUT guarda o
+ * cenário que já estava. O editor de hoje nunca troca o fundo; a escolha fica
+ * guardada para o editor novo (lib/media/cenario-do-video.ts).
  *
  * As respostas levam `legendaAutomatica` (o estilo que o modo automático usa
  * com a linguagem guardada) e as cores da marca, para a prévia da tela sair
@@ -62,13 +69,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   if (!(await donoDoProjeto(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const guardada = await prisma.project.findUnique({ where: { id }, select: { videoEstiloEscolha: true } });
-  const anterior = normalizarEscolha(guardada?.videoEstiloEscolha);
-  const escolha = {
-    ...normalizarEscolha(await req.json().catch(() => ({}))),
-    // A legenda que já estava, e não a do corpo (ver o comentário do topo); a dos cortes também (06/10, tarde).
-    legenda: anterior.legenda,
-    ...(anterior.legendaDosCortes ? { legendaDosCortes: anterior.legendaDosCortes } : {}),
-  };
+  // A legenda, a dos cortes (06/10, tarde) e o cenário (08/10) que já estavam, e não os do corpo (ver o comentário do topo).
+  const escolha = escolhaDoPut(await req.json().catch(() => ({})), guardada?.videoEstiloEscolha);
   const base = estiloDoCatalogo(escolha.estiloId)?.base ?? "acelerado";
   await prisma.project.update({ where: { id }, data: { videoEstiloEscolha: escolha as never, videoStyle: base } });
   return NextResponse.json({ ok: true, escolha, base, legendaAutomatica: automaticaDa(escolha.estiloId) });
@@ -78,23 +80,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   if (!(await donoDoProjeto(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
   // `legendaDosCortes` (06/10, tarde): objeto fixa a legenda só dos cortes, null volta ao padrão (cortes legendados).
-  const corpo = (await req.json().catch(() => ({}))) as { legenda?: unknown; legendaDosCortes?: unknown };
-  const mudaLegenda = Boolean(corpo.legenda && typeof corpo.legenda === "object");
-  const mudaCortes = "legendaDosCortes" in corpo && (corpo.legendaDosCortes === null || typeof corpo.legendaDosCortes === "object");
-  if (!mudaLegenda && !mudaCortes) {
-    return NextResponse.json({ error: "Diga se quer legenda e em qual estilo." }, { status: 400 });
-  }
+  // `cenario` (08/10): manter o cenário original ou trocar o fundo. A regra da junção é pura (escolhaDoPatch).
+  const corpo = await req.json().catch(() => ({}));
   const p = await prisma.project.findUnique({ where: { id }, select: { videoEstiloEscolha: true, videoStyle: true } });
-  // A escolha normalizada, e não o Json cru: projeto que nunca abriu o
-  // catálogo passa a ter a escolha guardada, com a mesma linguagem que o
-  // padrão já dava (o `videoStyle` não muda).
-  const { legendaDosCortes: cortesAntes, ...atual } = normalizarEscolha(p?.videoEstiloEscolha, p?.videoStyle);
-  const legenda = mudaLegenda ? normalizarLegenda(corpo.legenda) : atual.legenda;
-  // A legenda dos cortes à parte só existe junto do "sem" do projeto: trocar para automática ou estilo devolve os cortes à legenda do projeto.
-  const cortes = mudaCortes ? (corpo.legendaDosCortes ? normalizarLegenda(corpo.legendaDosCortes) : null) : legenda.modo === "sem" ? cortesAntes ?? null : null;
-  const escolha = { ...atual, legenda, ...(cortes ? { legendaDosCortes: cortes } : {}) };
+  const r = escolhaDoPatch(p?.videoEstiloEscolha, p?.videoStyle, corpo);
+  if (!r) return NextResponse.json({ error: "Diga se quer legenda e em qual estilo, ou se mantém o cenário original." }, { status: 400 });
+  const { escolha, cortes } = r;
   await prisma.project.update({ where: { id }, data: { videoEstiloEscolha: escolha as never } });
-  return NextResponse.json({ ok: true, legenda: escolha.legenda, legendaDosCortes: cortes, legendaAutomatica: automaticaDa(escolha.estiloId) });
+  return NextResponse.json({ ok: true, legenda: escolha.legenda, legendaDosCortes: cortes, cenario: escolha.cenario, legendaAutomatica: automaticaDa(escolha.estiloId) });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

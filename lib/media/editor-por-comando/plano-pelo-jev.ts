@@ -39,6 +39,7 @@ import {
 } from "@/lib/media/editor-por-comando/linguagem";
 import type { PedidoDaCena } from "@/lib/media/roteiro-em-texto";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
+import { fundoSeraTrocado, trocaDeFundoLigada, type CenarioDoVideo } from "@/lib/media/cenario-do-video";
 import {
   candidatasATese,
   legendaDasRespostas,
@@ -210,6 +211,13 @@ export type EntradaDoPlanoPeloJev = {
    */
   designGravado?: { linguagem: string; nome?: string | null } | null;
   /**
+   * O CENÁRIO ESCOLHIDO PELO CLIENTE NA TELA (08/10): "original" ou "trocar".
+   * O fundo só é trocado com "trocar" E o editor novo ligado
+   * (NEXT_PUBLIC_TROCA_DE_FUNDO=1); fora disso a gravação fica, mesmo que o
+   * comando peça a troca por escrito. Ausente: "original".
+   */
+  cenarioDoCliente?: CenarioDoVideo | null;
+  /**
    * A PROVA SEM IA PAGA (06/10): o JEV e o redator simulados. Só os testes
    * puros passam isto; na esteira, ficam o cliente do JEV e o Claude.
    */
@@ -300,7 +308,10 @@ const contextoDoProjeto = (e: EntradaDoPlanoPeloJev) =>
 /** O JEV escolhe a família da linguagem, a densidade, o quanto de vídeo e se o comando pede para trocar o cenário. */
 export async function decidirLinguagem(e: EntradaDoPlanoPeloJev): Promise<DecisaoDaLinguagem> {
   const daReferencia = estiloDoComando(e.comando);
-  const recuo: DecisaoDaLinguagem = { familia: familiaPorPalavras(e.comando.texto), densidade: "medio", video: "algum", confianca: null, cenario: cenarioPorPalavras(e.comando.texto), estilo: daReferencia, legenda: legendaPorPalavras(e.comando.texto) };
+  // O CENÁRIO (08/10): a escolha da tela manda. Sem "trocar" com o editor novo ligado, a gravação fica,
+  // e a pergunta ao JEV nem é feita (ninguém paga por uma decisão que não pode mudar nada).
+  const podeTrocar = fundoSeraTrocado(e.cenarioDoCliente, trocaDeFundoLigada());
+  const recuo: DecisaoDaLinguagem = { familia: familiaPorPalavras(e.comando.texto), densidade: "medio", video: "algum", confianca: null, cenario: podeTrocar ? cenarioPorPalavras(e.comando.texto) : "gravacao", estilo: daReferencia, legenda: legendaPorPalavras(e.comando.texto) };
   if (!jevDisponivel(e)) return recuo;
   try {
     const r = await jevDe(e)(
@@ -335,11 +346,16 @@ export async function decidirLinguagem(e: EntradaDoPlanoPeloJev): Promise<Decisa
           criteria: { muito: "muito: cenas em movimento frequentes", algum: "algum: vídeo nos momentos que pedem movimento", pouco: "pouco: quase tudo com texto, ícone e imagem parada" },
         },
         // O CENÁRIO (regra 1 de 05/10 à noite): só o pedido com todas as letras troca o fundo da gravação.
-        trocarCenario: {
-          type: "noul",
-          instructions:
-            "O comando do cliente PEDE EXPLICITAMENTE para trocar o fundo ou o cenário da gravação, ou para colocar a pessoa dentro de um cenário (por exemplo: \"troque o meu fundo\", \"me coloque numa biblioteca antiga\", \"quero um cenário de estúdio atrás de mim\")? Descrever um estilo visual, uma colagem, papel, neon ou um acabamento para as artes NÃO é pedir para trocar o cenário: responda sim só quando o texto pede a troca do fundo em que a pessoa aparece.",
-        },
+        // 08/10: e só quando a tela permite (o cliente escolheu "trocar" e o editor novo está ligado).
+        ...(podeTrocar
+          ? {
+              trocarCenario: {
+                type: "noul" as const,
+                instructions:
+                  "O comando do cliente PEDE EXPLICITAMENTE para trocar o fundo ou o cenário da gravação, ou para colocar a pessoa dentro de um cenário (por exemplo: \"troque o meu fundo\", \"me coloque numa biblioteca antiga\", \"quero um cenário de estúdio atrás de mim\")? Descrever um estilo visual, uma colagem, papel, neon ou um acabamento para as artes NÃO é pedir para trocar o cenário: responda sim só quando o texto pede a troca do fundo em que a pessoa aparece.",
+              },
+            }
+          : {}),
         // A LEGENDA DO ESTILO (06/10, noite): posição, tamanho, letra e palavras por vez que o comando pede.
         ...perguntasDaLegenda(),
       }
@@ -356,7 +372,7 @@ export async function decidirLinguagem(e: EntradaDoPlanoPeloJev): Promise<Decisa
       video: semVideo ? "nenhum" : decidirChoice(r.video, ["muito", "algum", "pouco"] as const, "algum", 0.3),
       confianca: fam ? +(fam.confidence ?? 0).toFixed(2) : null,
       // Sem resposta do JEV, a reserva por palavras; com resposta, só o "sim" firme troca.
-      cenario: trocar === null ? recuo.cenario : trocar >= 0.7 ? "trocado" : "gravacao",
+      cenario: !podeTrocar ? "gravacao" : trocar === null ? recuo.cenario : trocar >= 0.7 ? "trocado" : "gravacao",
       estilo: identificado && identificado !== "nenhum" ? identificado : null,
       legenda: legendaDasRespostas(r, recuo.legenda ?? null),
     };
@@ -1651,7 +1667,8 @@ export async function completarPlanoPeloJev(plano: PlanoDoDiretor, e: EntradaDoP
   const t0 = Date.now();
   const avisos: string[] = [];
   const palavras = e.palavras ?? [];
-  const L: DecisaoDaLinguagem = { familia: ling.familia, densidade: "medio", video: "algum", confianca: null, cenario: ling.cenario ?? "gravacao", estilo: ling.estiloDoCatalogo ?? null };
+  // O plano aprovado guarda o cenário dele; a troca só vale com a escolha da tela e o editor novo (08/10).
+  const L: DecisaoDaLinguagem = { familia: ling.familia, densidade: "medio", video: "algum", confianca: null, cenario: fundoSeraTrocado(e.cenarioDoCliente, trocaDeFundoLigada()) ? (ling.cenario ?? "gravacao") : "gravacao", estilo: ling.estiloDoCatalogo ?? null };
   const curto = e.duracao <= 95 || e.formato === "9:16";
   const teto = e.tetoUsdPorMinuto ?? tetoUsdPorMinuto();
   const R = regrasDoRitmo({ formato: e.formato, duracao: e.duracao, densidade: L.densidade, video: L.video, tetoUsdPorMinuto: teto, videosPorMinutoMax: videosPorMinutoMax(curto) });

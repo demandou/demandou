@@ -27,6 +27,7 @@ import { mancheteDaPeca, desenharPecaDeFeed } from "@/lib/media/peca-de-feed";
 import { metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { marcaDaArte, promptDaArteSemTexto, desenharComFraseEmCodigo } from "@/lib/media/arte-com-frase";
 import { escolhaDoDiaNaCampanha, modeloParaOFormato } from "@/lib/estilo-dos-posts/tipos";
+import { garantirDesignMestre, linguagemDoVideoPorIA } from "@/lib/estilo-dos-posts/design-mestre";
 import { TEXTO_DO_CARD_AGUARDANDO, diaPedeArte, pecaBaseDoDia } from "@/lib/modelos-de-arte/espera-da-identidade";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { roteiroDoCarrossel, desenharCarrossel, redesQueAceitamCarrossel, laminasPermitidas } from "@/lib/media/carrossel";
@@ -2106,6 +2107,17 @@ ${sourcesSection ? `\nFONTES REAIS ENCONTRADAS (inclua ao final):\n${sourcesSect
   }
 
   if (fatia.fase === "pesquisa") {
+    // O DESIGN MESTRE ANTES DOS DIAS (08/10, revisão): com algum post no estilo
+    // mestre, ele é preparado aqui, num ponto só, antes de os dias (e a trilha
+    // do vídeo, que roda em paralelo) pedirem a arte. Só chama a biblioteca se
+    // o estilo do vídeo mudou desde o último; falhar aqui não para nada (a
+    // arte tenta de novo, uma vez, ou segue a linguagem do vídeo).
+    if (Object.values(config.modelosDosPosts ?? {}).some((m) => (m as { mestre?: unknown } | null)?.mestre === true)) {
+      const feito = await garantirDesignMestre(project.id).catch(() => null);
+      if (feito?.refeito && feito.design) {
+        await appendLog(runId, { agent: "Diana Design", message: `Design mestre preparado a partir do estilo do vídeo: "${feito.design.nome}". As artes no estilo mestre saem nele.`, status: "running" });
+      }
+    }
     // A pesquisa acabou aqui, e é tudo o que este trabalho tinha para fazer.
     // Guardar a BRUTA junto com o brief não é luxo: é o que a régua de lastro
     // mede, e foi a falta dela que deixou passar "a Fitch atribuiu perspectiva
@@ -3066,7 +3078,7 @@ ${postDoLinkedIn.content}`,
       });
       const estiloDoDia = direcao.estilo;
       const paleta = direcao.paleta;
-      const styleHintEn = direcao.styleHint;
+      let styleHintEn = direcao.styleHint;
       // A família da linguagem e as cores da marca: a manchete e o infográfico
       // são compostos em código com elas desde 30/09 (lib/media/arte-com-frase).
       //
@@ -3078,9 +3090,22 @@ ${postDoLinkedIn.content}`,
       if (modeloDoDia) {
         await appendLog(runId, {
           agent: "Diana Design",
-          message: modeloDoDia.marca ? `${dayName}: sai nas cores e na letra da sua marca, como confirmado na janela.` : `${dayName}: a arte sai no modelo escolhido para este post${modeloDoDia.nome ? ` ("${modeloDoDia.nome}")` : ""}.`,
+          message: modeloDoDia.mestre
+            ? `${dayName}: sai no estilo mestre, o mesmo design do vídeo do projeto.`
+            : modeloDoDia.marca
+              ? `${dayName}: sai nas cores e na letra da sua marca, como confirmado na janela.`
+              : `${dayName}: a arte sai no ${isVideoType ? "estilo" : "modelo"} escolhido para este post${modeloDoDia.nome ? ` ("${modeloDoDia.nome}")` : ""}.`,
           status: "running",
         });
+      }
+      // O VÍDEO POR IA NO ESTILO ESCOLHIDO PARA O DIA (08/10, à noite): o estilo
+      // mestre (a linguagem visual do vídeo do projeto), um estilo de vídeo do
+      // catálogo ou um estilo criado a partir de uma ideia. A linguagem entra no
+      // lugar do estilo da direção de arte, com a paleta e o mundo do cliente.
+      // Sem escolha, ou sem linguagem para ela, vale a direção de sempre.
+      if (isVideoType && modeloDoDia && !modeloDoDia.marca) {
+        const linguagem = await linguagemDoVideoPorIA(project.id, modeloDoDia);
+        if (linguagem) styleHintEn = `${linguagem} ${paleta} ${direcao.mundo}`;
       }
       mediaByDayKey[dayKey] = { ...(mediaByDayKey[dayKey] ?? {}), visualStyle: direcao.visualStyle };
       const maxNarrWords = maxNarrationWordsForDuration(videoDuration);

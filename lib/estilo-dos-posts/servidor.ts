@@ -10,6 +10,7 @@ import { lerModelosEscolhidos, salvarModelosEscolhidos } from "@/lib/modelos-de-
 import { contarArtesEsperando } from "@/lib/modelos-de-arte/espera-da-identidade";
 import { estadoDaIdentidade, salvarIdentidadeVisual } from "@/lib/modelos-de-arte/identidade-aprovada";
 import { modeloDoPostValido, type EstadoDoEstiloDosPosts, type ModeloDoPost, type UltimosModelos } from "@/lib/estilo-dos-posts/tipos";
+import { estadoDoMestre, lerModoDosPosts } from "@/lib/estilo-dos-posts/design-mestre";
 
 /**
  * O ESTILO DOS POSTS NO BANCO (08/10/2026): escrever ou escolher um design de
@@ -64,8 +65,13 @@ export async function designAprovadoDoProjeto(projectId: string, designId: strin
  * da galeria depois). Null quando não existe ou é de vídeo.
  */
 export async function designDoPost(projectId: string, designId: string): Promise<DesignDaGaleria | null> {
-  const d = (await lerDesign(designId, { projectId }).catch(() => null)) ?? (await designAprovadoDoProjeto(projectId, designId));
+  const d = await designVisivelAoProjeto(projectId, designId);
   return d && d.tipo === "imagem" ? d : null;
+}
+
+/** Qualquer design que o projeto enxerga (de imagem ou de vídeo), ou null. */
+export async function designVisivelAoProjeto(projectId: string, designId: string): Promise<DesignDaGaleria | null> {
+  return (await lerDesign(designId, { projectId }).catch(() => null)) ?? (await designAprovadoDoProjeto(projectId, designId));
 }
 
 // ─────────────────────────── o último modelo por tipo ───────────────────────────
@@ -122,11 +128,14 @@ export async function edicaoDoProjeto(projectId: string): Promise<ModeloDoPost |
 
 /** O estado que o passo do estilo mostra. */
 export async function estadoDoEstiloDosPosts(projectId: string, podeMudar: boolean): Promise<EstadoDoEstiloDosPosts> {
-  const [estado, aguardando, ultimos, edicao] = await Promise.all([
+  const [estado, aguardando, ultimos, edicao, modo, mestre] = await Promise.all([
     estadoDaIdentidade(projectId),
     artesAguardandoIdentidade(projectId).catch(() => []),
     lerUltimosModelos(projectId),
     edicaoDoProjeto(projectId),
+    // O ESTILO MESTRE (08/10, à noite): o padrão dos posts e o design que sai do estilo do vídeo (lido, nunca feito aqui).
+    lerModoDosPosts(projectId),
+    estadoDoMestre(projectId).catch(() => null),
   ]);
   const design = await designAprovadoDoProjeto(projectId, estado.design);
   return {
@@ -138,5 +147,7 @@ export async function estadoDoEstiloDosPosts(projectId: string, podeMudar: boole
     podeMudar,
     ultimos,
     edicao,
+    modo,
+    mestre,
   };
 }

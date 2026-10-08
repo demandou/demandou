@@ -8,6 +8,7 @@ import { listaDaPaleta } from "@/lib/modelos-de-arte/identidade";
 import { lerModelosEscolhidos, salvarModelosEscolhidos } from "@/lib/modelos-de-arte/escolha";
 import { fotosDaVitrine, pessoasDeBanco, type PessoaDaPrevia } from "@/lib/modelos-de-arte/fotos-do-book";
 import { estadoDaIdentidade, lerIdentidadeVisual, salvarIdentidadeVisual } from "@/lib/modelos-de-arte/identidade-aprovada";
+import { salvarModoDosPosts } from "@/lib/estilo-dos-posts/design-mestre";
 import { artesAguardandoIdentidade, gerarGruposMarcados, iniciarGeracaoDasArtes } from "@/lib/media/artes-aguardando-identidade";
 import { contarArtesEsperando } from "@/lib/modelos-de-arte/espera-da-identidade";
 
@@ -158,6 +159,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (aprovar || modelosMudaram || corpo.letra !== undefined || corpo.papeis !== undefined || corpo.fotos !== undefined) {
     await salvarIdentidadeVisual(id, { letra: corpo.letra, papeis: corpo.papeis, fotos: corpo.fotos, aprovar, modelosMudaram });
   }
+  // O dono escolheu os modelos do book (08/10, o estilo mestre): eles passam a ser o padrão de cada post,
+  // no lugar do estilo mestre ("A geração obedece"). Voltar ao mestre é a primeira opção de Estilo dos posts.
+  if (modelosMudaram && escolha?.ids.length) await salvarModoDosPosts(id, "por-post");
   return NextResponse.json({ escolha: escolha?.ids ?? [], em: escolha?.em ?? null, identidade: await identidadeParaATela(id, p.colorPalette) });
 }
 

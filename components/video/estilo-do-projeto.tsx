@@ -8,6 +8,7 @@ import type { NomeDoEstilo } from "@/lib/media/estilos";
 import { CatalogoDeEstilos } from "@/components/video/catalogo-de-estilos";
 import { ComandoDoVideo } from "@/components/video/comando-do-video";
 import { EscolherMusica } from "@/components/video/escolher-musica";
+import { CenarioDoVideoNaTela } from "@/components/video/cenario-do-video";
 
 /**
  * A escolha do estilo de edição do projeto.
@@ -41,6 +42,7 @@ export function EstiloDoProjeto({
   musicaInicial,
   termosIniciais = null,
   mostrar = "tudo",
+  semCenario = false,
 }: {
   projectId: string;
   inicial: string | null;
@@ -60,6 +62,11 @@ export function EstiloDoProjeto({
    * e nada muda para ela.
    */
   mostrar?: "tudo" | "estilo" | "trilha-e-termos";
+  /**
+   * Sem a escolha do cenário (08/10): a campanha toda com IA não tem
+   * gravação, então não há fundo para manter nem trocar.
+   */
+  semCenario?: boolean;
 }) {
   const verEstilo = mostrar === "tudo" || mostrar === "estilo";
   const verResto = mostrar === "tudo" || mostrar === "trilha-e-termos";
@@ -153,6 +160,12 @@ export function EstiloDoProjeto({
           `aoMudarBase` para a trilha sugerir o clima certo. */}
       {/* O EDITOR POR COMANDO (05/10): com EDITOR_POR_COMANDO=1 o comando do cliente substitui o catálogo; desligado, o catálogo de sempre. */}
       {verEstilo && <ComandoDoVideo projectId={projectId} reserva={<CatalogoDeEstilos projectId={projectId} aoMudarBase={setEscolhido} />} />}
+      {/* O CENÁRIO (08/10): manter o original ou trocar o fundo, junto do estilo, que é onde o cliente decide como o vídeo fica. */}
+      {verEstilo && !semCenario && (
+        <div className="mt-4">
+          <CenarioDoVideoNaTela projectId={projectId} />
+        </div>
+      )}
 
       {verResto && (
       <>

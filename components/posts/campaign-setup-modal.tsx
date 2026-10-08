@@ -15,7 +15,9 @@ import { chaveDaDica } from "@/lib/avisos/chaves";
 import { PlanejadorSemanal } from "@/components/posts/planejador-semanal";
 import { cn } from "@/lib/utils";
 import { ModelosDosPosts } from "@/components/estilo-dos-posts/modelos-dos-posts";
-import { modelosParaGravar, oQueOPostPede, postsSemModelo, type FormatoDoPost, type ModelosDosPosts as EscolhasDosPosts, type PostVisual } from "@/lib/estilo-dos-posts/tipos";
+import { PassoDoEstiloMestre, useModoPadraoDosPosts } from "@/components/estilo-dos-posts/passo-do-estilo-mestre";
+import { modelosParaGravar, oQueOPostPede, postsSemModelo, todosNoMestre, type FormatoDoPost, type ModelosDosPosts as EscolhasDosPosts, type PostVisual } from "@/lib/estilo-dos-posts/tipos";
+import type { ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
 import { MateriaisDaCampanha } from "@/components/materiais/materiais-da-campanha";
 import { MEDIA_STYLE_OPTIONS, type MediaStyleId } from "@/lib/media/media-style";
 import { avisoDaCota, type CotaDoCliente } from "@/lib/media/cota-do-dia";
@@ -928,7 +930,7 @@ export function FormatoPorRede({
  * cliente não saberia que o "Automático" agora quer dizer "igual ao vídeo".
  * Não troca nada da tela: só acrescenta a frase quando há linguagem escolhida.
  */
-function LinhaDaLinguagem({ projectId, noEstiloProprio }: { projectId: string; noEstiloProprio?: boolean }) {
+function LinhaDaLinguagem({ projectId, noEstiloProprio, semGrade }: { projectId: string; noEstiloProprio?: boolean; semGrade?: boolean }) {
   const [linguagem, setLinguagem] = useState<{ nome: string; referencia?: string; arte: string } | null>(null);
   useEffect(() => {
     let vivo = true;
@@ -945,7 +947,9 @@ function LinhaDaLinguagem({ projectId, noEstiloProprio }: { projectId: string; n
       <strong style={{ color: "var(--text-primary)" }}>{linguagem.nome}{linguagem.referencia ? ` (${linguagem.referencia})` : ""}</strong>, {linguagem.arte}, sempre com as cores e o logo da marca.
       {noEstiloProprio
         ? " O seu estilo próprio refina essa linguagem, não a substitui."
-        : " No Automático vale para todas as peças; escolher um estilo abaixo troca só nesta campanha."}
+        : semGrade
+          ? " Todas as peças seguem o estilo mestre."
+          : " No Automático vale para todas as peças; escolher um estilo abaixo troca só nesta campanha."}
     </p>
   );
 }
@@ -1159,6 +1163,18 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
    * trechos e redação).
    */
   const [origem, setOrigem] = useState<"video" | "tema" | null>(origemInicial ?? null);
+  /**
+   * O ESTILO VEM PRIMEIRO (08/10, à noite). Pedido do Bruno: em toda porta, o
+   * primeiro passo depois de escolher é o estilo mestre (o do vídeo, que vale
+   * para a campanha inteira com IA), e logo depois a escolha "todas as peças
+   * seguem o estilo mestre" (o padrão) ou "quero mudar os posts".
+   */
+  const [estiloVisto, setEstiloVisto] = useState(false);
+  const modoPadraoDosPosts = useModoPadraoDosPosts(projectId);
+  const [modoEscolhido, setModoEscolhido] = useState<ModoDosPosts | null>(null);
+  const modoDosPosts: ModoDosPosts = modoEscolhido ?? modoPadraoDosPosts ?? "mestre";
+  // Conhecido só depois de ler o padrão do projeto (ou de a pessoa escolher): antes disso, nada é preenchido.
+  const modoConhecido: ModoDosPosts | null = modoEscolhido ?? modoPadraoDosPosts;
   const [step, setStep] = useState(0);
   const [campaignMode, setCampaignMode] = useState<CampaignMode>("weekly");
   /**
@@ -1461,8 +1477,24 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
     return DIAS.filter((d) => oQueOPostPede(weeklySchedule[d.key]) && comArteDaIA(d.key)).map((d) => ({ chave: d.key, rotulo: d.label, formato: weeklySchedule[d.key] as FormatoDoPost }));
   }, [campaignMode, singleDay, singleContentType, DIAS, weeklySchedule, origens]);
   const faltamModelos = modelosFalharam ? [] : postsSemModelo(postsVisuais, modelosDosPosts);
+  // TODAS AS PEÇAS NO ESTILO MESTRE (08/10, à noite): cada dia visual recebe o mestre, sem lista para conferir.
+  const chaveDosPostsVisuais = postsVisuais.map((p) => `${p.chave}:${p.formato}`).join("|");
+  useEffect(() => {
+    if (modoConhecido !== "mestre") return;
+    const todos = todosNoMestre(postsVisuais);
+    setModelosDosPosts((atual) => (JSON.stringify(atual) === JSON.stringify(todos) ? atual : todos));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modoConhecido, chaveDosPostsVisuais]);
   const listaDosModelos = (explicacao?: string) =>
-    projectId ? (
+    !projectId ? null : modoDosPosts === "mestre" ? (
+      // A lista post a post só aparece em "quero mudar os posts"; aqui, a linha do que vale e o caminho para mudar.
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-xs" style={{ borderColor: "var(--border)", background: "var(--bg-surface)", color: "var(--text-primary)" }}>
+        <span className="min-w-0 flex-1">Todas as peças seguem o estilo mestre, o do vídeo: a foto, o carrossel e o vídeo por IA saem com o mesmo design.</span>
+        <button type="button" onClick={() => setModoEscolhido("por-post")} className="shrink-0 rounded-lg border px-3 py-1.5 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}>
+          Quero mudar os posts
+        </button>
+      </div>
+    ) : (
       <ModelosDosPosts
         projectId={projectId}
         posts={postsVisuais}
@@ -1471,7 +1503,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
         aoCarregar={(ok) => setModelosFalharam(!ok)}
         explicacao={explicacao}
       />
-    ) : null;
+    );
   const [customDateInput, setCustomDateInput] = useState<string>("");
   const weekStart = selectedWeekStart;
 
@@ -1640,7 +1672,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
       videoDuration: (isSingle ? singleContentType : Object.values(weeklySchedule).find(v => v === "video") ? "video" : undefined) === "video" ? videoDuration : undefined,
       videoAudio: (isSingle ? singleContentType : Object.values(weeklySchedule).find(v => v === "video") ? "video" : undefined) === "video" ? videoAudio : undefined,
       videoVoz: (isSingle ? singleContentType : Object.values(weeklySchedule).find(v => v === "video") ? "video" : undefined) === "video" && videoAudio ? videoVoz : undefined,
-      mediaStyle: campaignUsesMediaStyle(isSingle, singleContentType, weeklySchedule, isRecurring) ? mediaStyle : undefined,
+      // No estilo mestre, o "Automático" (a direção de arte segue a linguagem do vídeo); a grade só vale em "quero mudar os posts".
+      mediaStyle: campaignUsesMediaStyle(isSingle, singleContentType, weeklySchedule, isRecurring) ? (modoDosPosts === "mestre" ? "auto" : mediaStyle) : undefined,
       topicsPerDay: temasFinais,
       hojeLocal: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })(),
       // Vai sempre, mesmo sem dia vencido: a esteira recalcula o vencimento com
@@ -1890,13 +1923,17 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
               onTema={() => setOrigem("tema")}
               onGemeo={() => router.push(`/projects/${projectId}/gemeo`)}
             />
+          ) : origem === "tema" && !estiloVisto && projectId ? (
+            // O ESTILO VEM PRIMEIRO (08/10, à noite): o estilo mestre e a escolha das peças, antes do formato da campanha.
+            // Sem gravação nesta porta: o cenário não aparece. O material próprio da campanha entra no `material` (ramo material-proprio-0810).
+            <PassoDoEstiloMestre projectId={projectId} estilo={null} musica={null} termos={null} comCenario={false} modo={modoDosPosts} aoMudarModo={setModoEscolhido} />
           ) : pedindoEstilo && projectId ? (
             // O PASSO DOS MODELOS (08/10): todo dia visual com o seu modelo, e a campanha gera.
             <div className="space-y-3">
               <div>
                 <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Antes de gerar: o modelo de cada post</h3>
                 <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                  Cada dia com foto ou carrossel tem o seu modelo: crie o seu falando ou escrevendo, ou escolha um da biblioteca. Infográfico e vídeo saem nas cores e na letra da sua marca. Com todos escolhidos, é só gerar.
+                  Cada dia com foto, carrossel ou vídeo por IA tem o seu estilo: o estilo mestre (o do vídeo), um da biblioteca ou um criado por você, falando ou escrevendo. O infográfico sai nas cores e na letra da sua marca. Com todos escolhidos, é só gerar.
                 </p>
               </div>
               {listaDosModelos("No quadro, a IA coloca o conteúdo de cada dia dentro do modelo escolhido para ele.")}
@@ -1972,15 +2009,15 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <div>
                       <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Estilo visual da mídia</p>
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        A campanha recorrente inclui posts com imagem: escolha o estilo (também vale para vídeos se adicionar depois).
+                        {modoDosPosts === "mestre" ? "Todas as peças seguem o estilo mestre, o do vídeo. Para mudar post a post, use Quero mudar os posts." : "A campanha recorrente inclui posts com imagem: escolha o estilo (também vale para vídeos se adicionar depois)."}
                       </p>
                     </div>
-                    <LinhaDaLinguagem projectId={projectId} />
+                    <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
                     {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
                     <MateriaisDaCampanha projectId={projectId} valor={materiaisDaCampanha} aoMudar={setMateriaisDaCampanha} />
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
+                    {modoDosPosts === "por-post" && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
                       {MEDIA_STYLE_OPTIONS.map((opt) => (
                         <button
                           key={opt.id}
@@ -1997,7 +2034,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                           <p className="text-[10px] mt-1 leading-snug" style={{ color: "var(--text-muted)" }}>{opt.short}</p>
                         </button>
                       ))}
-                    </div>
+                    </div>}
                   </div>
                 )}
               </motion.div>
@@ -2135,15 +2172,15 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <div>
                       <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Estilo visual da mídia</p>
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        Vale para todos os dias em que há imagem, vídeo ou carrossel.
+                        {modoDosPosts === "mestre" ? "Todas as peças seguem o estilo mestre, o do vídeo. Para mudar post a post, use Quero mudar os posts." : "Vale para todos os dias em que há imagem, vídeo ou carrossel."}
                       </p>
                     </div>
-                    <LinhaDaLinguagem projectId={projectId} />
+                    <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
                     {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
                     <MateriaisDaCampanha projectId={projectId} valor={materiaisDaCampanha} aoMudar={setMateriaisDaCampanha} />
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
+                    {modoDosPosts === "por-post" && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
                       {MEDIA_STYLE_OPTIONS.map((opt) => (
                         <button
                           key={opt.id}
@@ -2160,7 +2197,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                           <p className="text-[10px] mt-1 leading-snug" style={{ color: "var(--text-muted)" }}>{opt.short}</p>
                         </button>
                       ))}
-                    </div>
+                    </div>}
                   </div>
                 )}
                 {/* AS OPCOES DO VIDEO, e elas NAO existiam aqui ate 21/09.
@@ -2321,15 +2358,15 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <div>
                       <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Estilo visual da mídia</p>
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        Escolha como imagens, vídeos e carrosséis devem parecer (realismo, charge, reportagem, etc.).
+                        {modoDosPosts === "mestre" ? "Todas as peças seguem o estilo mestre, o do vídeo. Para mudar post a post, use Quero mudar os posts." : "Escolha como imagens, vídeos e carrosséis devem parecer (realismo, charge, reportagem, etc.)."}
                       </p>
                     </div>
-                    <LinhaDaLinguagem projectId={projectId} />
+                    <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
                     {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
                     <MateriaisDaCampanha projectId={projectId} valor={materiaisDaCampanha} aoMudar={setMateriaisDaCampanha} />
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {modoDosPosts === "por-post" && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                       {MEDIA_STYLE_OPTIONS.map((opt) => (
                         <button
                           key={opt.id}
@@ -2346,7 +2383,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                           <p className="text-[10px] mt-1 leading-snug" style={{ color: "var(--text-muted)" }}>{opt.short}</p>
                         </button>
                       ))}
-                    </div>
+                    </div>}
                   </div>
                 )}
               </motion.div>
@@ -3016,13 +3053,28 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
         <div className="flex items-center justify-between px-6 py-4 border-t shrink-0" style={{ borderColor: "var(--border)", background: "var(--bg-primary)" }}>
           <Button
             variant="ghost"
-            onClick={origem === null ? onClose : pedindoEstilo ? () => setPedindoEstilo(false) : step === 0 ? () => setOrigem(null) : prevStep}
+            onClick={
+              origem === null
+                ? onClose
+                : origem === "tema" && !estiloVisto && projectId
+                  ? () => setOrigem(null)
+                  : pedindoEstilo
+                    ? () => setPedindoEstilo(false)
+                    : step === 0
+                      ? () => (projectId && origem === "tema" ? setEstiloVisto(false) : setOrigem(null))
+                      : prevStep
+            }
             style={{ color: "var(--text-muted)" }}
           >
             {origem === null ? "Cancelar" : <><ChevronLeft className="w-4 h-4" />Voltar</>}
           </Button>
 
-          {origem === null ? null : pedindoEstilo ? (
+          {origem === null ? null : origem === "tema" && !estiloVisto && projectId ? (
+            <Button onClick={() => setEstiloVisto(true)}>
+              Continuar
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          ) : pedindoEstilo ? (
             <div className="flex flex-col items-end gap-1">
               {faltamModelos.length > 0 && (
                 <p className="max-w-[320px] text-right text-[11px] leading-snug" style={{ color: "#ea580c" }}>
@@ -3077,7 +3129,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                   lista dos modelos, e a campanha gera com todos escolhidos. */}
               {faltamModelos.length > 0 && (
                 <p className="max-w-[320px] text-right text-[11px] leading-snug" style={{ color: "#ea580c" }}>
-                  Falta o modelo de {faltamModelos.map((p) => p.rotulo).join(", ")}: você cria o seu ou escolhe da biblioteca, e a campanha já sai nele.
+                  Falta o estilo de {faltamModelos.map((p) => p.rotulo).join(", ")}: o estilo mestre, um da biblioteca ou um criado por você, e a campanha já sai nele.
                 </p>
               )}
               <Button onClick={faltamModelos.length > 0 ? () => setPedindoEstilo(true) : handleConfirm} disabled={conferindoSobreposicao} className="bg-orange-500 hover:bg-orange-600">

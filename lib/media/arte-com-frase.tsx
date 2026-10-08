@@ -190,7 +190,8 @@ export async function marcaDaArte(projectId?: string | null, opcoes?: { runId?: 
         console.warn("[arte-com-frase] o design do cliente não foi lido (segue o book):", e instanceof Error ? e.message : e);
         return null;
       });
-  const modelos = modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente, book: escolha?.ids });
+  // O post no estilo mestre sem o design mestre (08/10): nem o book nem o design do projeto, a direção do vídeo.
+  const modelos = doPost?.semModelo ? undefined : modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente, book: escolha?.ids });
   if (!modelos?.length && !materiais.length) return marca;
   const { lerMidia } = await import("@/lib/media/storage");
   const { logoParaArte } = await import("@/lib/modelos-de-arte/compor");
@@ -204,14 +205,37 @@ export async function marcaDaArte(projectId?: string | null, opcoes?: { runId?: 
  * cliente); sem ele, o dia só foi confirmado na marca. Null quando a escolha
  * não vale (o design sumiu, é de vídeo ou o projeto não o enxerga).
  */
-async function modeloEscolhidoParaOPost(projectId: string, escolhido: import("@/lib/estilo-dos-posts/tipos").ModeloDoPost): Promise<{ modeloId: string | null } | null> {
+async function modeloEscolhidoParaOPost(projectId: string, escolhido: import("@/lib/estilo-dos-posts/tipos").ModeloDoPost): Promise<{ modeloId: string | null; semModelo?: boolean } | null> {
   const { modeloPorId } = await import("@/lib/modelos-de-arte/catalogo");
-  if (escolhido.marca && !escolhido.designId && !escolhido.catalogoId) return { modeloId: null };
+  const { comoOPostDesenha } = await import("@/lib/estilo-dos-posts/tipos");
+  const como = comoOPostDesenha(escolhido);
+  // O ESTILO MESTRE (08/10, à noite): a arte usa o design mestre, o design que
+  // sai do estilo do vídeo. Ele só é feito de novo quando o estilo do vídeo
+  // mudou (uma vez, nunca a cada post). Sem ele (biblioteca fora do ar), o
+  // post continua aprovado e a arte segue a linguagem do vídeo pela direção
+  // de arte de sempre.
+  if (como === "mestre") {
+    const { garantirDesignMestre } = await import("@/lib/estilo-dos-posts/design-mestre");
+    const feito = await garantirDesignMestre(projectId);
+    // Sem o design mestre, nem o book: a composição da marca com a direção do vídeo (`semModelo`).
+    if (!feito.design) return { modeloId: null, semModelo: true };
+    const { modeloDoDesign, registrarModeloDoCliente } = await import("@/lib/modelos-de-arte/modelo-do-cliente");
+    const modelo = modeloDoDesign(feito.design);
+    if (!modelo) return { modeloId: null, semModelo: true };
+    registrarModeloDoCliente(modelo);
+    return { modeloId: modelo.id };
+  }
+  if (como === "marca") return { modeloId: null };
+  // Um estilo de vídeo (o vídeo por IA ou o curto, 08/10): a capa sai na marca, sem modelo de imagem.
+  if (como === "estilo-de-video") return { modeloId: null };
   // O modelo do book vale pelo id do catálogo (a semente pode nem existir no banco ainda).
   if (escolhido.catalogoId && modeloPorId(escolhido.catalogoId)) return { modeloId: escolhido.catalogoId };
   if (!escolhido.designId) return null;
-  const { designDoPost } = await import("@/lib/estilo-dos-posts/servidor");
-  const design = await designDoPost(projectId, escolhido.designId);
+  const { designVisivelAoProjeto } = await import("@/lib/estilo-dos-posts/servidor");
+  const visivel = await designVisivelAoProjeto(projectId, escolhido.designId);
+  // O estilo de um vídeo por IA criado a partir de uma ideia (08/10): a capa sai na marca, e o vídeo segue a linguagem dele.
+  if (visivel?.tipo === "video") return { modeloId: null };
+  const design = visivel?.tipo === "imagem" ? visivel : null;
   if (!design) {
     console.warn(`[arte-com-frase] o modelo escolhido para o post (${escolhido.designId}) não existe mais para este projeto; vale a regra do projeto`);
     return null;

@@ -1,3 +1,4 @@
+import { cenarioDaEscolha } from "@/lib/media/cenario-do-video";
 import type { Prisma } from "@prisma/client";
 import { debitoIsento } from "@/lib/credits/isencao";
 import { contaDoPlano } from "@/lib/equipe/conta";
@@ -754,6 +755,8 @@ export async function prepararRoteiro(
             nicho: v.project.niche,
             // As sugestões que o cliente já deixou cena a cena (06/10): o pedido é lei desde o primeiro plano.
             pedidos: sugestoesNaFala(completo.sugestoes, fala.palavras, fala.palavras),
+            // O cenário escolhido na tela (08/10): sem "trocar" com o editor novo ligado, a gravação fica.
+            cenario: cenarioDaEscolha(v.project.videoEstiloEscolha),
           });
           completo.comando = { texto: comando.texto, base: p.base, plano: p.plano.momentos.length ? p.plano : null, feitoEm: agora(), erro: p.erro ?? null, tempos: { ...p.tempos, total: +((Date.now() - t0) / 1000).toFixed(1) }, avisos: p.avisos.slice(0, 20) };
         } catch (e) {

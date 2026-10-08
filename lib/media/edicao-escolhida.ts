@@ -1,6 +1,7 @@
 import { CUSTO_DAS_INSERCOES_IA, estiloDoCatalogo, normalizarEscolha } from "@/lib/media/catalogo-de-estilos";
 import { resumoDaLegenda } from "@/lib/media/legenda-escolhida";
 import { estiloIdDoComando, roteiroDeOutroComando, trechoDoComando, type ComandoComReferencia } from "@/lib/media/estilo-do-comando";
+import { cenarioDaEscolha, resumoDoCenario, trocaDeFundoLigada, type CenarioDoVideo } from "@/lib/media/cenario-do-video";
 
 /**
  * COMO ESTE VÍDEO VAI SER EDITADO, em uma linha honesta (02/10/2026).
@@ -42,6 +43,13 @@ export type ResumoDaEdicao = {
    */
   edicao: string;
   insercoesIA: boolean;
+  /**
+   * O CENÁRIO (08/10): manter o original ou trocar o fundo, e a frase honesta
+   * do que acontece hoje (o editor atual nunca troca o fundo; ver
+   * lib/media/cenario-do-video.ts).
+   */
+  cenarioEscolhido: CenarioDoVideo;
+  cenario: string;
 };
 
 const nomeDoArquivo = (url: string) => {
@@ -68,6 +76,8 @@ export function resumoDaEdicao(p: {
   comando?: ComandoComReferencia;
   /** O texto do comando com que o roteiro do completo foi planejado (`completo.comando.texto`). */
   comandoDoRoteiro?: string | null;
+  /** O editor já troca o fundo (NEXT_PUBLIC_TROCA_DE_FUNDO=1). Sem isto, lido do ambiente. */
+  trocaDeFundo?: boolean;
 }): ResumoDaEdicao {
   const escolha = normalizarEscolha(p.videoEstiloEscolha, p.videoStyle);
   const doComando = estiloIdDoComando(p.comando);
@@ -92,6 +102,8 @@ export function resumoDaEdicao(p: {
     planejadoEm: planejado,
     refazerRoteiro: refazer,
     insercoesIA: Boolean(escolha.insercoesIA),
+    cenarioEscolhido: cenarioDaEscolha(p.videoEstiloEscolha),
+    cenario: resumoDoCenario(cenarioDaEscolha(p.videoEstiloEscolha), p.trocaDeFundo ?? trocaDeFundoLigada()),
     edicao: escolha.insercoesIA
       ? `Inserções de IA ligadas: imagens e cenas geradas na linguagem do estilo (${CUSTO_DAS_INSERCOES_IA.texto})`
       : "Corte limpo profissional: você na tela, cortes nas pausas, punch-in nas ênfases, poucas cartelas de texto e legenda; sem imagem gerada",

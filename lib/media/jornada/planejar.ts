@@ -83,6 +83,8 @@ export async function planejarJornada(
     feitoEm: new Date().toISOString(),
     formato: e.contexto.formato,
     duracao: e.contexto.duracao,
+    // O cenário escolhido (08/10) vai no plano para o editor novo; nenhum passo de hoje troca o fundo.
+    cenario: e.contexto.cenario ?? "original",
   };
   return { plano, leitura, amostras, avisos, descartados: d.descartados, ideias: ideias.map((i) => ({ frase: i.frase, gatilho: i.gatilho.palavra, descricao: i.descricao, textoNaImagem: i.textoNaImagem, midia: i.midia, papel: i.papel })), custoLeituraUsd, tempos };
 }
