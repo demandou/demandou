@@ -6,7 +6,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
-import { arteParaStory, caixaDaArte, jaEhStory, STORY } from "../../lib/media/arte-do-story.ts";
+const { arteParaStory, caixaDaArte, jaEhStory, STORY } = await import("@/lib/media/arte-do-story");
 
 const ler = (f: string) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
