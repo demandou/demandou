@@ -5,7 +5,8 @@ import { auth } from "@/lib/auth/server";
 import { prisma } from "@/lib/db/prisma";
 import { descartarGravacaoRecusada, fraseDoEstouro, registrarGravacao } from "@/lib/limites-do-plano";
 import { projetoVisivel } from "@/lib/equipe/conta";
-import { nomeDaGravacaoEmPartes, registroDasPartes, somaDosBytes, validarPartes } from "@/lib/media/partes-da-gravacao";
+import { validarPartes } from "@/lib/media/partes-da-gravacao";
+import { registrarGravacaoEmPartes } from "@/lib/media/partes-servidor";
 
 /** Lista os vídeos de um projeto. */
 export async function GET(req: NextRequest) {
@@ -82,14 +83,7 @@ export async function POST(req: NextRequest) {
     const itens = conferida.itens;
     let registroDasPartesFeito: Awaited<ReturnType<typeof registrarGravacao>>;
     try {
-      registroDasPartesFeito = await registrarGravacao({
-        userId,
-        projectId,
-        blobUrl: itens[0].url,
-        originalName: nomeDaGravacaoEmPartes(itens.map((p) => p.nome)),
-        sizeBytes: somaDosBytes(itens),
-        partes: registroDasPartes(itens, criterio),
-      });
+      registroDasPartesFeito = await registrarGravacaoEmPartes({ userId, projectId, itens, criterio });
     } catch (e) {
       console.error(`[partes][${projectId}] registro falhou:`, e);
       return NextResponse.json(

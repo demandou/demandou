@@ -30,6 +30,11 @@ const TOLERANCIA_DA_SINCRONIA_S = 0.034; // um quadro a 30
 // 1,0 e 2,4 caem na grade de 25, de 30 e de 60 quadros (múltiplos de 0,2 s):
 // assim o clarão de cada parte começa no instante exato do bipe na origem.
 const EVENTOS_LOCAIS = [1.0, 2.4];
+// PROVA_ESCALA=20: as mesmas três partes com 80, 70 e 60 s, e um terceiro
+// evento um segundo antes do fim de cada parte (deriva acumulada apareceria aí).
+const ESCALA = Math.max(1, Number(process.env.PROVA_ESCALA) || 1);
+const DURACOES = [4, 3.5, 3].map((d) => d * ESCALA);
+const eventosDe = (d) => (ESCALA > 1 ? [...EVENTOS_LOCAIS, Number((Math.floor((d - 1) / 0.2) * 0.2).toFixed(1))] : EVENTOS_LOCAIS);
 
 function executar(bin, args, { cwd } = {}) {
   return new Promise((resolve, reject) => {
@@ -45,22 +50,24 @@ function executar(bin, args, { cwd } = {}) {
 const ffmpeg = (args, opts) => executar("ffmpeg", ["-hide_banner", "-nostdin", "-y", ...args], opts);
 
 function somDaParte({ freqDoFundo, amplitude, duracao, atraso = 0 }) {
+  const eventos = eventosDe(duracao);
   // Os bipes caem no tempo de APRESENTAÇÃO; com o áudio atrasado, o relógio
   // dele começa `atraso` depois.
-  const bipes = EVENTOS_LOCAIS.map((t) => `between(t,${(t - atraso).toFixed(3)},${(t - atraso + 0.1).toFixed(3)})`).join("+");
+  const bipes = eventos.map((t) => `between(t,${(t - atraso).toFixed(3)},${(t - atraso + 0.1).toFixed(3)})`).join("+");
   return `aevalsrc='${amplitude}*sin(2*PI*${freqDoFundo}*t)+${amplitude}*sin(2*PI*3000*t)*(${bipes})':d=${(duracao - atraso).toFixed(3)}`;
 }
 
 function imagemDaParte({ cor, largura, altura, fps, duracao }) {
-  const clarao = EVENTOS_LOCAIS.map((t) => `between(t,${t},${(t + 0.099).toFixed(3)})`).join("+");
+  const eventos = eventosDe(duracao);
+  const clarao = eventos.map((t) => `between(t,${t},${(t + 0.099).toFixed(3)})`).join("+");
   return `color=c=${cor}:s=${largura}x${altura}:r=${fps}:d=${duracao},drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='${clarao}'`;
 }
 
 async function gerarPartes(pasta) {
   const a = join(pasta, "parte-1-deitada.mp4");
   await ffmpeg([
-    "-f", "lavfi", "-i", imagemDaParte({ cor: "red", largura: 1920, altura: 1080, fps: 30, duracao: 4 }),
-    "-f", "lavfi", "-i", `${somDaParte({ freqDoFundo: 300, amplitude: 0.03, duracao: 4 })}:s=48000:c=stereo`,
+    "-f", "lavfi", "-i", imagemDaParte({ cor: "red", largura: 1920, altura: 1080, fps: 30, duracao: DURACOES[0] }),
+    "-f", "lavfi", "-i", `${somDaParte({ freqDoFundo: 300, amplitude: 0.03, duracao: DURACOES[0] })}:s=48000:c=stereo`,
     "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ac", "2", "-shortest", a,
   ]);
 
@@ -68,8 +75,8 @@ async function gerarPartes(pasta) {
   // "gire 90" (matriz de exibição), como sai de um telefone de verdade.
   const deitada = join(pasta, "parte-2-sem-rotacao.mp4");
   await ffmpeg([
-    "-f", "lavfi", "-i", imagemDaParte({ cor: "green", largura: 1920, altura: 1080, fps: 25, duracao: 3.5 }),
-    "-f", "lavfi", "-i", `${somDaParte({ freqDoFundo: 400, amplitude: 0.45, duracao: 3.5 })}:s=44100`,
+    "-f", "lavfi", "-i", imagemDaParte({ cor: "green", largura: 1920, altura: 1080, fps: 25, duracao: DURACOES[1] }),
+    "-f", "lavfi", "-i", `${somDaParte({ freqDoFundo: 400, amplitude: 0.45, duracao: DURACOES[1] })}:s=44100`,
     "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ac", "1", "-ar", "44100", "-shortest", deitada,
   ]);
   const b = join(pasta, "parte-2-em-pe.mp4");
@@ -86,9 +93,9 @@ async function gerarPartes(pasta) {
 
   const c = join(pasta, "parte-3-60qps-som-atrasado.mp4");
   await ffmpeg([
-    "-f", "lavfi", "-i", imagemDaParte({ cor: "blue", largura: 1280, altura: 720, fps: 60, duracao: 3 }),
+    "-f", "lavfi", "-i", imagemDaParte({ cor: "blue", largura: 1280, altura: 720, fps: 60, duracao: DURACOES[2] }),
     "-itsoffset", "0.2",
-    "-f", "lavfi", "-i", `${somDaParte({ freqDoFundo: 500, amplitude: 0.15, duracao: 3, atraso: 0.2 })}:s=48000:c=stereo`,
+    "-f", "lavfi", "-i", `${somDaParte({ freqDoFundo: 500, amplitude: 0.15, duracao: DURACOES[2], atraso: 0.2 })}:s=48000:c=stereo`,
     "-map", "0:v", "-map", "1:a",
     "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ac", "2", c,
   ]);
@@ -154,7 +161,7 @@ async function main() {
     inicios.push(acumulado);
     acumulado += p.duracaoSeg;
   }
-  const esperados = inicios.flatMap((t0) => EVENTOS_LOCAIS.map((t) => Number((t0 + t).toFixed(3))));
+  const esperados = inicios.flatMap((t0, i) => eventosDe(DURACOES[i]).map((t) => Number((t0 + t).toFixed(3))));
   const vistos = await claroes(arquivo);
   const ouvidos = await bipes(arquivo);
   const sincronia = esperados.map((e) => {

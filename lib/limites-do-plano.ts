@@ -16,7 +16,6 @@ import { cicloAtual } from "@/lib/ciclo-de-credito";
 import { contaDoPlano, contaPagante, consumoDoMembro, membroAtivo, type MembroDaConta } from "@/lib/equipe/conta";
 import { fraseDaCotaDaEquipe, fraseDoTetoDeGravacoes, gravacoesDoCiclo as gravacoesComExtras, marcasDaConta } from "@/lib/equipe/regras";
 import { diaEMes } from "@/lib/frase-da-cota";
-import { gravarPartes } from "@/lib/media/partes-servidor";
 import type { PartesDaGravacao } from "@/lib/media/partes-da-gravacao";
 
 /**
@@ -471,7 +470,9 @@ export async function registrarGravacao(args: {
         },
         select: campos,
       });
-      if (args.partes) await gravarPartes(tx, video.id, args.partes);
+      // A coluna `partes` fica fora do schema do Prisma (lib/media/partes-servidor.ts):
+      // SQL cru, na mesma transação. Sem a coluna, lança e o registro inteiro desfaz.
+      if (args.partes) await tx.$executeRaw`UPDATE video_jobs SET partes = ${JSON.stringify(args.partes)}::jsonb WHERE id = ${video.id}`;
 
       const dono = await tx.user.findUniqueOrThrow({ where: { id: contaId }, select: { creditsBalance: true } });
       const numero = avaliacao.usadas + 1;

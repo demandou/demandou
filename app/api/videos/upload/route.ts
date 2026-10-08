@@ -6,13 +6,8 @@ import { auth } from "@/lib/auth/server";
 import { prisma } from "@/lib/db/prisma";
 import { despacharPasso } from "@/lib/media/piloto-do-servidor";
 import { projetoVisivel } from "@/lib/equipe/conta";
-import {
-  lerPedidoDaParte,
-  listaCompletaNoAviso,
-  nomeDaGravacaoEmPartes,
-  registroDasPartes,
-  somaDosBytes,
-} from "@/lib/media/partes-da-gravacao";
+import { lerPedidoDaParte, listaCompletaNoAviso } from "@/lib/media/partes-da-gravacao";
+import { registrarGravacaoEmPartes } from "@/lib/media/partes-servidor";
 
 /**
  * Upload de vídeo direto do navegador para o object storage.
@@ -118,14 +113,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           const pedido = lerPedidoDaParte(parte, projectId);
           const itens = pedido ? listaCompletaNoAviso(pedido, blob.url) : null;
           if (!pedido || !itens) return;
-          const registro = await registrarGravacao({
-            userId,
-            projectId,
-            blobUrl: itens[0].url,
-            originalName: nomeDaGravacaoEmPartes(itens.map((p) => p.nome)),
-            sizeBytes: somaDosBytes(itens),
-            partes: registroDasPartes(itens, pedido.criterio),
-          });
+          const registro = await registrarGravacaoEmPartes({ userId, projectId, itens, criterio: pedido.criterio });
           if (!registro.ok) {
             for (const p of itens) await descartarGravacaoRecusada(p.url, projectId);
             return;

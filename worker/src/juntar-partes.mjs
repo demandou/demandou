@@ -372,7 +372,7 @@ export async function juntarArquivos(fontes, pasta, { rodar = rodarNoWorker, apa
  * sobe o vídeo juntado e a fala dele (os dois no store PRIVADO: é a gravação
  * do cliente, não mídia publicada) e devolve o que o callback grava.
  *
- * `trabalho`: { videoJobId, chave, partes: [{ url, nome }] }.
+ * `trabalho`: { videoJobId, chave, partes: [{ url, nome }], callbackUrl, retorno }.
  */
 export async function juntarPartes(trabalho, { baixar, subir, rodar = rodarNoWorker }) {
   const partes = Array.isArray(trabalho.partes) ? trabalho.partes : [];
@@ -418,6 +418,8 @@ export async function juntarPartes(trabalho, { baixar, subir, rodar = rodarNoWor
         })),
       },
       audio,
+      // Volta como veio: o app só aceita o aviso da rodada que pediu.
+      retorno: trabalho.retorno ?? null,
     };
   } finally {
     await rm(pasta, { recursive: true, force: true }).catch(() => {});

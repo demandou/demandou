@@ -62,9 +62,20 @@ export async function POST(
   // ouvir não é a etapa. Todo caminho que chega aqui (a cura da aba, a nova
   // tentativa da falha, o vigia) segue para a junção, que no fim despacha
   // esta rota de novo com o vídeo juntado.
-  if ((video.status === "uploaded" || video.status === "failed") && (await idsComPartesPorJuntar([id])).has(id)) {
-    const r = await pedirJuncao(id);
-    return NextResponse.json(r.corpo, { status: r.status });
+  // A leitura é ESTRITA: na dúvida (banco fora por um instante), não ouve,
+  // porque ouvir agora seria transcrever e cobrar só a primeira parte.
+  if (video.status === "uploaded" || video.status === "failed") {
+    let porJuntar: Set<string>;
+    try {
+      porJuntar = await idsComPartesPorJuntar([id], { estrito: true });
+    } catch (e) {
+      console.error(`[transcricao][${id}] leitura das partes falhou:`, e);
+      return NextResponse.json({ error: "Não consegui conferir a gravação agora. Tente de novo em instantes." }, { status: 503 });
+    }
+    if (porJuntar.has(id)) {
+      const r = await pedirJuncao(id);
+      return NextResponse.json(r.corpo, { status: r.status });
+    }
   }
 
   // Idempotência: se já transcreveu, não paga de novo. Transcrição é a etapa

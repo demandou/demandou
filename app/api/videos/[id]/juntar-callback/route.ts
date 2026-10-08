@@ -32,6 +32,8 @@ type Corpo = {
   reiniciado?: boolean;
   juntado?: Omit<JuntadoDaGravacao, "em"> & { partes?: unknown };
   audio?: { url: string; bytes: number } | null;
+  /** O que o pedido levou e o worker devolve como veio: `{ inicio }`, o `startedAt` da rodada. */
+  retorno?: { inicio?: unknown } | null;
 };
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -47,11 +49,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Corpo não é JSON" }, { status: 400 });
   }
 
+  // A RODADA deste aviso: o `startedAt` que o pedido levou e o worker devolve.
+  // Com o vigia relançando uma junção lenta, duas rodadas podem estar no ar, e
+  // o aviso da velha não pode decidir pela nova (marcar falha, retomar, ou
+  // ganhar dela).
+  const inicio = typeof corpo.retorno?.inicio === "string" ? corpo.retorno.inicio : null;
+
   // O worker reiniciou no meio da junção (deploy): não é falha da gravação.
   // O vigia retoma na hora (volta para "uploaded" e pede a junção de novo).
   if (corpo.reiniciado) {
     const linha = await lerParaRetomar(id);
-    const feito = linha && linha.status === "juntando-partes" ? await retomarEtapa(linha, "reiniciado") : "ignorado";
+    const mesmaRodada = !inicio || linha?.startedAt?.getTime() === new Date(inicio).getTime();
+    const feito = linha && linha.status === "juntando-partes" && mesmaRodada ? await retomarEtapa(linha, "reiniciado") : "ignorado";
     return NextResponse.json({ ok: true, reiniciado: feito });
   }
 
@@ -59,11 +68,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!video) return NextResponse.json({ ok: true, ignorado: "vídeo não existe mais" });
   const produzidos = [corpo.juntado?.url, corpo.audio?.url].filter((u): u is string => Boolean(u));
 
-  // Só mexe em quem ainda espera a junção: aviso repetido do worker (ele
-  // insiste quando a rede soluça) não pode desfazer uma esteira que já andou.
+  // Só mexe em quem ainda espera a junção (e nesta rodada): aviso repetido do
+  // worker não pode desfazer uma esteira que já andou.
   if (!corpo.ok || !corpo.juntado?.url || !urlDaParteValida(corpo.juntado.url, video.projectId)) {
     await prisma.videoJob.updateMany({
-      where: { id, status: "juntando-partes" },
+      where: { id, status: "juntando-partes", ...(inicio ? { startedAt: new Date(inicio) } : {}) },
       data: { status: "failed", startedAt: null, error: MENSAGEM_DA_JUNCAO_FALHOU },
     });
     console.error(`[juntar][${id}] worker falhou: ${corpo.erro ?? "sem o vídeo juntado"}`);
@@ -71,7 +80,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ ok: true });
   }
 
-  const partes = await lerPartesDe(id);
+  // Estrita: na dúvida, 503, e o worker insiste (até ~3 min) em vez de o
+  // vídeo juntado ser jogado fora por um soluço do banco.
+  let partes: Awaited<ReturnType<typeof lerPartesDe>>;
+  try {
+    partes = await lerPartesDe(id, { estrito: true });
+  } catch (e) {
+    console.error(`[juntar][${id}] leitura das partes falhou:`, e);
+    return NextResponse.json({ error: "Banco indisponível; tente de novo." }, { status: 503 });
+  }
   const juntado: JuntadoDaGravacao = {
     url: corpo.juntado.url,
     bytes: Number(corpo.juntado.bytes) || 0,
@@ -96,6 +113,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             partes = jsonb_set(partes, '{juntado}', ${JSON.stringify(juntado)}::jsonb, true),
             "updatedAt" = now()
           WHERE id = ${id} AND status = 'juntando-partes'
+            AND (${inicio}::text IS NULL OR "startedAt" = ${inicio}::timestamp)
             AND COALESCE(partes -> 'juntado', 'null'::jsonb) = 'null'::jsonb`
       : 0;
 

@@ -228,6 +228,12 @@ export function VideoUpload({
   async function escolher(files: File[], somar: boolean) {
     setErro(null);
     setPronto(false);
+    // O mesmo arquivo escolhido duas vezes entraria duas vezes no vídeo.
+    const mesmo = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+    const repetidos = somar ? files.filter((f) => arquivos.some((a) => mesmo(a.file, f))) : [];
+    files = files.filter((f, i) => !repetidos.includes(f) && files.findIndex((g) => mesmo(g, f)) === i);
+    if (repetidos.length) setErro(`"${repetidos[0].name}" já está na lista e não entrou de novo.`);
+    if (!files.length) return;
     setLendo(true);
     const lidos: Arquivo[] = [];
     for (const file of files) {
@@ -276,7 +282,12 @@ export function VideoUpload({
           motivo: `Não consegui ler a duração de "${arquivos[ilegivel].file.name}" (parte ${ilegivel + 1}).`,
           dica: "Tente exportar esse arquivo em MP4, ou tire essa parte da lista.",
         }
-      : validarVideo(bytesTotal, duracaoTotal, envio);
+      : (() => {
+          // A régua é a da gravação JUNTADA (a soma), e a frase diz isso: o
+          // teto de tamanho do plano vale para a gravação inteira.
+          const r = validarVideo(bytesTotal, duracaoTotal, envio);
+          return r.ok ? r : { ...r, motivo: r.motivo.replace(/^Esse vídeo tem/, "As partes somam").replace(/^O arquivo tem/, "As partes somam").replace(/ por arquivo\./, " por gravação.") };
+        })();
 
   /**
    * AS PARTES, uma por uma, pelo mesmo caminho do arquivo único (Blob
