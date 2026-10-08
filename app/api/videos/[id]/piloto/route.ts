@@ -33,6 +33,12 @@ const PASSOS: Record<PassoDoPiloto, (videoId: string) => Promise<void>> = {
     await chamarRota(videoId, "transcribe");
   },
 
+  // A gravação em partes (08/10): o worker junta na ordem confirmada, e o
+  // `juntar-callback` despacha a transcrição do vídeo juntado.
+  async juntar(videoId) {
+    await chamarRota(videoId, "juntar", { timeoutMs: 60_000 });
+  },
+
   // Escolhe os trechos. O `cortar` sai de dentro da rota de seleção, quando
   // ela termina bem, seja quem for que a chamou (servidor ou tela).
   async selecionar(videoId) {

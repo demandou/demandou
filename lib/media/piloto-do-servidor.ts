@@ -29,6 +29,8 @@ import { projetoVisivel } from "@/lib/equipe/conta";
  */
 
 export type PassoDoPiloto =
+  // A gravação em partes (08/10): o worker junta antes de ouvir.
+  | "juntar"
   | "transcrever"
   | "selecionar"
   | "cortar"

@@ -40,6 +40,7 @@ import { imprimirHtml } from "./contrato-pdf.mjs";
 import { esperarMemoria, memoriaLivreMb } from "./memoria.mjs";
 import { CAPACIDADE, comFatia, resumoDaCapacidade } from "./capacidade.mjs";
 import { travarPartidaDoWorker, motivoParaRecusarCallback } from "./trava-do-ambiente.mjs";
+import { juntarPartes } from "./juntar-partes.mjs";
 
 /**
  * A paleta de emoji, que mora ao lado do codigo e nao na pasta temporaria.
@@ -1662,6 +1663,10 @@ const servidor = createServer((req, res) => {
   }
 
   const ehAudio = req.method === "POST" && req.url?.startsWith("/audio");
+  // /juntar (08/10): as partes da gravação, na ordem que o cliente escolheu,
+  // viram um vídeo só antes da transcrição (src/juntar-partes.mjs). Mesmo
+  // contrato do /audio: 202 na hora e o resultado pelo callback assinado.
+  const ehJuntar = req.method === "POST" && req.url?.startsWith("/juntar");
   // /recortar (30/09): recorta a pessoa de um quadro JÁ guardado e responde na
   // hora (poucos segundos). Serve às capas compostas em código dos vídeos que
   // foram cortados antes do quadro-da-capa existir.
@@ -2300,7 +2305,7 @@ const servidor = createServer((req, res) => {
         await rm(pasta, { recursive: true, force: true }).catch(() => {});
       }
   }
-  if (!ehAudio && (req.method !== "POST" || !req.url?.startsWith("/cortar"))) {
+  if (!ehAudio && !ehJuntar && (req.method !== "POST" || !req.url?.startsWith("/cortar"))) {
     return responder(404, { error: "Not found" });
   }
 
@@ -2319,7 +2324,8 @@ const servidor = createServer((req, res) => {
     } catch {
       return responder(400, { error: "Corpo não é JSON" });
     }
-    if (!trabalho.videoJobId || !trabalho.sourceUrl || !trabalho.callbackUrl) {
+    const temFonte = ehJuntar ? Array.isArray(trabalho.partes) && trabalho.partes.length > 1 : Boolean(trabalho.sourceUrl);
+    if (!trabalho.videoJobId || !temFonte || !trabalho.callbackUrl) {
       return responder(400, { error: "Faltam videoJobId, sourceUrl ou callbackUrl" });
     }
     // A trava dos ambientes (06/10): recusa na entrada, antes de gastar o corte.
@@ -2336,7 +2342,7 @@ const servidor = createServer((req, res) => {
     // recorte de um trecho.
     const soltar = registrarTrabalho({
       videoJobId: trabalho.videoJobId,
-      tipo: ehAudio ? "audio" : "cortar",
+      tipo: ehAudio ? "audio" : ehJuntar ? "juntar" : "cortar",
       destino: trabalho,
       reinicio: () => ({
         ok: false,
@@ -2357,9 +2363,11 @@ const servidor = createServer((req, res) => {
       const falso = process.env.WORKER_TRABALHO_FALSO === "1" && Number(trabalho.falsoSegundos) > 0;
       const resultados = falso
         ? await new Promise((ok) => setTimeout(() => ok({ trechos: [], falso: true }), Number(trabalho.falsoSegundos) * 1000))
-        : ehAudio
-          ? await extrairAudio(trabalho)
-          : await processar(trabalho);
+        : ehJuntar
+          ? await juntarPartes(trabalho, { baixar: baixarQualquer, subir, rodar })
+          : ehAudio
+            ? await extrairAudio(trabalho)
+            : await processar(trabalho);
       await avisar(trabalho, { ok: true, ...resultados });
     } catch (e) {
       const mensagem = e instanceof Error ? e.message : "Falha no processamento";

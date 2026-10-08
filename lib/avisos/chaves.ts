@@ -246,6 +246,8 @@ export type VideoParaChave = {
   temTrechos: boolean;
   temCortes?: boolean;
   roteiroPendente?: boolean;
+  /** A gravação em partes ainda não juntada (08/10): a etapa da falha é a junção. */
+  partesPorJuntar?: boolean;
 };
 
 export type ChavesDoVideo = {

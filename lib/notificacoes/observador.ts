@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { MAX_TENTATIVAS, etapaDeRetomada, prazoDoCompletoSegundos } from "@/lib/media/video-state";
 import { roteiroLigado } from "@/lib/media/roteiro-da-edicao";
+import { idsComPartesPorJuntar } from "@/lib/media/partes-servidor";
 import { falhaQueRepete, servidorRepetindo, type FalhaTratada } from "@/lib/media/falha-explicita-do-video";
 import {
   avisarEstorno,
@@ -60,6 +61,8 @@ type LinhaDoVideo = {
   tem_roteiro: boolean | null;
   tratada: FalhaTratada | null;
   detalhe_montagem: string | null;
+  /** Não vem do SQL: preenchido depois, pela coluna `partes` (08/10). */
+  partesPorJuntar?: boolean;
 };
 
 type Trecho = { posts?: unknown; midia?: { vertical?: unknown } | null; montagem?: { estado?: string; desde?: string; falhaTecnica?: boolean } | null };
@@ -102,9 +105,12 @@ export async function observarAvisos(
     return [] as LinhaDoVideo[];
   });
 
+  // A gravação em partes ainda não juntada (08/10): a falha dela é da junção
+  // (VID-JUN), a mesma conta que a faixa do Gestor faz.
+  const porJuntar = await idsComPartesPorJuntar(videos.filter((v) => v.status === "failed").map((v) => v.id));
   for (const v of videos) {
     try {
-      await observarVideo(v, agora, desde);
+      await observarVideo({ ...v, partesPorJuntar: porJuntar.has(v.id) }, agora, desde);
       r.videos++;
     } catch (e) {
       console.error(`[observador][${v.id}]`, e);
@@ -157,7 +163,7 @@ async function observarVideo(v: LinhaDoVideo, agora: Date, desde: Date): Promise
   const repetindo = servidorRepetindo({ status: v.status, updatedAt: v.updatedAt, attempts: v.attempts, error: v.error, tratada: v.tratada }, agora);
   if (v.status === "failed" && mudouAgora && agora.getTime() - v.updatedAt.getTime() > FALHA_ASSENTADA_MS && !repetindo) {
     const roteiroPendente = roteiroLigado() && temTrechos && !temCortes && !v.aprovado;
-    const etapa = etapaDeRetomada({ temTranscricao: v.durationSec !== null, temTrechos, temCortes, roteiroPendente });
+    const etapa = etapaDeRetomada({ temTranscricao: v.durationSec !== null, temTrechos, temCortes, roteiroPendente, partesPorJuntar: v.partesPorJuntar });
     await avisarFalhaDoVideo({
       videoId: v.id,
       etapa,

@@ -26,7 +26,12 @@
  * TELA DE ROTEIRO, que o cliente aprova antes de a esteira gerar imagem, cena,
  * corte e montagem. O estado de ESPERA correspondente é "roteiro".
  */
-export const TRABALHANDO = ["transcribing", "selecting", "writing", "cutting", "roteirizando"] as const;
+/**
+ * "juntando-partes" (08/10): a gravação enviada em mais de um arquivo vira um
+ * vídeo só no worker, antes da transcrição (lib/media/partes-da-gravacao.ts).
+ * A volta dele é "uploaded", e a rota que retoma é /juntar.
+ */
+export const TRABALHANDO = ["transcribing", "selecting", "writing", "cutting", "roteirizando", "juntando-partes"] as const;
 export type EstadoDeTrabalho = (typeof TRABALHANDO)[number];
 
 export function estaTrabalhando(status: string): status is EstadoDeTrabalho {
@@ -57,6 +62,9 @@ export const PRAZO_SEGUNDOS: Record<EstadoDeTrabalho, number> = {
   // vídeo longo (e renova o `startedAt` a cada volta); o prazo só pega a
   // função morta sem ter re-despachado.
   roteirizando: 830,
+  // A junção roda no worker (baixar, normalizar e emendar cada parte); o
+  // prazo cresce com o tamanho em `prazoDaEtapa`, e este é o piso.
+  "juntando-partes": 30 * 60,
 };
 
 /** O que dizer ao cliente quando o prazo estoura. */
@@ -71,6 +79,8 @@ export const MORTE: Record<EstadoDeTrabalho, string> = {
     "O corte da gravação não voltou no prazo. Pode tentar de novo, e nada do que já foi feito se perde.",
   roteirizando:
     "O roteiro da edição passou do tempo permitido e foi interrompido. Pode tentar de novo: o que já foi planejado fica guardado.",
+  "juntando-partes":
+    "A junção das partes da gravação não voltou no prazo. Pode tentar de novo: as partes continuam guardadas, na ordem que você escolheu.",
 };
 
 /** Quantas tentativas antes de parar de oferecer o botão de repetir. */
@@ -111,6 +121,7 @@ export const NOME_DA_ETAPA: Record<EstadoDeTrabalho, string> = {
   writing: "A redação dos posts",
   cutting: "O corte",
   roteirizando: "O roteiro",
+  "juntando-partes": "A junção das partes",
 };
 
 /**
@@ -153,6 +164,10 @@ export function prazoDaEtapa(video: VideoParaLeitura): number {
   const gb = Number(video.sizeBytes ?? 0) / 1073741824;
   if (video.status === "cutting") return Math.max(piso, 30 * 60 + Math.round(dur * 0.6));
   if (video.status === "transcribing" && gb > 1.8) return Math.max(piso, 20 * 60 + Math.round(gb * 240));
+  // A junção (08/10): 20 minutos mais 15 por GB das partes somadas. Um GB de
+  // celular em 4K são uns 20 minutos de gravação, que o worker baixa e
+  // recodifica antes de emendar.
+  if (video.status === "juntando-partes") return Math.max(piso, 20 * 60 + Math.round(gb * 900));
   return piso;
 }
 
@@ -211,11 +226,18 @@ export function etapaDeRetomada(video: {
    * no "roteirizando", ou a seleção acabou e o roteiro nem começou (30/09).
    */
   roteiroPendente?: boolean;
-}): "transcribe" | "select" | "write" | "cortar" | "roteiro" {
+  /**
+   * A gravação em partes ainda não foi juntada (08/10): antes de ouvir, a
+   * junção. Quem não manda o campo cai na transcrição, e a rota /transcribe
+   * passa o vídeo em partes pela junção do mesmo jeito.
+   */
+  partesPorJuntar?: boolean;
+}): "juntar" | "transcribe" | "select" | "write" | "cortar" | "roteiro" {
   if (video.temCortes) return "write";
   if (video.temTrechos && video.roteiroPendente) return "roteiro";
   if (video.temTrechos) return "cortar";
   if (video.temTranscricao) return "select";
+  if (video.partesPorJuntar) return "juntar";
   return "transcribe";
 }
 
@@ -226,10 +248,12 @@ export function proximaAcao(video: {
   temTrechos: boolean;
   temCortes?: boolean;
   roteiroPendente?: boolean;
+  partesPorJuntar?: boolean;
   attempts: number;
 }): { rotulo: string; rota: string } | null {
   switch (video.status) {
     case "uploaded":
+      if (video.partesPorJuntar) return { rotulo: "Juntar as partes", rota: "juntar" };
       return { rotulo: "Transcrever", rota: "transcribe" };
     case "transcribed":
       return { rotulo: "Escolher os trechos", rota: "select" };

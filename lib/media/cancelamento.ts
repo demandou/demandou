@@ -41,10 +41,10 @@ export const POSTS_NO_AR = ["published", "publishing", "scheduled"] as const;
 export const MONTAGEM_ANDANDO = ["na-fila", "preparando", "dirigindo", "ilustrando", "gerando", "montando"] as const;
 
 /** Etapas em que o WORKER está com um pedido deste vídeo nas mãos. */
-const NO_WORKER = new Set(["transcribing", "cutting"]);
+const NO_WORKER = new Set(["transcribing", "cutting", "juntando-partes"]);
 
 /** Estados antes da aprovação do roteiro: só a primeira parte foi cobrada. */
-const ANTES_DA_APROVACAO = new Set(["uploaded", "transcribing", "transcribed", "selecting", "selected", "roteirizando", "roteiro"]);
+const ANTES_DA_APROVACAO = new Set(["uploaded", "juntando-partes", "transcribing", "transcribed", "selecting", "selected", "roteirizando", "roteiro"]);
 
 export type Veredicto = { pode: true } | { pode: false; status: 404 | 409; motivo: string };
 
@@ -89,6 +89,7 @@ export function podeCancelarGravacao(v: { status: string; finishedAt: Date | str
  * Nulo quando não há nada no worker nem no gerador.
  */
 export function avisoDoQueTerminaSozinho(v: { status: string; edicaoAndando: boolean }): string | null {
+  if (v.status === "juntando-partes") return "A junção das partes que já estava em andamento termina sozinha e é descartada quando chegar.";
   if (NO_WORKER.has(v.status)) {
     return v.status === "transcribing"
       ? "A transcrição que já estava em andamento termina sozinha e é descartada quando chegar."

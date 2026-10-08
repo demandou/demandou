@@ -46,6 +46,8 @@ export type NotificacaoNaTela = {
  * (lib/media/video-state.ts), mais o completo e os efeitos.
  */
 export const CODIGO_DA_ETAPA = {
+  // A junção das partes da gravação enviada em mais de um arquivo (08/10).
+  juntar: "VID-JUN",
   transcribe: "VID-TRA",
   select: "VID-SEL",
   roteiro: "VID-ROT",
@@ -60,6 +62,7 @@ export const CODIGO_DA_ETAPA = {
 
 /** O nome da etapa no texto do aviso ("A transcrição parou"). */
 export const NOME_DA_ETAPA_NO_AVISO: Record<keyof typeof CODIGO_DA_ETAPA, string> = {
+  juntar: "A junção das partes da gravação",
   transcribe: "A transcrição",
   select: "A escolha dos trechos",
   roteiro: "O roteiro",

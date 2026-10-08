@@ -662,6 +662,10 @@ model VideoJob {
   /// para não depender do cliente do Prisma regenerado. Existe desde 01/10,
   /// quando um deploy do worker matou um corte e nada no servidor relançou.
   retomadas        Json?
+  // A coluna `partes` (jsonb, 08/10/2026) existe no banco e fica FORA deste
+  // schema de propósito: as partes da gravação enviada em mais de um arquivo,
+  // lidas e gravadas por SQL cru (lib/media/partes-servidor.ts), para o código
+  // tolerar a coluna ainda não existir. Não remover em "conserto" de drift.
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

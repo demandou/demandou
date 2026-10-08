@@ -1,0 +1,11 @@
+-- A GRAVAÇÃO EM PARTES (08/10/2026). Aditiva e com IF NOT EXISTS, como as
+-- outras: rodar duas vezes não pode quebrar nada. Escrita e NÃO aplicada por
+-- este commit: entra pelo build (scripts/build.mjs).
+--
+-- As partes de uma gravação enviada em mais de um arquivo, na ordem que o
+-- cliente confirmou ({ "versao": 1, "itens": [{ "url", "nome", "bytes",
+-- "duracaoSeg" }], "criterio", "confirmadaEm", "juntado": { "url", ... } }).
+-- Null no vídeo de arquivo único, que é quase todo vídeo. Fica FORA do
+-- schema do Prisma e é lida e gravada por SQL cru (lib/media/partes-servidor.ts):
+-- o código tolera esta coluna ainda não existir.
+ALTER TABLE "video_jobs" ADD COLUMN IF NOT EXISTS "partes" JSONB;

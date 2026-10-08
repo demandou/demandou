@@ -14,6 +14,7 @@ import { CODIGO_DA_ETAPA, pedirLeituraDoSino } from "@/lib/notificacoes/tipos";
 import toast from "react-hot-toast";
 import { BotaoDescartar, useDescarte, useDescartes } from "@/components/ui/descartar";
 import { chaveDaDica, chaveDoVigia, chavesCandidatasDoVideo } from "@/lib/avisos/chaves";
+import type { ResumoDasPartes } from "@/lib/media/partes-da-gravacao";
 
 /**
  * A faixa do piloto automático, dentro do Gestor de Conteúdo.
@@ -90,6 +91,13 @@ export type VideoAoVivo = {
   roteiro?: { existe: boolean; aprovado: boolean } | null;
   /** O próximo passo é montar (ou terminar) o roteiro, e não cortar. */
   roteiroPendente?: boolean;
+  /**
+   * A GRAVAÇÃO EM PARTES (08/10): quantas e se já viraram um vídeo só. A
+   * linha ganha o passo "Juntar as partes", e a falha antes de juntar mostra o
+   * código da junção.
+   */
+  partes?: ResumoDasPartes | null;
+  partesPorJuntar?: boolean;
   /**
    * A etapa passou do prazo do vigia do servidor (01/10): ele vai retomá-la
    * sozinho na próxima passada, em até um minuto.
@@ -585,7 +593,8 @@ export function EsteiraDoVideo({
       if (v.status === "uploaded") {
         if (parado > 20) {
           disparados.current.add(chave);
-          void executar(v.id, "transcribe", { silencioso: true });
+          // A gravação em partes (08/10) junta antes de ouvir.
+          void executar(v.id, v.partesPorJuntar ? "juntar" : "transcribe", { silencioso: true });
         }
         continue;
       }
@@ -1016,6 +1025,8 @@ function etapaEmPalavras(p: Passo | undefined): string {
       return "gerando o vídeo com o seu rosto";
     case "gemeo-juntar":
       return "juntando os pedaços do vídeo";
+    case "partes":
+      return "juntando as partes da gravação";
     case "ouvindo":
       return "ouvindo a gravação";
     case "pesquisando":

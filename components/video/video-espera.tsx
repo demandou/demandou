@@ -56,6 +56,10 @@ const ETAPAS: Array<{ chave: EstadoDeTrabalho; rotulo: string; detalhe: string }
  * aprende a ignorar.
  */
 const FRASES: Record<EstadoDeTrabalho, string[]> = {
+  "juntando-partes": [
+    "Juntando as partes da sua gravação na ordem que você escolheu, num vídeo só.",
+    "Cada parte sai no mesmo tamanho e no mesmo volume das outras, sem esticar a imagem.",
+  ],
   roteirizando: [
     "O squad está limpando a sua fala e planejando cada cena, em texto, antes de gastar com imagem.",
     "Nada de imagem, cena ou corte sai antes de você aprovar o roteiro.",
