@@ -685,7 +685,9 @@ export async function executeOAuthPostPublish(
      * alternativa seria perder a peça por causa do destino.
      */
     if (formato === "story" && publicUrls.length > 0) {
-      const result = await publishFacebookPhotoStory(accessToken, platformUserId, publicUrls[0]);
+      // Sempre pela rota assinada (08/10): é ela que entrega a arte em 9:16 (lib/media/arte-do-story.ts);
+      // a URL crua do storage levaria a arte do feed e a rede cortaria.
+      const result = await publishFacebookPhotoStory(accessToken, platformUserId, buildIgMediaPublicUrl(post.id, 0));
       externalUrl = result.url;
       externalId = result.postId;
       aviso =

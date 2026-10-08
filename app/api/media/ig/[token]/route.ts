@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { abrirMidia } from "@/lib/media/storage";
 import { prisma } from "@/lib/db/prisma";
 import { verifyIgMediaToken } from "@/lib/oauth/instagram";
+import { arteParaStory } from "@/lib/media/arte-do-story";
 
 /**
  * Serve a imagem de um post para a Meta buscar na hora de publicar.
@@ -27,8 +28,21 @@ export async function GET(
 
   const post = await prisma.post.findUnique({
     where: { id: verified.postId },
-    select: { imageUrl: true },
+    select: { imageUrl: true, metadata: true },
   });
+  // O STORY NA DIMENSÃO CERTA (08/10): o post irmão do story leva a arte do feed; a imagem
+  // sai daqui em 9:16, inteira e centrada (lib/media/arte-do-story.ts). Vídeo passa como está.
+  const ehStory = (post?.metadata as { formato?: unknown } | null)?.formato === "story";
+  const servirImagem = async (buffer: Buffer, mime: string) => {
+    const final = ehStory && mime.startsWith("image/") ? await arteParaStory(buffer) : { buffer, mime };
+    return new NextResponse(new Uint8Array(final.buffer), {
+      headers: {
+        "Content-Type": final.mime,
+        "Content-Length": String(final.buffer.length),
+        "Cache-Control": "no-store",
+      },
+    });
+  };
   const images = post?.imageUrl?.split("|").filter(Boolean) ?? [];
   const image = images[verified.index];
   if (!image) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -38,13 +52,7 @@ export async function GET(
     if (comma === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
     const mime = image.slice(5, comma).replace(";base64", "") || "image/jpeg";
     const buffer = Buffer.from(image.slice(comma + 1), "base64");
-    return new NextResponse(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type": mime,
-        "Content-Length": String(buffer.length),
-        "Cache-Control": "no-store",
-      },
-    });
+    return servirImagem(buffer, mime);
   }
 
   if (image.startsWith("https://")) {
@@ -60,6 +68,10 @@ export async function GET(
     const midia = await abrirMidia(image);
     if (!midia) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (ehStory && midia.mimeType.startsWith("image/")) {
+      const buffer = Buffer.from(await new Response(midia.stream).arrayBuffer());
+      return servirImagem(buffer, midia.mimeType);
     }
     // Em FLUXO. Um Reels de um minuto passa de 10 MB, e a Meta busca o arquivo
     // inteiro: materializar isso na memória da função é desnecessário e, com
