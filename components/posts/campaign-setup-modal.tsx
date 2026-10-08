@@ -1308,7 +1308,12 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
     };
   }, []);
 
-  const [singleDay, setSingleDay] = useState<number>(1);
+  // O DIA SAI DA DATA (08/10): nascia fixo em 1 (segunda) com a data em hoje, e o resumo dizia
+  // "Segunda-feira" para um post de quinta. O Bruno pediu a segunda 12 e o post saiu no dia 8.
+  const [singleDay, setSingleDay] = useState<number>(() => {
+    const d = new Date(hojeIso() + "T12:00:00").getDay();
+    return d === 0 ? 7 : d;
+  });
   // Nasce em HOJE, e não vazio. Vazio caía num seletor "Segunda..Domingo" sem
   // data, e o post único do Bruno em 19/09 saiu como "Segunda-feira 14" numa
   // sexta 18: dia 1 sobre a segunda da semana. Post único é uma DATA.
@@ -2816,7 +2821,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                   <div className="p-3 rounded-xl border" style={{ background: "var(--bg-primary)", borderColor: "var(--border)" }}>
                     <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Post único</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                      <span>Dia: <strong className="text-[var(--text-primary)]">{WEEK_DAYS.find((d) => d.dayNum === singleDay)?.label}</strong></span>
+                      <span>Dia: <strong className="text-[var(--text-primary)]">{WEEK_DAYS.find((d) => d.dayNum === singleDay)?.label}{singleDate ? `, ${singleDate.slice(8, 10)}/${singleDate.slice(5, 7)}` : ""}</strong></span>
                       <span>Plataforma: <strong className="text-[var(--text-primary)]">{singlePlatform === "both" ? "LinkedIn + X" : singlePlatform}</strong></span>
                       <span>Tipo: <strong className="text-[var(--text-primary)]">{CONTENT_TYPES.find((c) => c.id === singleContentType)?.label}</strong></span>
                       {campaignUsesMediaStyle(isSingle, singleContentType, weeklySchedule, isRecurring) && (
