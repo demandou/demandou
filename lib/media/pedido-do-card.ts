@@ -7,7 +7,7 @@ import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { desenharComFraseEmCodigo, marcaDaArte, promptDaArteSemTexto, type MarcaDaArte } from "@/lib/media/arte-com-frase";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
 import { arteCoerenteComOTexto } from "@/lib/squad/coerencia-da-arte";
-import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
+import { extrairConteudoDoInfografico, pedidoDoInfografico } from "@/lib/media/infographic";
 import { arteDoDia } from "@/lib/media/pecas-da-semana";
 import { formatoDaPeca } from "@/lib/media/formatos-das-redes";
 import { pecaPublicavel } from "@/lib/pipeline/guarda-de-texto";
@@ -974,22 +974,19 @@ async function refazerArteUnica(o: {
         : await mancheteDaPeca({ textoDoPost, estiloVisual: pedidoVisual, nicho: daDiana.project.niche, projectId: daDiana.projectId, runId: daDiana.runId });
     const manchete = manterGravada && fraseGravada ? fraseGravada : (peca?.manchete ?? "");
     const fraseNova = !manterGravada && manchete ? manchete : null;
-    const arte = await produzirArtePorRede({
-      redes: [...new Set(o.posts.map((p) => p.platform))],
-      contentType: ehInfografico ? "infographic" : "image",
-      promptBase: conteudo ? "" : promptDaArteSemTexto({ visual: `${peca?.visual ?? ""}\n${pedidoVisual}`, marca }),
-      textoEsperado: conteudo ? undefined : [manchete],
-      textoDoPost,
-      projectId: daDiana.projectId,
-      runId: daDiana.runId,
-      desenhar: conteudo
-        ? async (_p, proporcao) => {
-            const url = await desenharInfografico(conteudo, process.env.GEMINI_API_KEY ?? "", proporcao, { estilo: pedidoVisual, paleta: "", marca });
-            if (!url) throw new Error("o infográfico não foi montado");
-            return url;
+    const comum = { redes: [...new Set(o.posts.map((p) => p.platform))], textoDoPost, projectId: daDiana.projectId, runId: daDiana.runId };
+    const arte = await produzirArtePorRede(
+      conteudo
+        ? // O Nano Banana Pro desenha (08/10), com o pedido do cliente como estilo.
+          { ...comum, ...pedidoDoInfografico(conteudo, { estilo: pedidoVisual, paleta: "", marca }, { nicho: daDiana.project.niche, ctx: { projectId: daDiana.projectId, runId: daDiana.runId, operation: "infografico" } }) }
+        : {
+            ...comum,
+            contentType: "image",
+            promptBase: promptDaArteSemTexto({ visual: `${peca?.visual ?? ""}\n${pedidoVisual}`, marca }),
+            textoEsperado: [manchete],
+            desenhar: desenharComFraseEmCodigo(manchete, marca, (prompt, proporcao) => generateImage(prompt, proporcao, "hd")),
           }
-        : desenharComFraseEmCodigo(manchete, marca, (prompt, proporcao) => generateImage(prompt, proporcao, "hd")),
-    });
+    );
     if (!arte.principal) throw new Error("a arte não saiu");
     if (arte.principal === daDiana.mediaUrl) {
       await o.marcar("arte", "feito", "saiu igual");

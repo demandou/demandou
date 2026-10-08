@@ -7,7 +7,7 @@ import { desenharComFraseEmCodigo, marcaDaArte, marcaDaLaminaComFoto, promptDaAr
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
 import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
-import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
+import { extrairConteudoDoInfografico, pedidoDoInfografico } from "@/lib/media/infographic";
 import { arteDoDia } from "@/lib/media/pecas-da-semana";
 import { direcaoDaPeca } from "@/lib/media/direcao-de-arte";
 import { formatoDaPeca } from "@/lib/media/formatos-das-redes";
@@ -178,22 +178,19 @@ async function regerarGrupo(
         projectId: args.projectId,
         runId: base.runId ?? undefined,
       });
-  const arte = await produzirArtePorRede({
-    redes: [...new Set(posts.map((p) => p.platform))],
-    contentType: ehInfografico ? "infographic" : "image",
-    promptBase: peca ? promptDaArteSemTexto({ visual: peca.visual, estilo: base.imagePrompt ?? undefined, marca }) : "",
-    textoEsperado: peca ? [peca.manchete] : undefined,
-    textoDoPost: base.content,
-    projectId: args.projectId,
-    runId: base.runId ?? undefined,
-    desenhar: conteudo
-      ? async (_p, proporcao) => {
-          const url = await desenharInfografico(conteudo, "", proporcao, { estilo: "", paleta: "", marca });
-          if (!url) throw new Error("o infográfico não foi montado");
-          return url;
+  const comum = { redes: [...new Set(posts.map((p) => p.platform))], textoDoPost: base.content, projectId: args.projectId, runId: base.runId ?? undefined };
+  const arte = await produzirArtePorRede(
+    conteudo
+      ? // O Nano Banana Pro desenha o infográfico com a marca nova (08/10).
+        { ...comum, ...pedidoDoInfografico(conteudo, { estilo: "", paleta: "", marca }, { nicho, ctx: { projectId: args.projectId, runId: base.runId ?? undefined, operation: "infografico" } }) }
+      : {
+          ...comum,
+          contentType: "image",
+          promptBase: promptDaArteSemTexto({ visual: peca!.visual, estilo: base.imagePrompt ?? undefined, marca }),
+          textoEsperado: [peca!.manchete],
+          desenhar: desenharComFraseEmCodigo(peca!.manchete, marca, (prompt, proporcao) => generateImage(prompt, proporcao, "hd")),
         }
-      : desenharComFraseEmCodigo(peca!.manchete, marca, (prompt, proporcao) => generateImage(prompt, proporcao, "hd")),
-  });
+  );
   if (!arte.principal && !Object.keys(arte.porRede).length) throw new Error("a arte não saiu");
 
   // Cobra só depois de a arte existir: arte que não saiu não custa nada.

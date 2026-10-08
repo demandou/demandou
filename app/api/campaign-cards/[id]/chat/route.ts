@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db/prisma";
 import { askClaude } from "@/lib/claude";
 import { generateImage } from "@/lib/media/nano-banana";
 import { escolherEstilo, paletaDoProjeto } from "@/lib/media/direcao-de-arte";
-import { extrairConteudoDoInfografico, desenharInfografico } from "@/lib/media/infographic";
+import { extrairConteudoDoInfografico, pedidoDoInfografico } from "@/lib/media/infographic";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { desenharComFraseEmCodigo, marcaDaArte, marcaDaLaminaComFoto, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
@@ -403,23 +403,23 @@ async function tratarChatDoCard(
               marca: contextoDoProjeto,
             }
           );
+          // O Nano Banana Pro desenha (08/10), com o pedido do cliente junto
+          // do estilo: desde que um modelo desenha, "fundo azul" e "destaque os
+          // três dados" precisam chegar a ele, e não só à extração.
           const arte = await produzirArtePorRede({
             redes: redesDoDia,
-            contentType: "infographic",
-            promptBase: "",
             textoDoPost: postThemeContent ?? undefined,
             projectId: card.projectId,
             runId: card.runId ?? undefined,
-            desenhar: async (_p, proporcao) => {
-              const url = await desenharInfografico(conteudo, apiKey, proporcao, {
-                estilo: estilo.prompt,
+            ...pedidoDoInfografico(
+              conteudo,
+              {
+                estilo: message ? `${estilo.prompt} Client request for this version (apply to the design, keep the text): ${message}` : estilo.prompt,
                 paleta: paletaDoProjeto(card.project.colorPalette),
-                // Montado em código desde 30/09, com a família e as cores da marca.
                 marca: await marcaDaArte(card.projectId, { modeloDoPost }),
-              });
-              if (!url) throw new Error("o modelo não devolveu o infográfico");
-              return url;
-            },
+              },
+              { nicho: card.project.niche, ctx: { projectId: card.projectId, runId: card.runId ?? undefined, operation: "infografico" } }
+            ),
           });
           newSlideUrl = arte.principal ?? null;
           arteRefeitaPorRede = arte.porRede;

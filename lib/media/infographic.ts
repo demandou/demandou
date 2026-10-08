@@ -1,25 +1,35 @@
 /**
- * Infographic generation using Gemini Flash image generation ("Nano Banana").
+ * O INFOGRÁFICO: extração do conteúdo e desenho pelo modelo de imagem.
  *
- * Gemini Nano Banana Pro (gemini-3-pro-image-preview) is specifically designed
- * for complex layouts with accurate text rendering — this is the same engine
- * used by NotebookLM to generate infographics with perfect typography.
- *
- * Approach (desde 30/09/2026):
- * 1. Gemini (text) extracts structured content from the post (PT-BR, with data)
- * 2. O infografico e MONTADO EM CODIGO a partir desse conteudo
- *    (lib/media/infografico-em-codigo.tsx). O modelo de imagem nao escreve mais.
- *
- * Output: 9:16 portrait PNG — optimal LinkedIn format
+ * Desde 08/10/2026:
+ * 1. O Gemini (texto) extrai o conteúdo estruturado do post, em português e
+ *    com os dados dele, uma vez por dia.
+ * 2. O Nano Banana Pro (gemini-3-pro-image-preview, o modelo do Google feito
+ *    para layout com texto) DESENHA o infográfico em cada proporção do dia,
+ *    com o texto exato, a identidade aprovada e o estilo do dia
+ *    (lib/media/infografico-pelo-modelo.ts). Entre 30/09 e 08/10 ele era um
+ *    molde em código, e o Bruno reprovou: "os infográficos não estão usando
+ *    um modelo de IA".
+ * 3. A conferência do texto é a de toda arte (lib/media/arte-por-rede.ts), e
+ *    `pedidoDoInfografico` entrega a ela o texto pedido e o outro modelo.
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { ProporcaoPedida } from "./formatos-das-redes";
-import { coresDaMarca } from "@/lib/media/capa-composta";
 import { exigirIdentidadeAprovada, type MarcaDaArte } from "@/lib/media/arte-com-frase";
-import { montarInfograficoEmCodigo } from "@/lib/media/infografico-em-codigo";
 import { semNumerosRepetidos } from "@/lib/media/infografico-sem-repeticao";
 import { infograficoRepeteDado } from "@/lib/squad/coerencia-da-arte";
+import type { PedidoDeArte } from "@/lib/media/arte-por-rede";
+import {
+  conteudoSemTravessao,
+  gerarInfografico,
+  OPERACAO_DO_INFOGRAFICO,
+  ORDEM_ALTERNATIVA,
+  ORDEM_PRINCIPAL,
+  promptCompleto,
+  textosDoInfografico,
+  type OpcoesDoDesenho,
+} from "@/lib/media/infografico-pelo-modelo";
 
 /**
  * A direção de arte desta peça, decidida FORA daqui (lib/media/direcao-de-arte):
@@ -33,7 +43,10 @@ export interface DirecaoDeArte {
   estilo: string;
   /** Fragmento em inglês com as cores da marca do projeto. */
   paleta: string;
-  /** Família da linguagem e cores da marca: é o que o infográfico em código usa (30/09). */
+  /**
+   * A identidade do projeto: cores nos papéis aprovados, letra, modelo do
+   * book e a trava da aprovação. É o que o prompt do infográfico usa (08/10).
+   */
   marca?: MarcaDaArte;
 }
 
@@ -138,39 +151,78 @@ ${postContent.slice(0, 3000)}`;
 }
 
 /**
- * Desenha o infografico numa PROPORCAO pedida, EM CODIGO desde 30/09/2026.
+ * O conteúdo pronto para a peça: sem número repetido (a guarda pura vale em
+ * todo caminho: conteúdo antigo, refazer, chat) e sem travessão.
+ */
+function conteudoDaPeca(content: ConteudoDoInfografico): ConteudoDoInfografico {
+  const { conteudo, removidos } = semNumerosRepetidos(content);
+  if (removidos.length) console.warn(`[Infographic] número repetido tirado da peça: ${removidos.join("; ")}`);
+  return conteudoSemTravessao(conteudo);
+}
+
+/**
+ * Desenha o infográfico numa PROPORÇÃO pedida, PELO MODELO DE IMAGEM desde
+ * 08/10/2026 (o Nano Banana Pro primeiro; ver lib/media/infografico-pelo-modelo.ts).
  *
- * Ate 30/09 o modelo de imagem (Nano Banana Pro) desenhava o infografico
- * inteiro, texto incluido. O titulo e os numeros costumavam sair certos, mas
- * o modelo acrescentava por conta propria: na sexta do teste de 30/09 um
- * balao de fala com "Usar chocoers maxsto fbite" e personagens ilustrados.
- * A regra da casa passou a ser a da capa: texto em arte e sempre codigo. Os
- * dados ja saem estruturados da extracao, e lib/media/infografico-em-codigo
- * monta a peca com as fontes do repositorio, as cores da marca e o layout da
- * familia da linguagem do projeto. Ver o comentario de la para a escolha
- * entre montar em codigo e conferir por visao.
+ * Entre 30/09 e 08/10 ele era montado em código, com a justificativa do
+ * balão "Usar chocoers maxsto fbite" de 30/09. O preço foi um infográfico sem
+ * ilustração nenhuma, que o Bruno leu como "não está usando modelo de IA".
+ * Agora o modelo desenha e a conferência de arte (arte-por-rede) lê o que ele
+ * escreveu contra o texto pedido, refazendo no outro modelo quando a escrita
+ * erra. Nenhum modelo respondeu: lança `InfograficoSemImagem`.
  *
- * A assinatura continua a mesma (apiKey e direcao.estilo nao desenham mais)
- * para as chamadas da esteira, do chat e da semana do video nao mudarem de
- * forma; `direcao.marca` e o que manda agora.
+ * `_apiKey` ficou na assinatura para as chamadas antigas não mudarem de forma;
+ * a chave é lida do ambiente por quem chama o Google.
  */
 export async function desenharInfografico(
   content: ConteudoDoInfografico,
   _apiKey: string,
   proporcao: ProporcaoPedida,
-  direcao: DirecaoDeArte
-): Promise<string | null> {
+  direcao: DirecaoDeArte,
+  opcoes: OpcoesDoDesenho = {}
+): Promise<string> {
   // A TRAVA DA IDENTIDADE vale para o infográfico também (06/10): marca de
   // projeto sem identidade aprovada não desenha, e o chamador que sabe esperar
   // marca a peça como "aguardando a sua identidade visual".
   if (direcao.marca) exigirIdentidadeAprovada(direcao.marca);
-  const marca = direcao.marca ?? { familia: "impacto" as const, cores: coresDaMarca(null) };
-  // A guarda pura do número repetido vale em todo caminho (conteúdo antigo,
-  // refazer, chat): o mesmo número nunca sai em dois lugares da peça.
-  const { conteudo, removidos } = semNumerosRepetidos(content);
-  if (removidos.length) console.warn(`[Infographic] número repetido tirado da peça: ${removidos.join("; ")}`);
-  const jpeg = await montarInfograficoEmCodigo(conteudo, marca, proporcao);
-  return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+  const conteudo = conteudoDaPeca(content);
+  const prompt = promptCompleto({ conteudo, marca: direcao.marca, proporcao, estilo: direcao.estilo, nicho: opcoes.nicho }, opcoes.complemento);
+  const ctx = opcoes.ctx ?? { projectId: direcao.marca?.projectId, operation: OPERACAO_DO_INFOGRAFICO };
+  const img = await gerarInfografico(prompt, proporcao, ctx, opcoes.ordem ?? ORDEM_PRINCIPAL, opcoes.gerar);
+  return img.dataUrl;
+}
+
+/**
+ * O PEDIDO DE ARTE DO INFOGRÁFICO, para `produzirArtePorRede` (08/10).
+ *
+ * Todo caminho que desenha infográfico (esteira, semana do vídeo, chat do
+ * card, pedido pelo card, refazer a peça, Vera, "Aprovar e gerar") passa por
+ * aqui, e por isso todos levam as mesmas três coisas:
+ *   - `textoEsperado`: o texto que o modelo TEM de escrever, para a
+ *     conferência ler a imagem contra ele;
+ *   - `textoDesenhadoPeloModelo`: liga a leitura, a régua da margem e a
+ *     contagem do texto faltando (o texto não é composto em código aqui);
+ *   - `desenharAlternativo`: o outro modelo, quando a reprovação é de escrita.
+ *
+ * A trava da identidade roda AQUI, antes de qualquer chamada paga.
+ */
+export function pedidoDoInfografico(
+  content: ConteudoDoInfografico,
+  direcao: DirecaoDeArte,
+  opcoes: Omit<OpcoesDoDesenho, "complemento" | "ordem"> = {}
+): Pick<PedidoDeArte, "contentType" | "promptBase" | "textoEsperado" | "textoDesenhadoPeloModelo" | "desenhar" | "desenharAlternativo"> {
+  if (direcao.marca) exigirIdentidadeAprovada(direcao.marca);
+  const conteudo = conteudoDaPeca(content);
+  const desenhar = (ordem: OpcoesDoDesenho["ordem"]) => (prompt: string, proporcao: ProporcaoPedida) =>
+    desenharInfografico(conteudo, "", proporcao, direcao, { ...opcoes, complemento: prompt, ordem });
+  return {
+    contentType: "infographic",
+    promptBase: "",
+    textoEsperado: textosDoInfografico(conteudo),
+    textoDesenhadoPeloModelo: true,
+    desenhar: desenhar(ORDEM_PRINCIPAL),
+    desenharAlternativo: desenhar(ORDEM_ALTERNATIVA),
+  };
 }
 
 /** A extracao do conteudo, exposta para quem precisa desenhar MAIS DE UMA
@@ -229,9 +281,7 @@ export async function generateInfographic(
   const content = await extrairConteudoDoInfografico(postContent, niche, apiKey, regras);
   console.log(`[Infographic] Conteudo extraido - secoes: ${content.sections.length}, proporcao: ${proporcao}`);
 
-  // Montado em codigo (ver desenharInfografico): nao ha modelo de imagem para
-  // falhar, entao a queda antiga para o Imagen 3 saiu junto.
-  const imageUrl = await desenharInfografico(content, apiKey, proporcao, direcao);
-  if (!imageUrl) throw new Error("Nao foi possivel montar o infografico.");
-  return imageUrl;
+  // Desenhado pelo modelo de imagem (ver desenharInfografico), sem a
+  // conferência de arte: quem precisa dela usa `pedidoDoInfografico`.
+  return desenharInfografico(content, apiKey, proporcao, direcao, { nicho: niche, ctx: { projectId: regras?.projectId ?? undefined, operation: OPERACAO_DO_INFOGRAFICO } });
 }
