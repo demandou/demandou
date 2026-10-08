@@ -1865,7 +1865,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
 
   // Determine label for step indicator
   const stepLabels: Record<number, string> = {
-    0: "Tipo", 1: "Funil", 2: isSingle ? "Post único" : "Planejamento",
+    // O passo 0 abre pelo estilo mestre e depois pede o formato (08/10): o rótulo diz os dois.
+    0: "Estilo e tipo", 1: "Funil", 2: isSingle ? "Post único" : "Planejamento",
     3: isSingle ? "Confirmar" : isRecurring ? "Confirmar" : "Horários",
     4: "Confirmar",
   };
