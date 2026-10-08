@@ -144,7 +144,9 @@ test("o prompt leva o texto exato entre aspas, as cores nos papéis, a letra, o 
   assert.match(p, /accent #98092b ONLY in details/);
   assert.match(p, /Playfair Display style typeface/);
   assert.match(p, /hand drawn editorial, warm paper texture/);
-  assert.match(p, /Ignore every object, person, place or scene it names/);
+  assert.match(p, /ignore any object, person, scene, logo area or word count it names/);
+  // Cabe no limite da Higgsfield (5000) com folga para a correção da refação.
+  assert.ok(p.length < 4300, `prompt com ${p.length} caracteres`);
   assert.match(p, /marketing para pequenas empresas/);
   assert.match(p, /HIERARCHY/);
   assert.match(p, /vertical portrait 4:5/);

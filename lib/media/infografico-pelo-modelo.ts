@@ -3,7 +3,6 @@ import { conferirResposta } from "@/lib/fornecedores/aviso-de-saldo";
 import { gerarNaHiggsfield, type ImagemGerada } from "@/lib/media/imagem-higgsfield";
 import { MARGEM_SEGURA, type ProporcaoPedida } from "@/lib/media/formatos-das-redes";
 import { LETRAS } from "@/lib/modelos-de-arte/identidade";
-import { modeloPorId } from "@/lib/modelos-de-arte/catalogo";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
 import type { ConteudoDoInfografico } from "@/lib/media/infographic";
 
@@ -147,7 +146,8 @@ function q(s: string): string {
 function curto(s: string | null | undefined, max: number): string {
   const t = (s ?? "").replace(/\s+/g, " ").trim().replace(/\.+$/, "");
   if (t.length <= max) return t;
-  return t.slice(0, max).replace(/\s+\S*$/, "");
+  // Corta na palavra e não deixa vírgula ou dois-pontos pendurados no fim.
+  return t.slice(0, max).replace(/\s+\S*$/, "").replace(/[\s,;:.]+$/, "");
 }
 
 /** "Anton-400" vira "Anton"; "PlayfairDisplay-700" vira "Playfair Display". */
@@ -169,8 +169,8 @@ function layoutDaProporcao(proporcao: ProporcaoPedida, modulos: number): string 
   const n = Math.max(modulos, 1);
   if (proporcao === "16:9") {
     return [
-      `LAYOUT (horizontal landscape 16:9): title and subtitle across the top; on the left a hero data visual for the main number; on the right the ${n} modules as a left to right flow (a 2x2 grid when there are 4), each with its own icon, joined by arrows; key numbers in a slim strip along the bottom.`,
-      `This format is shown small in the feed: keep every text LARGE and short lines. Title at least 7% of the image height, module text at least 3.5% of the image height. Fewer decorations, more room for the words.`,
+      `LAYOUT (horizontal landscape 16:9): title and subtitle on top; main number with its chart on the left; the ${n} modules on the right as a left to right flow joined by arrows (2x2 grid when there are 4); key numbers in a slim bottom strip.`,
+      `Shown small in the feed: keep every text LARGE, title at least 7% of the image height, module text at least 3.5%. Fewer decorations, more room for words.`,
     ].join("\n");
   }
   if (proporcao === "9:16") {
@@ -203,41 +203,42 @@ export function promptDoInfografico(e: EntradaDoPrompt): string {
   const c = conteudoSemTravessao(e.conteudo);
   const cores = coresDoInfografico(e.marca);
   const letra = e.marca?.letra ? LETRAS[e.marca.letra] : null;
-  const modelo = (e.marca?.modelos ?? []).map((id) => modeloPorId(id)).find(Boolean) ?? null;
   const secoes = (c.sections ?? []).filter((s) => s.heading?.trim() || s.body?.trim());
   const numeros = (c.keyNumbers ?? []).filter((n) => n.value?.trim());
   const setor = e.marca?.identidade?.setor?.nome;
   const publico = e.marca?.identidade?.publico;
 
   const linhas: string[] = [
-    `Create a finished, publication ready INFOGRAPHIC for a social media feed, written in Brazilian Portuguese. Real visual storytelling: every module has its own icon or small spot illustration, there is at least one simple chart drawn from the real numbers (bar, donut, progress bar or before and after), and arrows show how the ideas connect. It must NOT look like a slide of plain text and numbers.`,
+    `Create a finished, publication ready INFOGRAPHIC for a social media feed, in Brazilian Portuguese. Visual storytelling, NOT a slide of text: each module has its own icon or small illustration, at least one simple chart drawn from the real numbers, and arrows connecting the ideas.`,
     "",
-    `SUBJECT: ${curto(e.nicho, 80) || "business"}${setor ? `; sector ${setor}` : ""}${publico ? `; audience ${curto(publico, 140)}` : ""}. Icons and illustrations come from the subject of the text below and from this world.`,
+    `SUBJECT: ${curto(e.nicho, 90) || "business"}${setor ? `; sector ${setor}` : ""}${publico ? `; audience ${curto(publico, 110)}` : ""}. Icons and illustrations come from the subject of the text below and from this world.`,
     "",
-    `HIERARCHY (reading order): 1) the TITLE, the largest text, at the top; 2) the MAIN NUMBER, very big, in the accent color, with its label; 3) the SUBTITLE; 4) the MODULES, each one a heading with its icon, its number when it has one, and its short text; 5) the KEY NUMBERS, small, at the bottom. Generous whitespace, aligned grid, nothing overlapping.`,
+    `HIERARCHY: 1) TITLE, the largest text, at the top; 2) MAIN NUMBER, very big, in the accent color, with its label; 3) SUBTITLE; 4) MODULES (heading, icon, number if any, short text); 5) KEY NUMBERS, small, at the bottom. Generous whitespace, aligned grid, nothing overlapping.`,
     "",
     layoutDaProporcao(e.proporcao, secoes.length),
     "",
     `BRAND IDENTITY (approved by the client, use exactly):`,
     `- background ${cores.fundo}, flat or with a very subtle texture in the same color;`,
     `- title and all body text ${cores.texto};`,
-    `- accent ${cores.destaque} ONLY in details: the main number, the module numbers, icon accents, arrows, thin bands and the chart. Never flood the image with the accent and never tint the illustrations entirely with it: illustrations keep natural or neutral tones with accent touches;`,
+    `- accent ${cores.destaque} ONLY in details (main number, module numbers, icon accents, arrows, thin bands, the chart); illustrations stay neutral with accent touches, never flooded with it;`,
     letra
-      ? `- typography: titles in a ${nomeDaFonte(letra.titulo)} style typeface${letra.caixaAlta ? " in UPPERCASE" : ""}; body text in a ${nomeDaFonte(letra.texto)} style typeface. One type family per role, nothing decorative.`
+      ? nomeDaFonte(letra.titulo) === nomeDaFonte(letra.texto)
+        ? `- typography: a ${nomeDaFonte(letra.titulo)} style typeface for everything, bold titles${letra.caixaAlta ? " in UPPERCASE" : ""}, regular body text, nothing decorative.`
+        : `- typography: titles in a ${nomeDaFonte(letra.titulo)} style typeface${letra.caixaAlta ? " in UPPERCASE" : ""}; body text in a ${nomeDaFonte(letra.texto)} style typeface; nothing decorative.`
       : `- typography: one clean ${e.marca?.tipografia ?? "sem-serifa"} family, bold titles, regular body text.`,
   ];
-  if (modelo) {
-    linhas.push(`- the client approved this art template: carry its visual language (type character and color use), never its layout: "${curto(modelo.estrutura, 200)}"; color use "${curto(modelo.cor, 160)}".`);
-  }
+  // O modelo do book NÃO entra: ele é a composição de uma peça de frase
+  // ("letra condensada enorme ocupando a peça"), e brigava com o layout do
+  // infográfico na prova de 08/10. A identidade entra pelas cores e pela letra.
   if (e.estilo?.trim()) {
     linhas.push(
       "",
-      `ART STYLE of the project. It describes HOW things are drawn (rendering, line, texture, mood). Ignore every object, person, place or scene it names: icons and illustrations come only from the text below, and the infographic layout above always wins. Style: ${curto(e.estilo, 700)}`
+      `ART STYLE (only HOW things are drawn: rendering, line, texture, mood; ignore any object, person, scene, logo area or word count it names; the layout above wins): ${curto(e.estilo, 450)}`
     );
   }
   linhas.push(
     "",
-    `TEXT: render EXACTLY the strings below, in Brazilian Portuguese, letter by letter, each one once, with every accent and cedilla correct (á, à, â, ã, é, ê, í, ó, ô, õ, ú, ç). Numbers, percent signs, "R$", commas and dots identical. No misspelling, no abbreviation, no word cut in the middle.`,
+    `TEXT: render EXACTLY these strings in Brazilian Portuguese, letter by letter, each once, every accent and cedilla correct; numbers, %, "R$", commas and dots identical; no abbreviation, no word cut.`,
     `TITLE: ${q(c.title)}`
   );
   if (c.highlight?.value?.trim()) linhas.push(`MAIN NUMBER: ${q(c.highlight.value)} with the label ${q(c.highlight.label ?? "")}`);
@@ -251,7 +252,7 @@ export function promptDoInfografico(e: EntradaDoPrompt): string {
   if (numeros.length) linhas.push(`KEY NUMBERS: ${numeros.map((n) => `${q(n.value)} with the label ${q(n.label ?? "")}`).join("; ")}`);
   linhas.push(
     "",
-    `DO NOT draw any word, number or label that is not listed above: no step numbers ("01", "1."), no source line, no date, no logo, no watermark, no signature, no speech bubble, no English words, no fake interface. No people, faces, hands or human silhouettes: icons are objects and symbols. Never draw a long dash.`
+    `DO NOT draw any other word, number or label: no step numbers ("01"), source line, date, logo, watermark, signature, speech bubble, English word or fake interface. No people, faces, hands or silhouettes: icons are objects and symbols. No long dash.`
   );
   return linhas.join("\n");
 }
