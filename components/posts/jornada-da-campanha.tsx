@@ -15,6 +15,7 @@ import { ModelosDosPosts } from "@/components/estilo-dos-posts/modelos-dos-posts
 import { PassoDoEstiloMestre, useModoPadraoDosPosts } from "@/components/estilo-dos-posts/passo-do-estilo-mestre";
 import { MaterialDaCampanha } from "@/components/materiais/material-da-campanha";
 import { LISTA_DE_ESTILOS, type NomeDoEstilo } from "@/lib/media/estilos";
+import { estiloDoCatalogo } from "@/lib/media/catalogo-de-estilos";
 import { LAMINAS_DO_CARROSSEL_DA_SEMANA, modelosDaSemana, normalizarSemana, planoParaGravar, postsVisuaisDaSemana, semanaComModelos, type SemanaDoVideo } from "@/lib/media/semana-do-video";
 import { postsSemModelo, todosNoMestre } from "@/lib/estilo-dos-posts/tipos";
 import type { ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
@@ -328,7 +329,26 @@ export function JornadaDaCampanha({
     setPasso((p) => p - 1);
   }
 
+  // O RESUMO DIZ O ESTILO MESTRE (08/10): o nome do catálogo que a pessoa escolheu no passo 1
+  // ("Explicativo editorial (estilo Vox)"), e não o perfil de legenda por trás dele ("Sério e técnico").
+  const [nomeDoMestre, setNomeDoMestre] = useState<string | null>(null);
+  const noEnvio = aberto && passo === total - 1;
+  useEffect(() => {
+    if (!noEnvio) return;
+    let vivo = true;
+    fetch(`/api/projects/${projectId}/estilo-de-edicao`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { escolha?: { estiloId?: string } } | null) => {
+        const c = estiloDoCatalogo(d?.escolha?.estiloId);
+        if (vivo) setNomeDoMestre(c ? `${c.nome}${c.referencia ? ` (${c.referencia})` : ""}` : null);
+      })
+      .catch(() => null);
+    return () => {
+      vivo = false;
+    };
+  }, [noEnvio, projectId]);
   const rotuloDoEstilo =
+    nomeDoMestre ??
     LISTA_DE_ESTILOS.find((e) => e.nome === ((estilo as NomeDoEstilo) ?? "acelerado"))?.rotulo ??
     "Acelerado";
 
