@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { motivoDeBastidor } from "@/lib/pipeline/guarda-de-texto";
-import type { Post, SocialAccount } from "@prisma/client";
+import type { Post, Prisma, SocialAccount } from "@prisma/client";
 import {
   publishToLinkedIn,
   publishLinkedInImagePost,
@@ -48,7 +48,7 @@ import { abrirMidia } from "@/lib/media/storage";
 import { publishYouTubeVideo, refreshYouTubeToken, setYouTubeThumbnail } from "@/lib/oauth/youtube";
 import { lerMidia } from "@/lib/media/storage";
 import { normalizarCapaParaYouTube } from "@/lib/media/capa-youtube";
-import { ligarCortesAoCompleto } from "@/lib/media/cortes-com-link-do-completo";
+import { ligarPecasQueCitam, prepararTextoParaPublicar } from "@/lib/media/elo-na-publicacao";
 import { lerInfoDoCriador, opcoesDoTikTokNoPost, publicarVideoNoTikTok, refreshTikTokToken } from "@/lib/oauth/tiktok";
 import { caminhoDaConta } from "@/lib/publish/roteador";
 import { naoFazPelaPonte, publicarPeloBlotato } from "@/lib/publish/via-blotato";
@@ -257,6 +257,30 @@ export async function executeOAuthPostPublish(
     console.log(`[publicar][${post.id}] vídeo do post trocado pela versão atual (edição mais recente)`);
     await prisma.post.update({ where: { id: post.id }, data: { imageUrl: atual } }).catch(() => {});
     post = { ...post, imageUrl: atual };
+  }
+
+  /**
+   * O TEXTO QUE VAI AO AR (08/10, regra do Bruno: "se não sabe, não fala").
+   * Antes de qualquer rede, e nos dois caminhos (API própria e Blotato):
+   * a guarda do conteúdo próprio tira o que cita vídeo, post ou canal do
+   * cliente que não está comprovado no ar, e o elo da campanha põe a chamada
+   * para o vídeo completo e para a peça anterior SÓ se elas estiverem
+   * publicadas, com o título real e o link onde a rede aceita
+   * (lib/media/elo-na-publicacao.ts). O que muda é gravado antes de publicar,
+   * para o post guardado ser o que foi ao ar.
+   */
+  {
+    const preparado = await prepararTextoParaPublicar(post);
+    if (preparado.content !== post.content || preparado.metadata) {
+      const dados: Prisma.PostUpdateInput = {};
+      if (preparado.content !== post.content) dados.content = preparado.content;
+      if (preparado.metadata) dados.metadata = preparado.metadata as Prisma.InputJsonValue;
+      await prisma.post.update({ where: { id: post.id }, data: dados });
+      if (preparado.content !== post.content) {
+        await prisma.campaignCard.updateMany({ where: { postId: post.id, content: post.content }, data: { content: preparado.content } }).catch(() => {});
+      }
+      post = { ...post, content: preparado.content, metadata: (preparado.metadata ?? post.metadata) as Post["metadata"] };
+    }
   }
 
   let externalUrl: string | null = null;
@@ -866,14 +890,12 @@ export async function executeOAuthPostPublish(
     },
   });
 
-  // O COMPLETO FOI AO AR: os cortes ainda não publicados recebem o link dele
-  // (05/10, lib/media/cortes-com-link-do-completo.ts). Falha aqui não desfaz
-  // a publicação, que já aconteceu.
-  if (account.platform === "youtube" && externalUrl) {
-    await ligarCortesAoCompleto(post, externalUrl).catch((e) =>
-      console.warn(`[publicar][${post.id}] os cortes ficaram sem o link do completo:`, e instanceof Error ? e.message : e)
-    );
-  }
+  // A PEÇA FOI AO AR: os rascunhos e agendados da campanha que a citam (os
+  // cortes chamando o completo, a peça seguinte chamando esta) recebem a
+  // chamada no texto (05/10 só para os cortes; desde 08/10 para todas as
+  // peças, lib/media/elo-na-publicacao.ts). Falha aqui não desfaz a
+  // publicação, que já aconteceu.
+  if (externalUrl) await ligarPecasQueCitam(post);
 
   // Primeiro comentário com referências (LinkedIn apenas)
   if (account.platform === "linkedin" && externalId) {

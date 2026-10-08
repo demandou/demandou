@@ -8,6 +8,7 @@ import { registrarAtoNaPeca } from "@/lib/cerebro/captura";
 import type { AtoDaPeca } from "@/lib/cerebro/tipos";
 import { arteCoerenteComOTexto } from "@/lib/squad/coerencia-da-arte";
 import { abrirPedido, executarPedido } from "@/lib/media/pedido-do-card";
+import { frasesDoClienteNaEdicao } from "@/lib/squad/guarda-do-conteudo-proprio";
 
 /**
  * O CLIENTE EDITOU A LEGENDA E A ARTE FICOU DE OUTRO ASSUNTO? (05/10, noite)
@@ -117,6 +118,14 @@ export async function PATCH(
       ...((post.metadata as Record<string, unknown> | null) ?? {}),
       formato: formatoValido(post.platform, body.formato),
     };
+  }
+
+  // AS FRASES DO CLIENTE (08/10): o que ele escreve na edição é a palavra
+  // dele, e a guarda do conteúdo próprio na publicação não tira
+  // (lib/squad/guarda-do-conteudo-proprio.ts). A regra vale para texto gerado.
+  if (typeof body.content === "string" && body.content !== post.content) {
+    const base = (updateData.metadata as Record<string, unknown> | undefined) ?? ((post.metadata as Record<string, unknown> | null) ?? {});
+    updateData.metadata = { ...base, frasesDoCliente: frasesDoClienteNaEdicao(post.content, body.content, base.frasesDoCliente) };
   }
 
   if (body.cancelSchedule) {

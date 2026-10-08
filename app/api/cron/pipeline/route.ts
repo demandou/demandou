@@ -10,6 +10,7 @@ import { executeOAuthPostPublish } from "@/lib/publish/oauth-post";
 import { vaiPeloBlotato } from "@/lib/publish/roteador";
 import { conferirEnviosPendentes, PREFIXO_DO_ENVIO } from "@/lib/publish/via-blotato";
 import { medirPostsVencidos } from "@/lib/analytics/agenda-de-medicao";
+import { varrerInventarios } from "@/lib/analytics/inventario-das-redes";
 import { repescarFeedbacksSemClasse } from "@/lib/feedback/captura";
 
 /**
@@ -123,6 +124,18 @@ export async function GET(req: NextRequest) {
   });
 
   /**
+   * O INVENTÁRIO DAS REDES DO CLIENTE (08/10): o que está no ar, a única lista
+   * de conteúdo próprio que os textos podem citar. YouTube pela API oficial
+   * (sem custo em dinheiro), no máximo uma leitura a cada 20 h por projeto,
+   * com teto de 20 s por passada (lib/analytics/inventario-das-redes.ts).
+   * Instagram, TikTok e Facebook entram pela leitura que a medição já faz.
+   */
+  const inventario = await varrerInventarios({ orcamentoMs: 20_000, maxProjetos: 4 }).catch((e) => {
+    console.error("[cron] varredura do inventário falhou:", e instanceof Error ? e.message : e);
+    return null;
+  });
+
+  /**
    * A repescagem do feedback sem classe (06/10, tarde): o que o JEV não
    * classificou na captura volta para ele, até 20 por passada
    * (lib/feedback/captura.ts). Por último e sem derrubar nada.
@@ -137,6 +150,7 @@ export async function GET(req: NextRequest) {
     results,
     ...(envios.length ? { envios } : {}),
     ...(medicao && medicao.vencidos ? { medicao } : {}),
+    ...(inventario && inventario.olhados ? { inventario } : {}),
     ...(repescagem && repescagem.tentados ? { repescagem } : {}),
     timestamp: now.toISOString(),
   });

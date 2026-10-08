@@ -4,6 +4,7 @@ import { researchTopic } from "@/lib/research/web-search";
 import { montarPrefixoCacheavel } from "@/lib/media/write-posts";
 import { dataDoDia, diaDaSemanaDe, diasDaSemana, normalizarSemana, planoDoRun, ROTULO_DO_FORMATO, type FormatoDoDia } from "@/lib/media/semana-do-video";
 import type { Prisma } from "@prisma/client";
+import { briefingComLastro } from "@/lib/media/lastro-do-video";
 
 /**
  * O Roberto Radar pesquisa A PARTIR DA TRANSCRIÇÃO.
@@ -254,13 +255,25 @@ Até 3 achados e até 3 dados, SOMENTE se estiverem no resultado da pesquisa aci
     { maxTokens: 6000, cachedPrefix: prefixo, usage }
   );
   const resto = lerJson<Partial<Pick<Radar, "achados" | "dados" | "angulos">>>(brutoRadar);
+  // DADO E ACHADO SÓ COM LASTRO NA PESQUISA (08/10): o pedido acima diz
+  // "somente se estiverem no resultado", e agora o código confere. Número que
+  // não aparece no resultado da busca, ou fonte que não aparece nele, sai
+  // antes de virar briefing (lib/media/lastro-do-video.ts).
+  const conferido = briefingComLastro(
+    {
+      dados: resumoWeb ? (resto.dados ?? []).filter((d) => d?.valor).slice(0, 3) : [],
+      achados: resumoWeb ? (resto.achados ?? []).filter((a) => a?.titulo).slice(0, 3) : [],
+    },
+    [resumoWeb, ...fontes.map((f) => `${f.title} ${f.url}`)].join(" ")
+  );
+  if (conferido.tirados.length) console.warn(`[radar][${videoJobId}] sem lastro na pesquisa, fora do briefing: ${conferido.tirados.join("; ")}`);
 
   const radar: Radar = {
     tema,
     resumo: teses.resumo?.trim() ?? "",
     teses: (teses.teses ?? []).filter((t) => t?.frase).slice(0, 5),
-    achados: resumoWeb ? (resto.achados ?? []).filter((a) => a?.titulo).slice(0, 3) : [],
-    dados: resumoWeb ? (resto.dados ?? []).filter((d) => d?.valor).slice(0, 3) : [],
+    achados: conferido.achados,
+    dados: conferido.dados,
     angulos: angulosPorDia(resto.angulos ?? [], dias),
     fontes,
     ...(semPesquisaWeb ? { semPesquisaWeb } : {}),
