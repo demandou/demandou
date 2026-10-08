@@ -2,12 +2,12 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { debitar, saldo, SaldoInsuficiente } from "@/lib/credits";
 import { custoDaMidia } from "@/lib/credits/estimativa";
-import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
+import { artePrincipal, produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { generateImage } from "@/lib/media/nano-banana";
 import { desenharComFraseEmCodigo, marcaDaArte, marcaDaLaminaComFoto, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
 import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
-import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
+import { extrairConteudoDoInfografico, pedidoDoInfografico } from "@/lib/media/infographic";
 import { desenharCarrossel, laminasPermitidas, redesQueAceitamCarrossel, roteiroDoCarrossel } from "@/lib/media/carrossel";
 import { direcaoDaPeca } from "@/lib/media/direcao-de-arte";
 import { MENSAGEM_AGUARDANDO } from "@/lib/modelos-de-arte/identidade";
@@ -160,7 +160,10 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
   // (nunca truncada) e o estilo aprovado. Aqui a trava já está aberta. Desde
   // 08/10 o vídeo não entra mais como foto: só a Biblioteca de materiais.
   const metaDoVideo = posts[0].metadata as { origem?: string; frase?: string; slides?: unknown; videoJobId?: string } | null;
-  if (metaDoVideo?.origem === "video") {
+  // O INFOGRÁFICO DA SEMANA DO VÍDEO (08/10) não entra aqui: este ramo
+  // desenha imagem com frase, e o infográfico que esperava a identidade saía
+  // como imagem. Ele vai ao ramo do infográfico, abaixo.
+  if (metaDoVideo?.origem === "video" && base.mediaType !== "infographic") {
     const { arteDoDia, tetoDePalavrasDoModelo } = await import("@/lib/media/pecas-da-semana");
     const { fraseGarantida } = await import("@/lib/media/frase-da-arte");
     const { formatoDaPeca } = await import("@/lib/media/formatos-das-redes");
@@ -186,7 +189,8 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
         if (!porProporcao.has(f.proporcao)) porProporcao.set(f.proporcao, arteDoDia(video, frase, estiloVisual, f, ctxDoVideo, undefined, marca));
         porRede[p.platform] = await porProporcao.get(f.proporcao)!;
       }
-      principal = porRede[posts[0].platform];
+      // O card mostra a 4:5 do Instagram quando o dia tem Instagram (08/10).
+      principal = artePrincipal(porRede) ?? porRede[posts[0].platform];
       manchetes = [frase];
       for (const p of posts) await prisma.post.update({ where: { id: p.id }, data: { metadata: { ...((p.metadata as Record<string, unknown> | null) ?? {}), frase } as Prisma.InputJsonValue } }).catch(() => {});
     }
@@ -204,18 +208,17 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
   } else if (base.mediaType === "infographic") {
     const chave = process.env.GEMINI_API_KEY ?? "";
     const conteudo = await extrairConteudoDoInfografico(texto, nicho ?? "negocios", chave, { funil: config?.funnelStage, projectId: args.projectId });
+    // O Nano Banana Pro desenha (08/10), com a conferência do texto.
     const arte = await produzirArtePorRede({
       redes,
-      contentType: "infographic",
-      promptBase: "",
       textoDoPost: texto,
       projectId: args.projectId,
       runId,
-      desenhar: async (_p, proporcao) => {
-        const url = await desenharInfografico(conteudo, chave, proporcao, { estilo: direcao?.estilo.prompt ?? "", paleta: direcao?.paleta ?? "", marca });
-        if (!url) throw new Error("o infográfico não foi montado");
-        return url;
-      },
+      ...pedidoDoInfografico(
+        conteudo,
+        { estilo: direcao?.estilo.prompt ?? "", paleta: direcao?.paleta ?? "", marca },
+        { nicho, ctx: { projectId: args.projectId, runId, operation: "infografico" } }
+      ),
     });
     principal = arte.principal;
     porRede = arte.porRede;

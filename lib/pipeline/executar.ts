@@ -22,7 +22,7 @@ import { askClaude, ehErroDeSaldo } from "@/lib/claude";
 import { lerNaoCitar, mencoesProibidas, removerFontesProibidas } from "@/lib/pipeline/restricoes";
 import { ehSemSaldoDaOpenAI } from "@/lib/media/gpt-image";
 import { generateImage } from "@/lib/media/nano-banana";
-import { extrairConteudoDoInfografico, desenharInfografico } from "@/lib/media/infographic";
+import { extrairConteudoDoInfografico, pedidoDoInfografico } from "@/lib/media/infographic";
 import { mancheteDaPeca, desenharPecaDeFeed } from "@/lib/media/peca-de-feed";
 import { metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { marcaDaArte, promptDaArteSemTexto, desenharComFraseEmCodigo } from "@/lib/media/arte-com-frase";
@@ -3206,22 +3206,19 @@ ${postDoLinkedIn.content}`,
               new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Timeout: infographic > 80s")), 80_000)),
             ]);
 
+            // O NANO BANANA PRO DESENHA (08/10), na proporção de cada grupo de
+            // redes, e a conferência lê o texto que ele escreveu contra o
+            // pedido; escrita errada refaz no outro modelo (lib/media/infographic.ts).
             const arte = await produzirArtePorRede({
               redes: redesDoDia,
-              contentType: "infographic",
-              promptBase: "",
               textoDoPost: pecaBase?.content,
               projectId: project.id,
               runId,
-              desenhar: async (_prompt, proporcao) => {
-                const url = await desenharInfografico(conteudoDoInfografico, process.env.GEMINI_API_KEY!, proporcao, {
-                  estilo: estiloDoDia.prompt,
-                  paleta,
-                  marca: marcaDaPeca,
-                });
-                if (!url) throw new Error("o modelo não devolveu o infográfico");
-                return url;
-              },
+              ...pedidoDoInfografico(
+                conteudoDoInfografico,
+                { estilo: estiloDoDia.prompt, paleta, marca: marcaDaPeca },
+                { nicho: project.niche, ctx: { projectId: project.id, runId, operation: "infografico" } }
+              ),
             });
 
             dianaFinalUrl = arte.principal;

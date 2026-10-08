@@ -14,7 +14,7 @@ import { desenharComFraseEmCodigo, marcaDaArte, promptDaArteSemTexto } from "@/l
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
 import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
-import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
+import { extrairConteudoDoInfografico, pedidoDoInfografico } from "@/lib/media/infographic";
 import { lerNaoCitar } from "@/lib/pipeline/restricoes";
 import { ehIdentidadeNaoAprovada } from "@/lib/modelos-de-arte/identidade";
 import { conteudoDoCardAguardando, marcarEspera } from "@/lib/modelos-de-arte/espera-da-identidade";
@@ -183,9 +183,10 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
   if (GERA_ARTE.has(post.mediaType ?? "")) {
     try {
       /**
-       * TEXTO EM ARTE É CÓDIGO (30/09): a manchete sai do texto novo, a cena
-       * sai sem letra nem gente, e o infográfico é montado em código com os
-       * dados do texto novo. Ver lib/media/arte-com-frase.tsx.
+       * TEXTO EM ARTE É CÓDIGO (30/09): a manchete sai do texto novo e a cena
+       * sai sem letra nem gente (lib/media/arte-com-frase.tsx). O infográfico
+       * é a exceção desde 08/10: o Nano Banana Pro o desenha com os dados do
+       * texto novo, e a conferência lê o que ele escreveu.
        */
       // O modelo escolhido para este post (08/10) manda também no refazer.
       // E as fotos que a pessoa escolheu para ele (08/10, material próprio): o refazer não troca a foto.
@@ -203,22 +204,18 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
             projectId: post.projectId,
             runId: post.runId ?? undefined,
           });
-      const arte = await produzirArtePorRede({
-        redes: [post.platform],
-        contentType: ehInfografico ? "infographic" : post.mediaType === "carousel" ? "carousel" : "image",
-        promptBase: peca ? promptDaArteSemTexto({ visual: peca.visual, estilo: post.imagePrompt ?? undefined, marca }) : "",
-        textoEsperado: peca ? [peca.manchete] : undefined,
-        textoDoPost: limpo.texto,
-        projectId: post.projectId,
-        runId: post.runId ?? undefined,
-        desenhar: conteudo
-          ? async (_p, proporcao) => {
-              const url = await desenharInfografico(conteudo, "", proporcao, { estilo: "", paleta: "", marca });
-              if (!url) throw new Error("o infográfico não foi montado");
-              return url;
+      const comum = { redes: [post.platform], textoDoPost: limpo.texto, projectId: post.projectId, runId: post.runId ?? undefined };
+      const arte = await produzirArtePorRede(
+        conteudo
+          ? { ...comum, ...pedidoDoInfografico(conteudo, { estilo: "", paleta: "", marca }, { nicho: post.project.niche, ctx: { projectId: post.projectId, runId: post.runId ?? undefined, operation: "infografico" } }) }
+          : {
+              ...comum,
+              contentType: post.mediaType === "carousel" ? "carousel" : "image",
+              promptBase: promptDaArteSemTexto({ visual: peca!.visual, estilo: post.imagePrompt ?? undefined, marca }),
+              textoEsperado: [peca!.manchete],
+              desenhar: desenharComFraseEmCodigo(peca!.manchete, marca, (prompt, proporcao) => generateImage(prompt, proporcao, "hd")),
             }
-          : desenharComFraseEmCodigo(peca!.manchete, marca, (prompt, proporcao) => generateImage(prompt, proporcao, "hd")),
-      });
+      );
       novaImagem = arte.principal ?? null;
       arteRefeita = Boolean(novaImagem);
     } catch (e) {

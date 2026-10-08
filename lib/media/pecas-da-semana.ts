@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db/prisma";
 import { askClaude } from "@/lib/claude";
 import { generateImage } from "@/lib/media/nano-banana";
 import { direcaoDaPeca, escolherEstilo, paletaDoProjeto } from "@/lib/media/direcao-de-arte";
-import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
+import { extrairConteudoDoInfografico, pedidoDoInfografico } from "@/lib/media/infographic";
+import { artePrincipal, produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { cenaDaFrase, fotoEscolhidaDaPeca, layoutDaPeca, marcaDaArte, marcaDaLaminaComFoto, modeloDaMarca, pecaComFraseEmCodigo } from "@/lib/media/arte-com-frase";
 import { escolhaDaArteDoPost, fotosDoPost, metadataDasFotosEscolhidas } from "@/lib/materiais/material-da-campanha";
 import { avisoDoRecuo } from "@/lib/media/aviso-da-arte";
@@ -816,7 +817,8 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
           const foto = metadataDaFoto([frase]);
           const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: url, extra: { frase, ...foto, ...doModelo } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
-          await gravarCard(AGENTES.diana, { content: conteudoDaDiana(`Imagem com a frase: "${frase}"`, [frase]), mediaType: "image", mediaUrl: url, postId, extra: { rede: principal, frase, ...foto } });
+          // O card mostra a 4:5 do Instagram quando o dia tem Instagram (08/10), como o infográfico.
+          await gravarCard(AGENTES.diana, { content: conteudoDaDiana(`Imagem com a frase: "${frase}"`, [frase]), mediaType: "image", mediaUrl: artePrincipal(artes) ?? url, postId, extra: { rede: principal, frase, ...foto } });
           await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "image", imageUrl: artes.get(rede) ?? url, extra: { frase, ...foto, ...doModelo } }));
         }
       } else if (formato === "carousel") {
@@ -952,24 +954,41 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
           extrairConteudoDoInfografico(fonte, video.project.niche ?? "negocios", geminiKey, { projectId: video.projectId }),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Infografico passou de 120s")), 120_000)),
         ]);
-        // O formato sai da tabela das redes desde 19/09, e desde 30/09 é um
-        // infográfico por PROPORÇÃO das redes do dia (Instagram em retrato, o
-        // resto em paisagem); o recorte final deixa cada um no tamanho exato.
-        const artes = await artesPorRede(async (formatoDaRede) => {
-          // `marca` decide o infográfico desde 30/09: ele é montado em código
-          // com a família da linguagem e as cores do projeto (infographic.ts).
-          const bruta = await desenharInfografico(conteudo, geminiKey, formatoDaRede.proporcao, { estilo: estilo.prompt, paleta: paletaDoProjeto(video.project.colorPalette), marca });
-          if (!bruta) throw new Error("Nao foi possivel montar o infografico.");
-          return (await ajustarParaFormato(bruta, formatoDaRede)).dataUri;
+        // O formato sai da tabela das redes desde 19/09: um infográfico por
+        // PROPORÇÃO das redes do dia (Instagram em retrato 4:5, o resto em
+        // paisagem 16:9), recortado no tamanho exato de cada rede. Desde 08/10
+        // quem desenha é o Nano Banana Pro, pela MESMA esteira de arte da
+        // campanha (produzirArtePorRede): a conferência lê o texto que ele
+        // escreveu contra o pedido e refaz no outro modelo quando a escrita erra.
+        const arte = await produzirArtePorRede({
+          redes: [principal, ...outras],
+          textoDoPost: legenda,
+          projectId: video.projectId,
+          runId: run.id,
+          ...pedidoDoInfografico(
+            conteudo,
+            { estilo: estilo.prompt, paleta: paletaDoProjeto(video.project.colorPalette), marca },
+            { nicho: video.project.niche, ctx: { projectId: video.projectId, runId: run.id, operation: "infografico" } }
+          ),
         });
-        const url = artes.get(principal) ?? [...artes.values()][0];
-        // O CONTEÚDO EXTRAÍDO FICA NO POST (06/10): recompor o infográfico (regra
-        // nova de caber, identidade aprovada depois) passa a ser composição local
-        // e grátis, sem extrair de novo (scripts/tmp/infografico-volta-a-espera-0610.mts).
+        if (arte.algumaReprovada) console.warn(`[semana][${videoJobId}] ${DIAS[dia]}: o infográfico saiu com a conferência reprovada: ${arte.avisos.join(" ")}`);
+        const url = arte.porRede[principal] ?? artePrincipal(arte.porRede)!;
+        // O CONTEÚDO EXTRAÍDO FICA NO POST (06/10): refazer o infográfico (a
+        // identidade aprovada depois, o pedido pelo chat) parte dele sem
+        // extrair de novo (scripts/tmp/infografico-volta-a-espera-0610.mts).
         const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: url, extra: { infografico: conteudo } });
         await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
-        await gravarCard(AGENTES.diana, { content: "Infográfico com os dados do briefing do Roberto.", mediaType: "infographic", mediaUrl: url, postId, extra: { rede: principal } });
-        await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: artes.get(rede) ?? url, extra: { infografico: conteudo } }));
+        // O CARD MOSTRA A 4:5 DO INSTAGRAM quando o dia tem Instagram (08/10):
+        // o post de cada rede leva a arte dele, e o quadro mostra a que o
+        // cliente mais olha (arte-por-rede.ts, `artePrincipal`).
+        await gravarCard(AGENTES.diana, {
+          content: "Infográfico com os dados do briefing do Roberto.",
+          mediaType: "infographic",
+          mediaUrl: artePrincipal(arte.porRede) ?? url,
+          postId,
+          extra: { rede: principal, ...(arte.algumaReprovada ? { conferenciaDaArte: arte.avisos.join(" ").slice(0, 600) } : {}) },
+        });
+        await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: arte.porRede[rede] ?? url, extra: { infografico: conteudo } }));
       }
       escritos++;
       // Card de espera que ninguém aproveitou sai (04/10): o "Lucas está

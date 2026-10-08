@@ -1,6 +1,6 @@
 import { gruposDeFormato, instrucaoDeFormato, type FormatoDaRede, type ProporcaoPedida } from "@/lib/media/formatos-das-redes";
 import { ajustarParaFormato } from "@/lib/media/margem-de-seguranca";
-import { conferirArte, pedidoDeCorrecao } from "@/lib/media/conferencia-da-arte";
+import { conferirArte, pedidoDeCorrecao, pedidoDeCorrecaoDoTexto } from "@/lib/media/conferencia-da-arte";
 import { textoPermitidoComModelo } from "@/lib/modelos-de-arte/registro";
 import { pecaUsaMaterial } from "@/lib/materiais/escolha";
 
@@ -29,7 +29,7 @@ export interface ArteDoDia {
   porRede: Record<string, string>;
   /**
    * Uma arte para quem só sabe lidar com uma (o card da Diana, telas antigas).
-   * É a da rede de maior alcance entre as do dia, na ordem da lista.
+   * Com Instagram no dia, é a 4:5 dele (ver `artePrincipal`).
    */
   principal?: string;
   /** O que aconteceu, em português, para o log da execução e para a Vera. */
@@ -72,9 +72,35 @@ export interface PedidoDeArte {
    * Vai para a conferência, que reprova qualquer outra palavra desenhada.
    */
   textoEsperado?: string[];
+  /**
+   * O `textoEsperado` é DESENHADO PELO MODELO, não composto em código: o
+   * infográfico desde 08/10 (lib/media/infographic.ts, `pedidoDoInfografico`).
+   * Liga o olho (a leitura do texto), a régua da margem (o texto pode
+   * encostar na borda) e a conferência do texto que falta; a correção pede o
+   * texto exato em vez de "sem texto".
+   */
+  textoDesenhadoPeloModelo?: boolean;
   usarOlho?: boolean;
   projectId?: string;
   runId?: string;
+  /** Quem confere. Só o teste troca (scripts/testes/infografico-pelo-modelo-0810.test.mts). */
+  conferir?: typeof conferirArte;
+}
+
+/**
+ * A ARTE QUE O CARD MOSTRA, quando o dia tem mais de uma (08/10).
+ *
+ * Com Instagram no dia, é a 4:5 dele: é a rede que o cliente mais olha, e o
+ * Bruno viu no quadro o infográfico deitado do LinkedIn e leu "o formato sai
+ * errado para Instagram" (o post do Instagram estava certo, 1080x1350; o card
+ * da semana do vídeo mostrava a arte da rede principal do dia). Sem
+ * Instagram, a ordem de alcance de antes. Pura.
+ */
+const ORDEM_DA_PRINCIPAL = ["instagram", "linkedin", "facebook", "twitter", "youtube"];
+export function artePrincipal(porRede: Record<string, string | undefined> | Map<string, string>): string | undefined {
+  const de = (r: string) => (porRede instanceof Map ? porRede.get(r) : porRede[r]);
+  const todas = porRede instanceof Map ? [...porRede.values()] : Object.values(porRede);
+  return ORDEM_DA_PRINCIPAL.map(de).find(Boolean) ?? todas.find(Boolean);
 }
 
 /**
@@ -96,11 +122,19 @@ function piorRecorte(redes: Array<{ platform: string; formato: FormatoDaRede }>,
 export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoDia> {
   const redes = pedido.redes.length ? pedido.redes : ["linkedin"];
   const grupos = gruposDeFormato(redes, pedido.contentType);
-  const porRede: Record<string, string> = {};
-  const avisos: string[] = [];
-  let algumaReprovada = false;
+  const textoDoModelo = Boolean(pedido.textoDesenhadoPeloModelo);
 
-  for (const grupo of grupos) {
+  /**
+   * OS GRUPOS EM PARALELO (08/10). Eram em fila, e com o infográfico desenhado
+   * pelo Nano Banana Pro (30 a 60 s por imagem, até três tentativas) o dia de
+   * Instagram e LinkedIn passaria de seis minutos só de arte. Cada grupo é
+   * independente (proporção, tentativas, conferência); os avisos voltam na
+   * ordem dos grupos, para o log continuar legível.
+   */
+  const resultados = await Promise.all(grupos.map(async (grupo) => {
+    const avisos: string[] = [];
+    let algumaReprovada = false;
+    const porRede: Record<string, string> = {};
     const nomes = grupo.redes.map((r) => r.platform).join(", ");
     const instrucao = instrucaoDeFormato(grupo.proporcao);
     const pior = piorRecorte(grupo.redes, grupo.proporcao);
@@ -124,7 +158,7 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
       const prompt =
         tentativa === 1
           ? `${pedido.promptBase}\n\n${instrucao}`
-          : `${pedido.promptBase}\n\n${instrucao}${pedidoDeCorrecao(veredito!)}`;
+          : `${pedido.promptBase}\n\n${instrucao}${textoDoModelo ? pedidoDeCorrecaoDoTexto(veredito!) : pedidoDeCorrecao(veredito!)}`;
 
       /** A reprovação foi de ESCRITA? Então o modelo é parte do problema. */
       const erroDeEscrita =
@@ -138,21 +172,24 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
       bruto = await desenhista(prompt, grupo.proporcao);
 
       const { dataUri } = await ajustarParaFormato(bruto, pior.formato);
-      veredito = await conferirArte(dataUri, {
+      veredito = await (pedido.conferir ?? conferirArte)(dataUri, {
         formato: pior.formato,
         textoDoPost: pedido.textoDoPost,
         // Com um modelo do book (03/10), o texto que o código compôs além da
         // manchete (itens, lados, cabeçalho) também é permitido.
         textoEsperado: textoPermitidoComModelo(pedido.textoEsperado),
+        // O texto desenhado pelo modelo (o infográfico, 08/10) tem de estar
+        // todo lá e igual, não só "sem texto a mais".
+        textoObrigatorio: textoDoModelo,
         // Com a frase composta em código, a margem é garantida pelo layout.
-        usarRegua: !pedido.textoEsperado,
-        // O infográfico é montado em código desde 30/09: todo texto dele vem
-        // da extração, e nenhum modelo de imagem desenha nada. O olho ali só
-        // estranhava conteúdo legítimo do vídeo que não está no post ("Jetro",
-        // na sexta do teste) e fazia a peça idêntica ser refeita três vezes.
-        // A FOTO REAL DO CLIENTE (03/10, lib/materiais) também não vai ao olho:
-        // ele reprova gente e letreiro, e ali a gente e a placa são do cliente.
-        usarOlho: pedido.contentType === "infographic" || pecaUsaMaterial(pedido.textoEsperado) ? false : pedido.usarOlho,
+        // Com o texto desenhado pelo modelo, não: a régua volta a valer.
+        usarRegua: !pedido.textoEsperado || textoDoModelo,
+        // O infográfico VOLTOU ao olho em 08/10: desde que o modelo desenha o
+        // texto, ler a imagem é a conferência dele (entre 30/09 e 08/10 ele
+        // era montado em código e ficava fora). A FOTO REAL DO CLIENTE (03/10,
+        // lib/materiais) continua fora: o olho reprova gente e letreiro, e ali
+        // a gente e a placa são do cliente.
+        usarOlho: pecaUsaMaterial(pedido.textoEsperado) ? false : pedido.usarOlho,
         projectId: pedido.projectId,
         runId: pedido.runId,
       });
@@ -175,12 +212,11 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
       porRede[platform] = dataUri;
     }
     avisos.push(`${nomes}: ${grupo.redes.map((r) => r.formato.rotulo).join(" · ")}.`);
-  }
+    return { porRede, avisos, algumaReprovada };
+  }));
 
-  // A principal serve as telas que só sabem mostrar uma arte. A ordem não é
-  // alfabética: é a de alcance da peça visual no produto.
-  const preferencia = ["instagram", "linkedin", "facebook", "twitter", "youtube"];
-  const principal = preferencia.map((p) => porRede[p]).find(Boolean) ?? Object.values(porRede)[0];
-
-  return { porRede, principal, avisos, algumaReprovada };
+  const porRede: Record<string, string> = Object.assign({}, ...resultados.map((r) => r.porRede));
+  const avisos = resultados.flatMap((r) => r.avisos);
+  const algumaReprovada = resultados.some((r) => r.algumaReprovada);
+  return { porRede, principal: artePrincipal(porRede), avisos, algumaReprovada };
 }

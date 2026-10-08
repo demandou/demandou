@@ -42,13 +42,30 @@ test("projeto sem identidade aprovada: o infográfico NÃO é desenhado (nenhum 
   );
 });
 
-test("com a identidade aprovada, o infográfico sai (composição local, sem custo)", async () => {
+test("com a identidade aprovada, o infográfico sai pelo modelo de imagem (aqui um gerador falso, sem custo)", async () => {
+  // Desde 08/10 o Nano Banana Pro desenha (lib/media/infografico-pelo-modelo.ts);
+  // a composição local saiu. O gerador falso devolve uma imagem chapada.
+  const sharp = (await import("sharp")).default;
+  const modelos: string[] = [];
   const w = console.warn;
   console.warn = () => {};
   try {
-    const url = await desenharInfografico(CONTEUDO, "", "4:5", { estilo: "", paleta: "", marca: { familia: "colagem", cores: CORES, projectId: "cmu7hmu0j000004jrh2yc5udb", identidadeAprovada: true } });
-    assert.ok(url?.startsWith("data:image/jpeg;base64,"));
-    assert.ok((url?.length ?? 0) > 10_000);
+    const url = await desenharInfografico(
+      CONTEUDO,
+      "",
+      "4:5",
+      { estilo: "", paleta: "", marca: { familia: "colagem", cores: CORES, projectId: "cmu7hmu0j000004jrh2yc5udb", identidadeAprovada: true } },
+      {
+        gerar: async (modelo) => {
+          modelos.push(modelo);
+          const buf = await sharp({ create: { width: 1600, height: 2000, channels: 3, background: "#f5f0ec" } }).jpeg().toBuffer();
+          return { dataUrl: `data:image/jpeg;base64,${buf.toString("base64")}`, modelo, custoUsd: 0 };
+        },
+      }
+    );
+    assert.ok(url.startsWith("data:image/jpeg;base64,"));
+    assert.ok(url.length > 10_000);
+    assert.deepEqual(modelos, ["nano-banana-pro"]);
   } finally {
     console.warn = w;
   }

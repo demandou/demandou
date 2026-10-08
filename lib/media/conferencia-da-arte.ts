@@ -178,13 +178,72 @@ export function palavrasForaDoPermitido(textos: string[], permitido: string[]): 
 
 export type DecisaoDaDescricao = { reprovou: string | null; porCodigo: boolean };
 
+/** Números de um texto, como escritos ("7,6", "2.500", "70"). */
+function numerosDe(t: string): string[] {
+  return (t.normalize("NFC").match(/\d+(?:[.,]\d+)*/g) ?? []).map((n) => n.replace(/[.,]$/, ""));
+}
+
+/** Palavras de 3 letras ou mais, em minúscula e COM acento (acento errado é erro). */
+function palavrasComAcento(t: string): string[] {
+  return (t.normalize("NFC").toLowerCase().match(/\p{L}{3,}/gu) ?? []);
+}
+
+export type TextoPedidoNaArte = {
+  /** Número do texto pedido que não está, igual, no texto transcrito. */
+  numerosFaltando: string[];
+  /** Palavra do texto pedido que não aparece igual (com acento) no texto transcrito. */
+  palavrasFaltando: string[];
+  /** Quantas palavras o texto pedido tem, para a proporção. */
+  palavrasPedidas: number;
+};
+
+/**
+ * O TEXTO PEDIDO ESTÁ NA ARTE? (08/10, o infográfico desenhado pelo modelo).
+ *
+ * Na arte com a frase composta em código a pergunta é só "tem texto a mais?",
+ * e a comparação é tolerante (o Haiku troca uma letra ao transcrever a frase
+ * que o código escreveu certo). No infográfico quem escreve é o MODELO, e a
+ * pergunta inverte: tudo o que foi pedido está lá, igual? Número tem de ser
+ * idêntico ("7,6" não é "76"). Palavra é exata, com acento, e o que falta vai
+ * ao JEV como evidência: a transcrição também erra, e quem lê é ele. Puro.
+ */
+export function textoPedidoNaArte(pedido: string[], transcrito: string[]): TextoPedidoNaArte {
+  const lido = transcrito.join("\n");
+  const numerosLidos = new Set(numerosDe(lido));
+  const palavrasLidas = new Set(palavrasComAcento(lido));
+  const pedidas = pedido.flatMap(palavrasComAcento);
+  return {
+    numerosFaltando: [...new Set(pedido.flatMap(numerosDe).filter((n) => !numerosLidos.has(n)))],
+    palavrasFaltando: [...new Set(pedidas.filter((p) => !palavrasLidas.has(p)))],
+    palavrasPedidas: new Set(pedidas).size,
+  };
+}
+
+/** Sem o JEV, o código reprova quando falta mais que isto das palavras pedidas (um módulo inteiro, não uma letra). */
+export const FALTA_QUE_REPROVA_SEM_JEV = 0.15;
+
 /**
  * O que o CÓDIGO decide sobre a descrição, sem JEV: texto além do permitido,
- * gente onde não pode, e elemento (não fundo) que a borda corta. Puro.
+ * gente onde não pode, e elemento (não fundo) que a borda corta. Com
+ * `textoObrigatorio` (o texto foi desenhado pelo modelo), também o texto
+ * pedido que não chegou: arte sem texto nenhum e número diferente. Puro.
  */
-export function decidirPelaDescricao(descricao: DescricaoDaArte, opcoes: { textoEsperado?: string[]; permitirPessoas?: boolean }): DecisaoDaDescricao {
+export function decidirPelaDescricao(
+  descricao: DescricaoDaArte,
+  opcoes: { textoEsperado?: string[]; permitirPessoas?: boolean; textoObrigatorio?: boolean }
+): DecisaoDaDescricao {
   const textos = (descricao.textos ?? []).filter((t) => String(t?.texto ?? "").trim());
   const motivos: string[] = [];
+  if (opcoes.textoObrigatorio && opcoes.textoEsperado?.length) {
+    if (!textos.length) {
+      motivos.push("texto pedido escrito: nenhum, a arte saiu sem o texto");
+    } else {
+      const { numerosFaltando } = textoPedidoNaArte(opcoes.textoEsperado, textos.map((t) => String(t.texto)));
+      if (numerosFaltando.length) motivos.push(`número escrito diferente ou faltando: ${numerosFaltando.slice(0, 6).join(", ")}`);
+    }
+    const cortado = textos.filter((t) => t.borda === "cortado");
+    if (cortado.length) motivos.push(`texto cortado pela borda: ${cortado.map((t) => `"${String(t.texto).slice(0, 40)}"`).join(", ")}`);
+  }
   if (opcoes.textoEsperado) {
     const fora = palavrasForaDoPermitido(
       textos.map((t) => String(t.texto)),
@@ -229,6 +288,17 @@ async function olharPeloJev(
   if (pelaDescricao.reprovou) {
     return { decidido: true, reprovou: pelaDescricao.reprovou, parecer: `VEREDITO: REPROVADA\nMOTIVO: ${pelaDescricao.reprovou}`, descricao, notas: {}, por: "haiku+codigo" };
   }
+  // O TEXTO PEDIDO QUE NÃO CHEGOU (08/10, infográfico): número diferente já
+  // reprovou acima; a palavra que falta vai ao JEV como evidência. Sem o JEV,
+  // o código só reprova a falta grande (um módulo inteiro), porque a
+  // transcrição também troca letra.
+  const pedidoNaArte =
+    opcoes.textoObrigatorio && opcoes.textoEsperado?.length ? textoPedidoNaArte(opcoes.textoEsperado, textos.map((t) => String(t.texto))) : null;
+  if (pedidoNaArte && !conferenciaPeloJev() && pedidoNaArte.palavrasFaltando.length > pedidoNaArte.palavrasPedidas * FALTA_QUE_REPROVA_SEM_JEV) {
+    const reprovou = `texto pedido escrito errado ou faltando: ${pedidoNaArte.palavrasFaltando.slice(0, 8).join(", ")}`;
+    return { decidido: true, reprovou, parecer: `VEREDITO: REPROVADA\nMOTIVO: ${reprovou}`, descricao, notas: {}, por: "haiku+codigo" };
+  }
+
   // 2. O JEV, sobre o que é leitura. Sem texto na arte não há o que ler.
   const temNumero = textos.some((t) => /\d/.test(String(t.texto)));
   if (!textos.length || !conferenciaPeloJev()) return { decidido: true, parecer: "VEREDITO: APROVADA", descricao, notas: {}, por: "haiku+codigo" };
@@ -240,10 +310,11 @@ async function olharPeloJev(
     formato: opcoes.formato.rotulo,
     textoPermitido: opcoes.textoEsperado
       ? opcoes.textoEsperado.length
-        ? `${opcoes.textoEsperado.map((t) => `"${t}"`).join(" ")} (composto em código: a borda dele não conta)`
+        ? `${opcoes.textoEsperado.map((t) => `"${t}"`).join(" ")} (${opcoes.textoObrigatorio ? "desenhado pelo modelo de imagem: tem de estar inteiro e igual na arte" : "composto em código: a borda dele não conta"})`
         : "nenhum: qualquer letra ou número reprova"
       : "não informado",
     palavrasForaDoTextoPermitido: opcoes.textoEsperado ? foraDoPermitido : "não se aplica",
+    ...(pedidoNaArte ? { palavrasPedidasNaoAchadasIguais: pedidoNaArte.palavrasFaltando.slice(0, 40) } : {}),
     pessoasPermitidas: Boolean(opcoes.permitirPessoas),
     textoDoPost: opcoes.textoDoPost ? opcoes.textoDoPost.slice(0, 1200) : "não informado",
     descricaoDaArte: { ...descricao, textos },
@@ -256,6 +327,13 @@ async function olharPeloJev(
       motivo: "texto com palavra que não existe ou escrita errada",
     },
   };
+  if (pedidoNaArte) {
+    regras.textoPedido = {
+      pergunta:
+        "O texto permitido foi desenhado pelo modelo de imagem e tinha de aparecer INTEIRO e IGUAL na arte. Comparando com a transcrição literal, falta algum trecho do texto permitido, ou algum trecho aparece com palavra diferente, letra trocada, acento errado ou palavra cortada no meio? `palavrasPedidasNaoAchadasIguais` lista as palavras pedidas que não aparecem iguais na transcrição. Diferença só de quebra de linha, de maiúscula ou de ordem dos blocos não é erro.",
+      motivo: `texto pedido escrito errado ou faltando${pedidoNaArte.palavrasFaltando.length ? `: ${pedidoNaArte.palavrasFaltando.slice(0, 8).join(", ")}` : ""}`,
+    };
+  }
   if (opcoes.textoDoPost && temNumero) {
     regras.numero = { pergunta: "Algum número escrito na arte CONTRADIZ um número do texto do post?", motivo: "número na arte que contradiz o post" };
   }
@@ -300,6 +378,12 @@ export async function conferirArte(
      * Lista vazia quer dizer arte sem texto nenhum.
      */
     textoEsperado?: string[];
+    /**
+     * O `textoEsperado` foi DESENHADO PELO MODELO (o infográfico, 08/10), e
+     * não composto em código: além de não ter texto a mais, ele tem de estar
+     * todo lá, com número idêntico e grafia certa.
+     */
+    textoObrigatorio?: boolean;
     /** Gente na arte é permitida? Padrão: não. Arte gerada não mostra estranhos. */
     permitirPessoas?: boolean;
     /** A régua de margem vale? Padrão: sim. Ver o comentário no veredito. */
@@ -345,7 +429,9 @@ export async function conferirArte(
           `Margem de segurança pedida ao gerador: ${Math.round(MARGEM_SEGURA * 100)}% em cada borda.`,
           opcoes.textoEsperado
             ? opcoes.textoEsperado.length
-              ? `\nTEXTO PERMITIDO NA ARTE (e nenhum outro; caixa alta ou baixa não importa):\n${opcoes.textoEsperado.map((t) => `"${t}"`).join("\n")}\nEsse texto foi composto em código, com a margem medida: não reprove por margem nem por borda dele (regras 1 e 4 valem só para o resto da arte).`
+              ? opcoes.textoObrigatorio
+                ? `\nTEXTO PEDIDO NA ARTE (e nenhum outro; caixa alta ou baixa não importa):\n${opcoes.textoEsperado.map((t) => `"${t}"`).join("\n")}\nEsse texto foi desenhado pelo modelo de imagem: REPROVE se faltar algum trecho, se algum número for diferente ou se alguma palavra estiver escrita diferente do pedido.`
+                : `\nTEXTO PERMITIDO NA ARTE (e nenhum outro; caixa alta ou baixa não importa):\n${opcoes.textoEsperado.map((t) => `"${t}"`).join("\n")}\nEsse texto foi composto em código, com a margem medida: não reprove por margem nem por borda dele (regras 1 e 4 valem só para o resto da arte).`
               : "\nTEXTO PERMITIDO NA ARTE: nenhum. Qualquer letra ou número reprova."
             : "",
           opcoes.permitirPessoas ? "\nPessoas são permitidas nesta arte." : "\nEsta arte NÃO pode ter pessoas (regra 7).",
@@ -411,6 +497,28 @@ export function pedidoDeCorrecao(veredito: VereditoDaArte): string {
     `Redo the composition SMALLER and MORE CENTERED: shrink the whole subject so there is at least`,
     `${pct * 2}% of empty background on every side. No text, number or logo anywhere near the frame.`,
     `If the previous attempt had text, prefer an image with NO text at all — the caption carries the words.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+/**
+ * A correção quando o TEXTO é parte da peça (o infográfico, 08/10). A de
+ * cima pede "de preferência sem texto nenhum", que aqui seria pedir a peça
+ * errada: o infográfico só existe com o texto. Esta diz o que errou, pede o
+ * texto exato e só fala de margem quando a borda cortou algo.
+ */
+export function pedidoDeCorrecaoDoTexto(veredito: VereditoDaArte): string {
+  const lados = (Object.entries(veredito.medida.lados) as Array<[string, { cortado: boolean }]>)
+    .filter(([, m]) => m.cortado)
+    .map(([l]) => ({ topo: "top", baixo: "bottom", esquerda: "left", direita: "right" })[l] ?? l);
+  const pct = Math.round(MARGEM_SEGURA * 100);
+  return [
+    `\n\nPREVIOUS ATTEMPT WAS REJECTED. What went wrong: ${veredito.motivo}`,
+    lados.length
+      ? `Elements were clipped by the ${lados.join(" and ")} edge${lados.length > 1 ? "s" : ""}: shrink the whole layout so there is at least ${pct * 2}% of empty background on every side.`
+      : "",
+    `Render every listed string exactly once, letter by letter, with every accent, and every number identical. Draw no other word, number or label anywhere.`,
   ]
     .filter(Boolean)
     .join(" ");
