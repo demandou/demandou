@@ -201,6 +201,17 @@ export function distribuirFotos(material: MaterialProprio, posts: PostVisual[], 
 }
 
 /**
+ * O post ainda recebe esta foto? A foto do dia ocupada troca de lugar (sempre
+ * pode); o carrossel cheio não recebe mais nenhuma (a tela desliga a opção,
+ * senão a foto voltaria sozinha para outro lugar). Puro.
+ */
+export function postRecebeAFoto(material: MaterialProprio, id: string, post: Pick<PostVisual, "chave" | "formato">, laminas: number): boolean {
+  if (post.formato === "image") return true;
+  const outras = material.fotos.filter((f) => f.id !== id && f.post === post.chave).length;
+  return outras < capacidadeDoPost(post, laminas);
+}
+
+/**
  * A pessoa põe a foto num post (ou tira de todos, com null). Se o post é uma
  * foto do dia já ocupada, a outra foto troca de lugar com esta. Depois, a
  * distribuição padrão arruma o resto. Puro.
@@ -248,11 +259,14 @@ export function comEstiloDaFoto(material: MaterialProprio, id: string, estilo: E
  * O que vai para a esteira: a escolha arrumada contra os posts que existem de
  * verdade no envio (a pessoa pode ter mudado um dia depois de escolher). "Sim"
  * sem nenhuma foto marcada não é escolha nenhuma: volta a regra de hoje
- * (undefined). Puro.
+ * (undefined). Campanha sem dia de foto ou carrossel também (08/10, revisão):
+ * a pergunta nem aparece na tela, então uma resposta antiga não pode mudar a
+ * campanha escondida. Puro.
  */
 export function materialParaGravar(material: MaterialProprio | null | undefined, posts: PostVisual[], laminas: number): MaterialProprio | undefined {
   const valido = materialProprioValido(material);
   if (!valido) return undefined;
+  if (!postsQueRecebemFoto(posts).length) return undefined;
   if (!valido.usar) return { usar: false, fotos: [] };
   if (!valido.fotos.length) return undefined;
   return distribuirFotos(valido, posts, laminas, { manterValidas: true });

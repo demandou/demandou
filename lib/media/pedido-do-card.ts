@@ -859,7 +859,11 @@ async function refazerCarrossel(o: {
   // modelo tem o lugar de "você"; uma foto diferente por lâmina, nunca a
   // mesma em vizinhas; o JEV escolhe entre as candidatas pela frase.
   const modeloPedePessoa = fotoDoClienteEntra(modelo);
-  const plano: FotoDaLamina[] = modeloPedePessoa && fotosDaPessoa.length
+  // AS FOTOS ESCOLHIDAS PELA PESSOA (08/10, material próprio) já dizem a foto
+  // de cada lâmina: nada de intercalar por conta própria nem trocar o modelo
+  // da lâmina sem foto (a resposta diria "intercaladas" sem ter intercalado).
+  const comFotosEscolhidas = Boolean(marca.fotosDoPost);
+  const plano: FotoDaLamina[] = !comFotosEscolhidas && modeloPedePessoa && fotosDaPessoa.length
     ? await escolherFotosDasLaminas({
         frases,
         fotos: fotosDaPessoa,
@@ -871,6 +875,7 @@ async function refazerCarrossel(o: {
   const modeloSoTexto = (marca.modelos ?? []).map((id) => modeloPorId(id)).find((m) => m && soTexto(m)) ?? null;
   const marcaDaLamina = async (i: number): Promise<MarcaDaArte> => {
     const pagina = { i, total };
+    if (comFotosEscolhidas) return { ...marca, pagina };
     const foto = plano[i];
     if (foto) {
       const ref = await referenciaDoMaterial(foto).catch(() => null);

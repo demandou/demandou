@@ -20,6 +20,7 @@ import {
   ESTILO_MESTRE,
   MAXIMO_DE_FOTOS,
   moverFoto,
+  postRecebeAFoto,
   postsQueRecebemFoto,
   resumoDoPost,
   ROTULO_DA_PORTA,
@@ -335,6 +336,12 @@ export function MaterialDaCampanha({
                 </div>
               )}
 
+              {valor && valor.fotos.length === 0 && (biblioteca?.length ?? 0) > 0 && (
+                <p className="text-[12px] leading-snug" style={{ color: "var(--text-muted)" }}>
+                  Nenhuma foto marcada ainda. Sem marcar, vale o de sempre: o squad usa uma foto da sua biblioteca quando ela serve ao post.
+                </p>
+              )}
+
               {valor && valor.fotos.length > 0 && (
                 <ul className="flex flex-col divide-y rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--bg-surface)" }} aria-label="As fotos marcadas e o estilo de cada uma">
                   {valor.fotos.map((f, i) => {
@@ -360,10 +367,12 @@ export function MaterialDaCampanha({
                             >
                               {alvos.map((p) => {
                                 const outra = p.formato === "image" ? valor.fotos.findIndex((x) => x.id !== f.id && x.post === p.chave) : -1;
+                                const cheio = f.post !== p.chave && !postRecebeAFoto(valor, f.id, p, laminas);
                                 return (
-                                  <option key={p.chave} value={p.chave}>
+                                  <option key={p.chave} value={p.chave} disabled={cheio}>
                                     {rotuloCurto(p)}
                                     {outra >= 0 ? ` (troca com a foto ${outra + 1})` : ""}
+                                    {cheio ? " (todas as lâminas já têm foto)" : ""}
                                   </option>
                                 );
                               })}
@@ -399,7 +408,9 @@ export function MaterialDaCampanha({
                           <Check className="h-3.5 w-3.5 shrink-0 text-green-600" />
                           {f.estilo.porta === "mestre"
                             ? destino
-                              ? `Segue o estilo do post${doPost?.nome ? ` ("${doPost.nome}")` : ""}.`
+                              ? doPost?.catalogoId && modeloPorId(doPost.catalogoId)?.foto === "nenhuma"
+                                ? `O modelo do post ("${doPost.nome ?? "só texto"}") é só texto: a foto entra num molde com foto, nas cores e na letra da sua marca.`
+                                : `Segue o estilo do post${doPost?.nome ? ` ("${doPost.nome}")` : ""}.`
                               : "Segue o estilo do post em que entrar."
                             : `${ROTULO_DA_PORTA[f.estilo.porta]}: "${f.estilo.modelo.nome ?? "modelo escolhido"}".`}
                           {!destino && " Esta foto fica fora: não entra em nenhum post desta campanha."}
@@ -411,7 +422,7 @@ export function MaterialDaCampanha({
                               tipoFixo="imagem"
                               semEscrever
                               titulo={`Um estilo para a foto ${i + 1}`}
-                              descricao="Só os modelos com lugar para a sua foto. A foto entra como você subiu, e o texto do post vai por cima, no modelo."
+                              descricao="Só os modelos com lugar para a sua foto. O texto do post vai por cima, no modelo."
                               filtrar={(d: DesignDaGaleria) => designRecebeFoto(d, destino?.formato ?? "image")}
                               rotuloDoUsar="Usar nesta foto"
                               aoEscolher={async (d) => escolherEstilo(f, "biblioteca", escolhaDoDesign(d))}

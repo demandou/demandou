@@ -1641,7 +1641,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
       // As fotos escolhidas, cada uma no post e no estilo dela (08/10), arrumadas contra os posts que saem de verdade.
       ...(() => {
         const m = materialParaGravar(materialProprio, postsVisuais, laminasDoCarrossel);
-        return m ? { materialProprio: m, materiaisDaCampanha: m.fotos.length ? m.fotos.map((f) => f.id) : undefined } : {};
+        const naCampanha = m?.fotos.filter((f) => f.post).map((f) => f.id) ?? [];
+        return m ? { materialProprio: m, materiaisDaCampanha: naCampanha.length ? naCampanha : undefined } : {};
       })(),
       campaignMode,
       funnelStage,

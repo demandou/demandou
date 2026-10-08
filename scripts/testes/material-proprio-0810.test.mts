@@ -30,6 +30,7 @@ import {
   metadataDasFotosEscolhidas,
   moldeDaFotoEscolhida,
   moverFoto,
+  postRecebeAFoto,
   PORTAS_DO_ESTILO,
   resumoDoPost,
   ROTULO_DA_PORTA,
@@ -496,4 +497,54 @@ test("nada de travessão no texto novo", () => {
   for (const arquivo of ["lib/materiais/material-da-campanha.ts", "lib/materiais/subir-no-navegador.ts", "components/materiais/material-da-campanha.tsx"]) {
     assert.ok(!fonte(arquivo).includes("—"), `${arquivo} tem travessão`);
   }
+});
+
+// ── A revisão cética do ramo (08/10) ─────────────────────────────────────────
+
+test("revisão: na lâmina do carrossel com modelo só de texto, a foto escolhida no Estilo mestre continua aparecendo", async () => {
+  const frase = "A lâmina com a sua foto";
+  // O carrossel cujo modelo é só texto: antes, a composição herdava o modeloFixo e a foto sumia.
+  const marca = { ...MARCA_DE_TESTE, modeloFixo: "frase-fundo-escuro", pagina: { i: 0, total: 5 }, materiais: [], fotosDoPost: [{ material: ESCOLHIDA, modeloId: null }] };
+  const uri = await arte.desenharComFraseEmCodigo(frase, marca as never, naoGera)("Scene: an office", "4:5");
+  const vermelhos = await contarPixels(uri, "vermelho");
+  assert.ok(vermelhos > 1000, `a foto sumiu da lâmina: ${vermelhos}`);
+  assert.equal(fotoDaPeca(frase)?.materialId, "mat_escolhida");
+  // A lâmina sem foto escolhida (a 2) sai no modelo do carrossel, sem foto nenhuma.
+  const semFoto = { ...marca, pagina: { i: 1, total: 5 } };
+  const uri2 = await arte.desenharComFraseEmCodigo("A lâmina sem foto", semFoto as never, naoGera)("Scene: a desk", "4:5");
+  assert.equal(await contarPixels(uri2, "vermelho"), 0, "a foto da lâmina 1 não aparece na 2");
+});
+
+test("revisão: o chat do card não intercala por conta própria um carrossel com fotos escolhidas", () => {
+  const pedido = fonte("lib/media/pedido-do-card.ts");
+  assert.match(pedido, /const comFotosEscolhidas = Boolean\(marca\.fotosDoPost\);/);
+  assert.match(pedido, /const plano: FotoDaLamina\[\] = !comFotosEscolhidas && modeloPedePessoa/, "sem plano próprio, a resposta não diz intercaladas");
+  assert.match(pedido, /if \(comFotosEscolhidas\) return \{ \.\.\.marca, pagina \};/, "a lâmina sem foto não troca de modelo");
+});
+
+test("revisão: campanha sem dia de foto ou carrossel não leva uma resposta antiga escondida", () => {
+  const soInfografico: PostVisual[] = [{ chave: "6", rotulo: "Sábado 18", formato: "infographic" }];
+  assert.equal(materialParaGravar(marcar(["a"]), soInfografico, LAMINAS), undefined, "sim antigo: regra de hoje");
+  assert.equal(materialParaGravar({ usar: false, fotos: [] }, soInfografico, LAMINAS), undefined, "não antigo: regra de hoje");
+  const modal = fonte("components/posts/campaign-setup-modal.tsx");
+  assert.match(modal, /m\?\.fotos\.filter\(\(f\) => f\.post\)\.map\(\(f\) => f\.id\)/, "materiaisDaCampanha só com as fotos que entram");
+});
+
+test("revisão: o carrossel cheio não aparece como destino, e a foto do dia ocupada troca", () => {
+  const cheio = marcar(["a", "b", "c", "d", "e", "f", "g"]);
+  const car = POSTS[1];
+  assert.equal(cheio.fotos.filter((f) => f.post === "3").length, LAMINAS);
+  assert.equal(postRecebeAFoto(cheio, "a", car, LAMINAS), false, "a foto da segunda não cabe no carrossel cheio");
+  assert.equal(postRecebeAFoto(cheio, "b", car, LAMINAS), true, "a que já está nele continua podendo ficar");
+  assert.equal(postRecebeAFoto(cheio, "a", POSTS[2], LAMINAS), true, "a foto do dia ocupada troca de lugar");
+  const ui = fonte("components/materiais/material-da-campanha.tsx");
+  assert.match(ui, /disabled=\{cheio\}/);
+});
+
+test("revisão: a tela não promete o que a arte não faz", () => {
+  const ui = fonte("components/materiais/material-da-campanha.tsx");
+  assert.doesNotMatch(ui, /como você subiu/, "no lugar de \"você\" a foto é referência do gerador, não entra crua");
+  assert.match(ui, /Nenhuma foto marcada ainda\. Sem marcar, vale o de sempre/, "sim sem foto: diz que vale a regra de hoje");
+  assert.match(ui, /é só texto: a foto entra num molde com foto/, "o Estilo mestre com modelo só de texto diz para onde a foto vai");
+  assert.equal(moldeDaFotoEscolhida({ modelo: { foto: "nenhuma" }, pessoa: false }), "familia");
 });

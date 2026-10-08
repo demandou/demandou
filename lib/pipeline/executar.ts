@@ -3109,7 +3109,7 @@ ${postDoLinkedIn.content}`,
       } else if (escolhaDaArte.fotos && escolhaDaArte.fotos.length > 0) {
         await appendLog(runId, {
           agent: "Diana Design",
-          message: `${dayName}: a foto escolhida para este post não está mais na sua biblioteca; a arte sai gerada, sem outra foto no lugar.`,
+          message: `${dayName}: a foto escolhida para este post não foi encontrada na sua biblioteca; a arte sai gerada, sem outra foto no lugar.`,
           status: "warning",
         });
       }

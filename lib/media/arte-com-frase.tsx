@@ -445,7 +445,9 @@ export async function arteComMaterialDoCliente(o: {
   const jpeg = await comporFraseNaArte({
     arte: foto,
     frase: o.frase,
-    marca: modelo ? { ...o.marca, modeloFixo: modelo.id } : { ...o.marca, modelos: undefined },
+    // Sem modelo, a composição da família: nem os modelos nem o fixo do carrossel
+    // (08/10, revisão: o carrossel só texto apagava a foto escolhida da lâmina).
+    marca: modelo ? { ...o.marca, modeloFixo: modelo.id } : { ...o.marca, modelos: undefined, modeloFixo: undefined },
     largura: o.largura,
     altura: o.altura,
     recorte,
