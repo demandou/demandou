@@ -154,7 +154,12 @@ export async function garantirSemente(tipo: TipoDeDesign, catalogoId: string): P
   });
 }
 
-export type ComoEntrou = "pedido" | "escolhido" | "referencia";
+/**
+ * Como o design entrou no projeto. "mestre" (08/10): o design de arte que sai
+ * do estilo do vídeo (lib/estilo-dos-posts/design-mestre.ts); ele nunca conta
+ * como "o design de imagem mais recente" que o cliente escreveu.
+ */
+export type ComoEntrou = "pedido" | "escolhido" | "referencia" | "mestre";
 
 /** Liga (ou religa) um design ao projeto; a ligação mais recente é "o design atual" daquele tipo. */
 export async function ligarAoProjeto(o: { projectId: string; designId: string; tipo: TipoDeDesign; comoEntrou: ComoEntrou }): Promise<void> {
@@ -258,10 +263,11 @@ const SERVICOS_DE_VERDADE: ServicosDoRegistro = {
  * continua sendo compartilhar: tudo o que passa entra na biblioteca de todos.
  */
 export async function registrarPedidoDeDesign(
-  o: { projectId: string; userId: string; tipo: TipoDeDesign; pedido: string; nicho?: string | null; publico?: string | null; soNoMeuProjeto?: boolean },
+  o: { projectId: string; userId: string; tipo: TipoDeDesign; pedido: string; nicho?: string | null; publico?: string | null; soNoMeuProjeto?: boolean; comoEntrou?: ComoEntrou },
   servicos: ServicosDoRegistro = SERVICOS_DE_VERDADE
 ): Promise<ResultadoDoPedido | null> {
   const { deposito } = servicos;
+  const comoEntrou: ComoEntrou = o.comoEntrou ?? "pedido";
   const quem: QuemVe = { projectId: o.projectId, userId: o.userId };
   const pedido = semTravessao(o.pedido).slice(0, TETO.pedido);
   if (pedido.length < 12) return null;
@@ -269,7 +275,7 @@ export async function registrarPedidoDeDesign(
   // O mesmo texto de novo (o cliente só trocou a letra ou as cores): nada de IA, só religa.
   const repetido = await deposito.repetido(o.projectId, o.tipo, pedido);
   if (repetido) {
-    await deposito.ligar({ projectId: o.projectId, designId: repetido, tipo: o.tipo, comoEntrou: "pedido" });
+    await deposito.ligar({ projectId: o.projectId, designId: repetido, tipo: o.tipo, comoEntrou });
     const d = await deposito.ler(repetido, quem);
     return d ? { design: d, veredito: "repetido" } : null;
   }
@@ -279,7 +285,7 @@ export async function registrarPedidoDeDesign(
   const veredito = await servicos.comparar({ tipo: o.tipo, pedido, candidatos, projectId: o.projectId });
 
   if (veredito.veredito === "igual") {
-    await deposito.ligar({ projectId: o.projectId, designId: veredito.designId, tipo: o.tipo, comoEntrou: "pedido" });
+    await deposito.ligar({ projectId: o.projectId, designId: veredito.designId, tipo: o.tipo, comoEntrou });
     const d = await deposito.ler(veredito.designId, quem);
     return d ? { design: d, veredito: "igual" } : null;
   }
@@ -316,7 +322,7 @@ export async function registrarPedidoDeDesign(
     criadoPorUserId: o.userId,
     agrupadoEmId: referencia?.id ?? null,
   });
-  await deposito.ligar({ projectId: o.projectId, designId: criado.id, tipo: o.tipo, comoEntrou: "pedido" });
+  await deposito.ligar({ projectId: o.projectId, designId: criado.id, tipo: o.tipo, comoEntrou });
   return { design: paraAGaleria(criado, quem, new Set([criado.id])), veredito: veredito.veredito, fichaPor: origem, soNoProjeto: decidida.motivo };
 }
 
@@ -407,7 +413,8 @@ export async function designsDoProjeto(projectId: string): Promise<DesignDaGaler
  */
 export async function designDeImagemMaisRecente(projectId: string): Promise<{ design: DesignDaGaleria; ligadoEm: Date } | null> {
   const elo = await prisma.designDoProjeto
-    .findFirst({ where: { projectId, tipo: "imagem" }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true, design: { select: SELECAO } } })
+    // O design mestre (08/10) não é um design que o cliente escreveu: fica de fora desta regra.
+    .findFirst({ where: { projectId, tipo: "imagem", comoEntrou: { not: "mestre" } }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true, design: { select: SELECAO } } })
     .catch(() => null);
   return elo?.design ? { design: paraAGaleria(elo.design, { projectId }), ligadoEm: elo.updatedAt } : null;
 }

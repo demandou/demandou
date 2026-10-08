@@ -4,6 +4,7 @@ import { jevLigado, perguntarAoJev } from "@/lib/jev/cliente";
 import { coresDaMarca } from "@/lib/media/capa-composta";
 import { perfilDoProjeto } from "@/lib/media/perfil-do-projeto";
 import { destinoDoVideo, type ContextoDaJornada } from "@/lib/media/jornada/contexto";
+import { cenarioDaEscolha } from "@/lib/media/cenario-do-video";
 import { MODELO_DAS_IDEIAS, type Redator } from "@/lib/media/jornada/ideias";
 import type { Jev } from "@/lib/media/jornada/decisoes";
 
@@ -23,7 +24,7 @@ export async function estiloDoCliente(projectId: string): Promise<string> {
 /** O contexto do projeto para os pedidos ao Sonnet: empresa, nicho, perfil, cores e o estilo do cliente. */
 export async function contextoDoProjeto(projectId: string, formato: "9:16" | "16:9", duracao: number): Promise<ContextoDaJornada> {
   const [p, perfil, estilo] = await Promise.all([
-    prisma.project.findUnique({ where: { id: projectId }, select: { name: true, niche: true, colorPalette: true } }),
+    prisma.project.findUnique({ where: { id: projectId }, select: { name: true, niche: true, colorPalette: true, videoEstiloEscolha: true } }),
     perfilDoProjeto(projectId).catch(() => null),
     estiloDoCliente(projectId).catch(() => ""),
   ]);
@@ -37,6 +38,8 @@ export async function contextoDoProjeto(projectId: string, formato: "9:16" | "16
     formato,
     duracao,
     destino: destinoDoVideo(formato, duracao),
+    // O cenário escolhido (08/10): só vai ao plano, para o editor novo; hoje nada troca o fundo.
+    cenario: cenarioDaEscolha(p?.videoEstiloEscolha),
   };
 }
 

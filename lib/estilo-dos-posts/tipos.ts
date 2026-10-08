@@ -1,4 +1,5 @@
 import { TETO } from "@/lib/biblioteca-de-design/tipos";
+import type { ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
 
 /**
  * O ESTILO DOS POSTS (08/10/2026): os tipos e as regras puras.
@@ -53,6 +54,27 @@ export interface EstadoDoEstiloDosPosts {
   ultimos?: UltimosModelos;
   /** O estilo de edição que vale hoje no projeto, para o vídeo curto vir preenchido. */
   edicao?: ModeloDoPost | null;
+  /**
+   * O PADRÃO DOS POSTS DO PROJETO (08/10): "mestre" (o padrão de todo projeto:
+   * toda peça segue o estilo do vídeo) ou "por-post" (o dono escolheu em
+   * Configurações um estilo da biblioteca ou criou o dele). É com ele que a
+   * escolha de cada post vem preenchida.
+   */
+  modo?: ModoDosPosts;
+  /** O estilo mestre do projeto e o design de arte que sai dele (08/10). */
+  mestre?: EstadoDoMestre | null;
+}
+
+/** O estilo mestre como a tela mostra (08/10). */
+export interface EstadoDoMestre {
+  /** O nome do estilo do vídeo ("Autoridade high ticket", ou "o seu estilo de vídeo"). */
+  nome: string;
+  referencia: string | null;
+  estiloId: string | null;
+  /** O design de arte que sai do estilo do vídeo, quando já foi feito. */
+  design: DesignDoEstilo | null;
+  /** O design gravado é o do estilo do vídeo de agora (false: muda na próxima arte, uma vez). */
+  emDia: boolean;
 }
 
 // ─────────────────────────── o modelo de cada post ───────────────────────────
@@ -72,23 +94,35 @@ export interface EstadoDoEstiloDosPosts {
  *     com `catalogoId`, ou criado por um cliente, com `designId`);
  *   - vídeo curto: o ESTILO DE EDIÇÃO do catálogo (`estiloId`), o mesmo que a
  *     jornada do vídeo já escolhe para o projeto;
- *   - infográfico, vídeo por IA e capa de artigo: não há modelo a escolher (o
- *     infográfico é desenhado em código), e o dia sai nas cores e na letra da
- *     marca (`marca: true`, a confirmação daquele dia).
+ *   - infográfico e capa de artigo: não há modelo a escolher (o infográfico
+ *     é desenhado em código), e o dia sai nas cores e na letra da marca
+ *     (`marca: true`, a confirmação daquele dia).
  * A aprovação antes de gerar passa a ser esta: todo dia visual com a sua
  * escolha. Módulo puro: a tela importa daqui.
+ *
+ * 08/10, à noite, O ESTILO MESTRE (lib/estilo-dos-posts/estilo-mestre.ts):
+ * foto, carrossel, vídeo por IA e vídeo curto ganham a mesma primeira opção,
+ * `mestre: true`, que é o PADRÃO (a escolha de cada post vem com ela):
+ *   - foto e carrossel no mestre: a arte usa o design mestre, o design que
+ *     sai do estilo do vídeo;
+ *   - vídeo por IA (`video-ia`): o mestre (a linguagem visual do estilo do
+ *     vídeo), um estilo de vídeo do catálogo (`estiloId`) ou um estilo de
+ *     vídeo criado a partir de uma ideia (`designId` de um design de vídeo);
+ *   - vídeo curto no mestre: o corte sai no estilo do vídeo do projeto.
  */
 
 /** Os formatos de post que têm peça visual. */
 export type FormatoDoPost = "image" | "carousel" | "infographic" | "video" | "article" | "short";
 
-/** O que cada formato pede: um modelo de arte, um estilo de edição ou só a marca. */
-export type OQueOPostPede = "modelo" | "edicao" | "marca";
+/** O que cada formato pede: um modelo de arte, um estilo de edição, o estilo do vídeo por IA ou só a marca. */
+export type OQueOPostPede = "modelo" | "edicao" | "video-ia" | "marca";
 
 export function oQueOPostPede(formato: string | null | undefined): OQueOPostPede | null {
   if (formato === "image" || formato === "carousel") return "modelo";
   if (formato === "short") return "edicao";
-  if (formato === "infographic" || formato === "video" || formato === "article") return "marca";
+  // O vídeo por IA (08/10, à noite): o estilo mestre, um estilo de vídeo da biblioteca ou um criado a partir de uma ideia.
+  if (formato === "video") return "video-ia";
+  if (formato === "infographic" || formato === "article") return "marca";
   return null;
 }
 
@@ -102,8 +136,14 @@ export const ROTULO_DO_POST: Record<FormatoDoPost, string> = {
   short: "Vídeo curto (Shorts, Reels, TikTok)",
 };
 
-/** A escolha de um post. Só um dos três campos manda, conforme o formato. */
+/** A escolha de um post. Só um dos campos manda, conforme o formato. */
 export interface ModeloDoPost {
+  /**
+   * O ESTILO MESTRE (08/10, à noite): o post segue o estilo do vídeo do
+   * projeto. Na foto e no carrossel, a arte usa o design mestre; no vídeo por
+   * IA, a linguagem visual do estilo do vídeo; no corte, a edição do projeto.
+   */
+  mestre?: boolean;
   /** O design da biblioteca (imagem), criado por um cliente ou semente do book. */
   designId?: string | null;
   /** O modelo do book, quando o design é semente dele (o id do catálogo). */
@@ -138,17 +178,55 @@ export function modeloDoPostValido(bruto: unknown): ModeloDoPost | null {
   if (catalogoId) m.catalogoId = catalogoId;
   if (estiloId) m.estiloId = estiloId;
   if (b.marca === true) m.marca = true;
+  // O mestre manda sozinho: a escolha que diz "mestre" não leva modelo junto.
+  if (b.mestre === true) return { mestre: true, ...(nome ? { nome } : {}) };
   if (!m.designId && !m.catalogoId && !m.estiloId && !m.marca) return null;
   if (nome) m.nome = nome;
   return m;
 }
 
-/** A escolha serve ao que o post pede? Modelo para foto e carrossel, edição para o curto, marca para o resto. Puro. */
+/**
+ * A escolha serve ao que o post pede? O mestre serve a foto, carrossel, vídeo
+ * por IA e vídeo curto; fora dele, modelo para foto e carrossel, estilo de
+ * edição para o curto, estilo de vídeo (do catálogo ou criado) para o vídeo
+ * por IA, marca para o resto. O vídeo por IA aceita também o `marca` das
+ * campanhas de antes do estilo mestre (seguia o estilo visual da mídia). Puro.
+ */
 export function modeloServeAoPost(m: ModeloDoPost | null | undefined, pede: OQueOPostPede | null): boolean {
   if (!m || !pede) return false;
+  if (m.mestre === true) return pede !== "marca";
   if (pede === "modelo") return Boolean(m.designId || m.catalogoId);
   if (pede === "edicao") return Boolean(m.estiloId);
+  if (pede === "video-ia") return Boolean(m.estiloId || m.designId || m.marca === true);
   return m.marca === true;
+}
+
+/** A escolha do estilo mestre para um post. */
+export const ESCOLHA_DO_MESTRE: ModeloDoPost = { mestre: true, nome: "Estilo mestre" };
+
+/** Qual das três portas (estilo mestre, biblioteca, criar) a escolha de agora usa, para a tela abrir nela. Puro. */
+export function opcaoDaEscolha(m: ModeloDoPost | null | undefined): "mestre" | "biblioteca" | "criar" {
+  if (!m || m.mestre) return "mestre";
+  return "biblioteca";
+}
+
+/** Todos os posts visuais no estilo mestre (a escolha "todas as peças seguem o estilo mestre"); os de marca, na marca. Puro. */
+export function todosNoMestre(posts: PostVisual[]): ModelosDosPosts {
+  const out: ModelosDosPosts = {};
+  for (const p of posts) {
+    const pede = oQueOPostPede(p.formato);
+    if (!pede) continue;
+    out[p.chave] = pede === "marca" ? { marca: true, nome: "Nas cores e na letra da sua marca" } : { ...ESCOLHA_DO_MESTRE };
+  }
+  return out;
+}
+
+/** Todos os posts que pedem estilo estão no mestre? (a tela marca "todas seguem o estilo mestre"). Puro. */
+export function todosEstaoNoMestre(posts: PostVisual[], modelos: ModelosDosPosts | null | undefined): boolean {
+  return posts.every((p) => {
+    const pede = oQueOPostPede(p.formato);
+    return !pede || pede === "marca" || modelos?.[p.chave]?.mestre === true;
+  });
 }
 
 /** A escolha de um dia, só se ela serve ao formato daquele dia; senão null. Puro. */
@@ -208,28 +286,35 @@ export function modelosParaGravar(posts: PostVisual[], modelos: ModelosDosPosts 
 }
 
 /**
- * A ESCOLHA JÁ PREENCHIDA, que a pessoa vê e troca: o dia sem escolha recebe o
- * último modelo usado naquele tipo de post (o carrossel, o do carrossel; a
- * foto, o da foto); sem ele, o estilo dos posts aprovado no projeto (o que foi
- * criado ou escolhido em Fotos e estilo); o vídeo curto, o último estilo de
- * edição, senão o do projeto. Infográfico e vídeo por IA saem confirmados na
- * marca. Dia que já tem escolha válida não muda. Puro.
+ * A ESCOLHA JÁ PREENCHIDA, que a pessoa vê e troca.
+ *
+ * 08/10, à noite: o ESTILO MESTRE é o padrão. Todo dia sem escolha (foto,
+ * carrossel, vídeo por IA e vídeo curto) vem no estilo mestre, a primeira
+ * opção da lista. Só quando o dono escolheu em Configurações um estilo próprio
+ * para os posts (`modo: "por-post"`) vale a regra de antes: o último modelo
+ * usado naquele tipo de post, senão o estilo dos posts aprovado no projeto; o
+ * vídeo curto, o último estilo de edição, senão o do projeto; sem nada disso,
+ * o mestre. Infográfico e capa saem confirmados na marca. Dia que já tem
+ * escolha válida não muda. Puro.
  */
 export function preencherModelos(
   posts: PostVisual[],
   atuais: ModelosDosPosts | null | undefined,
-  o: { ultimos?: UltimosModelos | null; padraoDaImagem?: ModeloDoPost | null; padraoDaEdicao?: ModeloDoPost | null }
+  o: { ultimos?: UltimosModelos | null; padraoDaImagem?: ModeloDoPost | null; padraoDaEdicao?: ModeloDoPost | null; modo?: ModoDosPosts | null }
 ): ModelosDosPosts {
   const out: ModelosDosPosts = { ...(atuais ?? {}) };
+  const proprio = o.modo === "por-post";
   for (const p of posts) {
     const pede = oQueOPostPede(p.formato);
     if (modeloServeAoPost(out[p.chave], pede)) continue;
     let sugerido: ModeloDoPost | null | undefined = null;
     if (pede === "modelo") {
       const tipo = p.formato === "carousel" ? "carousel" : "image";
-      sugerido = o.ultimos?.[tipo] ?? o.padraoDaImagem;
+      sugerido = proprio ? (o.ultimos?.[tipo] ?? o.padraoDaImagem ?? ESCOLHA_DO_MESTRE) : ESCOLHA_DO_MESTRE;
     } else if (pede === "edicao") {
-      sugerido = o.ultimos?.short ?? o.padraoDaEdicao;
+      sugerido = proprio ? (o.ultimos?.short ?? o.padraoDaEdicao ?? ESCOLHA_DO_MESTRE) : ESCOLHA_DO_MESTRE;
+    } else if (pede === "video-ia") {
+      sugerido = ESCOLHA_DO_MESTRE;
     } else if (pede === "marca") {
       sugerido = { marca: true, nome: "Nas cores e na letra da sua marca" };
     }
@@ -238,6 +323,23 @@ export function preencherModelos(
     else delete out[p.chave];
   }
   return out;
+}
+
+/**
+ * COMO A ARTE DE UM POST É DESENHADA, pela escolha dele (08/10, à noite): o
+ * design mestre, um modelo do book, um design da biblioteca (de imagem, criado
+ * ou escolhido), só a marca, ou um estilo de vídeo (o vídeo por IA e o curto:
+ * a capa sai na marca, sem modelo de imagem). Null sem escolha: vale a regra
+ * do projeto. É o que lib/media/arte-com-frase.tsx (marcaDaArte) segue. Puro.
+ */
+export function comoOPostDesenha(m: ModeloDoPost | null | undefined): "mestre" | "book" | "design" | "marca" | "estilo-de-video" | null {
+  if (!m) return null;
+  if (m.mestre) return "mestre";
+  if (m.catalogoId) return "book";
+  if (m.designId) return "design";
+  if (m.estiloId) return "estilo-de-video";
+  if (m.marca) return "marca";
+  return null;
 }
 
 /**
@@ -317,7 +419,9 @@ export function pedidoDaConversa(mensagens: string[], teto: number = TETO.pedido
 }
 
 /** A linha que diz como os posts saem hoje. */
-export function resumoDoEstilo(e: Pick<EstadoDoEstiloDosPosts, "aprovada" | "design" | "modelos"> | null | undefined): string {
+export function resumoDoEstilo(e: (Pick<EstadoDoEstiloDosPosts, "aprovada" | "design" | "modelos"> & Partial<Pick<EstadoDoEstiloDosPosts, "modo" | "mestre">>) | null | undefined): string {
+  // O ESTILO MESTRE (08/10, à noite): o padrão de todo projeto.
+  if (e?.modo === "mestre") return e.mestre?.nome ? `Seus posts seguem o estilo mestre, o do vídeo (${e.mestre.nome}).` : "Seus posts seguem o estilo mestre, o do vídeo.";
   // Design gravado sem aprovação (08/10, revisão): a aprovação caiu depois de
   // uma mudança na marca (cores, letra). Dizer "ainda não foi escolhido" com a
   // descrição do design logo ao lado era mentira na tela.

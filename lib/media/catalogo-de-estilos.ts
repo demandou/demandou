@@ -1,5 +1,6 @@
 import type { NomeDoEstilo } from "@/lib/media/estilos";
 import { normalizarLegenda, type EscolhaDaLegenda } from "@/lib/media/legenda-escolhida";
+import { cenarioDaEscolha, cenarioValido, type CenarioDoVideo } from "@/lib/media/cenario-do-video";
 
 /**
  * O CATÁLOGO DE ESTILOS DE EDIÇÃO, em camadas (29/09/2026).
@@ -202,6 +203,13 @@ export type EscolhaDeEstilo = {
    * custo. Mesmo Json, sem migração; ausente é falso.
    */
   insercoesIA?: boolean;
+  /**
+   * O CENÁRIO DO VÍDEO (08/10): manter o cenário original da gravação ou
+   * trocar o fundo. Mesmo Json, sem migração; ausente é "original". O editor
+   * de hoje nunca troca o fundo (ver lib/media/cenario-do-video.ts); a
+   * escolha fica guardada e vai ao plano da edição para o editor novo.
+   */
+  cenario?: CenarioDoVideo;
 };
 
 /**
@@ -271,5 +279,47 @@ export function normalizarEscolha(bruta: unknown, baseAtual?: string | null): Es
     legenda: normalizarLegenda(b.legenda),
     ...(b.legendaDosCortes && typeof b.legendaDosCortes === "object" ? { legendaDosCortes: normalizarLegenda(b.legendaDosCortes) } : {}),
     ...(b.insercoesIA === true ? { insercoesIA: true } : {}),
+    cenario: cenarioDaEscolha(b),
   };
+}
+
+/**
+ * A ESCOLHA QUE O PUT DO CATÁLOGO GRAVA (08/10): a do corpo, com a legenda, a
+ * legenda dos cortes e o CENÁRIO que já estavam guardados. Cada campo tem um
+ * caminho só de escrita (o PATCH): um PUT atrasado do catálogo, com a escolha
+ * que a tela carregou antes, não desfaz uma troca feita em outro lugar. Puro.
+ */
+export function escolhaDoPut(corpo: unknown, guardadaBruta: unknown): EscolhaDeEstilo {
+  const anterior = normalizarEscolha(guardadaBruta);
+  return {
+    ...normalizarEscolha(corpo),
+    legenda: anterior.legenda,
+    ...(anterior.legendaDosCortes ? { legendaDosCortes: anterior.legendaDosCortes } : {}),
+    cenario: anterior.cenario ?? "original",
+  };
+}
+
+/**
+ * A ESCOLHA QUE O PATCH GRAVA (30/09 a legenda, 06/10 a dos cortes, 08/10 o
+ * cenário): só os campos que vieram no corpo mudam. Null quando o corpo não
+ * pede nada que este caminho grava (a rota responde 400). Parte da escolha
+ * normalizada, e não do Json cru: projeto que nunca abriu o catálogo passa a
+ * ter a escolha guardada, com a mesma linguagem que o padrão já dava. Puro.
+ */
+export function escolhaDoPatch(
+  guardadaBruta: unknown,
+  videoStyle: string | null | undefined,
+  corpoBruto: unknown
+): { escolha: EscolhaDeEstilo; cortes: EscolhaDaLegenda | null } | null {
+  const corpo = (corpoBruto && typeof corpoBruto === "object" ? corpoBruto : {}) as { legenda?: unknown; legendaDosCortes?: unknown; cenario?: unknown };
+  const mudaLegenda = Boolean(corpo.legenda && typeof corpo.legenda === "object");
+  const mudaCortes = "legendaDosCortes" in corpo && (corpo.legendaDosCortes === null || typeof corpo.legendaDosCortes === "object");
+  const mudaCenario = cenarioValido(corpo.cenario);
+  if (!mudaLegenda && !mudaCortes && !mudaCenario) return null;
+  const { legendaDosCortes: cortesAntes, ...atual } = normalizarEscolha(guardadaBruta, videoStyle);
+  const legenda = mudaLegenda ? normalizarLegenda(corpo.legenda) : atual.legenda;
+  // A legenda dos cortes à parte só existe junto do "sem" do projeto: trocar para automática ou estilo devolve os cortes à legenda do projeto.
+  const cortes = mudaCortes ? (corpo.legendaDosCortes ? normalizarLegenda(corpo.legendaDosCortes) : null) : legenda.modo === "sem" ? (cortesAntes ?? null) : null;
+  const cenario: CenarioDoVideo = mudaCenario ? (corpo.cenario as CenarioDoVideo) : (atual.cenario ?? "original");
+  return { escolha: { ...atual, legenda, ...(cortes ? { legendaDosCortes: cortes } : {}), cenario }, cortes };
 }

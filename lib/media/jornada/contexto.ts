@@ -7,6 +7,8 @@
  * Módulo puro.
  */
 
+import type { CenarioDoVideo } from "@/lib/media/cenario-do-video";
+
 export type CoresDaJornada = { acento: string; escuro: string; claro: string };
 
 export type ContextoDaJornada = {
@@ -26,6 +28,13 @@ export type ContextoDaJornada = {
   duracaoTotal?: number;
   /** Onde o vídeo vai: o completo vai ao YouTube; o vertical curto às redes de vídeo curto. */
   destino: string;
+  /**
+   * O CENÁRIO escolhido pelo cliente (08/10): manter o original ou trocar o
+   * fundo. Só viaja até o plano, para o editor novo ler; NÃO entra no texto
+   * dos pedidos (contextoEmTexto) e nenhum passo de hoje troca o fundo.
+   * Ausente: "original".
+   */
+  cenario?: CenarioDoVideo;
 };
 
 /** O destino pelo formato e pela duração (só para o texto do pedido; a IA decide o que fazer com ele). */

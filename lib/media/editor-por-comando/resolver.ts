@@ -1,4 +1,5 @@
 import type { PalavraNoCorte, Retangulo } from "@/lib/media/plano-de-montagem";
+import { trocaDeFundoLigada } from "@/lib/media/cenario-do-video";
 import { ESTILOS_DO_VOX, FICHAS, passesDaPeca, pecaContinua } from "@/lib/media/editor-sob-medida/pecas";
 import { pecaNoEstiloDoComando } from "@/lib/media/editor-por-comando/diretor";
 import { caixaDoCartao, cameraDeRitmo, frasesNumeradas, limparSvg, paginasDaLegenda, resolverAncora } from "@/lib/media/editor-sob-medida/resolver";
@@ -214,7 +215,8 @@ export function resolverPorComando(p: PlanoDoDiretor, ctx: ContextoDoComando): {
   // O PLANO LIVRE (dois eixos, 05/10 à noite): com a linguagem no tema, nenhuma peça é trocada pelo estilo e a imagem em tela cheia vale em toda linguagem.
   const livre = Boolean(p.tema?.linguagem);
   // O cenário trocado só com o pedido explícito (regra 1); plano sem o campo (de antes de 05/10 à noite) fica com a gravação.
-  const cenarioTrocado = p.linguagem?.cenario === "trocado";
+  // 08/10: e só com o editor novo ligado (NEXT_PUBLIC_TROCA_DE_FUNDO=1). Desligado, nenhum plano troca o fundo, nem os antigos.
+  const cenarioTrocado = p.linguagem?.cenario === "trocado" && trocaDeFundoLigada();
   // O lado livre do rosto (16:9) e a faixa livre (9:16): onde a folha e a chamada de inscrever entram sem tapar a pessoa.
   const vertical0 = H > W;
   const ladoLivre: "esquerda" | "direita" = x0 > 0.5 ? "esquerda" : "direita";

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Captions, Loader2, Music, RefreshCw, Scissors, Sparkles, Volume2, Wand2 } from "lucide-react";
+import { Captions, Image as ImageIcon, Loader2, Music, RefreshCw, Scissors, Sparkles, Volume2, Wand2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { BotaoDescartar, Descartavel } from "@/components/ui/descartar";
@@ -64,6 +64,8 @@ export function ComoOSquadEdita({
     // Como o diretor edita (03/10): corte limpo por padrão; inserções de IA só
     // quando ligadas no passo do estilo, com o custo dito ali.
     { Icone: Scissors, texto: resumo.edicao },
+    // O cenário (08/10): manter o original ou trocar o fundo, com a frase honesta do que sai hoje.
+    { Icone: ImageIcon, texto: resumo.cenario },
     { Icone: Captions, texto: `Legenda: ${resumo.legenda}` },
     { Icone: Music, texto: resumo.trilha },
     { Icone: Volume2, texto: resumo.efeitos },

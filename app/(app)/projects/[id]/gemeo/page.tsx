@@ -9,6 +9,7 @@ import { cadastroParaTela, videoParaTela } from "@/lib/media/gemeo";
 import { geradorDoCadastro, lerCadastro, listarVideos } from "@/lib/media/gemeo-servidor";
 import { GemeoDoProjeto } from "@/components/gemeo/gemeo-do-projeto";
 import { ComoOSquadEdita } from "@/components/video/como-o-squad-edita";
+import { PecasNoEstiloMestre } from "@/components/estilo-dos-posts/pecas-no-estilo-mestre";
 import { resumoDaEdicao } from "@/lib/media/edicao-escolhida";
 import { editorPorComandoLigado, lerComandoDoProjeto } from "@/lib/media/editor-por-comando";
 import { nomeDoDono, podeUsarProjeto } from "@/lib/equipe/conta";
@@ -42,7 +43,7 @@ export default async function GemeoPage({
   const { roteiro } = await searchParams;
   const project = await prisma.project.findUnique({
     where: { id },
-    select: { id: true, userId: true, name: true, videoEstiloEscolha: true, videoStyle: true, videoMusicUrl: true, videoMusicName: true, videoTerms: true },
+    select: { id: true, userId: true, name: true, videoEstiloEscolha: true, videoStyle: true, videoMusicUrl: true, videoMusicName: true, videoTerms: true, videoSemana: true },
   });
   if (!project || !(await podeUsarProjeto(userId, project))) notFound();
 
@@ -85,6 +86,10 @@ export default async function GemeoPage({
         termos={project.videoTerms ?? null}
         onde="gemeo"
       />
+
+      {/* O ESTILO VEM PRIMEIRO (08/10, à noite): logo depois do estilo, a escolha das peças
+          da semana que sai do vídeo do gêmeo: todas no estilo mestre (o padrão) ou post a post. */}
+      <PecasNoEstiloMestre projectId={id} semana={project.videoSemana} />
 
       <GemeoDoProjeto
         projectId={id}

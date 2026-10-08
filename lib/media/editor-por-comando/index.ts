@@ -19,6 +19,7 @@ import { fonteDoEstilo, linguagemDoEstilo } from "@/lib/media/editor-por-comando
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { gerarFundosCombinados } from "@/lib/media/editor-por-comando/combinada";
 import { escolhaSincronizadaComComando } from "@/lib/media/estilo-do-comando";
+import type { CenarioDoVideo } from "@/lib/media/cenario-do-video";
 import { conferenciaVisualLigada, conferirImagensGeradas, falaDaInsercao, idNoPlano, type ConferidaDaImagem, type InsercaoDoPlano } from "@/lib/media/conferencia-visual";
 import { ehPecaGerada, prepararElementosGerados } from "@/lib/media/editor-por-comando/elemento-gerado";
 import { dependenciasDeVerdade } from "@/lib/media/editor-por-comando/elemento-gerado-servidor";
@@ -250,6 +251,8 @@ export type EntradaDoPlano = {
    * cenas a partir do cenário, e o resolvedor posiciona cada peça pelo trecho lido. Sem ela, tudo segue como antes.
    */
   leitura?: LeituraDoVideo | null;
+  /** O cenário escolhido na tela (08/10): sem "trocar" com o editor novo ligado, a gravação fica. Ausente: "original". */
+  cenario?: CenarioDoVideo | null;
 };
 
 export type PlanoPorComando = {
@@ -434,6 +437,7 @@ function entradaPeloJev(e: EntradaDoPlano, base: string, cores: { acento: string
     cores,
     youtube: e.youtube,
     leitura: e.leitura ?? null,
+    cenarioDoCliente: e.cenario ?? null,
   };
 }
 

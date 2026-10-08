@@ -12,9 +12,11 @@ import { EstiloDoProjeto } from "@/components/video/estilo-do-projeto";
 import { SemanaDoVideoPlanejador } from "@/components/video/semana-do-video";
 import { VideoUpload } from "@/components/video/video-upload";
 import { ModelosDosPosts } from "@/components/estilo-dos-posts/modelos-dos-posts";
+import { PassoDoEstiloMestre, useModoPadraoDosPosts } from "@/components/estilo-dos-posts/passo-do-estilo-mestre";
 import { LISTA_DE_ESTILOS, type NomeDoEstilo } from "@/lib/media/estilos";
 import { modelosDaSemana, normalizarSemana, planoParaGravar, postsVisuaisDaSemana, semanaComModelos, type SemanaDoVideo } from "@/lib/media/semana-do-video";
-import { postsSemModelo } from "@/lib/estilo-dos-posts/tipos";
+import { postsSemModelo, todosNoMestre } from "@/lib/estilo-dos-posts/tipos";
+import type { ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
 
 /**
  * A jornada de criar uma campanha, em passos, igual à de criar um projeto.
@@ -72,13 +74,23 @@ import { postsSemModelo } from "@/lib/estilo-dos-posts/tipos";
  * sempre que a semana tem dia visual (a pessoa vê o que vai sair), e o pulo e
  * o "Continuar" só seguem com todos os dias escolhidos. Membro e dono
  * escolhem igual: o modelo do post não muda o estilo do projeto.
+ *
+ * ## O estilo vem primeiro (08/10, à noite)
+ *
+ * Pedido do Bruno: em toda porta, o primeiro passo depois de escolher é o
+ * ESTILO MESTRE (a linguagem do vídeo), e logo depois a escolha "todas as
+ * peças seguem o estilo mestre" (o padrão) ou "quero mudar os posts". O pulo
+ * de quem já configurou o vídeo continua, mas parte do estilo: da porta, a
+ * jornada vai sempre ao passo do estilo, e dele direto ao envio. Com "todas
+ * seguem", cada dia visual da semana recebe o estilo mestre e o passo dos
+ * modelos não aparece; com "quero mudar", ele aparece, um post por linha.
  */
 
 type Origem = "video" | "tema";
 
 const PASSOS_DO_VIDEO = [
   { chave: "origem", titulo: "De onde vem o conteúdo" },
-  { chave: "estilo", titulo: "Como o squad edita" },
+  { chave: "estilo", titulo: "O estilo mestre" },
   { chave: "trilha", titulo: "Trilha e termos do seu negócio" },
   { chave: "semana", titulo: "O que sai em cada dia" },
   { chave: "posts", titulo: "O modelo de cada post" },
@@ -167,7 +179,26 @@ export function JornadaDaCampanha({
   const faltamModelos = modelosFalharam ? [] : postsSemModelo(postsDaSemana, modelosDaSemana(semanaAtual));
   const temPostsVisuais = postsDaSemana.length > 0;
 
-  const passoInicial = comecarNoVideo ? (estilo ? PASSOS_DO_VIDEO.length - 1 : 1) : 0;
+  /**
+   * A ESCOLHA DAS PEÇAS (08/10, à noite): todas no estilo mestre (o padrão do
+   * projeto) ou post a post. Com "todas", cada dia visual recebe o mestre ao
+   * sair do passo do estilo ou da semana, e o passo dos modelos não aparece.
+   */
+  const modoPadraoDosPosts = useModoPadraoDosPosts(aberto ? projectId : null);
+  const [modoEscolhido, setModoEscolhido] = useState<ModoDosPosts | null>(null);
+  const modoDosPosts: ModoDosPosts = modoEscolhido ?? modoPadraoDosPosts ?? "mestre";
+  const mostraOsPosts = modoDosPosts === "por-post" && temPostsVisuais;
+  /** A semana com todo dia visual no estilo mestre (os de marca, na marca). */
+  const semanaNoMestre = (s: SemanaDoVideo) => semanaComModelos(s, { ...modelosDaSemana(s), ...todosNoMestre(postsVisuaisDaSemana(s)) });
+  /** Grava a semana, já no mestre quando "todas as peças seguem o estilo mestre". */
+  function fecharASemana(): void {
+    const nova = modoDosPosts === "mestre" ? semanaNoMestre(semanaAtual) : semanaAtual;
+    if (nova !== semanaAtual) setSemanaAtual(nova);
+    salvarSemana(nova);
+  }
+
+  // Quem já escolheu "Editar o meu vídeo" na aba Criar começa no estilo (08/10, à noite: o estilo vem primeiro).
+  const passoInicial = comecarNoVideo ? 1 : 0;
   const [passo, setPasso] = useState(passoInicial);
   // Cada abertura recomeça do passo certo. Ajuste durante o render, e não em
   // efeito: é o jeito do React de derivar estado de uma prop que mudou.
@@ -216,8 +247,14 @@ export function JornadaDaCampanha({
   if (semGravacao && passo > 0 && passo < PASSOS_DO_VIDEO.length - 1) setPasso(PASSOS_DO_VIDEO.length - 1);
   // O pulo não passa por cima do modelo de cada post (08/10): chegou ao envio
   // com dia visual sem escolha, volta para o passo dos modelos. Sem gravação
-  // disponível nada é gerado, então não há o que escolher.
-  if (!semGravacao && faltamModelos.length > 0 && passo === PASSOS_DO_VIDEO.length - 1) setPasso(PASSO_DOS_POSTS);
+  // disponível nada é gerado, então não há o que escolher. Com "todas as peças
+  // seguem o estilo mestre", o dia sem escolha recebe o mestre (08/10, à noite).
+  if (!semGravacao && modoDosPosts === "por-post" && faltamModelos.length > 0 && passo === PASSOS_DO_VIDEO.length - 1) setPasso(PASSO_DOS_POSTS);
+  const precisaFecharNoMestre = aberto && !semGravacao && modoDosPosts === "mestre" && faltamModelos.length > 0 && passo === PASSOS_DO_VIDEO.length - 1;
+  useEffect(() => {
+    if (precisaFecharNoMestre) fecharASemana();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [precisaFecharNoMestre]);
 
   /**
    * Reabrir a jornada reabre no COMEÇO, e não onde parou da última vez: quem
@@ -234,19 +271,26 @@ export function JornadaDaCampanha({
   const atual = PASSOS_DO_VIDEO[passo];
 
   function avancar() {
-    // O PULO: do passo 1 direto para o envio, quando já há estilo no projeto.
-    // A pessoa continua podendo rever, pelo botão da linha de resumo. Com o
-    // estilo dos posts faltando, o pulo para no passo dele (08/10).
-    if (passo === 0 && pulaParaOEnvio) {
-      setPasso(faltamModelos.length > 0 && !semGravacao ? PASSO_DOS_POSTS : total - 1);
+    // O ESTILO VEM PRIMEIRO (08/10, à noite): da porta, sempre ao passo do estilo mestre.
+    // Sem gravação disponível nada é gerado: direto ao envio, onde mora a oferta.
+    if (passo === 0) {
+      setPasso(semGravacao ? total - 1 : 1);
+      return;
+    }
+    // O PULO, agora do estilo: quem já configurou o vídeo vai direto ao envio
+    // (ou aos modelos de cada post, em "quero mudar os posts"). A pessoa
+    // continua podendo rever, pelo botão da linha de resumo.
+    if (passo === 1 && pulaParaOEnvio) {
+      fecharASemana();
+      setPasso(mostraOsPosts && !semGravacao ? PASSO_DOS_POSTS : total - 1);
       return;
     }
     // Da semana, o que ficou na tela vai para o projeto (o planejador grava
     // com atraso, e sair do passo cancelava a última troca), e o passo dos
-    // modelos aparece sempre que a semana tem dia visual.
+    // modelos aparece em "quero mudar os posts", quando a semana tem dia visual.
     if (passo === PASSO_DOS_POSTS - 1) {
-      salvarSemana(semanaAtual);
-      setPasso(temPostsVisuais ? PASSO_DOS_POSTS : total - 1);
+      fecharASemana();
+      setPasso(mostraOsPosts ? PASSO_DOS_POSTS : total - 1);
       return;
     }
     setPasso((p) => Math.min(p + 1, total - 1));
@@ -254,18 +298,19 @@ export function JornadaDaCampanha({
 
   function voltar() {
     // A volta desfaz o pulo pelo mesmo caminho, senão quem pulou para o envio
-    // voltaria para o planejador da semana, uma tela que ele nunca viu.
+    // voltaria para o planejador da semana, uma tela que ele nunca viu. O
+    // pulo parte do estilo (08/10, à noite), e é para ele que a volta leva.
     if (passo === total - 1 && pulaParaOEnvio) {
-      setPasso(0);
+      setPasso(semGravacao ? 0 : 1);
       return;
     }
     // O mesmo no passo dos modelos, quando o pulo parou nele (08/10).
     if (passo === PASSO_DOS_POSTS && pulaParaOEnvio) {
-      setPasso(0);
+      setPasso(1);
       return;
     }
-    // Do envio, sem dia visual na semana, volta direto para a semana.
-    if (passo === total - 1 && !temPostsVisuais) {
+    // Do envio, sem a lista dos modelos (sem dia visual, ou todas as peças no mestre), volta direto para a semana.
+    if (passo === total - 1 && !mostraOsPosts) {
       setPasso(PASSO_DOS_POSTS - 1);
       return;
     }
@@ -368,12 +413,16 @@ export function JornadaDaCampanha({
                   )}
 
                   {passo === 1 && (
-                    <EstiloDoProjeto
+                    // O ESTILO VEM PRIMEIRO (08/10, à noite): o estilo mestre, o cenário e a escolha das peças.
+                    // O material próprio da campanha entra no `material` (ramo material-proprio-0810).
+                    <PassoDoEstiloMestre
                       projectId={projectId}
-                      inicial={estilo}
-                      musicaInicial={musica}
-                      termosIniciais={termos}
-                      mostrar="estilo"
+                      estilo={estilo}
+                      musica={musica}
+                      termos={termos}
+                      comCenario
+                      modo={modoDosPosts}
+                      aoMudarModo={setModoEscolhido}
                     />
                   )}
 
@@ -401,7 +450,7 @@ export function JornadaDaCampanha({
                   {passo === PASSO_DOS_POSTS && (
                     <div className="space-y-3">
                       <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>
-                        Cada dia com foto, carrossel ou vídeo curto tem o seu modelo, e no quadro a IA coloca o conteúdo daquele dia dentro dele. Veio preenchido com o último modelo usado em cada tipo de post (ou com o estilo do projeto): confira, troque o que quiser e siga para o envio. Prefere sem arte? Volte e troque esses dias por texto.
+                        Cada dia com foto, carrossel ou vídeo curto tem o seu estilo, e no quadro a IA coloca o conteúdo daquele dia dentro dele. Veio no estilo mestre, o do vídeo: troque o que quiser e siga para o envio. Prefere sem arte? Volte e troque esses dias por texto.
                       </p>
                       <ModelosDosPosts
                         projectId={projectId}
@@ -413,6 +462,7 @@ export function JornadaDaCampanha({
                           salvarSemana(nova);
                         }}
                         aoCarregar={(ok) => setModelosFalharam(!ok)}
+                        aoAbrirEstiloDoVideo={() => setPasso(1)}
                       />
                     </div>
                   )}
@@ -443,7 +493,21 @@ export function JornadaDaCampanha({
                         </div>
                       )}
                       {/* O que cada post vai usar (08/10), com o mesmo "Rever" do resumo. */}
-                      {temPostsVisuais && !semGravacao && (
+                      {temPostsVisuais && !semGravacao && modoDosPosts === "mestre" && (
+                        <div
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3"
+                          style={{ background: "var(--bg-input)", borderColor: "var(--border)" }}
+                        >
+                          <p className="min-w-0 flex-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
+                            Todas as peças seguem o estilo mestre: o vídeo, as artes e os cortes saem com o mesmo design.
+                          </p>
+                          <Button variant="outline" size="sm" onClick={() => setPasso(1)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                            Rever
+                          </Button>
+                        </div>
+                      )}
+                      {temPostsVisuais && !semGravacao && modoDosPosts === "por-post" && (
                         <div
                           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3"
                           style={{ background: "var(--bg-input)", borderColor: "var(--border)" }}
@@ -452,7 +516,7 @@ export function JornadaDaCampanha({
                             {postsDaSemana
                               .map((p) => {
                                 const m = modelosDaSemana(semanaAtual)[p.chave];
-                                return `${p.rotulo.split(",")[0]}: ${m?.marca ? "nas cores da marca" : m?.nome ?? "sem modelo"}`;
+                                return `${p.rotulo.split(",")[0]}: ${m?.mestre ? "estilo mestre" : m?.marca ? "nas cores da marca" : m?.nome ?? "sem modelo"}`;
                               })
                               .join(" · ")}
                           </p>

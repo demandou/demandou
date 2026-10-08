@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
+import type { CenarioDoVideo } from "@/lib/media/cenario-do-video";
 
 /**
  * O EDITOR PELA JORNADA OFICIAL (06/10/2026, docs/editor-jornada-0610.md).
@@ -104,6 +105,14 @@ export type PlanoDaJornada = {
   feitoEm: string;
   formato: "9:16" | "16:9";
   duracao: number;
+  /**
+   * O CENÁRIO que o cliente escolheu (08/10): "original" (manter o lugar da
+   * gravação) ou "trocar" (trocar o fundo). Gravado no plano para o editor
+   * novo ler sem migração. O editor de hoje NUNCA troca o fundo, com qualquer
+   * valor (lib/media/cenario-do-video.ts, `fundoSeraTrocado`). Planos antigos
+   * não têm o campo: vale "original".
+   */
+  cenario?: CenarioDoVideo;
 };
 
 export type RevisaoDoElemento = {

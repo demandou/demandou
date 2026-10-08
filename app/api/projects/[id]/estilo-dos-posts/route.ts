@@ -10,6 +10,7 @@ import { soODono } from "@/lib/equipe/permissoes";
 import { ligarAoProjeto, lerDesign, registrarPedidoDeDesign, type MotivoDeFicarNoProjeto } from "@/lib/biblioteca-de-design/registro";
 import { aprovarEstiloPeloDesign, designAprovadoDoProjeto, estadoDoEstiloDosPosts, salvarUltimoModelo, tipoDoUltimoValido } from "@/lib/estilo-dos-posts/servidor";
 import { modeloParaOFormato, pedidoDaConversa } from "@/lib/estilo-dos-posts/tipos";
+import { salvarModoDosPosts } from "@/lib/estilo-dos-posts/design-mestre";
 
 /**
  * O ESTILO DOS POSTS DE UM PROJETO (08/10/2026).
@@ -37,6 +38,13 @@ import { modeloParaOFormato, pedidoDaConversa } from "@/lib/estilo-dos-posts/tip
  *   estilo do projeto (modelo do book: passa a ser o único escolhido).
  * PATCH { tipo, modelo }: o último modelo usado num tipo de post ("image",
  *   "carousel", "short"), para a próxima escolha vir preenchida.
+ *
+ * 08/10, à noite, O ESTILO MESTRE: o padrão de todo post é seguir o estilo do
+ * vídeo (a rota ./mestre volta o projeto para ele e prepara o design mestre).
+ * Quando o dono cria ou escolhe aqui o estilo do projeto (POST sem
+ * `paraOPost`, ou PUT), o padrão dos posts passa a ser esse estilo próprio.
+ * O POST com `tipo: "video"` (só para o post) cria o estilo de um vídeo por IA
+ * a partir de uma ideia: um design de vídeo na biblioteca, sem aprovar nada.
  *
  * Nenhuma arte é gerada aqui.
  */
@@ -70,8 +78,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const r = await projetoDoUsuario(id);
   if (r.erro) return r.erro;
-  const corpo = (await req.json().catch(() => ({}))) as { conversa?: unknown; soNoMeuProjeto?: unknown; paraOPost?: unknown };
+  const corpo = (await req.json().catch(() => ({}))) as { conversa?: unknown; soNoMeuProjeto?: unknown; paraOPost?: unknown; tipo?: unknown };
   const paraOPost = corpo.paraOPost === true;
+  // O estilo de um vídeo por IA (08/10, à noite): só para o post; o estilo dos posts do projeto é sempre de imagem.
+  const tipo = corpo.tipo === "video" ? "video" : "imagem";
+  if (tipo === "video" && !paraOPost) return NextResponse.json({ error: "O estilo de vídeo criado aqui vale para um post. O estilo do vídeo do projeto é escolhido no estilo mestre." }, { status: 400 });
   const dono = r.project.userId === r.userId;
   // O estilo do projeto é do dono; criar um modelo para um post, qualquer um que usa o projeto.
   if (!paraOPost) {
@@ -82,13 +93,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const pedido = pedidoDaConversa(mensagens);
   if (pedido.length < 12) return NextResponse.json({ error: "Conte com pelo menos uma frase como você quer os posts." }, { status: 400 });
   try {
-    const resultado = await registrarPedidoDeDesign({ projectId: id, userId: r.userId, tipo: "imagem", pedido, nicho: r.project.niche, publico: r.project.targetAudience, soNoMeuProjeto: corpo.soNoMeuProjeto === true });
+    const resultado = await registrarPedidoDeDesign({ projectId: id, userId: r.userId, tipo, pedido, nicho: r.project.niche, publico: r.project.targetAudience, soNoMeuProjeto: corpo.soNoMeuProjeto === true });
     if (!resultado) return NextResponse.json({ error: "Não consegui registrar o estilo." }, { status: 400 });
     const ondeFicou = ondeOModeloFicou(resultado.soNoProjeto, resultado.veredito);
     if (paraOPost) {
       return NextResponse.json({ ...resultado, aprovado: true, efeito: ondeFicou, estado: await estadoDoEstiloDosPosts(id, dono) });
     }
     const aprovacao = await aprovarEstiloPeloDesign(id, resultado.design, { substituir: true });
+    // O dono criou o estilo dos posts do projeto: ele passa a ser o padrão de cada post, no lugar do estilo mestre (08/10).
+    if (aprovacao.aprovado) await salvarModoDosPosts(id, "por-post");
     return NextResponse.json({ ...resultado, ...aprovacao, efeito: `${aprovacao.efeito} ${ondeFicou}`, estado: await estadoDoEstiloDosPosts(id, true) });
   } catch (e) {
     console.error("[estilo-dos-posts] chat:", e instanceof Error ? e.message : e);
@@ -113,6 +126,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     await ligarAoProjeto({ projectId: id, designId: design.id, tipo: design.tipo, comoEntrou: "escolhido" });
     const aprovacao = await aprovarEstiloPeloDesign(id, design, { substituir: true });
+    // Escolhido da biblioteca como o estilo do projeto: o padrão de cada post passa a ser ele (08/10).
+    if (aprovacao.aprovado) await salvarModoDosPosts(id, "por-post");
     return NextResponse.json({ ok: true, design: { ...design, doProjeto: true }, ...aprovacao, estado: await estadoDoEstiloDosPosts(id, true) });
   } catch (e) {
     console.error("[estilo-dos-posts] escolher:", e instanceof Error ? e.message : e);

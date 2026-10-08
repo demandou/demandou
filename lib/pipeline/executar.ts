@@ -27,6 +27,7 @@ import { mancheteDaPeca, desenharPecaDeFeed } from "@/lib/media/peca-de-feed";
 import { metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { marcaDaArte, promptDaArteSemTexto, desenharComFraseEmCodigo } from "@/lib/media/arte-com-frase";
 import { escolhaDoDiaNaCampanha, modeloParaOFormato } from "@/lib/estilo-dos-posts/tipos";
+import { linguagemDoVideoPorIA } from "@/lib/estilo-dos-posts/design-mestre";
 import { TEXTO_DO_CARD_AGUARDANDO, diaPedeArte, pecaBaseDoDia } from "@/lib/modelos-de-arte/espera-da-identidade";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { roteiroDoCarrossel, desenharCarrossel, redesQueAceitamCarrossel, laminasPermitidas } from "@/lib/media/carrossel";
@@ -3066,7 +3067,7 @@ ${postDoLinkedIn.content}`,
       });
       const estiloDoDia = direcao.estilo;
       const paleta = direcao.paleta;
-      const styleHintEn = direcao.styleHint;
+      let styleHintEn = direcao.styleHint;
       // A família da linguagem e as cores da marca: a manchete e o infográfico
       // são compostos em código com elas desde 30/09 (lib/media/arte-com-frase).
       //
@@ -3078,9 +3079,22 @@ ${postDoLinkedIn.content}`,
       if (modeloDoDia) {
         await appendLog(runId, {
           agent: "Diana Design",
-          message: modeloDoDia.marca ? `${dayName}: sai nas cores e na letra da sua marca, como confirmado na janela.` : `${dayName}: a arte sai no modelo escolhido para este post${modeloDoDia.nome ? ` ("${modeloDoDia.nome}")` : ""}.`,
+          message: modeloDoDia.mestre
+            ? `${dayName}: sai no estilo mestre, o mesmo design do vídeo do projeto.`
+            : modeloDoDia.marca
+              ? `${dayName}: sai nas cores e na letra da sua marca, como confirmado na janela.`
+              : `${dayName}: a arte sai no ${isVideoType ? "estilo" : "modelo"} escolhido para este post${modeloDoDia.nome ? ` ("${modeloDoDia.nome}")` : ""}.`,
           status: "running",
         });
+      }
+      // O VÍDEO POR IA NO ESTILO ESCOLHIDO PARA O DIA (08/10, à noite): o estilo
+      // mestre (a linguagem visual do vídeo do projeto), um estilo de vídeo do
+      // catálogo ou um estilo criado a partir de uma ideia. A linguagem entra no
+      // lugar do estilo da direção de arte, com a paleta e o mundo do cliente.
+      // Sem escolha, ou sem linguagem para ela, vale a direção de sempre.
+      if (isVideoType && modeloDoDia && !modeloDoDia.marca) {
+        const linguagem = await linguagemDoVideoPorIA(project.id, modeloDoDia);
+        if (linguagem) styleHintEn = `${linguagem} ${paleta} ${direcao.mundo}`;
       }
       mediaByDayKey[dayKey] = { ...(mediaByDayKey[dayKey] ?? {}), visualStyle: direcao.visualStyle };
       const maxNarrWords = maxNarrationWordsForDuration(videoDuration);
