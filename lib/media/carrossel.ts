@@ -9,7 +9,8 @@ import {
   laminaGuardada,
   guardarLamina,
 } from "@/lib/media/checkpoint-do-carrossel";
-import { arteComMaterialDoCliente, comporFraseNaArte, exigirIdentidadeAprovada, layoutDaPeca, marcaDaArte, modeloDaMarca, modeloParaOMaterial, pecaNoModeloComPrompt, promptDaArteSemTexto, proporcaoDaArte, type MarcaDaArte } from "@/lib/media/arte-com-frase";
+import { arteComFotoEscolhida, arteComMaterialDoCliente, comporFraseNaArte, exigirIdentidadeAprovada, layoutDaPeca, marcaDaArte, modeloDaMarca, modeloParaOMaterial, pecaNoModeloComPrompt, promptDaArteSemTexto, proporcaoDaArte, type MarcaDaArte } from "@/lib/media/arte-com-frase";
+import { fotoDaLamina } from "@/lib/materiais/material-da-campanha";
 import { promptDoModelo } from "@/lib/modelos-de-arte/prompts-com-foto";
 import { avisoDoRecuo } from "@/lib/media/aviso-da-arte";
 import { registrarFotoDaPeca } from "@/lib/media/foto-da-peca";
@@ -210,6 +211,16 @@ export async function desenharCarrossel(opcoes: {
   // a variedade de layout é entre peças, não entre lâminas da mesma peça.
   const ancora = opcoes.roteiro[0]?.frase ?? "";
   const marca: MarcaDaArte = { ...marcaDoProjeto, variante: layoutDaPeca(marcaDoProjeto, ancora).variante };
+  // AS FOTOS QUE A PESSOA ESCOLHEU PARA ESTE CARROSSEL (08/10, material
+  // próprio): cada uma na lâmina dela (espalhadas, a primeira na capa), no
+  // estilo escolhido para ela. A lâmina sem foto escolhida sai gerada no
+  // modelo do carrossel, sem nenhuma outra foto da biblioteca.
+  const fotosDoPost = marca.fotosDoPost;
+  const fotoEscolhidaDaLamina = fotosDoPost ? opcoes.roteiro.map((_, i) => fotoDaLamina(fotosDoPost, i, opcoes.roteiro.length)) : null;
+  if (fotosDoPost) {
+    marca.materiais = [];
+    marca.fotoEscolhida = null;
+  }
   // O MODELO DO BOOK (03/10): um só para o carrossel inteiro, escolhido pela
   // primeira lâmina; o roteiro inteiro é o contexto dos textos extras.
   // OS MATERIAIS DO CLIENTE (03/10, lib/materiais): cada lâmina leva a foto
@@ -298,6 +309,22 @@ export async function desenharCarrossel(opcoes: {
     // UMA tentativa desde 30/09. A retentativa existia para frase desenhada
     // que a borda cortava; com a frase composta em código dentro da margem,
     // isso deixou de acontecer, e a arte encostar na borda é de propósito.
+    // A FOTO QUE A PESSOA ESCOLHEU PARA ESTA LÂMINA (08/10) vem antes de tudo.
+    const escolhida = fotoEscolhidaDaLamina?.[i] ?? null;
+    if (escolhida) {
+      const composta = await arteComFotoEscolhida({
+        frase: opcoes.roteiro[i].frase,
+        marca: { ...marca, pagina: { i, total: opcoes.roteiro.length } },
+        largura: formato.largura,
+        altura: formato.altura,
+        cena: opcoes.roteiro[i].visual ?? null,
+        foto: escolhida,
+      }).catch((e) => {
+        console.warn(`[carrossel] a foto escolhida da lâmina ${i + 1} não entrou; a lâmina sai gerada:`, e instanceof Error ? e.message : e);
+        return null;
+      });
+      if (composta) uri = (await ajustarParaFormato(composta, formato)).dataUri;
+    }
     // A FOTO REAL DA LÂMINA (03/10): composta sem imagem paga.
     const material = materialDaLamina[i];
     // O MODELO POR PROMPT (05/10): a colagem da lâmina vem do modelo de
@@ -305,7 +332,7 @@ export async function desenharCarrossel(opcoes: {
     // em código. Sem o fundo, a lâmina segue o caminho de sempre.
     // Desde a regra geral de 05/10 vale para TODO modelo com foto, e a
     // referência vai primeiro ao GPT Image 2 ou ao Gemini (gerador-com-referencia.ts).
-    if (modeloDoCarrossel && promptDoModelo(modeloDoCarrossel)) {
+    if (!uri && modeloDoCarrossel && promptDoModelo(modeloDoCarrossel)) {
       const marcaDaLamina = { ...marca, pagina: { i, total: opcoes.roteiro.length } };
       const composta = await pecaNoModeloComPrompt({
         modelo: modeloDoCarrossel,

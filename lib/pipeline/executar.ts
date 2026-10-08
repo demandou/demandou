@@ -28,6 +28,7 @@ import { metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { marcaDaArte, promptDaArteSemTexto, desenharComFraseEmCodigo } from "@/lib/media/arte-com-frase";
 import { escolhaDoDiaNaCampanha, modeloParaOFormato } from "@/lib/estilo-dos-posts/tipos";
 import { garantirDesignMestre, linguagemDoVideoPorIA } from "@/lib/estilo-dos-posts/design-mestre";
+import { escolhaDaArteDoPost, fotosDoDiaNaCampanha, metadataDasFotosEscolhidas } from "@/lib/materiais/material-da-campanha";
 import { TEXTO_DO_CARD_AGUARDANDO, diaPedeArte, pecaBaseDoDia } from "@/lib/modelos-de-arte/espera-da-identidade";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { roteiroDoCarrossel, desenharCarrossel, redesQueAceitamCarrossel, laminasPermitidas } from "@/lib/media/carrossel";
@@ -210,6 +211,13 @@ interface CampaignConfig {
    * descarta a escolha que não serve ao formato resolvido do dia.
    */
   modelosDosPosts?: Record<string, unknown>;
+  /**
+   * O MATERIAL DO CLIENTE NESTA CAMPANHA (08/10, lib/materiais/material-da-campanha.ts):
+   * as fotos escolhidas na janela, o post de cada uma e o estilo de cada foto.
+   * Ler com `fotosDoDiaNaCampanha`. Ausente: a regra de hoje (o squad escolhe
+   * na biblioteca); `usar: false`: nenhuma foto da biblioteca entra.
+   */
+  materialProprio?: unknown;
 }
 
 /**
@@ -3085,8 +3093,17 @@ ${postDoLinkedIn.content}`,
       // O MODELO DO POST (08/10): a escolha feita na janela para ESTE dia manda
       // na arte, e escolher é aprovar este post (lib/media/arte-com-frase.tsx).
       // Sem escolha (campanha antiga, dia livre), vale a regra do projeto.
-      const modeloDoDia = modeloParaOFormato(escolhaDoDiaNaCampanha(config, dayOfWeek), resolvedType);
-      const marcaDaPeca = await marcaDaArte(project.id, { runId, modeloDoPost: modeloDoDia });
+      //
+      // AS FOTOS QUE A PESSOA ESCOLHEU (08/10, material próprio): na foto do
+      // dia, a foto com estilo próprio leva o modelo dela; no carrossel, cada
+      // lâmina com foto usa o estilo da sua. Sem escolha, a regra de hoje.
+      const escolhaDaArte = escolhaDaArteDoPost({
+        fotos: fotosDoDiaNaCampanha(config, dayOfWeek),
+        formato: resolvedType,
+        modeloDoPost: modeloParaOFormato(escolhaDoDiaNaCampanha(config, dayOfWeek), resolvedType),
+      });
+      const modeloDoDia = escolhaDaArte.modeloDoPost;
+      const marcaDaPeca = await marcaDaArte(project.id, { runId, modeloDoPost: modeloDoDia, fotosDoPost: escolhaDaArte.fotos });
       if (modeloDoDia) {
         await appendLog(runId, {
           agent: "Diana Design",
@@ -3106,6 +3123,20 @@ ${postDoLinkedIn.content}`,
       if (isVideoType && modeloDoDia && !modeloDoDia.marca) {
         const linguagem = await linguagemDoVideoPorIA(project.id, modeloDoDia);
         if (linguagem) styleHintEn = `${linguagem} ${paleta} ${direcao.mundo}`;
+      }
+      if (marcaDaPeca.fotosDoPost?.length) {
+        const n = marcaDaPeca.fotosDoPost.length;
+        await appendLog(runId, {
+          agent: "Diana Design",
+          message: `${dayName}: ${n === 1 ? "a arte usa a foto que você escolheu" : `as lâminas usam as ${n} fotos que você escolheu`}, no estilo escolhido para cada uma.`,
+          status: "running",
+        });
+      } else if (escolhaDaArte.fotos && escolhaDaArte.fotos.length > 0) {
+        await appendLog(runId, {
+          agent: "Diana Design",
+          message: `${dayName}: a foto escolhida para este post não foi encontrada na sua biblioteca; a arte sai gerada, sem outra foto no lugar.`,
+          status: "warning",
+        });
       }
       mediaByDayKey[dayKey] = { ...(mediaByDayKey[dayKey] ?? {}), visualStyle: direcao.visualStyle };
       const maxNarrWords = maxNarrationWordsForDuration(videoDuration);
@@ -4458,9 +4489,14 @@ ${d.content}
               // Qual foto entrou na arte (08/10): só a da Biblioteca de materiais é foto real.
               ...(dayMedia?.imageUrl && dayMedia.foto ? dayMedia.foto : {}),
               // O modelo escolhido para este post (08/10): o refazer do chat do card parte dele.
-              ...(() => {
-                const m = modeloParaOFormato(escolhaDoDiaNaCampanha(config, dp.dayOfWeek), dp.mediaType);
-                return m ? { modeloDoPost: m } : {};
+              // E as fotos escolhidas para ele (08/10, material próprio), pelo mesmo motivo.
+              ...((): Record<string, unknown> => {
+                const e = escolhaDaArteDoPost({
+                  fotos: fotosDoDiaNaCampanha(config, dp.dayOfWeek),
+                  formato: dp.mediaType,
+                  modeloDoPost: modeloParaOFormato(escolhaDoDiaNaCampanha(config, dp.dayOfWeek), dp.mediaType),
+                });
+                return { ...(e.modeloDoPost ? { modeloDoPost: e.modeloDoPost } : {}), ...metadataDasFotosEscolhidas(e.fotos) };
               })(),
             }) as Prisma.InputJsonValue,
             dayOfWeek: dp.dayOfWeek,

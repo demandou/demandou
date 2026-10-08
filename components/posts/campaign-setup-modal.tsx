@@ -18,7 +18,8 @@ import { ModelosDosPosts } from "@/components/estilo-dos-posts/modelos-dos-posts
 import { PassoDoEstiloMestre, useModoPadraoDosPosts } from "@/components/estilo-dos-posts/passo-do-estilo-mestre";
 import { modelosParaGravar, oQueOPostPede, postsSemModelo, todosNoMestre, type FormatoDoPost, type ModelosDosPosts as EscolhasDosPosts, type PostVisual } from "@/lib/estilo-dos-posts/tipos";
 import type { ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
-import { MateriaisDaCampanha } from "@/components/materiais/materiais-da-campanha";
+import { MaterialDaCampanha } from "@/components/materiais/material-da-campanha";
+import { materialParaGravar, type MaterialProprio } from "@/lib/materiais/material-da-campanha";
 import { MEDIA_STYLE_OPTIONS, type MediaStyleId } from "@/lib/media/media-style";
 import { avisoDaCota, type CotaDoCliente } from "@/lib/media/cota-do-dia";
 import { fraseDoTeste, SEM_TESTE, type LimiteDoTeste } from "@/lib/teste-gratis";
@@ -161,6 +162,12 @@ export interface CampaignConfig {
    * daquele dia dentro dele (lib/pipeline/executar.ts).
    */
   modelosDosPosts?: EscolhasDosPosts;
+  /**
+   * MATERIAL SEU NESTA CAMPANHA (08/10, lib/materiais/material-da-campanha.ts):
+   * as fotos escolhidas, o post de cada uma e o estilo de cada foto. Ausente:
+   * a regra de hoje; `usar: false`: nenhuma foto da biblioteca entra.
+   */
+  materialProprio?: MaterialProprio;
 }
 
 export interface ContaConectada {
@@ -1395,8 +1402,9 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
   // isto a janela dizia "gera 0 vídeos, 0 no total" com o vídeo marcado (28/09).
   // De onde vem a peça de cada dia: IA ou material do cliente (28/09).
   const [origens, setOrigens] = useState<Record<string, OrigemDoDia>>({});
-  // Os materiais da biblioteca marcados para esta campanha (03/10).
-  const [materiaisDaCampanha, setMateriaisDaCampanha] = useState<string[]>([]);
+  // MATERIAL SEU NESTA CAMPANHA (08/10, components/materiais/material-da-campanha.tsx):
+  // a pergunta, as fotos e o estilo de cada foto. Null: sem resposta (a regra de hoje).
+  const [materialProprio, setMaterialProprio] = useState<MaterialProprio | null>(null);
   const diaComVideoProprio = (key: string) => origens[key]?.modo === "meu";
   const diasDeVideo =
     campaignMode === "single"
@@ -1504,6 +1512,18 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
         explicacao={explicacao}
       />
     );
+  const blocoDoMaterial = () =>
+    projectId ? (
+      <MaterialDaCampanha
+        projectId={projectId}
+        posts={postsVisuais}
+        laminas={laminasDoCarrossel}
+        valor={materialProprio}
+        aoMudar={setMaterialProprio}
+        modelosDosPosts={modelosDosPosts}
+        nota={campaignMode === "biweekly" ? "Na quinzenal, cada foto entra no mesmo dia das duas semanas." : undefined}
+      />
+    ) : null;
   const [customDateInput, setCustomDateInput] = useState<string>("");
   const weekStart = selectedWeekStart;
 
@@ -1650,7 +1670,12 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
 
     void confirmarComAvisoDeSobreposicao({
       midiaDoCliente: Object.keys(midiaDoCliente).length ? midiaDoCliente : undefined,
-      materiaisDaCampanha: materiaisDaCampanha.length ? materiaisDaCampanha : undefined,
+      // As fotos escolhidas, cada uma no post e no estilo dela (08/10), arrumadas contra os posts que saem de verdade.
+      ...(() => {
+        const m = materialParaGravar(materialProprio, postsVisuais, laminasDoCarrossel);
+        const naCampanha = m?.fotos.filter((f) => f.post).map((f) => f.id) ?? [];
+        return m ? { materialProprio: m, materiaisDaCampanha: naCampanha.length ? naCampanha : undefined } : {};
+      })(),
       campaignMode,
       funnelStage,
       weeklySchedule,
@@ -2016,8 +2041,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
-                    {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
-                    <MateriaisDaCampanha projectId={projectId} valor={materiaisDaCampanha} aoMudar={setMateriaisDaCampanha} />
+                    {/* Material seu nesta campanha (08/10): as fotos, o post e o estilo de cada uma. */}
+                    {blocoDoMaterial()}
                     {modoDosPosts === "por-post" && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
                       {MEDIA_STYLE_OPTIONS.map((opt) => (
                         <button
@@ -2179,8 +2204,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
-                    {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
-                    <MateriaisDaCampanha projectId={projectId} valor={materiaisDaCampanha} aoMudar={setMateriaisDaCampanha} />
+                    {/* Material seu nesta campanha (08/10): as fotos, o post e o estilo de cada uma. */}
+                    {blocoDoMaterial()}
                     {modoDosPosts === "por-post" && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1">
                       {MEDIA_STYLE_OPTIONS.map((opt) => (
                         <button
@@ -2365,8 +2390,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
-                    {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
-                    <MateriaisDaCampanha projectId={projectId} valor={materiaisDaCampanha} aoMudar={setMateriaisDaCampanha} />
+                    {/* Material seu nesta campanha (08/10): as fotos, o post e o estilo de cada uma. */}
+                    {blocoDoMaterial()}
                     {modoDosPosts === "por-post" && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
                       {MEDIA_STYLE_OPTIONS.map((opt) => (
                         <button

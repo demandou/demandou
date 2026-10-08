@@ -10,8 +10,9 @@ import { generateImage } from "@/lib/media/nano-banana";
 import { escolherEstilo, paletaDoProjeto } from "@/lib/media/direcao-de-arte";
 import { extrairConteudoDoInfografico, desenharInfografico } from "@/lib/media/infographic";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
-import { desenharComFraseEmCodigo, marcaDaArte, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
+import { desenharComFraseEmCodigo, marcaDaArte, marcaDaLaminaComFoto, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
+import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
 import { ajustarVideoPeloChat } from "@/lib/media/ajuste-pelo-chat";
 import { pecaPublicavel } from "@/lib/pipeline/guarda-de-texto";
@@ -471,7 +472,9 @@ No explanations, no prefixes, just the prompt text.`;
            * desenha só a cena pedida, sem letra e sem gente.
            */
           const meta = (card.metadata as { frase?: string; slides?: string[] } | null) ?? {};
-          const marca = await marcaDaArte(card.projectId, { modeloDoPost });
+          // As fotos escolhidas para o post (08/10, material próprio): a lâmina pedida leva a dela.
+          const marcaDoPost = await marcaDaArte(card.projectId, { modeloDoPost, fotosDoPost: fotosGravadasNosPosts(postsDoDiaDoCard) });
+          const marca = targetSlide !== null && existingSlides ? marcaDaLaminaComFoto(marcaDoPost, targetSlide, existingSlides.length) : marcaDoPost;
           const frase =
             (targetSlide !== null ? meta.slides?.[targetSlide] : meta.frase) ??
             (await mancheteDaPeca({

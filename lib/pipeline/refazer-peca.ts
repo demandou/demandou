@@ -12,6 +12,7 @@ import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { generateImage } from "@/lib/media/nano-banana";
 import { desenharComFraseEmCodigo, marcaDaArte, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
+import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
 import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
 import { lerNaoCitar } from "@/lib/pipeline/restricoes";
@@ -187,7 +188,8 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
        * dados do texto novo. Ver lib/media/arte-com-frase.tsx.
        */
       // O modelo escolhido para este post (08/10) manda também no refazer.
-      const marca = await marcaDaArte(post.projectId, { modeloDoPost: modeloGravadoNosPosts([post]) });
+      // E as fotos que a pessoa escolheu para ele (08/10, material próprio): o refazer não troca a foto.
+      const marca = await marcaDaArte(post.projectId, { modeloDoPost: modeloGravadoNosPosts([post]), fotosDoPost: fotosGravadasNosPosts([post]) });
       const ehInfografico = post.mediaType === "infographic";
       const conteudo = ehInfografico && process.env.GEMINI_API_KEY
         ? await extrairConteudoDoInfografico(limpo.texto, post.project.niche ?? "negocios", process.env.GEMINI_API_KEY)

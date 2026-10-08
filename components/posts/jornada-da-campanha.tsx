@@ -13,8 +13,9 @@ import { SemanaDoVideoPlanejador } from "@/components/video/semana-do-video";
 import { VideoUpload } from "@/components/video/video-upload";
 import { ModelosDosPosts } from "@/components/estilo-dos-posts/modelos-dos-posts";
 import { PassoDoEstiloMestre, useModoPadraoDosPosts } from "@/components/estilo-dos-posts/passo-do-estilo-mestre";
+import { MaterialDaCampanha } from "@/components/materiais/material-da-campanha";
 import { LISTA_DE_ESTILOS, type NomeDoEstilo } from "@/lib/media/estilos";
-import { modelosDaSemana, normalizarSemana, planoParaGravar, postsVisuaisDaSemana, semanaComModelos, type SemanaDoVideo } from "@/lib/media/semana-do-video";
+import { LAMINAS_DO_CARROSSEL_DA_SEMANA, modelosDaSemana, normalizarSemana, planoParaGravar, postsVisuaisDaSemana, semanaComModelos, type SemanaDoVideo } from "@/lib/media/semana-do-video";
 import { postsSemModelo, todosNoMestre } from "@/lib/estilo-dos-posts/tipos";
 import type { ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
 
@@ -470,6 +471,21 @@ export function JornadaDaCampanha({
                         aoCarregar={(ok) => setModelosFalharam(!ok)}
                         aoAbrirEstiloDoVideo={() => setPasso(1)}
                       />
+                      {/* Material seu nesta semana (08/10): as fotos, o post e o estilo de cada uma, guardados na semana. */}
+                      <MaterialDaCampanha
+                        projectId={projectId}
+                        posts={postsDaSemana}
+                        laminas={LAMINAS_DO_CARROSSEL_DA_SEMANA}
+                        valor={semanaAtual.material ?? null}
+                        aoMudar={(m) => {
+                          const { material: _antigo, ...resto } = semanaAtual;
+                          void _antigo;
+                          const nova: SemanaDoVideo = m ? { ...resto, material: m } : resto;
+                          setSemanaAtual(nova);
+                          salvarSemana(nova);
+                        }}
+                        modelosDosPosts={modelosDaSemana(semanaAtual)}
+                      />
                     </div>
                   )}
 
@@ -525,6 +541,12 @@ export function JornadaDaCampanha({
                                 return `${p.rotulo.split(",")[0]}: ${m?.mestre ? "estilo mestre" : m?.marca ? "nas cores da marca" : m?.nome ?? "sem modelo"}`;
                               })
                               .join(" · ")}
+                            {/* As fotos suas desta semana (08/10), com o mesmo "Rever". */}
+                            {semanaAtual.material?.usar === false
+                              ? ". Nenhuma foto sua nesta semana."
+                              : semanaAtual.material?.usar && semanaAtual.material.fotos.some((f) => f.post)
+                                ? `. Fotos suas: ${semanaAtual.material.fotos.filter((f) => f.post).length}.`
+                                : ""}
                           </p>
                           <Button variant="outline" size="sm" onClick={() => setPasso(PASSO_DOS_POSTS)}>
                             <Pencil className="h-3.5 w-3.5" />

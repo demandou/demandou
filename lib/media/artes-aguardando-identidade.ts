@@ -4,7 +4,8 @@ import { debitar, saldo, SaldoInsuficiente } from "@/lib/credits";
 import { custoDaMidia } from "@/lib/credits/estimativa";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { generateImage } from "@/lib/media/nano-banana";
-import { desenharComFraseEmCodigo, marcaDaArte, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
+import { desenharComFraseEmCodigo, marcaDaArte, marcaDaLaminaComFoto, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
+import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
 import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
 import { desenharCarrossel, laminasPermitidas, redesQueAceitamCarrossel, roteiroDoCarrossel } from "@/lib/media/carrossel";
@@ -144,7 +145,8 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
       : null;
   const estiloVisual = direcao?.styleHint ?? posts[0].imagePrompt ?? "";
   // A marca lida AGORA: letra e papéis recém-aprovados, e a trava aberta.
-  const marca = await marcaDaArte(args.projectId, { runId });
+  // As fotos que a pessoa escolheu para o post (08/10, material próprio) entram também quando a arte sai depois.
+  const marca = await marcaDaArte(args.projectId, { runId, fotosDoPost: fotosGravadasNosPosts(posts) });
   const ctx = { projectId: args.projectId, runId, operation: "campanha_imagem" };
 
   let principal: string | undefined;
@@ -168,7 +170,7 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
       const slides = Array.isArray(metaDoVideo.slides) ? metaDoVideo.slides.filter((s): s is string => typeof s === "string" && s.trim().length > 0) : [];
       if (!slides.length) throw new Error("o carrossel do vídeo não tem as frases das lâminas gravadas");
       const formato = formatoDaPeca(posts[0].platform, "carousel");
-      const urls = await Promise.all(slides.map((frase) => arteDoDia(video, frase, estiloVisual, formato, ctxDoVideo, slides[0], marca)));
+      const urls = await Promise.all(slides.map((frase, i) => arteDoDia(video, frase, estiloVisual, formato, ctxDoVideo, slides[0], marcaDaLaminaComFoto(marca, i, slides.length))));
       manchetes = slides;
       principal = urls.join("|");
       porRede = Object.fromEntries(redes.map((r) => [r, principal!]));

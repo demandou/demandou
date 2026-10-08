@@ -420,10 +420,12 @@ test("o modelo criado pelo cliente vira o molde, e a IA coloca o conteúdo do di
 test("a esteira entrega o modelo de cada post à arte, e o refazer parte dele", () => {
   const esteira = fonte("lib/pipeline/executar.ts");
   assert.ok(esteira.includes("modeloParaOFormato(escolhaDoDiaNaCampanha(config, dayOfWeek), resolvedType)"));
-  assert.ok(esteira.includes("marcaDaArte(project.id, { runId, modeloDoPost: modeloDoDia })"));
+  // 08/10 (material próprio): a marca do dia leva também as fotos escolhidas; o modelo do post continua indo.
+  assert.ok(/marcaDaArte\(project\.id, \{ runId, modeloDoPost: modeloDoDia[,}]/.test(esteira), "a esteira passa o modelo do dia para a marca");
   assert.ok(/chave: chaveDoCarrossel,[\s\S]{0,300}marca: marcaDaPeca,/.test(esteira), "o carrossel recebe a marca do dia (antes lia a do projeto de novo)");
   const semana = fonte("lib/media/pecas-da-semana.ts");
-  assert.ok(semana.includes("marcaDaArte(video.projectId, { runId: run.id, modeloDoPost: modelo ?? null })"));
+  assert.ok(semana.includes("modeloDoPost: modelo ?? null"), "a semana do vídeo parte do modelo escolhido para o dia");
+  assert.ok(/marcaDaArte\(video\.projectId, \{ runId: run\.id, modeloDoPost: escolhaDaArte\.modeloDoPost[,}]/.test(semana), "e o entrega à marca do dia");
   const arte = fonte("lib/media/arte-com-frase.tsx");
   assert.ok(arte.includes("modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente, book: escolha?.ids })"));
   assert.ok(arte.includes("pecaAprovada({ identidadeAprovada: identidade?.aprovada, escolhidoParaOPost: Boolean(doPost) })"));
@@ -487,13 +489,15 @@ test("revisão: todo refazer da arte parte do modelo do post, inclusive o infogr
   assert.deepEqual(modeloGravadoNosPosts([{ metadata: null }, { metadata: { modeloDoPost: { marca: true } } }]), { marca: true });
   assert.deepEqual(modeloGravadoNosPosts([{ metadata: { modeloDoPost: { designId: "cmx", nome: "X" } } }]), { designId: "cmx", nome: "X" });
   assert.equal(modeloGravadoNosPosts([{ metadata: { modeloDoPost: { nada: 1 } } }]), null);
-  assert.ok(fonte("lib/pipeline/refazer-peca.ts").includes("marcaDaArte(post.projectId, { modeloDoPost: modeloGravadoNosPosts([post]) })"));
+  assert.ok(/marcaDaArte\(post\.projectId, \{ modeloDoPost: modeloGravadoNosPosts\(\[post\]\)[,}]/.test(fonte("lib/pipeline/refazer-peca.ts")), "o refazer da peça parte do modelo gravado");
   assert.ok(fonte("lib/vera/regerar-arte.ts").includes("modeloDoPost: modeloGravadoNosPosts([base])"));
   const chat = fonte("app/api/campaign-cards/[id]/chat/route.ts");
-  assert.equal((chat.match(/marcaDaArte\(card\.projectId, \{ modeloDoPost \}\)/g) ?? []).length, 2, "o infográfico e a arte refeitos pelo chat");
+  assert.equal((chat.match(/marcaDaArte\(card\.projectId, \{ modeloDoPost[ ,}]/g) ?? []).length, 2, "o infográfico e a arte refeitos pelo chat");
   // A esteira grava a escolha no post, também a da marca (o refazer do infográfico não volta a esperar).
-  assert.ok(fonte("lib/pipeline/executar.ts").includes("return m ? { modeloDoPost: m } : {};"));
-  assert.ok(fonte("lib/media/pecas-da-semana.ts").includes("const doModelo = modelo ? { modeloDoPost: modelo } : {};"));
+  // 08/10 (material próprio): o post grava o modelo que desenhou a arte (o da foto, quando ela tem estilo próprio).
+  const gravaOModelo = /(\w+)\.modeloDoPost \? \{ modeloDoPost: \1\.modeloDoPost \} : \{\}/;
+  assert.ok(gravaOModelo.test(fonte("lib/pipeline/executar.ts")), "a esteira grava o modelo no post");
+  assert.ok(gravaOModelo.test(fonte("lib/media/pecas-da-semana.ts")), "a semana do vídeo grava o modelo no post");
 });
 
 test("revisão: salvar o mesmo comando de vídeo (só letra ou cores) não paga IA de novo", () => {
