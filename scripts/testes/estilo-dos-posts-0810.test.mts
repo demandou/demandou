@@ -152,9 +152,10 @@ test("a jornada do vídeo tem o passo dos posts antes do envio, e o pulo não pa
   const envio = jornada.indexOf('chave: "envio"');
   assert.ok(posts > 0 && posts < envio, "posts vem antes do envio");
   assert.ok(jornada.includes("faltamModelos.length > 0 && passo === PASSOS_DO_VIDEO.length - 1) setPasso(PASSO_DOS_POSTS)"));
-  // 08/10, à noite: o pulo parte do passo do estilo mestre e para nos modelos em "quero mudar os posts";
-  // com "todas as peças seguem o estilo mestre", o dia sem escolha recebe o mestre antes do envio.
-  assert.ok(jornada.includes("setPasso(mostraOsPosts && !semGravacao ? PASSO_DOS_POSTS : total - 1)"));
+  // 08/10, teste do Bruno: a semana é decisão de cada campanha; o pulo do estilo só passa por cima da trilha
+  // e para na semana (preenchida com a última). Sem gravação disponível, direto ao envio, onde mora a oferta.
+  assert.ok(/if \(passo === 1 && pulaParaOEnvio\) \{[\s\S]{0,160}setPasso\(total - 1\);[\s\S]{0,80}setPasso\(PASSO_DOS_POSTS - 1\);/.test(jornada));
+  assert.ok(!jornada.includes("setPasso(mostraOsPosts && !semGravacao ? PASSO_DOS_POSTS : total - 1)"), "o pulo não vai mais do estilo ao envio");
   assert.ok(jornada.includes("if (precisaFecharNoMestre) fecharASemana();"));
 });
 

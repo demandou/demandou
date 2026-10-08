@@ -5,6 +5,7 @@ import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { normalizarComando } from "@/lib/media/editor-por-comando/comando";
 import { editorPorComandoLigado, lerComandoDoProjeto, paletaDoProjeto, salvarComandoDoProjeto } from "@/lib/media/editor-por-comando";
 import { coresDaMarca } from "@/lib/media/capa-composta";
+import { estiloDoCatalogo, normalizarEscolha } from "@/lib/media/catalogo-de-estilos";
 import { designAtualDoProjeto, ligarCatalogoAoProjeto, registrarPedidoDeDesign, type ResultadoDoPedido } from "@/lib/biblioteca-de-design/registro";
 import type { DesignDaGaleria } from "@/lib/biblioteca-de-design/tipos";
 
@@ -57,6 +58,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   // O comando de antes (08/10): o mesmo texto não volta ao registro da biblioteca (abaixo).
   const anterior = await lerComandoDoProjeto(id).catch(() => null);
   await salvarComandoDoProjeto(id, comando);
+  // O ESTILO DO ROTEIRO ACOMPANHA O CARD (08/10, teste do Bruno): o comando nascia do "Lousa de negócios" e
+  // o roteiro dizia "Autoridade high ticket", porque o estilo do projeto (videoEstiloEscolha) ficava o antigo.
+  // O card clicado passa a ser também o estilo do projeto; legenda, cenário e camadas ficam como estavam.
+  const doCard = comando.origem === "referencia" ? estiloDoCatalogo(comando.referencia) : undefined;
+  if (doCard) {
+    const atual = normalizarEscolha(r.project.videoEstiloEscolha, r.project.videoStyle);
+    if (atual.estiloId !== doCard.id) {
+      await prisma.project.update({ where: { id }, data: { videoEstiloEscolha: { ...atual, estiloId: doCard.id } as never, videoStyle: doCard.base } });
+    }
+  }
   // A biblioteca de design (06/10): a miniatura clicada liga a semente do estilo; o texto do cliente vira um pedido (JEV compara, Claude escreve).
   let biblioteca: { design: DesignDaGaleria; veredito: ResultadoDoPedido["veredito"] | "catalogo" } | null = null;
   try {

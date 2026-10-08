@@ -288,9 +288,17 @@ export function JornadaDaCampanha({
     // O PULO, agora do estilo: quem já configurou o vídeo vai direto ao envio
     // (ou aos modelos de cada post, em "quero mudar os posts"). A pessoa
     // continua podendo rever, pelo botão da linha de resumo.
+    // A SEMANA É DECISÃO DE CADA CAMPANHA (08/10, teste do Bruno): o pulo ia do
+    // estilo ao envio e a campanha saía com a semana salva num teste antigo, sem
+    // ninguém ver o que posta em cada dia e em qual rede. Agora o pulo só passa
+    // por cima da trilha; a semana aparece sempre, preenchida com a última.
     if (passo === 1 && pulaParaOEnvio) {
-      fecharASemana();
-      setPasso(mostraOsPosts && !semGravacao ? PASSO_DOS_POSTS : total - 1);
+      if (semGravacao) {
+        fecharASemana();
+        setPasso(total - 1);
+        return;
+      }
+      setPasso(PASSO_DOS_POSTS - 1);
       return;
     }
     // Da semana, o que ficou na tela vai para o projeto (o planejador grava
@@ -308,12 +316,12 @@ export function JornadaDaCampanha({
     // A volta desfaz o pulo pelo mesmo caminho, senão quem pulou para o envio
     // voltaria para o planejador da semana, uma tela que ele nunca viu. O
     // pulo parte do estilo (08/10, à noite), e é para ele que a volta leva.
-    if (passo === total - 1 && pulaParaOEnvio) {
-      setPasso(semGravacao ? 0 : 1);
+    if (passo === total - 1 && semGravacao) {
+      setPasso(0);
       return;
     }
-    // O mesmo no passo dos modelos, quando o pulo parou nele (08/10).
-    if (passo === PASSO_DOS_POSTS && pulaParaOEnvio) {
+    // Da semana, quem pulou a trilha volta ao estilo, pelo mesmo caminho (08/10, teste do Bruno).
+    if (passo === PASSO_DOS_POSTS - 1 && pulaParaOEnvio) {
       setPasso(1);
       return;
     }

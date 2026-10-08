@@ -509,8 +509,8 @@ test("revisão: salvar o mesmo comando de vídeo (só letra ou cores) não paga 
 
 test("revisão: o Voltar do passo dos modelos desfaz o pulo, como o do envio", () => {
   const jornada = fonte("components/posts/jornada-da-campanha.tsx");
-  // 08/10, à noite: o pulo parte do passo do estilo mestre, e a volta leva a ele.
-  assert.ok(/if \(passo === PASSO_DOS_POSTS && pulaParaOEnvio\) \{\s*setPasso\(1\);/.test(jornada));
+  // 08/10, teste do Bruno: o pulo só passa por cima da trilha; dos modelos a volta vai à semana, e da semana ao estilo.
+  assert.ok(/if \(passo === PASSO_DOS_POSTS - 1 && pulaParaOEnvio\) \{\s*setPasso\(1\);/.test(jornada));
   // Sair do passo da semana grava o que ficou na tela (o planejador grava com atraso), já no mestre quando todas as peças seguem ele.
   assert.ok(/if \(passo === PASSO_DOS_POSTS - 1\) \{\s*fecharASemana\(\);/.test(jornada));
   assert.ok(/function fecharASemana\(\): void \{[\s\S]{0,500}salvarSemana\(nova\);/.test(jornada));

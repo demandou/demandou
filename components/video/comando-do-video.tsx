@@ -54,6 +54,27 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
   const gravador = useRef<MediaRecorder | null>(null);
   const pedacos = useRef<Blob[]>([]);
 
+  // O QUE FICOU NA TELA VAI JUNTO (08/10, teste do Bruno): sair do passo (o "Continuar" da jornada desmonta
+  // esta tela) grava o comando escrito e ainda não salvo. Sem isto, o vídeo saía no comando antigo.
+  const pendente = useRef<{ texto: string; fonte: FonteDoComando; cores: CoresDoComando; origem: ComandoDoVideo["origem"]; referencia: string | null; salvo: string; ligado: boolean } | null>(null);
+  useEffect(() => {
+    pendente.current = { texto, fonte, cores, origem, referencia, salvo, ligado };
+  });
+  useEffect(
+    () => () => {
+      const p = pendente.current;
+      if (!p || !p.ligado || p.texto.trim().length < 3) return;
+      if (JSON.stringify([p.texto.trim(), p.fonte, p.cores]) === p.salvo) return;
+      void fetch(`/api/projects/${projectId}/comando-do-video`, {
+        method: "PUT",
+        keepalive: true,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto: p.texto.trim(), fonte: p.fonte, cores: p.cores, origem: p.origem, referencia: p.referencia }),
+      }).catch(() => undefined);
+    },
+    [projectId]
+  );
+
   useEffect(() => {
     let vivo = true;
     fetch(`/api/projects/${projectId}/comando-do-video`)
@@ -92,6 +113,8 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
 
   // A MINIATURA DO ESTILO (05/10, noite): o clique preenche o comando com a linguagem do estilo, as cores da
   // marca, o nicho do projeto e a sugestão de ritmo e elementos (o texto continua editável; o JEV segue livre).
+  // O CLIQUE GRAVA (08/10): o Bruno clicou no Dan Martell, seguiu pelo "Continuar" da jornada e o vídeo saiu no
+  // estilo de antes, porque só o "Salvar comando" gravava. Escolher um estilo é decisão: vale na hora.
   const miniaturas = miniaturasDosEstilos();
   function usarEstilo(id: string) {
     const m = miniaturas.find((x) => x.id === id);
@@ -101,11 +124,13 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
     setFonte(m.fonte);
     setReferencia(id);
     setOrigem("referencia");
+    void salvar({ texto: t, fonte: m.fonte, cores, origem: "referencia", referencia: id });
   }
   const estiloEscolhido = referencia ? estiloDoCatalogo(referencia) : undefined;
 
-  async function salvar() {
-    if (texto.trim().length < 3) {
+  async function salvar(valores?: { texto: string; fonte: FonteDoComando; cores: CoresDoComando; origem: ComandoDoVideo["origem"]; referencia: string | null }) {
+    const novo = valores ?? { texto, fonte, cores, origem, referencia };
+    if (novo.texto.trim().length < 3) {
       toast.error("Escreva o comando do vídeo primeiro.");
       return;
     }
@@ -114,11 +139,11 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
       const r = await fetch(`/api/projects/${projectId}/comando-do-video`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto: texto.trim(), fonte, cores, origem, referencia }),
+        body: JSON.stringify({ texto: novo.texto.trim(), fonte: novo.fonte, cores: novo.cores, origem: novo.origem, referencia: novo.referencia }),
       });
       const d = (await r.json().catch(() => ({}))) as { error?: string; biblioteca?: { design?: { nome?: string }; veredito?: string } | null };
       if (!r.ok) throw new Error(d.error || "Não consegui salvar.");
-      setSalvo(JSON.stringify([texto.trim(), fonte, cores]));
+      setSalvo(JSON.stringify([novo.texto.trim(), novo.fonte, novo.cores]));
       // A biblioteca de design (06/10): o comando escrito entrou na biblioteca (ou já existia lá), e a tela diz com que nome.
       const nome = d.biblioteca?.design?.nome;
       const v = d.biblioteca?.veredito;
