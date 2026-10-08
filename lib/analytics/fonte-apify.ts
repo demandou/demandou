@@ -3,6 +3,7 @@ import { coletarReferencia } from "@/lib/referencias/coletar";
 import { apifyConfigurada, rodarAtor } from "@/lib/referencias/apify";
 import { Caixa } from "@/lib/referencias/config";
 import type { FonteDaLeitura, NumerosLidos } from "@/lib/analytics/fontes-da-leitura";
+import { guardarVarredura } from "@/lib/analytics/inventario-das-redes";
 
 /**
  * OS NÚMEROS PELO PERFIL PÚBLICO (01/10), camada 3 da medição: a reserva.
@@ -99,6 +100,8 @@ type Grupo = { fonte: FonteDaLeitura; perfil: string; alvos: AlvoDaApify[] };
 async function lerInstagram(projectId: string, g: Grupo, caixa: Caixa): Promise<{ lidos: Map<string, LidoNaApify>; custo: number; status: string; erro?: string; itens: number }> {
   const maxItens = await itensParaAlcancar(projectId, "instagram", g.alvos);
   const r = await coletarReferencia("instagram", g.perfil, { maxItens, caixa });
+  // O perfil inteiro veio na mesma leitura: vai para o inventário (08/10), sem custo a mais.
+  if (r.status === "ok") await guardarVarredura(projectId, "instagram", g.perfil, r.posts, "apify:instagram");
   const porCodigo = new Map(r.posts.map((p) => [codigoDoInstagram(p.url), p]));
   const lidos = new Map<string, LidoNaApify>();
   const casados = g.alvos.filter((a) => porCodigo.has(codigoDoInstagram(a.externalUrl)));
@@ -122,6 +125,7 @@ async function lerInstagram(projectId: string, g: Grupo, caixa: Caixa): Promise<
 async function lerTiktok(projectId: string, g: Grupo, caixa: Caixa): Promise<{ lidos: Map<string, LidoNaApify>; custo: number; status: string; erro?: string; itens: number }> {
   const maxItens = await itensParaAlcancar(projectId, "tiktok", g.alvos);
   const r = await coletarReferencia("tiktok", g.perfil, { maxItens, caixa });
+  if (r.status === "ok") await guardarVarredura(projectId, "tiktok", g.perfil, r.posts, "apify:tiktok");
   const lidos = new Map<string, LidoNaApify>();
   const achados = new Map<string, (typeof r.posts)[number]>();
   for (const a of g.alvos) {
@@ -215,9 +219,9 @@ async function lerLinkedin(g: Grupo, caixa: Caixa): Promise<{ lidos: Map<string,
   return { lidos, custo: r.custoUsd, status: r.status, erro: r.erro, itens: r.itens.length };
 }
 
-type ItemDoFacebook = { postId?: string; url?: string; topLevelUrl?: string; likes?: number; topReactionsCount?: number; comments?: number; shares?: number; viewsCount?: number; time?: string; error?: string; errorDescription?: string };
+type ItemDoFacebook = { postId?: string; url?: string; topLevelUrl?: string; text?: string; likes?: number; topReactionsCount?: number; comments?: number; shares?: number; viewsCount?: number; time?: string; error?: string; errorDescription?: string };
 
-async function lerFacebook(g: Grupo, caixa: Caixa): Promise<{ lidos: Map<string, LidoNaApify>; custo: number; status: string; erro?: string; itens: number }> {
+async function lerFacebook(projectId: string, g: Grupo, caixa: Caixa): Promise<{ lidos: Map<string, LidoNaApify>; custo: number; status: string; erro?: string; itens: number }> {
   const maisAntigo = g.alvos.reduce((m, a) => (a.publishedAt < m ? a.publishedAt : m), g.alvos[0].publishedAt);
   const desde = new Date(maisAntigo.getTime() - 86400_000).toISOString().slice(0, 10);
   const maxItens = Math.max(5, Math.min(30, g.alvos.length + 5));
@@ -231,6 +235,15 @@ async function lerFacebook(g: Grupo, caixa: Caixa): Promise<{ lidos: Map<string,
   // (medido em 01/10 na página da Demandou: "no_items, Empty or private data").
   const semPosts = r.itens.length > 0 && r.itens.every((x) => x.error);
   r.itens = r.itens.filter((x) => !x.error);
+  if (r.itens.length) {
+    await guardarVarredura(
+      projectId,
+      "facebook",
+      g.perfil,
+      r.itens.map((x) => ({ url: x.url ?? x.topLevelUrl ?? null, legenda: x.text ?? "", publicadoEm: x.time ?? null, formato: "post" })),
+      "apify:facebook"
+    );
+  }
   const lidos = new Map<string, LidoNaApify>();
   const casados = new Map<string, ItemDoFacebook>();
   for (const a of g.alvos) {
@@ -336,7 +349,7 @@ export async function lerPelaApify(
         g.fonte === "apify:instagram" ? await lerInstagram(projectId, g, caixa)
         : g.fonte === "apify:tiktok" ? await lerTiktok(projectId, g, caixa)
         : g.fonte === "apify:linkedin" ? await lerLinkedin(g, caixa)
-        : await lerFacebook(g, caixa);
+        : await lerFacebook(projectId, g, caixa);
       custoUsd += r.custo;
       let casados = 0;
       for (const [id, l] of r.lidos) {

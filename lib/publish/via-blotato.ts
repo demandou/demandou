@@ -23,7 +23,7 @@ import {
   parseLinkedInArticleContent,
 } from "@/lib/articles/linkedin-article";
 import { abrirMidia, ehPublica } from "@/lib/media/storage";
-import { ligarCortesAoCompleto } from "@/lib/media/cortes-com-link-do-completo";
+import { ligarPecasQueCitam } from "@/lib/media/elo-na-publicacao";
 
 /**
  * PUBLICAR PELO BLOTATO, gravando no post o MESMO que a API própria grava
@@ -442,12 +442,9 @@ async function gravarPublicado(postId: string, conta: SocialAccount, envio: Stat
     },
   });
   if (!externalUrl) avisos.push("A rede confirmou a publicação, mas não devolveu o link do post.");
-  // O completo no ar leva o link aos cortes (05/10), como na API própria.
-  if (conta.platform === "youtube" && externalUrl && atual) {
-    await ligarCortesAoCompleto({ id: postId, ...atual }, externalUrl).catch((e) =>
-      console.warn(`[ponte][${postId}] os cortes ficaram sem o link do completo:`, e instanceof Error ? e.message : e)
-    );
-  }
+  // A peça no ar leva a chamada às peças da campanha que a citam (05/10 para
+  // os cortes; desde 08/10 para todas), como na API própria.
+  if (externalUrl && atual) await ligarPecasQueCitam({ id: postId, projectId: atual.projectId });
   return { url: externalUrl, externalId, aviso: avisos.length ? avisos.join(" ") : undefined };
 }
 

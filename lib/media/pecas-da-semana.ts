@@ -21,8 +21,11 @@ import { pecaPublicavel } from "@/lib/pipeline/guarda-de-texto";
 import { ajustarParaFormato } from "@/lib/media/margem-de-seguranca";
 import { limparMarcadores, montarPrefixoCacheavel, textoDaRede } from "@/lib/media/write-posts";
 import { blocoDosLinks, lerLinks } from "@/lib/projeto/links-do-cliente";
-import { eloDaCampanha, nomeDoCanal, pecasDoPlano, regraDeLinkNaAdaptacao } from "@/lib/media/elo-da-campanha";
-import { textoDoCompleto } from "@/lib/media/completo-no-quadro";
+import { eloDaCampanha, eloDaPeca, pecasDoPlano, perfisDoCliente, regraDeLinkNaAdaptacao, type EloDoPost } from "@/lib/media/elo-da-campanha";
+import { lerInventario } from "@/lib/analytics/inventario-das-redes";
+import { listaDoInventarioParaRedator } from "@/lib/analytics/tipos-do-inventario";
+import { limparTextoGerado } from "@/lib/media/elo-na-publicacao";
+import { infograficoComLastro, lastroDoVideo } from "@/lib/media/lastro-do-video";
 import { AberturasDaSemana, aberturaDe } from "@/lib/media/aberturas-da-semana";
 import { escreverLegendaDoCarrossel } from "@/lib/media/carrossel-do-video";
 import { textoDoRadar, type Radar } from "@/lib/media/radar-do-video";
@@ -190,32 +193,46 @@ export function planoDaSemana(dias: Array<{ dia: number; formato: FormatoDoDia; 
 }
 
 /**
- * O ELO DA CAMPANHA para cada dia (05/10, noite): quem cada peça chama é
- * regra de código (o vídeo completo sempre, e a peça do dia anterior no
- * plano), e o redator escreve a chamada na mesma chamada que escreve a peça.
- * O completo entra pelo post dele (título na primeira linha, link só depois
- * de publicado); antes de o post existir, pelo mesmo texto que ele vai ter.
- * Ver lib/media/elo-da-campanha.ts.
+ * O ELO DA CAMPANHA para cada dia. Desde 08/10 (o "vídeo que não existe"):
+ *   - o redator NÃO escreve a chamada; recebe a regra e o inventário do que
+ *     está no ar, a única lista de conteúdo próprio que pode citar (`pedido`);
+ *   - quem a peça chama (o completo e a peça anterior do plano) fica no post,
+ *     em `metadata.elo` (`doDia`), e a frase entra na publicação, só se a peça
+ *     citada estiver no ar (lib/media/elo-na-publicacao.ts);
+ *   - todo texto da semana passa pela guarda antes de ir ao quadro (`limpar`):
+ *     conteúdo próprio que não está no ar sai, e número ou fonte sem lastro na
+ *     fala, na pesquisa ou no material do cliente sai, com aviso no log da Vera.
  */
-async function eloDoVideo(video: VideoParaEscrever, semana: SemanaDoVideo): Promise<(dia: number, rede: string) => string> {
-  const postDoCompleto = await prisma.post.findFirst({
-    where: {
-      projectId: video.projectId,
-      platform: "youtube",
-      AND: [{ metadata: { path: ["videoJobId"], equals: video.id } }, { metadata: { path: ["gravacaoCompleta"], equals: true } }],
-    },
-    select: { content: true, externalUrl: true },
-  });
+type EloDoVideo = {
+  pedido: (dia: number, rede: string) => string;
+  doDia: (dia: number) => EloDoPost;
+  limpar: (texto: string, rede: string, dia: number) => Promise<string>;
+  /** A fala, o briefing e o material do cliente: o que um número precisa para entrar. */
+  lastro: string;
+};
+
+async function eloDoVideo(video: VideoParaEscrever, semana: SemanaDoVideo, runId: string): Promise<EloDoVideo> {
   const trechos = ((video.clips as unknown as Array<Trecho & { publicar?: boolean; texto?: { titulo?: string } }> | null) ?? []);
   const cortes = trechos.filter((t) => t.publicar !== false).map((t) => t.texto?.titulo?.trim() || t.titulo?.trim() || "").filter(Boolean);
   const pecas = pecasDoPlano(semana, cortes);
   const radar = video.radar as unknown as Radar | null;
-  const completo = {
-    titulo: postDoCompleto?.content.split("\n")[0]?.trim() || textoDoCompleto(trechos, video).split("\n")[0]?.trim() || null,
-    url: postDoCompleto?.externalUrl ?? null,
-    canal: nomeDoCanal(video.project.socialAccounts, video.project.config),
+  const inventario = await lerInventario(video.projectId).catch(() => []);
+  const lista = listaDoInventarioParaRedator(inventario);
+  const permitidos = [
+    ...lerLinks(video.project.config).map((l) => l.url),
+    ...perfisDoCliente(video.project.socialAccounts, video.project.config).map((p) => p.url).filter((u): u is string => Boolean(u)),
+  ];
+  const lastro = lastroDoVideo({
+    transcricao: (video.transcript as { text?: string } | null)?.text ?? "",
+    radar: radar ? textoDoRadar(radar) : "",
+    material: [video.project.name, video.project.niche, video.project.targetAudience, video.project.voice],
+  });
+  return {
+    pedido: () => eloDaCampanha({ inventario: lista }),
+    doDia: (dia) => eloDaPeca({ videoJobId: video.id, runId, dia, pecas }),
+    limpar: (texto, rede, dia) => limparTextoGerado({ texto, rede, dia, projectId: video.projectId, runId, inventario, permitidos, lastro }),
+    lastro,
   };
-  return (dia, rede) => eloDaCampanha({ dia, rede, pecas, completo, angulos: radar?.angulos ?? [] });
 }
 
 /**
@@ -313,7 +330,7 @@ export async function reescreverAberturasRepetidas(
   const radar = video.radar as unknown as Radar | null;
   const prefixo = prefixoDoVideo(video);
   const plano = planoDaSemana(dias, radar);
-  const elo = await eloDoVideo(video, planoDoRun(run.config, video.project.videoSemana));
+  const elo = await eloDoVideo(video, planoDoRun(run.config, video.project.videoSemana), run.id);
   const lucas = video.project.agents.find((a) => a.agentId === "lucas-linkedin");
   const tiago = video.project.agents.find((a) => a.agentId === "xavier-x") ?? fichaComoAgente("xavier-x");
   const personaDaRede = (rede: string) => {
@@ -334,12 +351,13 @@ export async function reescreverAberturasRepetidas(
       (c) => c.dayOfWeek === dia && c.postId && (c.metadata as { derivado?: boolean } | null)?.derivado && c.agentId !== AGENTES.diana.agentId
     );
     if (!formato || !card?.postId) continue;
-    // O elo da campanha vai junto do contexto, na rede do post (05/10).
-    const contextoNa = (rede: string) => contextoDoDia(dia, formato, radar, plano) + elo(dia, rede);
+    // O elo da campanha vai junto do contexto, na rede do post (05/10; desde
+    // 08/10 só a regra e o inventário, e o texto passa pela guarda).
+    const contextoNa = (rede: string) => contextoDoDia(dia, formato, radar, plano) + elo.pedido(dia, rede);
     const antes = aberturaDe(card.content ?? "");
     if (formato === "thread") {
       const contexto = contextoNa("twitter");
-      const texto = await aberturas.escrever(DIAS[dia], (p) => escreverThread(tiago, prefixo, contexto + p, usage(AGENTES.tiago.agentId)), (t) => t);
+      const texto = await elo.limpar(await aberturas.escrever(DIAS[dia], (p) => escreverThread(tiago, prefixo, contexto + p, usage(AGENTES.tiago.agentId)), (t) => t), "twitter", dia);
       await prisma.post.update({ where: { id: card.postId }, data: { content: texto } });
       const meta = { ...((card.metadata as Record<string, unknown> | null) ?? {}), tweets: separarTweets(texto).length };
       await prisma.campaignCard.update({ where: { id: card.id }, data: { content: texto, metadata: meta as Prisma.InputJsonValue } });
@@ -348,6 +366,7 @@ export async function reescreverAberturasRepetidas(
       const post = await prisma.post.findUnique({ where: { id: card.postId }, select: { platform: true, metadata: true } });
       const contexto = contextoNa(post?.platform ?? "linkedin");
       const enquete = await aberturas.escrever(DIAS[dia], (p) => escreverEnquete(lucas, prefixo, contexto + p, post?.platform ?? "linkedin", usage(AGENTES.lucas.agentId)), (e) => e.intro);
+      enquete.intro = await elo.limpar(enquete.intro, post?.platform ?? "linkedin", dia);
       const legivel = textoDaEnquete(enquete);
       await prisma.post.update({
         where: { id: card.postId },
@@ -361,11 +380,15 @@ export async function reescreverAberturasRepetidas(
     } else if (formato === "text") {
       const post = await prisma.post.findUnique({ where: { id: card.postId }, select: { platform: true } });
       const contexto = contextoNa(post?.platform ?? "linkedin");
-      const texto = await aberturas.escrever(
-        DIAS[dia],
-        (p) => escreverTexto(personaDaRede(post?.platform ?? "linkedin"), prefixo, contexto + p, post?.platform ?? "linkedin", usage(redatorDaRede(post?.platform ?? "linkedin").agentId)),
-        (t) => t,
-        { ajustar: (t, tirar) => tirar(t) }
+      const texto = await elo.limpar(
+        await aberturas.escrever(
+          DIAS[dia],
+          (p) => escreverTexto(personaDaRede(post?.platform ?? "linkedin"), prefixo, contexto + p, post?.platform ?? "linkedin", usage(redatorDaRede(post?.platform ?? "linkedin").agentId)),
+          (t) => t,
+          { ajustar: (t, tirar) => tirar(t) }
+        ),
+        post?.platform ?? "linkedin",
+        dia
       );
       await prisma.post.update({ where: { id: card.postId }, data: { content: texto } });
       await prisma.campaignCard.update({ where: { id: card.id }, data: { content: texto } });
@@ -475,8 +498,9 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
   // rodada anterior. Cada dia novo é proibido de repetir qualquer uma delas.
   const aberturas = new AberturasDaSemana(aberturasJaUsadas(video, cardsDoVideo));
   const plano = planoDaSemana(dias, radar);
-  // Quem cada peça chama (o completo e a peça anterior), decidido em código (05/10).
-  const elo = await eloDoVideo(video, semana);
+  // Quem cada peça chama (o completo e a peça anterior), decidido em código
+  // (05/10), e a guarda que todo texto atravessa antes do quadro (08/10).
+  const elo = await eloDoVideo(video, semana, run.id);
 
   // A DATA de cada dia sai do início congelado no run (30/09), e não mais da
   // segunda da semana: com a campanha começando na quarta, a terça é a da
@@ -540,7 +564,19 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
     const usage = (agentId: string) => ({ operation: "agent", runId: run.id, agentId, projectId: video.projectId });
     // `formatoRotulo` é o que o cabeçalho do quadro mostra; sem ele o chip
     // do dia sumia assim que o card de espera virava peça (visto em 02/09).
-    const metaBase = { origem: "video", videoJobId: video.id, derivado: true, formato: escolhido, formatoRotulo: ROTULO_DO_FORMATO[escolhido], dia, redes };
+    // `elo` (08/10): quem a peça chama, para a publicação pôr a chamada só
+    // quando a peça citada estiver no ar. A enquete não leva (o texto dela no
+    // LinkedIn é a introdução da enquete, montada à parte).
+    const metaBase = {
+      origem: "video",
+      videoJobId: video.id,
+      derivado: true,
+      formato: escolhido,
+      formatoRotulo: ROTULO_DO_FORMATO[escolhido],
+      dia,
+      redes,
+      ...(formato !== "poll" ? { elo: elo.doDia(dia) } : {}),
+    };
 
     /**
      * Cria ou preenche o card de um agente neste dia. O card de espera de um
@@ -648,7 +684,9 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
             await criarPost({
               platform: rede,
               socialAccountId: contaDe(rede),
-              content: adaptado.content,
+              // A adaptação passa pela mesma guarda (08/10): ela pode trazer
+              // de volta uma chamada que a principal não tinha.
+              content: await elo.limpar(adaptado.content, rede, dia),
               // Texto que virou thread no X sai como thread; com mídia, o
               // publicador do X põe a arte no primeiro tweet.
               mediaType: m.mediaType === "text" && adaptado.tweets > 1 ? "thread" : m.mediaType,
@@ -678,7 +716,8 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
     // O pedido do dia leva o elo da campanha (quem esta peça chama) na rede
     // principal; as frases das lâminas não levam, porque chamada não é lâmina.
     const contextoSemElo = contextoDoDia(dia, formato, radar, plano, tese);
-    const contexto = contextoSemElo + elo(dia, principal);
+    const contexto = contextoSemElo + elo.pedido(dia, principal);
+    const limpar = (texto: string, rede: string = principal) => elo.limpar(texto, rede, dia);
     // Cada peça passa pela fila de aberturas: se abrir igual a outro dia, é
     // escrita de novo sabendo quais ganchos estão tomados (ver aberturas-da-semana.ts).
     const semTopo = (t: string, tirar: (x: string) => string | null) => tirar(t);
@@ -721,19 +760,24 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
     try {
       if (formato === "text" && principal === "twitter") {
         // Só o X marcado num dia de texto: o texto do dia é a thread do Xavier.
-        const texto = await aberturas.escrever(
-          DIAS[dia],
-          (proibidas) => escreverThread(tiago, prefixo, contexto + proibidas, usage(AGENTES.tiago.agentId)),
-          (t) => t
+        const texto = await limpar(
+          await aberturas.escrever(
+            DIAS[dia],
+            (proibidas) => escreverThread(tiago, prefixo, contexto + proibidas, usage(AGENTES.tiago.agentId)),
+            (t) => t
+          ),
+          "twitter"
         );
         const postId = await criarPost({ platform: "twitter", socialAccountId: contaDe("twitter"), content: texto, mediaType: "thread" });
         await gravarCard(AGENTES.tiago, { content: texto, mediaType: "thread", postId, extra: { rede: "twitter", tweets: separarTweets(texto).length } });
       } else if (formato === "text") {
-        const texto = await aberturas.escrever(
-          DIAS[dia],
-          (proibidas) => escreverTexto(persona, prefixo, contexto + proibidas, principal, usage(redator.agentId)),
-          (t) => t,
-          { ajustar: semTopo }
+        const texto = await limpar(
+          await aberturas.escrever(
+            DIAS[dia],
+            (proibidas) => escreverTexto(persona, prefixo, contexto + proibidas, principal, usage(redator.agentId)),
+            (t) => t,
+            { ajustar: semTopo }
+          )
         );
         const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: texto, mediaType: "text" });
         await gravarCard(redator, { content: texto, mediaType: "text", postId, extra: { rede: principal } });
@@ -744,14 +788,18 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
           (proibidas) => escreverEnquete(persona, prefixo, contexto + proibidas, principal, usage(redator.agentId)),
           (e) => e.intro
         );
+        enquete.intro = await limpar(enquete.intro);
         const legivel = textoDaEnquete(enquete);
         const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legivel, mediaType: "poll", extra: enquete });
         await gravarCard(redator, { content: legivel, mediaType: "poll", postId, extra: { rede: principal, ...enquete } });
       } else if (formato === "thread") {
-        const texto = await aberturas.escrever(
-          DIAS[dia],
-          (proibidas) => escreverThread(tiago, prefixo, contexto + proibidas, usage(AGENTES.tiago.agentId)),
-          (t) => t
+        const texto = await limpar(
+          await aberturas.escrever(
+            DIAS[dia],
+            (proibidas) => escreverThread(tiago, prefixo, contexto + proibidas, usage(AGENTES.tiago.agentId)),
+            (t) => t
+          ),
+          "twitter"
         );
         const postId = await criarPost({ platform: "twitter", socialAccountId: contaDe("twitter"), content: texto, mediaType: "thread" });
         await gravarCard(AGENTES.tiago, { content: texto, mediaType: "thread", postId, extra: { rede: "twitter", tweets: separarTweets(texto).length } });
@@ -771,12 +819,14 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
           contexto: [radar?.tema, radar?.resumo].filter(Boolean).join(". "),
           usage: { projectId: video.projectId, runId: run.id },
         });
-        const legenda = await aberturas.escrever(
-          DIAS[dia],
-          (proibidas) =>
-            escreverTexto(persona, prefixo, `${contexto}${proibidas}\n\nEsta legenda acompanha uma IMAGEM com a frase "${frase}" escrita nela. Não repita a frase literalmente na primeira linha; desenvolva a ideia.`, principal, usage(redator.agentId)),
-          (t) => t,
-          { ajustar: semTopo }
+        const legenda = await limpar(
+          await aberturas.escrever(
+            DIAS[dia],
+            (proibidas) =>
+              escreverTexto(persona, prefixo, `${contexto}${proibidas}\n\nEsta legenda acompanha uma IMAGEM com a frase "${frase}" escrita nela. Não repita a frase literalmente na primeira linha; desenvolva a ideia.`, principal, usage(redator.agentId)),
+            (t) => t,
+            { ajustar: semTopo }
+          )
         );
         // A FRASE E A LEGENDA SÃO UMA PEÇA SÓ (05/10, noite): o JEV confere antes
         // de pagar a arte. Se a legenda foi para outro assunto, a frase nasce da
@@ -832,8 +882,9 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
           // dele. Com a fonte ao lado, cada um fica com o dono certo.
           ...(radar?.dados ?? []).map((d) => `Dado: ${d.valor}, ${d.oQueMede} (fonte: ${d.fonte})`),
           ...(radar?.achados ?? []).map((x) => `Achado: ${x.titulo} (fonte: ${x.fonte}${x.data ? `, ${x.data}` : ""})`),
-          // A legenda do carrossel também chama o completo e a peça anterior (05/10).
-          elo(dia, principal).trim(),
+          // A regra do elo e o inventário do que está no ar (08/10): a legenda
+          // não escreve chamada; ela entra na publicação.
+          elo.pedido(dia, principal).trim(),
         ].filter(Boolean);
         // Frases e legenda saem juntas pela fila de aberturas, ANTES das
         // lâminas: se a legenda repetir o gancho de outro dia, reescrever as
@@ -855,7 +906,7 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
           (p) => p.legenda,
           { ajustar: (p, tirar) => { const l = tirar(p.legenda); return l ? { ...p, legenda: l } : null; } }
         );
-        const legenda = escrito.legenda;
+        const legenda = await limpar(escrito.legenda);
         let frases = escrito.frases;
         // AS LÂMINAS E A LEGENDA SÃO UMA PEÇA SÓ (05/10, noite): o JEV confere
         // antes de pagar as lâminas; se a legenda foi para outro assunto, as
@@ -909,14 +960,16 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
         // carrossel: a legenda sai, o post nasce sem arte e marcado, e nada de
         // extração nem de desenho roda. "Aprovar e gerar" desenha depois
         // (lib/media/artes-aguardando-identidade.ts, ramo do infográfico).
-        const legenda = await aberturas.escrever(
-          DIAS[dia],
-          (proibidas) =>
-            escreverTexto(persona, prefixo, `${contexto}${proibidas}
+        const legenda = await limpar(
+          await aberturas.escrever(
+            DIAS[dia],
+            (proibidas) =>
+              escreverTexto(persona, prefixo, `${contexto}${proibidas}
 
 Esta legenda acompanha um INFOGRÁFICO com os dados do briefing (se o briefing não tem dado com fonte, o infográfico organiza as teses do vídeo). Cite no texto só o que está no briefing.`, principal, usage(redator.agentId)),
-          (t) => t,
-          { ajustar: semTopo }
+            (t) => t,
+            { ajustar: semTopo }
+          )
         );
         const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: null, extra: { aguardandoIdentidade: true } });
         await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
@@ -925,12 +978,14 @@ Esta legenda acompanha um INFOGRÁFICO com os dados do briefing (se o briefing n
 Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", mediaUrl: null, postId, extra: { rede: principal, aguardandoIdentidade: true } });
         await levarParaAsOutras(postId, legenda, () => ({ mediaType: "infographic", imageUrl: null, extra: { aguardandoIdentidade: true } }));
       } else if (formato === "infographic") {
-        const legenda = await aberturas.escrever(
-          DIAS[dia],
-          (proibidas) =>
-            escreverTexto(persona, prefixo, `${contexto}${proibidas}\n\nEsta legenda acompanha um INFOGRÁFICO com os dados do briefing (se o briefing não tem dado com fonte, o infográfico organiza as teses do vídeo). Cite no texto só o que está no briefing.`, principal, usage(redator.agentId)),
-          (t) => t,
-          { ajustar: semTopo }
+        const legenda = await limpar(
+          await aberturas.escrever(
+            DIAS[dia],
+            (proibidas) =>
+              escreverTexto(persona, prefixo, `${contexto}${proibidas}\n\nEsta legenda acompanha um INFOGRÁFICO com os dados do briefing (se o briefing não tem dado com fonte, o infográfico organiza as teses do vídeo). Cite no texto só o que está no briefing.`, principal, usage(redator.agentId)),
+            (t) => t,
+            { ajustar: semTopo }
+          )
         );
         const geminiKey = process.env.GEMINI_API_KEY;
         if (!geminiKey) throw new Error("GEMINI_API_KEY não configurada para o infográfico");
@@ -950,10 +1005,15 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
         // UMA extração para todas as proporções (06/10): extrair por proporção
         // pagava duas chamadas e dava dois infográficos com textos diferentes
         // no mesmo dia (o do Instagram e o do LinkedIn não batiam).
-        const conteudo = await Promise.race([
+        const extraido = await Promise.race([
           extrairConteudoDoInfografico(fonte, video.project.niche ?? "negocios", geminiKey, { projectId: video.projectId }),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Infografico passou de 120s")), 120_000)),
         ]);
+        // NÚMERO DESENHADO SÓ COM LASTRO (08/10): o destaque, o número dos
+        // cartões e o rodapé que não estão na fala nem na pesquisa saem antes
+        // do desenho (lib/media/lastro-do-video.ts).
+        const { conteudo, tirados: semLastro } = infograficoComLastro(extraido, [elo.lastro, legenda].join(" "));
+        if (semLastro.length) console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: número sem lastro fora do infográfico: ${semLastro.join("; ")}`);
         // O formato sai da tabela das redes desde 19/09: um infográfico por
         // PROPORÇÃO das redes do dia (Instagram em retrato 4:5, o resto em
         // paisagem 16:9), recortado no tamanho exato de cada rede. Desde 08/10

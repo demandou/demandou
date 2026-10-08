@@ -67,6 +67,7 @@ import { DestinosDoDia } from "@/components/posts/destinos-do-dia";
 import { EditorDeTextos } from "@/components/content/editor-de-textos";
 import { FalhaDaPublicacao, LinhaDaPublicacaoRecolhida, chaveDoPostQueFalhou } from "@/components/posts/falha-da-publicacao";
 import { TRADUCAO_DOS_CODIGOS, chamadoDaFalha, codigoDaFalha, motivoDaRedeNaFrase } from "@/lib/publish/codigos";
+import { avisoDoEloNoQuadro } from "@/lib/media/elo-da-campanha";
 import { abrirChamado as abrirJanelaDeChamado } from "@/lib/suporte/abrir-chamado";
 import { SemanaDoQuadro, proximaPeca, type DiaDaSemana, type PecaDoDia, type EstadoDaPeca, type PortaDoDia } from "@/components/content/semana-do-quadro";
 import { JanelaDoConteudoPronto } from "@/components/posts/janela-do-conteudo-pronto";
@@ -83,6 +84,9 @@ import { AbrirControleDoCorte } from "@/components/video/controle-do-corte";
 import { JanelaDoTikTok, type PostParaTikTok } from "@/components/social/janela-do-tiktok";
 import { AvatarDoAgente } from "@/components/escritorio/avatar-do-agente";
 import { useUmaAUma } from "@/components/escritorio/pecas-uma-a-uma";
+
+/** O nome da rede no aviso da chamada do elo (08/10). */
+const NOME_DA_REDE_NO_AVISO: Record<string, string> = { youtube: "YouTube", instagram: "Instagram", facebook: "Facebook", linkedin: "LinkedIn", twitter: "X", tiktok: "TikTok" };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -3362,6 +3366,27 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                         />
                       );
                     })}
+
+                    {/* A CHAMADA DO ELO (08/10): o que entra na publicação, e
+                        só se a peça citada estiver no ar. O cliente lê aqui,
+                        antes de publicar, por que o texto não tem a chamada
+                        ainda (lib/media/elo-da-campanha.ts). */}
+                    {(() => {
+                      const avisos = dayPosts
+                        .filter((p) => !["published", "publishing", "cancelled"].includes(p.status ?? ""))
+                        .map((p) => ({ id: p.id, rede: p.platform, aviso: avisoDoEloNoQuadro(p.metadata, p.content ?? "") }))
+                        .filter((x): x is { id: string; rede: string; aviso: string } => Boolean(x.aviso));
+                      if (!avisos.length) return null;
+                      return (
+                        <div className="rounded-xl border px-4 py-3 space-y-1.5" style={{ borderColor: "var(--border)", background: "var(--bg-primary)" }}>
+                          {avisos.map((a) => (
+                            <p key={a.id} className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{NOME_DA_REDE_NO_AVISO[a.rede] ?? a.rede}:</span> {a.aviso}
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    })()}
 
                     {/* First comment preview (LinkedIn sources) */}
                     {(() => {
