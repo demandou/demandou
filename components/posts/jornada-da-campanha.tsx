@@ -187,12 +187,14 @@ export function JornadaDaCampanha({
   const modoPadraoDosPosts = useModoPadraoDosPosts(aberto ? projectId : null);
   const [modoEscolhido, setModoEscolhido] = useState<ModoDosPosts | null>(null);
   const modoDosPosts: ModoDosPosts = modoEscolhido ?? modoPadraoDosPosts ?? "mestre";
+  const modoConhecido = modoEscolhido ?? modoPadraoDosPosts;
   const mostraOsPosts = modoDosPosts === "por-post" && temPostsVisuais;
   /** A semana com todo dia visual no estilo mestre (os de marca, na marca). */
   const semanaNoMestre = (s: SemanaDoVideo) => semanaComModelos(s, { ...modelosDaSemana(s), ...todosNoMestre(postsVisuaisDaSemana(s)) });
   /** Grava a semana, já no mestre quando "todas as peças seguem o estilo mestre". */
   function fecharASemana(): void {
-    const nova = modoDosPosts === "mestre" ? semanaNoMestre(semanaAtual) : semanaAtual;
+    // Só no mestre depois de saber o padrão do projeto: enquanto lê, a semana vai como está (o envio confere de novo).
+    const nova = modoConhecido === "mestre" ? semanaNoMestre(semanaAtual) : semanaAtual;
     if (nova !== semanaAtual) setSemanaAtual(nova);
     salvarSemana(nova);
   }
@@ -207,7 +209,11 @@ export function JornadaDaCampanha({
   const [abertoAntes, setAbertoAntes] = useState(aberto);
   if (aberto !== abertoAntes) {
     setAbertoAntes(aberto);
-    if (aberto) setPasso(passoInicial);
+    if (aberto) {
+      setPasso(passoInicial);
+      // A escolha das peças também recomeça: vale o padrão do projeto (08/10, revisão).
+      setModoEscolhido(null);
+    }
   }
 
   /**
@@ -250,7 +256,7 @@ export function JornadaDaCampanha({
   // disponível nada é gerado, então não há o que escolher. Com "todas as peças
   // seguem o estilo mestre", o dia sem escolha recebe o mestre (08/10, à noite).
   if (!semGravacao && modoDosPosts === "por-post" && faltamModelos.length > 0 && passo === PASSOS_DO_VIDEO.length - 1) setPasso(PASSO_DOS_POSTS);
-  const precisaFecharNoMestre = aberto && !semGravacao && modoDosPosts === "mestre" && faltamModelos.length > 0 && passo === PASSOS_DO_VIDEO.length - 1;
+  const precisaFecharNoMestre = aberto && !semGravacao && modoConhecido === "mestre" && faltamModelos.length > 0 && passo === PASSOS_DO_VIDEO.length - 1;
   useEffect(() => {
     if (precisaFecharNoMestre) fecharASemana();
     // eslint-disable-next-line react-hooks/exhaustive-deps

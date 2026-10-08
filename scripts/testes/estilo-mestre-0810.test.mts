@@ -34,7 +34,7 @@ import {
   linguagemDoEstiloDeVideo,
   OPCOES_DE_ESTILO,
 } from "@/lib/estilo-dos-posts/estilo-mestre";
-import { garantirDesignMestre, type DepositoDoMestre } from "@/lib/estilo-dos-posts/design-mestre";
+import { designMestreParaRefazer, garantirDesignMestre, type DepositoDoMestre } from "@/lib/estilo-dos-posts/design-mestre";
 import {
   comoOPostDesenha,
   ESCOLHA_DO_MESTRE,
@@ -427,6 +427,57 @@ test("B: o estilo vem primeiro em toda porta (menos o conteúdo pronto), e a esc
   assert.ok(!fonte("components/posts/janela-do-conteudo-pronto.tsx").includes("PassoDoEstiloMestre"));
 });
 
+// ─────────────── a revisão cética do ramo (08/10) ───────────────
+
+test("revisão: o design mestre é preparado num ponto só, no fim da pesquisa, antes dos dias e do vídeo", () => {
+  const esteira = fonte("lib/pipeline/executar.ts");
+  const pesquisa = esteira.indexOf('if (fatia.fase === "pesquisa") {');
+  const preparo = esteira.indexOf("const feito = await garantirDesignMestre(project.id).catch(() => null);");
+  assert.ok(pesquisa > 0 && preparo > pesquisa && preparo - pesquisa < 1200, "logo no começo do fim da pesquisa");
+  assert.ok(/some\(\(m\) => \(m as \{ mestre\?: unknown \} \| null\)\?\.mestre === true\)/.test(esteira), "só quando algum post está no mestre");
+});
+
+test("revisão: o design mestre em dia mas ilegível não vira uma derivação paga por arte", async () => {
+  const agora = Date.parse("2026-10-08T21:00:00Z");
+  assert.equal(designMestreParaRefazer({ feitoEm: "2026-10-08T20:55:00Z" }, agora), false, "recente: não refaz");
+  assert.equal(designMestreParaRefazer({ feitoEm: "2026-10-08T20:00:00Z" }, agora), true, "antigo: o apagado de verdade volta");
+  assert.equal(designMestreParaRefazer({ feitoEm: "" }, agora), true);
+  // O fluxo: feito, depois ilegível (o banco piscou), dez artes: nenhuma IA a mais.
+  const m = mestreEmMemoria({ escolha: { estiloId: "bbc" } });
+  const primeiro = await garantirDesignMestre("cmprojeto", { deposito: m.deposito });
+  assert.ok(primeiro.design);
+  const ilegivel: DepositoDoMestre = { ...m.deposito, lerDesign: async () => null };
+  for (let i = 0; i < 10; i++) {
+    const r = await garantirDesignMestre("cmprojeto", { deposito: ilegivel });
+    assert.equal(r.design, null);
+  }
+  assert.equal(m.pedidos.length, 1);
+});
+
+test("revisão: escolher os modelos do book é escolher o estilo dos posts; ligar o mestre não mexe no design do cliente", () => {
+  const rota = fonte("app/api/projects/[id]/modelos-de-arte/route.ts");
+  assert.ok(rota.includes('if (modelosMudaram && escolha?.ids.length) await salvarModoDosPosts(id, "por-post");'));
+  const posts = fonte("app/api/projects/[id]/estilo-dos-posts/route.ts");
+  assert.equal((posts.match(/if \(aprovacao\.aprovado\) await salvarModoDosPosts\(id, "por-post"\);/g) ?? []).length, 2, "criar e escolher como estilo do projeto");
+  const registro = fonte("lib/biblioteca-de-design/registro.ts");
+  assert.ok(registro.includes('update: o.comoEntrou === "mestre" ? {} : { comoEntrou: o.comoEntrou, updatedAt: new Date() },'));
+  assert.ok(registro.includes('where: { projectId, tipo: "imagem", comoEntrou: { not: "mestre" } }'), "o mestre não é o design mais recente que o cliente escreveu");
+});
+
+test("revisão: nada é pintado de mestre antes de saber o padrão do projeto, e a tela não promete a grade que sumiu", () => {
+  const modal = fonte("components/posts/campaign-setup-modal.tsx");
+  assert.ok(modal.includes("const modoConhecido: ModoDosPosts | null = modoEscolhido ?? modoPadraoDosPosts;"));
+  assert.ok(modal.includes('if (modoConhecido !== "mestre") return;'));
+  assert.equal((modal.match(/<LinhaDaLinguagem projectId=\{projectId\} semGrade=\{modoDosPosts === "mestre"\} \/>/g) ?? []).length, 3);
+  assert.ok(modal.includes('? " Todas as peças seguem o estilo mestre."'), "sem a grade, a linha não fala em escolher um estilo abaixo");
+  const jornada = fonte("components/posts/jornada-da-campanha.tsx");
+  assert.ok(jornada.includes('const nova = modoConhecido === "mestre" ? semanaNoMestre(semanaAtual) : semanaAtual;'));
+  assert.ok(jornada.includes('modoConhecido === "mestre" && faltamModelos.length > 0'));
+  assert.ok(/if \(aberto\) \{\s*setPasso\(passoInicial\);[\s\S]{0,120}setModoEscolhido\(null\);/.test(jornada), "cada abertura recomeça a escolha das peças");
+  assert.ok(!fonte("components/estilo-dos-posts/modelos-dos-posts.tsx").includes("antes de enviar a gravação"), "fora da jornada não há gravação a enviar");
+  assert.ok(fonte("components/kanban/step-materiais.tsx").includes("O padrão é o estilo mestre"));
+});
+
 test("nenhum texto novo usa travessão", () => {
   for (const arquivo of [
     "lib/media/cenario-do-video.ts",
@@ -440,6 +491,8 @@ test("nenhum texto novo usa travessão", () => {
     "components/estilo-dos-posts/modelos-dos-posts.tsx",
     "components/estilo-dos-posts/estilo-dos-posts.tsx",
     "app/api/projects/[id]/estilo-dos-posts/mestre/route.ts",
+    "components/posts/jornada-da-campanha.tsx",
+    "components/kanban/step-materiais.tsx",
   ]) {
     assert.ok(!fonte(arquivo).includes(String.fromCharCode(0x2014)), arquivo);
   }

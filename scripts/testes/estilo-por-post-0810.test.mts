@@ -509,7 +509,7 @@ test("revisão: o Voltar do passo dos modelos desfaz o pulo, como o do envio", (
   assert.ok(/if \(passo === PASSO_DOS_POSTS && pulaParaOEnvio\) \{\s*setPasso\(1\);/.test(jornada));
   // Sair do passo da semana grava o que ficou na tela (o planejador grava com atraso), já no mestre quando todas as peças seguem ele.
   assert.ok(/if \(passo === PASSO_DOS_POSTS - 1\) \{\s*fecharASemana\(\);/.test(jornada));
-  assert.ok(/function fecharASemana\(\): void \{[\s\S]{0,240}salvarSemana\(nova\);/.test(jornada));
+  assert.ok(/function fecharASemana\(\): void \{[\s\S]{0,500}salvarSemana\(nova\);/.test(jornada));
   assert.ok(!jornada.includes("ultimaSalva.current = JSON.stringify(planoParaGravar(s));"), "o aviso do planejador não marca como gravado o que talvez não foi");
 });
 

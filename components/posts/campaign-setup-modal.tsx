@@ -930,7 +930,7 @@ export function FormatoPorRede({
  * cliente não saberia que o "Automático" agora quer dizer "igual ao vídeo".
  * Não troca nada da tela: só acrescenta a frase quando há linguagem escolhida.
  */
-function LinhaDaLinguagem({ projectId, noEstiloProprio }: { projectId: string; noEstiloProprio?: boolean }) {
+function LinhaDaLinguagem({ projectId, noEstiloProprio, semGrade }: { projectId: string; noEstiloProprio?: boolean; semGrade?: boolean }) {
   const [linguagem, setLinguagem] = useState<{ nome: string; referencia?: string; arte: string } | null>(null);
   useEffect(() => {
     let vivo = true;
@@ -947,7 +947,9 @@ function LinhaDaLinguagem({ projectId, noEstiloProprio }: { projectId: string; n
       <strong style={{ color: "var(--text-primary)" }}>{linguagem.nome}{linguagem.referencia ? ` (${linguagem.referencia})` : ""}</strong>, {linguagem.arte}, sempre com as cores e o logo da marca.
       {noEstiloProprio
         ? " O seu estilo próprio refina essa linguagem, não a substitui."
-        : " No Automático vale para todas as peças; escolher um estilo abaixo troca só nesta campanha."}
+        : semGrade
+          ? " Todas as peças seguem o estilo mestre."
+          : " No Automático vale para todas as peças; escolher um estilo abaixo troca só nesta campanha."}
     </p>
   );
 }
@@ -1171,6 +1173,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
   const modoPadraoDosPosts = useModoPadraoDosPosts(projectId);
   const [modoEscolhido, setModoEscolhido] = useState<ModoDosPosts | null>(null);
   const modoDosPosts: ModoDosPosts = modoEscolhido ?? modoPadraoDosPosts ?? "mestre";
+  // Conhecido só depois de ler o padrão do projeto (ou de a pessoa escolher): antes disso, nada é preenchido.
+  const modoConhecido: ModoDosPosts | null = modoEscolhido ?? modoPadraoDosPosts;
   const [step, setStep] = useState(0);
   const [campaignMode, setCampaignMode] = useState<CampaignMode>("weekly");
   /**
@@ -1476,11 +1480,11 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
   // TODAS AS PEÇAS NO ESTILO MESTRE (08/10, à noite): cada dia visual recebe o mestre, sem lista para conferir.
   const chaveDosPostsVisuais = postsVisuais.map((p) => `${p.chave}:${p.formato}`).join("|");
   useEffect(() => {
-    if (modoDosPosts !== "mestre") return;
+    if (modoConhecido !== "mestre") return;
     const todos = todosNoMestre(postsVisuais);
     setModelosDosPosts((atual) => (JSON.stringify(atual) === JSON.stringify(todos) ? atual : todos));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modoDosPosts, chaveDosPostsVisuais]);
+  }, [modoConhecido, chaveDosPostsVisuais]);
   const listaDosModelos = (explicacao?: string) =>
     !projectId ? null : modoDosPosts === "mestre" ? (
       // A lista post a post só aparece em "quero mudar os posts"; aqui, a linha do que vale e o caminho para mudar.
@@ -2005,10 +2009,10 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <div>
                       <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Estilo visual da mídia</p>
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        A campanha recorrente inclui posts com imagem: escolha o estilo (também vale para vídeos se adicionar depois).
+                        {modoDosPosts === "mestre" ? "Todas as peças seguem o estilo mestre, o do vídeo. Para mudar post a post, use Quero mudar os posts." : "A campanha recorrente inclui posts com imagem: escolha o estilo (também vale para vídeos se adicionar depois)."}
                       </p>
                     </div>
-                    <LinhaDaLinguagem projectId={projectId} />
+                    <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
                     {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
@@ -2168,10 +2172,10 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <div>
                       <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Estilo visual da mídia</p>
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        Vale para todos os dias em que há imagem, vídeo ou carrossel.
+                        {modoDosPosts === "mestre" ? "Todas as peças seguem o estilo mestre, o do vídeo. Para mudar post a post, use Quero mudar os posts." : "Vale para todos os dias em que há imagem, vídeo ou carrossel."}
                       </p>
                     </div>
-                    <LinhaDaLinguagem projectId={projectId} />
+                    <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
                     {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}
@@ -2354,10 +2358,10 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                     <div>
                       <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Estilo visual da mídia</p>
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        Escolha como imagens, vídeos e carrosséis devem parecer (realismo, charge, reportagem, etc.).
+                        {modoDosPosts === "mestre" ? "Todas as peças seguem o estilo mestre, o do vídeo. Para mudar post a post, use Quero mudar os posts." : "Escolha como imagens, vídeos e carrosséis devem parecer (realismo, charge, reportagem, etc.)."}
                       </p>
                     </div>
-                    <LinhaDaLinguagem projectId={projectId} />
+                    <LinhaDaLinguagem projectId={projectId} semGrade={modoDosPosts === "mestre"} />
                     {/* O MODELO DE CADA POST (08/10): criado falando ou escrevendo, ou escolhido da biblioteca, dia a dia. */}
                     {listaDosModelos()}
                     {/* A biblioteca de materiais (03/10): as fotos reais desta campanha. */}

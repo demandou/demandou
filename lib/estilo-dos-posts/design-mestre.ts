@@ -80,6 +80,15 @@ const depositoNoBanco: DepositoDoMestre = {
 
 export type DesignMestrePronto = { mestre: EstiloMestre; design: DesignDaGaleria | null; refeito: boolean; erro?: string };
 
+/** O design mestre em dia, mas ilegível, só é refeito depois desta janela (nunca a cada arte). */
+export const JANELA_PARA_REFAZER_MS = 10 * 60_000;
+
+/** Pode refazer o design mestre que está em dia mas não foi lido? Só quando ele tem mais que a janela. Puro. */
+export function designMestreParaRefazer(g: Pick<DesignMestreGuardado, "feitoEm">, agoraMs: number): boolean {
+  const feito = Date.parse(g.feitoEm);
+  return !Number.isFinite(feito) || agoraMs - feito > JANELA_PARA_REFAZER_MS;
+}
+
 /** Uma derivação por projeto e assinatura neste processo: duas artes juntas pagam uma vez. */
 const EM_ANDAMENTO = new Map<string, Promise<DesignMestrePronto>>();
 
@@ -99,6 +108,9 @@ export async function garantirDesignMestre(projectId: string, o: { userId?: stri
   if (guardado && designMestreEmDia(guardado, mestre)) {
     const design = await deposito.lerDesign(projectId, guardado.designId);
     if (design) return { mestre, design, refeito: false };
+    // Em dia, mas ilegível agora (o banco piscou, ou o design foi apagado): sem IA de novo enquanto ele é recente.
+    // Uma falha de leitura nunca vira uma derivação paga por arte; o apagado de verdade volta depois da janela.
+    if (!designMestreParaRefazer(guardado, Date.now())) return { mestre, design: null, refeito: false, erro: "design mestre ilegível agora" };
   }
   const chave = `${projectId}|${mestre.assinatura}`;
   const andando = EM_ANDAMENTO.get(chave);

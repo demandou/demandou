@@ -384,7 +384,7 @@ export function ModelosDosPosts({
                           <Sparkles className="h-3.5 w-3.5" /> Criar o estilo do vídeo
                         </button>
                       ) : (
-                        <p style={{ color: "var(--text-muted)" }}>Crie o seu no passo do estilo do vídeo, antes de enviar a gravação.</p>
+                        <p style={{ color: "var(--text-muted)" }}>Crie o seu no estilo do vídeo do projeto (o estilo mestre), onde você escolhe como o vídeo é editado.</p>
                       )}
                     </div>
                   )}

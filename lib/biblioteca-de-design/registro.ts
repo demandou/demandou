@@ -166,7 +166,9 @@ export async function ligarAoProjeto(o: { projectId: string; designId: string; t
   await prisma.designDoProjeto.upsert({
     where: { projectId_designId: { projectId: o.projectId, designId: o.designId } },
     create: { projectId: o.projectId, designId: o.designId, tipo: o.tipo, comoEntrou: o.comoEntrou },
-    update: { comoEntrou: o.comoEntrou, updatedAt: new Date() },
+    // O design mestre (08/10) que o JEV achou igual a um design já ligado ao projeto não muda nada nele:
+    // nem o "como entrou" nem a ordem (a regra do design mais recente que o cliente escreveu continua igual).
+    update: o.comoEntrou === "mestre" ? {} : { comoEntrou: o.comoEntrou, updatedAt: new Date() },
   });
 }
 
