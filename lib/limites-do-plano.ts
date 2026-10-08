@@ -16,6 +16,8 @@ import { cicloAtual } from "@/lib/ciclo-de-credito";
 import { contaDoPlano, contaPagante, consumoDoMembro, membroAtivo, type MembroDaConta } from "@/lib/equipe/conta";
 import { fraseDaCotaDaEquipe, fraseDoTetoDeGravacoes, gravacoesDoCiclo as gravacoesComExtras, marcasDaConta } from "@/lib/equipe/regras";
 import { diaEMes } from "@/lib/frase-da-cota";
+import { gravarPartes } from "@/lib/media/partes-servidor";
+import type { PartesDaGravacao } from "@/lib/media/partes-da-gravacao";
 
 /**
  * Os limites do plano, aplicados de verdade.
@@ -422,6 +424,13 @@ export async function registrarGravacao(args: {
   blobUrl: string;
   originalName?: string | null;
   sizeBytes?: number | null;
+  /**
+   * A GRAVAÇÃO EM PARTES (08/10): a lista na ordem confirmada, gravada na
+   * mesma transação da criação. `blobUrl` é a primeira parte, e é ela que
+   * resolve a corrida entre o aviso do storage e o registro do navegador.
+   * Continua sendo UMA gravação na cota.
+   */
+  partes?: PartesDaGravacao | null;
 }): Promise<RegistroDaGravacao> {
   const { userId, projectId, blobUrl } = args;
   // Quem PAGA a gravação (01/10): a conta do dono quando quem envia é membro.
@@ -462,6 +471,7 @@ export async function registrarGravacao(args: {
         },
         select: campos,
       });
+      if (args.partes) await gravarPartes(tx, video.id, args.partes);
 
       const dono = await tx.user.findUniqueOrThrow({ where: { id: contaId }, select: { creditsBalance: true } });
       const numero = avaliacao.usadas + 1;

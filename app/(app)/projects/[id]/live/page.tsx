@@ -15,6 +15,8 @@ import { descreverFalhaDaCampanha } from "@/lib/pipeline/falha-da-campanha";
 import { DescartesProvider } from "@/components/ui/descartar";
 import { descartadasEntre } from "@/lib/avisos/descartes";
 import { chaveDaCampanha, chaveDaMontagem, chaveDaMontagemSegura, listaDasChavesDoVideo } from "@/lib/avisos/chaves";
+import { lerPartes } from "@/lib/media/partes-servidor";
+import { partesPorJuntar, resumoDasPartes } from "@/lib/media/partes-da-gravacao";
 
 function getMonday(d: Date): Date {
   const day = d.getUTCDay();
@@ -245,6 +247,9 @@ export default async function LivePage({
       })
     : null;
 
+  // A gravação em partes (08/10), igual à rota de status: a primeira pintura
+  // já mostra "Juntar as partes" e a mesma etapa da falha (a chave do descarte).
+  const partesDosVideos = await lerPartes(videos.map((v) => v.id));
   const videosNaFaixa = [...gemeos.ativos, ...videos.map((v) => {
     const trechos = (Array.isArray(v.clips) ? v.clips : []) as Array<{
       publicar?: boolean;
@@ -288,6 +293,8 @@ export default async function LivePage({
       temCortes: comMidia.length > 0,
       temTrechosComPosts: trechos.some((t) => t.posts),
       temCompleto: Boolean(v.completoUrl),
+      partes: resumoDasPartes(partesDosVideos.get(v.id)),
+      partesPorJuntar: partesPorJuntar(partesDosVideos.get(v.id)),
       roteiro: roteiros.get(v.id) ?? null,
       roteiroPendente: roteiroPendenteDe({
         status: v.status,

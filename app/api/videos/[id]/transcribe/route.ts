@@ -15,6 +15,7 @@ import { MAX_TENTATIVAS } from "@/lib/media/video-state";
 import { head } from "@vercel/blob";
 import { LIMITE_DA_TRANSCRICAO_DIRETA } from "@/lib/media/limits";
 import { assinarCorpo, CABECALHO_ASSINATURA } from "@/lib/media/worker-token";
+import { idsComPartesPorJuntar, pedirJuncao } from "@/lib/media/partes-servidor";
 
 export async function POST(
   req: NextRequest,
@@ -56,6 +57,15 @@ export async function POST(
     },
   });
   if (!video) return NextResponse.json({ error: "Vídeo não encontrado" }, { status: 404 });
+
+  // A GRAVAÇÃO EM PARTES (08/10): enquanto as partes não viraram um vídeo só,
+  // ouvir não é a etapa. Todo caminho que chega aqui (a cura da aba, a nova
+  // tentativa da falha, o vigia) segue para a junção, que no fim despacha
+  // esta rota de novo com o vídeo juntado.
+  if ((video.status === "uploaded" || video.status === "failed") && (await idsComPartesPorJuntar([id])).has(id)) {
+    const r = await pedirJuncao(id);
+    return NextResponse.json(r.corpo, { status: r.status });
+  }
 
   // Idempotência: se já transcreveu, não paga de novo. Transcrição é a etapa
   // que custa dinheiro de verdade por repetição, então a guarda importa mais

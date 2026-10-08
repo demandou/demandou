@@ -12,6 +12,8 @@ import { extrasDaLinha, gemeosNaFaixa } from "@/lib/media/linha-do-tempo-servido
 import { temCapasGeradas } from "@/lib/media/estilos-de-capa";
 import { descartadasEntre } from "@/lib/avisos/descartes";
 import { listaDasChavesDoVideo } from "@/lib/avisos/chaves";
+import { lerPartes } from "@/lib/media/partes-servidor";
+import { partesPorJuntar, resumoDasPartes } from "@/lib/media/partes-da-gravacao";
 
 /**
  * O estado dos vídeos de um projeto, enxuto, para a tela consultar de tempos em
@@ -103,6 +105,9 @@ export async function GET(req: NextRequest) {
     }
   }
   const ligado = roteiroLigado();
+  // A GRAVAÇÃO EM PARTES (08/10): quantas e se já viraram um vídeo só. A
+  // coluna é lida por SQL cru; sem ela (antes da migração), nenhum tem partes.
+  const partesDosVideos = await lerPartes(videos.map((v) => v.id));
   // A LINHA DO TEMPO INTEIRA (02/10): efeitos, revisão final e as peças
   // esperando aprovação. Ver lib/media/linha-do-tempo.ts.
   const extras = await extrasDaLinha(projectId, videos);
@@ -123,6 +128,7 @@ export async function GET(req: NextRequest) {
         midia?: { vertical?: unknown };
       }>;
       const comMidia = trechos.filter((t) => t.midia?.vertical);
+      const pendentes = partesPorJuntar(partesDosVideos.get(v.id));
       // O começo da RODADA atual: `rodadaEm` quando o vídeo foi refeito,
       // senão o envio. Ver o campo no schema.
       const inicioDaRodada = v.rodadaEm ?? v.createdAt;
@@ -186,6 +192,10 @@ export async function GET(req: NextRequest) {
       temCortes: comMidia.length > 0,
       temTrechosComPosts: trechos.some((t) => t.posts),
       temCompleto: Boolean(v.completoUrl),
+      // A gravação em partes (08/10): a linha mostra "Juntar as partes", e a
+      // falha antes de juntar é da junção (VID-JUN), e não da transcrição.
+      partes: resumoDasPartes(partesDosVideos.get(v.id)),
+      partesPorJuntar: pendentes,
       // A tela de roteiro (30/09): a faixa leva o cliente a ela, e o piloto da
       // tela cura o vídeo parado em "selected" pelo roteiro, e não pelo corte.
       roteiro: roteiros.get(v.id) ?? null,
@@ -260,7 +270,11 @@ export async function GET(req: NextRequest) {
        * tomado de novo), para a frase não piscar.
        */
       retomada: (() => {
-        const etapa = estaTrabalhando(v.status) ? v.status : ETAPA_DA_VOLTA[v.status];
+        const etapa = estaTrabalhando(v.status)
+          ? v.status
+          : v.status === "uploaded" && pendentes
+            ? "juntando-partes"
+            : ETAPA_DA_VOLTA[v.status];
         const r = etapa ? retomadas.get(v.id)?.[etapa] : undefined;
         if (!r || !r.n || !r.em || new Date(r.em).getTime() < inicioDaRodada.getTime()) return null;
         return { n: r.n, max: MAX_RETOMADAS, motivo: r.motivo ?? "prazo", em: r.em };

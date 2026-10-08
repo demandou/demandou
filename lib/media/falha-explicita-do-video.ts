@@ -37,6 +37,8 @@ export const RETOMADA_EM_ANDAMENTO_S = 5 * 60;
 
 /** O passo do piloto que retoma cada etapa (o mesmo que o vigia usa no prazo). */
 export const PASSO_DA_ETAPA: Record<ReturnType<typeof etapaDeRetomada>, PassoDoPiloto> = {
+  // A gravação em partes ainda não juntada (08/10).
+  juntar: "juntar",
   transcribe: "transcrever",
   select: "selecionar",
   roteiro: "roteiro",
@@ -82,6 +84,8 @@ export type FalhaParaDecidir = {
   temTrechos: boolean;
   temCortes: boolean;
   roteiroPendente: boolean;
+  /** A gravação em partes ainda não foi juntada (08/10): a etapa é a junção. */
+  partesPorJuntar?: boolean;
   tratada: FalhaTratada | null;
 };
 

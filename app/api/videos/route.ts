@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth/server";
 import { prisma } from "@/lib/db/prisma";
 import { descartarGravacaoRecusada, fraseDoEstouro, registrarGravacao } from "@/lib/limites-do-plano";
 import { projetoVisivel } from "@/lib/equipe/conta";
+import { nomeDaGravacaoEmPartes, registroDasPartes, somaDosBytes, validarPartes } from "@/lib/media/partes-da-gravacao";
 
 /** Lista os vídeos de um projeto. */
 export async function GET(req: NextRequest) {
@@ -52,8 +53,8 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { projectId, blobUrl, originalName, sizeBytes } = await req.json();
-  if (!projectId || !blobUrl) {
+  const { projectId, blobUrl, originalName, sizeBytes, partes: partesBrutas, criterio } = await req.json();
+  if (!projectId || (!blobUrl && partesBrutas === undefined)) {
     return NextResponse.json(
       { error: "projectId e blobUrl são obrigatórios" },
       { status: 400 }
@@ -72,6 +73,40 @@ export async function POST(req: NextRequest) {
   // 30/09 quem resolve a corrida é a trava de `registrarGravacao`, que também
   // confere a COTA DE GRAVAÇÕES: até aqui esta rota registrava qualquer arquivo
   // sem cota, e era a porta aberta do limite de 4 gravações do Starter.
+  // A GRAVAÇÃO EM PARTES (08/10): a lista vem na ordem que a pessoa
+  // confirmou, e continua sendo UMA gravação na cota. A primeira parte é a
+  // chave do registro (a mesma que o aviso da última parte usa).
+  if (partesBrutas !== undefined) {
+    const conferida = validarPartes(partesBrutas, projectId);
+    if (!conferida.ok) return NextResponse.json({ error: conferida.erro }, { status: 400 });
+    const itens = conferida.itens;
+    let registroDasPartesFeito: Awaited<ReturnType<typeof registrarGravacao>>;
+    try {
+      registroDasPartesFeito = await registrarGravacao({
+        userId,
+        projectId,
+        blobUrl: itens[0].url,
+        originalName: nomeDaGravacaoEmPartes(itens.map((p) => p.nome)),
+        sizeBytes: somaDosBytes(itens),
+        partes: registroDasPartes(itens, criterio),
+      });
+    } catch (e) {
+      console.error(`[partes][${projectId}] registro falhou:`, e);
+      return NextResponse.json(
+        { error: "Não consegui registrar as partes da gravação agora. Elas já subiram: tente enviar de novo em alguns minutos." },
+        { status: 500 }
+      );
+    }
+    if (!registroDasPartesFeito.ok) {
+      for (const p of itens) await descartarGravacaoRecusada(p.url, projectId);
+      return NextResponse.json(
+        { error: fraseDoEstouro(registroDasPartesFeito.estouro), limite: registroDasPartesFeito.estouro },
+        { status: 403 }
+      );
+    }
+    return NextResponse.json({ video: registroDasPartesFeito.video, partes: itens.length });
+  }
+
   const registro = await registrarGravacao({ userId, projectId, blobUrl, originalName, sizeBytes });
   if (!registro.ok) {
     await descartarGravacaoRecusada(blobUrl, projectId);

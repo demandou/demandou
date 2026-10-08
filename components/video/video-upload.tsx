@@ -24,6 +24,8 @@ import { FaixaDeCota, PedidoDeUpgrade, type Estouro } from "@/components/planos/
 import { AvisoDeWifi, MedidorDeEnvio } from "@/components/video/medidor-de-envio";
 import { BotaoDescartar } from "@/components/ui/descartar";
 import { ARQUIVO_GRANDE_BYTES, emDadosMoveis } from "@/lib/media/velocidade-do-envio";
+import { PartesDaGravacao } from "@/components/video/partes-da-gravacao";
+import { MAX_PARTES, moverParte, sugerirOrdem, type CriterioDaOrdem } from "@/lib/media/partes-da-gravacao";
 
 /**
  * Envio do vídeo semanal.
@@ -39,22 +41,88 @@ import { ARQUIVO_GRANDE_BYTES, emDadosMoveis } from "@/lib/media/velocidade-do-e
  * megabytes, e um vídeo de 20 minutos passa de 1 GB.
  */
 
-type Arquivo = { file: File; duracao: number; veredito: Veredito };
+/**
+ * Um arquivo escolhido. Desde 08/10 a gravação pode vir em PARTES (vários
+ * arquivos, na ordem que a pessoa confirma): `url` guarda a parte que já
+ * subiu, para um envio interrompido continuar de onde parou, e a miniatura só
+ * é lida quando há mais de uma parte (o arquivo único segue como antes).
+ */
+type Arquivo = {
+  id: string;
+  file: File;
+  duracao: number;
+  veredito: Veredito;
+  largura: number | null;
+  altura: number | null;
+  /** undefined: ainda não tentou; null: o navegador não deu. */
+  miniatura?: string | null;
+  url: string | null;
+  progresso: number | null;
+};
 
-async function lerDuracao(file: File): Promise<number> {
+async function lerVideo(file: File): Promise<{ duracao: number; largura: number | null; altura: number | null }> {
   return new Promise((resolve) => {
     const el = document.createElement("video");
     el.preload = "metadata";
     el.onloadedmetadata = () => {
       URL.revokeObjectURL(el.src);
-      resolve(el.duration);
+      resolve({ duracao: el.duration, largura: el.videoWidth || null, altura: el.videoHeight || null });
     };
     el.onerror = () => {
       URL.revokeObjectURL(el.src);
-      resolve(0);
+      resolve({ duracao: 0, largura: null, altura: null });
     };
     el.src = URL.createObjectURL(file);
   });
+}
+
+/** Um quadro do começo da parte, pequeno, para a lista das partes. Null se o navegador não der. */
+async function lerMiniatura(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const el = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    let feito = false;
+    const fim = (m: string | null) => {
+      if (feito) return;
+      feito = true;
+      clearTimeout(prazo);
+      URL.revokeObjectURL(url);
+      resolve(m);
+    };
+    // Celular que não decodifica sem toque nunca chega ao `seeked`: fica o ícone.
+    const prazo = setTimeout(() => fim(null), 4000);
+    el.preload = "auto";
+    el.muted = true;
+    el.playsInline = true;
+    el.onloadedmetadata = () => {
+      const d = Number.isFinite(el.duration) ? el.duration : 0;
+      el.currentTime = Math.min(1, d / 2);
+    };
+    el.onseeked = () => {
+      try {
+        const largura = 160;
+        const altura = el.videoWidth && el.videoHeight ? Math.round((largura * el.videoHeight) / el.videoWidth) : 90;
+        const c = document.createElement("canvas");
+        c.width = largura;
+        c.height = altura;
+        c.getContext("2d")?.drawImage(el, 0, 0, largura, altura);
+        fim(c.toDataURL("image/jpeg", 0.7));
+      } catch {
+        fim(null);
+      }
+    };
+    el.onerror = () => fim(null);
+    el.src = url;
+  });
+}
+
+function novoId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+}
+
+/** O que cada parte manda ao servidor, na ordem da lista. */
+function partesParaEnviar(lista: Arquivo[]) {
+  return lista.map((a) => ({ url: a.url, nome: a.file.name, bytes: a.file.size, duracaoSeg: a.duracao > 0 && Number.isFinite(a.duracao) ? a.duracao : null }));
 }
 
 export function VideoUpload({
@@ -65,7 +133,16 @@ export function VideoUpload({
   onEnviado?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [arquivo, setArquivo] = useState<Arquivo | null>(null);
+  // Um arquivo (o caso de sempre) ou as PARTES da gravação, na ordem do vídeo (08/10).
+  const [arquivos, setArquivos] = useState<Arquivo[]>([]);
+  const arquivo = arquivos[0] ?? null;
+  const emPartes = arquivos.length > 1;
+  // Como a ordem foi sugerida, e se a pessoa já confirmou a que está na tela.
+  const [criterio, setCriterio] = useState<CriterioDaOrdem | "manual">("nome");
+  const [confirmada, setConfirmada] = useState(false);
+  // O próximo arquivo escolhido ACRESCENTA uma parte (e não troca a lista).
+  const acrescentar = useRef(false);
+  const miniaturasPedidas = useRef(new Set<string>());
   const [lendo, setLendo] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [progresso, setProgresso] = useState(0);
@@ -131,22 +208,137 @@ export function VideoUpload({
     };
   }, [pronto]);
 
-  async function escolher(file: File) {
+  // A miniatura de cada parte, só quando há mais de uma (o arquivo único segue
+  // sem ela, como antes): um quadro do começo, lido no navegador.
+  useEffect(() => {
+    if (arquivos.length < 2) return;
+    for (const a of arquivos) {
+      if (a.miniatura !== undefined || miniaturasPedidas.current.has(a.id)) continue;
+      miniaturasPedidas.current.add(a.id);
+      void lerMiniatura(a.file).then((m) => setArquivos((xs) => xs.map((x) => (x.id === a.id ? { ...x, miniatura: m } : x))));
+    }
+  }, [arquivos]);
+
+  /**
+   * Os arquivos escolhidos. Um só: exatamente o caminho de sempre. Mais de um
+   * (de uma vez, ou acrescentando depois): as PARTES, numeradas na ordem
+   * sugerida, esperando a confirmação. Se a pessoa já mexeu na ordem, o que
+   * chega depois entra no fim, para não desfazer o que ela montou.
+   */
+  async function escolher(files: File[], somar: boolean) {
     setErro(null);
     setPronto(false);
     setLendo(true);
-    const duracao = await lerDuracao(file);
-    setArquivo({ file, duracao, veredito: validarVideo(file.size, duracao, envio) });
+    const lidos: Arquivo[] = [];
+    for (const file of files) {
+      const { duracao, largura, altura } = await lerVideo(file);
+      lidos.push({ id: novoId(), file, duracao, largura, altura, veredito: validarVideo(file.size, duracao, envio), url: null, progresso: null });
+    }
+    const base = somar ? arquivos : [];
+    const ordenar = (lista: Arquivo[]) => {
+      const s = sugerirOrdem(lista.map((a) => ({ nome: a.file.name, modificadoEm: a.file.lastModified })));
+      return { lista: s.ordem.map((i) => lista[i]), criterio: s.criterio };
+    };
+    let lista: Arquivo[];
+    let novoCriterio: CriterioDaOrdem | "manual";
+    if (somar && criterio === "manual") {
+      lista = [...base, ...ordenar(lidos).lista];
+      novoCriterio = "manual";
+    } else {
+      const s = ordenar([...base, ...lidos]);
+      lista = s.lista;
+      novoCriterio = s.criterio;
+    }
+    if (lista.length > MAX_PARTES) {
+      lista = lista.slice(0, MAX_PARTES);
+      setErro(`Uma gravação aceita até ${MAX_PARTES} partes. Ficaram as ${MAX_PARTES} primeiras da lista.`);
+    }
+    setArquivos(lista);
+    setCriterio(novoCriterio);
+    setConfirmada(false);
     setLendo(false);
   }
 
+  function abrirEscolha(somar: boolean) {
+    acrescentar.current = somar;
+    inputRef.current?.click();
+  }
+
+  /** O que manda na tela e no envio: o arquivo único, ou a soma das partes. */
+  const duracaoTotal = arquivos.reduce((t, a) => t + (Number.isFinite(a.duracao) ? a.duracao : 0), 0);
+  const bytesTotal = arquivos.reduce((t, a) => t + a.file.size, 0);
+  const ilegivel = arquivos.findIndex((a) => !a.duracao || !Number.isFinite(a.duracao));
+  const vereditoDasPartes: Veredito | null = !emPartes
+    ? null
+    : ilegivel >= 0
+      ? {
+          ok: false,
+          motivo: `Não consegui ler a duração de "${arquivos[ilegivel].file.name}" (parte ${ilegivel + 1}).`,
+          dica: "Tente exportar esse arquivo em MP4, ou tire essa parte da lista.",
+        }
+      : validarVideo(bytesTotal, duracaoTotal, envio);
+
+  /**
+   * AS PARTES, uma por uma, pelo mesmo caminho do arquivo único (Blob
+   * privado). Cada pedido de token leva a lista inteira na ordem confirmada,
+   * com a URL das que já subiram: o aviso da última parte registra o vídeo
+   * mesmo se a aba fechar. Parte que já subiu num envio interrompido não sobe
+   * de novo. No fim, o registro com a lista, como o do arquivo único.
+   */
+  async function enviarPartes(): Promise<Response> {
+    const lista = arquivos.map((a) => ({ ...a }));
+    let antes = lista.filter((a) => a.url).reduce((t, a) => t + a.file.size, 0);
+    for (let i = 0; i < lista.length; i++) {
+      const a = lista[i];
+      if (a.url) continue;
+      setArquivos((xs) => xs.map((x) => (x.id === a.id ? { ...x, progresso: 0 } : x)));
+      const blob = await upload(`videos/${projectId}/${a.file.name}`, a.file, {
+        access: "private",
+        multipart: true,
+        handleUploadUrl: "/api/videos/upload",
+        clientPayload: JSON.stringify({ projectId, parte: { indice: i, criterio, partes: partesParaEnviar(lista) } }),
+        onUploadProgress: (p) => {
+          setArquivos((xs) => xs.map((x) => (x.id === a.id ? { ...x, progresso: Math.round(p.percentage) } : x)));
+          setEnviados(antes + p.loaded);
+          setProgresso(Math.round(((antes + p.loaded) / Math.max(1, bytesTotal)) * 100));
+        },
+      });
+      a.url = blob.url;
+      antes += a.file.size;
+      setArquivos((xs) => xs.map((x) => (x.id === a.id ? { ...x, url: blob.url, progresso: 100 } : x)));
+    }
+    return fetch("/api/videos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId, criterio, partes: partesParaEnviar(lista) }),
+    });
+  }
+
   async function enviar() {
-    if (!arquivo || !arquivo.veredito.ok) return;
+    if (!arquivo) return;
+    if (emPartes ? !vereditoDasPartes?.ok || !confirmada : !arquivo.veredito.ok) return;
     setEnviando(true);
     setErro(null);
     setProgresso(0);
     setEnviados(0);
     try {
+      if (emPartes) {
+        const registro = await enviarPartes();
+        if (!registro.ok) {
+          const corpo = (await registro.json().catch(() => ({}))) as { error?: string; limite?: Estouro };
+          if (corpo.limite?.recurso === "gravacoes") {
+            setArquivos([]);
+            setLimite(corpo.limite);
+            return;
+          }
+          throw new Error(corpo.error ?? "Não consegui registrar as partes da gravação.");
+        }
+        setPronto(true);
+        setArquivos([]);
+        onEnviado?.();
+        return;
+      }
+
       const blob = await upload(`videos/${projectId}/${arquivo.file.name}`, arquivo.file, {
         // Privado de propósito: vídeo cru do cliente é material não publicado e
         // não pode ficar alcançável por quem tiver a URL.
@@ -182,7 +374,7 @@ export function VideoUpload({
       if (!registro.ok) {
         const corpo = (await registro.json().catch(() => ({}))) as { error?: string; limite?: Estouro };
         if (corpo.limite?.recurso === "gravacoes") {
-          setArquivo(null);
+          setArquivos([]);
           setLimite(corpo.limite);
           return;
         }
@@ -190,7 +382,7 @@ export function VideoUpload({
       }
 
       setPronto(true);
-      setArquivo(null);
+      setArquivos([]);
       onEnviado?.();
     } catch (e) {
       // Internet que caiu no meio do envio: dizer o que houve e o que fazer,
@@ -207,7 +399,7 @@ export function VideoUpload({
     }
   }
 
-  const v = arquivo?.veredito;
+  const v = emPartes ? vereditoDasPartes : arquivo?.veredito;
 
   // Cota esgotada: o cartao de envio SOME e a oferta toma o lugar dele. Deixar o
   // cartao na tela, desabilitado, convida a tentar e falhar, que e o contrario
@@ -241,17 +433,22 @@ export function VideoUpload({
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept={TIPOS_ACEITOS.join(",")}
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void escolher(f);
+          // Vários de uma vez (08/10): a gravação feita em partes. O valor é
+          // limpo para o mesmo arquivo poder ser escolhido de novo.
+          const fs = Array.from(e.target.files ?? []);
+          e.target.value = "";
+          if (fs.length) void escolher(fs, acrescentar.current);
+          acrescentar.current = false;
         }}
       />
 
       {!arquivo && !pronto && (
         <button
-          onClick={() => inputRef.current?.click()}
+          onClick={() => abrirEscolha(false)}
           disabled={lendo}
           className="w-full rounded-xl border border-dashed p-8 text-center transition-colors hover:border-orange-500/40"
           style={{ borderColor: "var(--border)", background: "var(--bg-primary)" }}
@@ -274,6 +471,9 @@ export function VideoUpload({
                 MP4, MOV, MKV ou WebM. Até {duracaoPorExtenso(envio.duracaoMaximaSeg)}
                 {envio.plano ? ` no ${envio.plano}` : ""}.
               </span>
+              <span className="block text-xs text-[var(--text-muted)] mt-1">
+                Gravou em partes? Escolha todos os arquivos de uma vez e diga a ordem em seguida.
+              </span>
             </>
           )}
         </button>
@@ -289,7 +489,7 @@ export function VideoUpload({
             <button
               onClick={() => {
                 setPronto(false);
-                inputRef.current?.click();
+                abrirEscolha(false);
               }}
               className="text-sm text-orange-400 mt-1 hover:underline"
             >
@@ -301,18 +501,58 @@ export function VideoUpload({
 
       {arquivo && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <div
-            className="rounded-xl border p-4 mb-4"
-            style={{ background: "var(--bg-primary)", borderColor: "var(--border)" }}
-          >
-            <p className="text-[var(--text-primary)] font-medium truncate">
-              {arquivo.file.name}
-            </p>
-            <p className="text-sm text-[var(--text-muted)] mt-1">
-              {Math.round(arquivo.duracao / 60)} min,{" "}
-              {(arquivo.file.size / 1048576).toFixed(0)} MB
-            </p>
-          </div>
+          {emPartes ? (
+            <PartesDaGravacao
+              partes={arquivos.map((a) => ({
+                id: a.id,
+                nome: a.file.name,
+                bytes: a.file.size,
+                duracao: Number.isFinite(a.duracao) ? a.duracao : 0,
+                largura: a.largura,
+                altura: a.altura,
+                miniatura: a.miniatura ?? null,
+                progresso: a.progresso,
+                enviada: Boolean(a.url),
+              }))}
+              criterio={criterio}
+              confirmada={confirmada}
+              bloqueada={enviando || lendo}
+              onMover={(de, para) => {
+                setArquivos((xs) => moverParte(xs, de, para));
+                setCriterio("manual");
+                setConfirmada(false);
+              }}
+              onRemover={(i) => {
+                setArquivos((xs) => xs.filter((_, j) => j !== i));
+                setConfirmada(false);
+              }}
+              onAcrescentar={() => abrirEscolha(true)}
+              onConfirmar={() => setConfirmada(true)}
+            />
+          ) : (
+            <div
+              className="rounded-xl border p-4 mb-4"
+              style={{ background: "var(--bg-primary)", borderColor: "var(--border)" }}
+            >
+              <p className="text-[var(--text-primary)] font-medium truncate">
+                {arquivo.file.name}
+              </p>
+              <p className="text-sm text-[var(--text-muted)] mt-1">
+                {Math.round(arquivo.duracao / 60)} min,{" "}
+                {(arquivo.file.size / 1048576).toFixed(0)} MB
+              </p>
+              {/* A gravação em partes (08/10): o arquivo único pode ganhar
+                  outra parte depois, e aí a tela pede a ordem. */}
+              <button
+                type="button"
+                onClick={() => abrirEscolha(true)}
+                disabled={enviando || lendo}
+                className="text-sm text-orange-400 mt-2 hover:underline disabled:opacity-50"
+              >
+                Gravou em mais de um arquivo? Acrescentar outra parte
+              </button>
+            </div>
+          )}
 
           {v && !v.ok && (
             <div className="rounded-xl border border-orange-500/25 bg-orange-500/10 p-4 mb-4 flex items-start gap-3">
@@ -338,7 +578,8 @@ export function VideoUpload({
                   em vigor desde 01/10. Desde então passam de mil, e vão com
                   separador de milhar: "3174" se lê errado, "3.174" não. */}
               {(() => {
-                const partes = creditosEmDuasPartes(arquivo.duracao, arquivo.file.size);
+                // Com partes (08/10), a conta é a da gravação juntada: a soma.
+                const partes = creditosEmDuasPartes(duracaoTotal, bytesTotal);
                 return (
                   <>
                     <p className="text-sm text-[var(--text-muted)]">
@@ -390,7 +631,7 @@ export function VideoUpload({
                   quanto falta.
                 </p>
               )}
-              {!enviando && (arquivo.file.size > ARQUIVO_GRANDE_BYTES || movel === true) && <AvisoDeWifi movel={movel === true} />}
+              {!enviando && (bytesTotal > ARQUIVO_GRANDE_BYTES || movel === true) && <AvisoDeWifi movel={movel === true} />}
 
               {v.sugestao && (
                 <p className="text-sm text-orange-300 border-t pt-3" style={{ borderColor: "var(--border)" }}>
@@ -412,9 +653,11 @@ export function VideoUpload({
                 />
               </div>
               <p className="text-sm text-[var(--text-muted)] mt-2">
-                Enviando, {progresso}%
+                {emPartes
+                  ? `Enviando as ${arquivos.length} partes (${arquivos.filter((a) => a.url).length} de ${arquivos.length} prontas), ${progresso}%`
+                  : `Enviando, ${progresso}%`}
               </p>
-              <MedidorDeEnvio enviados={enviados} total={arquivo.file.size} />
+              <MedidorDeEnvio enviados={enviados} total={bytesTotal} />
               {/* O ÚNICO MOMENTO QUE PEDE A PÁGINA ABERTA (03/10): o arquivo sai
                   do aparelho do cliente. Depois do envio, tudo roda nos nossos
                   servidores e o e-mail chama de volta. */}
@@ -427,7 +670,7 @@ export function VideoUpload({
           )}
 
           <div className="flex gap-3">
-            <Button onClick={enviar} disabled={!v?.ok || enviando}>
+            <Button onClick={enviar} disabled={!v?.ok || enviando || (emPartes && !confirmada)}>
               {enviando ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -443,14 +686,19 @@ export function VideoUpload({
             <Button
               variant="outline"
               onClick={() => {
-                setArquivo(null);
+                setArquivos([]);
+                setConfirmada(false);
                 setErro(null);
               }}
               disabled={enviando}
             >
-              Escolher outro
+              {emPartes ? "Recomeçar" : "Escolher outro"}
             </Button>
           </div>
+          {/* A ordem antes do envio (08/10): o botão fica parado até a pessoa confirmar. */}
+          {emPartes && !confirmada && v?.ok && !enviando && (
+            <p className="text-xs text-[var(--text-muted)] mt-2">Confirme a ordem das partes para enviar.</p>
+          )}
         </motion.div>
       )}
 

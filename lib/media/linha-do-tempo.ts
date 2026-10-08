@@ -111,12 +111,15 @@ export type EntradaDaLinha = {
   roteiro?: { existe: boolean; aprovado: boolean } | null;
   roteiroPendente?: boolean;
   linha?: ExtrasDaLinha | null;
+  /** A gravação enviada em mais de um arquivo (08/10): quantas partes e se já viraram um vídeo só. */
+  partes?: { quantas: number; juntadas: boolean } | null;
 };
 
 export type ChaveDoPasso =
   | "gemeo-voz"
   | "gemeo-pedacos"
   | "gemeo-juntar"
+  | "partes"
   | "ouvindo"
   | "pesquisando"
   | "escolhendo"
@@ -179,6 +182,7 @@ const DETALHES: Record<ChaveDoPasso, { rotulo: string; detalhe: string }> = {
   "gemeo-voz": { rotulo: "Sua voz", detalhe: "O seu gêmeo fala o roteiro com a sua voz" },
   "gemeo-pedacos": { rotulo: "Seu vídeo", detalhe: "O seu rosto falando, gerado em pedaços ao mesmo tempo" },
   "gemeo-juntar": { rotulo: "Juntar", detalhe: "Os pedaços emendados num vídeo só, que entra na edição" },
+  partes: { rotulo: "Juntar as partes", detalhe: "As partes da gravação, na ordem que você escolheu, viram um vídeo só" },
   ouvindo: { rotulo: "Ouvindo", detalhe: "Palavra por palavra, com marcação de tempo" },
   pesquisando: { rotulo: "Pesquisando", detalhe: "O que você disse, o que estão falando, dados com fonte" },
   escolhendo: { rotulo: "Escolhendo", detalhe: "Procurando as falas que sustentam um post sozinhas" },
@@ -207,7 +211,8 @@ function pesosDoRelogio(relogio: LeituraDaLinha["relogio"], d: number | null): P
   }
   if (relogio === "roteiro") {
     const r = segundosDaEtapa("roteiro", d);
-    return { ouvindo: r * 0.15, escolhendo: r * 0.25, roteiro: r * 0.6 };
+    // "partes" só pesa quando a gravação veio em partes (o passo só existe aí).
+    return { partes: r * 0.15, ouvindo: r * 0.15, escolhendo: r * 0.25, roteiro: r * 0.6 };
   }
   const b = segundosDaEtapa("base", d);
   return {
@@ -269,8 +274,19 @@ export function lerLinhaDoTempo(v: EntradaDaLinha, etapaLocal: string | null = n
   }
   const antes = gemeoGravando; // nada da esteira começou ainda
 
+  // A gravação em partes (08/10): juntar vem antes de ouvir, e só existe
+  // quando a pessoa enviou mais de um arquivo.
+  const partesPendentes = Boolean(v.partes && v.partes.quantas > 1 && !v.partes.juntadas && !v.temTranscricao);
+  if (v.partes && v.partes.quantas > 1) {
+    add(
+      "partes",
+      antes ? "falta" : !partesPendentes ? "feito" : falhou ? "falhou" : ["uploaded", "juntando-partes"].includes(s) ? "agora" : "falta",
+      `${v.partes.quantas} partes`
+    );
+  }
+
   // Ouvindo
-  add("ouvindo", antes ? "falta" : v.temTranscricao ? "feito" : falhou ? "falhou" : ["uploaded", "transcribing"].includes(s) ? "agora" : "falta");
+  add("ouvindo", antes || partesPendentes ? "falta" : v.temTranscricao ? "feito" : falhou ? "falhou" : ["uploaded", "transcribing"].includes(s) ? "agora" : "falta");
 
   // Pesquisando, em paralelo com a escolha (o Roberto roda da mesma transcrição).
   const radar = v.radar as { teses?: number; fontes?: number } | null | undefined;
@@ -489,6 +505,10 @@ function fraseDoAgora(
         : "Gerando o vídeo com o seu rosto.";
     case "gemeo-juntar":
       return "Juntando os pedaços num vídeo só; em seguida ele entra na edição.";
+    case "partes":
+      return v.partes
+        ? `Juntando as ${v.partes.quantas} partes na ordem que você escolheu, num vídeo só; em seguida ele é ouvido.`
+        : "Juntando as partes da gravação num vídeo só.";
     case "ouvindo":
       return "Ouvindo a gravação palavra por palavra.";
     case "pesquisando":

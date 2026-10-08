@@ -6,6 +6,13 @@ import { auth } from "@/lib/auth/server";
 import { prisma } from "@/lib/db/prisma";
 import { despacharPasso } from "@/lib/media/piloto-do-servidor";
 import { projetoVisivel } from "@/lib/equipe/conta";
+import {
+  lerPedidoDaParte,
+  listaCompletaNoAviso,
+  nomeDaGravacaoEmPartes,
+  registroDasPartes,
+  somaDosBytes,
+} from "@/lib/media/partes-da-gravacao";
 
 /**
  * Upload de vídeo direto do navegador para o object storage.
@@ -46,6 +53,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const payload = clientPayload ? JSON.parse(clientPayload) : {};
         const projectId: string | undefined = payload.projectId;
         if (!projectId) throw new Error("projectId é obrigatório");
+        // UMA PARTE de uma gravação em vários arquivos (08/10): a lista inteira,
+        // na ordem confirmada, vai no token para o aviso da última parte poder
+        // registrar o vídeo sozinho. Pedido de parte que não confere é recusado.
+        const parte = payload.parte === undefined ? null : lerPedidoDaParte(payload.parte, projectId);
+        if (payload.parte !== undefined && !parte) throw new Error("A lista de partes da gravação não confere.");
 
         const project = await prisma.project.findFirst({
           where: { id: projectId, ...projetoVisivel(userId) },
@@ -87,7 +99,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           maximumSizeInBytes: envio.bytesMaximo,
           addRandomSuffix: true,
           // Volta para nós no onUploadCompleted, já validado.
-          tokenPayload: JSON.stringify({ userId, projectId }),
+          tokenPayload: JSON.stringify(parte ? { userId, projectId, parte } : { userId, projectId }),
         };
       },
 
@@ -95,7 +107,33 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // o storage não alcança o localhost, então este passo não dispara: por
       // isso a criação do registro também é exposta na rota /api/videos.
       onUploadCompleted: async ({ blob, tokenPayload }) => {
-        const { userId, projectId } = JSON.parse(tokenPayload ?? "{}");
+        const { userId, projectId, parte } = JSON.parse(tokenPayload ?? "{}");
+
+        // A GRAVAÇÃO EM PARTES (08/10): parte que chega não é gravação. O vídeo
+        // nasce no aviso da ÚLTIMA parte que faltava (a lista do token tem a
+        // URL de todas as outras), com a lista na ordem confirmada, e o passo
+        // seguinte é juntar, e não transcrever. O navegador também registra,
+        // pela rota /api/videos, e a primeira parte resolve a corrida.
+        if (parte) {
+          const pedido = lerPedidoDaParte(parte, projectId);
+          const itens = pedido ? listaCompletaNoAviso(pedido, blob.url) : null;
+          if (!pedido || !itens) return;
+          const registro = await registrarGravacao({
+            userId,
+            projectId,
+            blobUrl: itens[0].url,
+            originalName: nomeDaGravacaoEmPartes(itens.map((p) => p.nome)),
+            sizeBytes: somaDosBytes(itens),
+            partes: registroDasPartes(itens, pedido.criterio),
+          });
+          if (!registro.ok) {
+            for (const p of itens) await descartarGravacaoRecusada(p.url, projectId);
+            return;
+          }
+          if (registro.video.status === "uploaded") await despacharPasso(registro.video.id, "juntar");
+          return;
+        }
+
         // O navegador também registra, pela rota /api/videos, e os dois chegam
         // quase juntos. `registrarGravacao` (30/09) resolve a corrida e confere
         // a cota de novo: o token foi emitido com a cota livre, mas entre o

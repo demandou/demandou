@@ -18,6 +18,7 @@ import { Prisma } from "@prisma/client";
 import { decidirFalhaExplicita, ESPERA_DA_FALHA_S, JANELA_DA_FALHA_S, type FalhaTratada } from "@/lib/media/falha-explicita-do-video";
 import { avisarAdmins } from "@/lib/notificacoes/aviso-aos-admins";
 import { CODIGO_DA_ETAPA } from "@/lib/notificacoes/tipos";
+import { idsComPartesPorJuntar } from "@/lib/media/partes-servidor";
 
 /**
  * O VIGIA DAS ETAPAS (01/10): quem retoma, NO SERVIDOR, a etapa de vídeo que
@@ -90,6 +91,9 @@ const RETOMADA: Record<EstadoDeTrabalho, { volta: (v: LinhaDoVideo) => string; p
   // A redação volta para "cut" quando os cortes existem (voltar para
   // "selected" ofereceria cortar de novo, meia hora de worker por nada).
   writing: { volta: (v) => (v.temCortes ? "cut" : "selected"), passo: "preparar", devolveTentativa: true },
+  // A junção das partes (08/10): volta para "uploaded" e o worker junta de
+  // novo. Não cobra nada (a cobrança é na seleção, pela duração do juntado).
+  "juntando-partes": { volta: () => "uploaded", passo: "juntar", devolveTentativa: true },
 };
 
 /**
@@ -487,6 +491,8 @@ export async function vigiarFalhas(opcoes: OpcoesDasFalhas = {}): Promise<Result
   // Import tardio: o vigia também roda na rota de status e nos callbacks, e o
   // módulo do roteiro puxa o editor inteiro. Só a falha precisa dele.
   const { roteiroLigado } = await import("@/lib/media/roteiro-da-edicao");
+  // A gravação em partes ainda não juntada (08/10): a falha é da junção.
+  const porJuntar = await idsComPartesPorJuntar(linhas.map((v) => v.id));
   for (const v of linhas) {
     try {
       const trechos = (Array.isArray(v.clips) ? v.clips : []) as Array<{ midia?: { vertical?: unknown } | null }>;
@@ -502,6 +508,7 @@ export async function vigiarFalhas(opcoes: OpcoesDasFalhas = {}): Promise<Result
           temTrechos,
           temCortes,
           roteiroPendente: roteiroLigado() && temTrechos && !temCortes && !v.aprovado,
+          partesPorJuntar: porJuntar.has(v.id),
           tratada: v.tratada,
         },
         agora

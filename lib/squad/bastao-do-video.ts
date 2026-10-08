@@ -76,6 +76,8 @@ const PAULO_S = 9;
 export function faseDoVideo(v: VideoParaOBastao, agora: number): FaseDoVideo | null {
   switch (v.status) {
     case "uploaded":
+    // A junção das partes (08/10) é o preparo da escuta: o bastão já é de quem ouve.
+    case "juntando-partes":
     case "transcribing":
       return "ouvindo";
     case "transcribed":
