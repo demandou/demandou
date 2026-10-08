@@ -4,9 +4,10 @@ import { askClaude } from "@/lib/claude";
 import { generateImage } from "@/lib/media/nano-banana";
 import { direcaoDaPeca, escolherEstilo, paletaDoProjeto } from "@/lib/media/direcao-de-arte";
 import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
-import { cenaDaFrase, layoutDaPeca, marcaDaArte, modeloDaMarca, pecaComFraseEmCodigo } from "@/lib/media/arte-com-frase";
+import { cenaDaFrase, fotoEscolhidaDaPeca, layoutDaPeca, marcaDaArte, marcaDaLaminaComFoto, modeloDaMarca, pecaComFraseEmCodigo } from "@/lib/media/arte-com-frase";
+import { escolhaDaArteDoPost, fotosDoPost, metadataDasFotosEscolhidas } from "@/lib/materiais/material-da-campanha";
 import { avisoDoRecuo } from "@/lib/media/aviso-da-arte";
-import { metadataDaFoto } from "@/lib/media/foto-da-peca";
+import { fotoDaPeca, metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { fraseCompleta, fraseGarantida, pareceTruncada, TETO_DA_FRASE } from "@/lib/media/frase-da-arte";
 import { conferirArte } from "@/lib/media/conferencia-da-arte";
 import { MENSAGEM_AGUARDANDO } from "@/lib/modelos-de-arte/identidade";
@@ -700,9 +701,14 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
     // Biblioteca de materiais entra num post (lib/media/referencia-da-pessoa.ts).
     // O MODELO DO POST (08/10): o escolhido para este dia na jornada manda na
     // arte, e escolher é aprovar este post (lib/media/arte-com-frase.tsx).
-    const marcaDoDia = tipoGeraArte(formato) ? await marcaDaArte(video.projectId, { runId: run.id, modeloDoPost: modelo ?? null }) : null;
-    // Gravado no post: o refazer do chat do card parte do mesmo modelo.
-    const doModelo = modelo ? { modeloDoPost: modelo } : {};
+    // AS FOTOS QUE A PESSOA ESCOLHEU PARA ESTE DIA (08/10, material próprio,
+    // lib/materiais/material-da-campanha.ts): na foto do dia, a foto com
+    // estilo próprio leva o modelo dela; no carrossel, cada lâmina com foto
+    // usa o estilo da sua. Sem escolha na semana, a regra de hoje.
+    const escolhaDaArte = escolhaDaArteDoPost({ fotos: fotosDoPost(semana.material, String(dia)), formato, modeloDoPost: modelo ?? null });
+    const marcaDoDia = tipoGeraArte(formato) ? await marcaDaArte(video.projectId, { runId: run.id, modeloDoPost: escolhaDaArte.modeloDoPost, fotosDoPost: escolhaDaArte.fotos }) : null;
+    // Gravado no post: o refazer do chat do card parte do mesmo modelo e das mesmas fotos.
+    const doModelo = { ...(escolhaDaArte.modeloDoPost ? { modeloDoPost: escolhaDaArte.modeloDoPost } : {}), ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) };
     const aguardandoIdentidade = Boolean(marcaDoDia && marcaDoDia.identidadeAprovada === false);
     const TEXTO_AGUARDANDO = `${MENSAGEM_AGUARDANDO}: escreva como quer o estilo dos posts ou escolha um da biblioteca em Configurações (aba Estilo dos posts). Nenhum crédito de imagem foi gasto; a arte sai depois da escolha.`;
     /** O card da Diana: o aviso do recuo para o desenho em código vem antes do conteúdo. */
@@ -795,10 +801,11 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
         // igual a esteira; sem ela a imagem saia "bold typographic" fixo.
         const direcao = await direcaoDaPeca({ projectId: video.projectId, runId: run.id, dayOfWeek: dia, infografico: false, preferido: (run.config as { mediaStyle?: string } | null)?.mediaStyle });
         if (aguardandoIdentidade) {
-          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true } });
+          // As fotos escolhidas ficam no post (08/10): a arte que sai depois da aprovação usa as mesmas.
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
           await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\nImagem com a frase: "${frase}"`, mediaType: "image", mediaUrl: null, postId, extra: { rede: principal, frase, aguardandoIdentidade: true } });
-          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true } }));
+          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
         } else {
           // A FRASE ENTRA EM CÓDIGO (30/09): o modelo desenha só a arte, sem
           // letra e sem gente, e a frase é composta por cima no tamanho da rede.
@@ -871,13 +878,14 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
         // carrossel é 4:5 em todas as redes, então as lâminas servem a todas.
         const listaDasFrases = `Carrossel de ${frases.length} lâminas:\n${frases.map((f, i) => `${i + 1}. ${f}`).join("\n")}`;
         if (aguardandoIdentidade) {
-          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true } });
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
           await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\n${listaDasFrases}`, mediaType: "carousel", mediaUrl: null, postId, extra: { rede: principal, slides: frases, aguardandoIdentidade: true } });
-          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true } }));
+          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
         } else {
+          // Cada lâmina com a foto escolhida para ela (08/10), quando houve escolha.
           const urls = await Promise.all(
-            frases.map((frase) => arteDoDia(video, frase, direcao.styleHint, formatoDaPeca(principal, "carousel"), { projectId: video.projectId, runId: run.id }, frases[0], marcaDoDia ?? undefined))
+            frases.map((frase, i) => arteDoDia(video, frase, direcao.styleHint, formatoDaPeca(principal, "carousel"), { projectId: video.projectId, runId: run.id }, frases[0], marcaDoDia ? marcaDaLaminaComFoto(marcaDoDia, i, frases.length) : undefined))
           );
           const fotos = metadataDaFoto(frases);
           const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: urls.join("|"), extra: { carrossel: true, slides: frases, ...fotos, ...doModelo } });
@@ -1195,6 +1203,12 @@ export async function arteDoDia(
   // propósito; reprovar por "tem pessoa" pagava a lâmina duas vezes e ainda
   // pedia ao gerador para tirar o cliente da própria arte.
   let peca = await desenhar();
+  // A FOTO QUE A PESSOA ESCOLHEU (08/10) entrou nesta peça: é a foto dela, com
+  // a gente e a placa que tiver, e o texto da arte é todo em código. A
+  // conferência por visão não roda (como em arte-por-rede.ts para a foto do
+  // cliente): reprovar "tem pessoa" refaria a mesma foto e pagaria de novo.
+  const escolhida = fotoEscolhidaDaPeca(marca);
+  if (escolhida && fotoDaPeca(frase)?.materialId === escolhida.material.id) return peca;
   const modeloDaPeca = await modeloDaMarca(marca, formato.largura, formato.altura, frase).catch(() => null);
   const { fotoDoClienteEntra } = await import("@/lib/modelos-de-arte/prompts-com-foto");
   // Pessoa só é permitida quando a foto dela é do cliente (08/10): sem foto da

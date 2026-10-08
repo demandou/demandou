@@ -3,8 +3,9 @@ import { debitar, saldo, SaldoInsuficiente } from "@/lib/credits";
 import { custoDaMidia } from "@/lib/credits/estimativa";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { generateImage } from "@/lib/media/nano-banana";
-import { desenharComFraseEmCodigo, marcaDaArte, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
+import { desenharComFraseEmCodigo, marcaDaArte, marcaDaLaminaComFoto, promptDaArteSemTexto } from "@/lib/media/arte-com-frase";
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
+import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 import { mancheteDaPeca } from "@/lib/media/peca-de-feed";
 import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
 import { arteDoDia } from "@/lib/media/pecas-da-semana";
@@ -147,17 +148,22 @@ export async function regerarArtes(args: { projectId: string; userId: string; po
 async function regerarGrupo(
   args: { projectId: string; userId: string },
   grupo: ArtePendente[],
-  marca: Awaited<ReturnType<typeof marcaDaArte>>,
+  marcaDoProjeto: Awaited<ReturnType<typeof marcaDaArte>>,
   nicho: string | null
 ): Promise<Escrita[]> {
+  let marca = marcaDoProjeto;
   if (grupo[0].mediaType === "carousel") return regerarCarrossel(args, grupo);
   const ids = grupo.map((a) => a.postId);
   const posts = await prisma.post.findMany({
     where: { id: { in: ids }, projectId: args.projectId },
-    select: { id: true, platform: true, content: true, imagePrompt: true, imageUrl: true, mediaType: true, runId: true, dayOfWeek: true },
+    select: { id: true, platform: true, content: true, imagePrompt: true, imageUrl: true, mediaType: true, runId: true, dayOfWeek: true, metadata: true },
   });
   if (!posts.length) return [];
   const base = posts[0];
+  // O post com fotos escolhidas pela pessoa (08/10, material próprio) é
+  // redesenhado com elas, no modelo dele; os outros seguem a marca de agora.
+  const fotosDoPost = fotosGravadasNosPosts(posts);
+  if (fotosDoPost) marca = await marcaDaArte(args.projectId, { runId: base.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(posts), fotosDoPost });
   const ehInfografico = base.mediaType === "infographic";
   const conteudo =
     ehInfografico && process.env.GEMINI_API_KEY
@@ -259,11 +265,12 @@ async function regerarCarrossel(args: { projectId: string; userId: string }, gru
   const projeto = await prisma.project.findUniqueOrThrow({ where: { id: args.projectId }, select: { niche: true } });
   // A marca lida agora (a cor nova já gravada) e a direção de arte do dia, que também lê a paleta de agora.
   // O modelo escolhido para o post (08/10) continua mandando no redesenho.
-  const marca = await marcaDaArte(args.projectId, { runId, modeloDoPost: modeloGravadoNosPosts([base]) });
+  // As fotos escolhidas para o post (08/10, material próprio): cada lâmina com a sua.
+  const marca = await marcaDaArte(args.projectId, { runId, modeloDoPost: modeloGravadoNosPosts([base]), fotosDoPost: fotosGravadasNosPosts([base]) });
   const direcao = await direcaoDaPeca({ projectId: args.projectId, runId, dayOfWeek: dia, infografico: false, preferido: null }).catch(() => ({ styleHint: "" }));
   const formato = formatoDaPeca(base.platform, "carousel");
-  const { urls, feitas } = await redesenharLaminas(frases, atuais, (frase) =>
-    arteDoDia({ projectId: args.projectId, project: { niche: projeto.niche } }, frase, direcao.styleHint, formato, { projectId: args.projectId, runId }, frases[0], marca)
+  const { urls, feitas } = await redesenharLaminas(frases, atuais, (frase, i) =>
+    arteDoDia({ projectId: args.projectId, project: { niche: projeto.niche } }, frase, direcao.styleHint, formato, { projectId: args.projectId, runId }, frases[0], marcaDaLaminaComFoto(marca, i, atuais.length))
   );
   if (!feitas) throw new Error("nenhuma lâmina saiu");
 

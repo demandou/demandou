@@ -41,6 +41,7 @@ import { descreverIntercalacao, escolherFotosDasLaminas, pedidoDeIntercalar, typ
 import { capturarFeedbackDoChatDoCard } from "@/lib/feedback/captura";
 import { fotosDasLaminasRefeitas, metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
+import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
 
 /**
  * O PEDIDO COMPOSTO DO CHAT DO CARD, feito como tarefa no servidor (05/10).
@@ -820,7 +821,8 @@ async function refazerCarrossel(o: {
   const direcao = await direcaoDaPeca({ projectId: daDiana.projectId, runId, dayOfWeek: dia, infografico: false, preferido: null }).catch(() => ({ styleHint: "" }));
   // O que já estava gravado (tratamento, modelo, ajustes) vale até o pedido mudar.
   const gravado = arteGravadaDoDia(daDiana.metadata, o.posts.find((p) => p.imageUrl)?.metadata);
-  const { marca, decidido, mudou } = marcaDoPedido(await marcaDaArte(daDiana.projectId, { runId, modeloDoPost: modeloDosPosts(o.posts) }), acao, gravado);
+  // As fotos escolhidas para o post (08/10) ficam cada uma na lâmina dela: a marca da lâmina leva a página.
+  const { marca, decidido, mudou } = marcaDoPedido(await marcaDaArte(daDiana.projectId, { runId, modeloDoPost: modeloDosPosts(o.posts), fotosDoPost: fotosGravadasNosPosts(o.posts) }), acao, gravado);
   const estilo = [
     direcao.styleHint,
     `CLIENT REQUEST FOR THIS CAROUSEL: ${acao.instrucao}`,
@@ -937,7 +939,8 @@ async function refazerArteUnica(o: {
   const base = o.posts[0];
   const textoDoPost = base?.content ?? "";
   const gravado = arteGravadaDoDia(daDiana.metadata, o.posts.find((p) => p.imageUrl)?.metadata);
-  const { marca, decidido, mudou } = marcaDoPedido(await marcaDaArte(daDiana.projectId, { runId: daDiana.runId, modeloDoPost: modeloDosPosts(o.posts) }), acao, gravado);
+  // A foto escolhida para o post (08/10) continua nele quando a arte é refeita.
+  const { marca, decidido, mudou } = marcaDoPedido(await marcaDaArte(daDiana.projectId, { runId: daDiana.runId, modeloDoPost: modeloDosPosts(o.posts), fotosDoPost: fotosGravadasNosPosts(o.posts) }), acao, gravado);
   const ehInfografico = o.formato === "infographic";
   const pedidoVisual = `${acao.instrucao}${acao.cor ? `. Use ${acao.cor} as the dominant accent color.` : ""}${decidido.tratamento ? ` ${direcaoParaOTratamento(decidido.tratamento)}` : ""}`;
   try {

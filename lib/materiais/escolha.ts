@@ -55,6 +55,25 @@ async function marcadosNaCampanha(projectId: string, runId?: string): Promise<st
   return ler(r?.config);
 }
 
+type LinhaDoMaterial = Awaited<ReturnType<typeof prisma.materialDoCliente.findFirstOrThrow>>;
+
+/** A linha do banco como a arte lê. */
+function paraMaterialDaMarca(m: LinhaDoMaterial, daCampanha: boolean): MaterialDaMarca {
+  return {
+    id: m.id,
+    url: m.url,
+    etiquetas: m.etiquetas.filter(ehEtiqueta),
+    descricao: m.descricao ?? "",
+    palavrasEn: m.palavrasEn,
+    luz: m.luz,
+    orientacao: m.orientacao,
+    temRosto: m.temRosto,
+    usos: m.usos,
+    ultimoUsoEm: m.ultimoUsoEm?.getTime() ?? 0,
+    daCampanha,
+  };
+}
+
 /** As fotos da biblioteca que podem virar arte. Vazio quando não há (ou a tabela ainda não existe). */
 export async function materiaisDaMarca(projectId: string, runId?: string): Promise<MaterialDaMarca[]> {
   const [linhas, marcados] = await Promise.all([
@@ -66,19 +85,21 @@ export async function materiaisDaMarca(projectId: string, runId?: string): Promi
   const marcadosSet = new Set(marcados);
   return linhas
     .filter((m) => m.qualidade !== "fraca" && !m.etiquetas.includes("documento"))
-    .map((m) => ({
-      id: m.id,
-      url: m.url,
-      etiquetas: m.etiquetas.filter(ehEtiqueta),
-      descricao: m.descricao ?? "",
-      palavrasEn: m.palavrasEn,
-      luz: m.luz,
-      orientacao: m.orientacao,
-      temRosto: m.temRosto,
-      usos: m.usos,
-      ultimoUsoEm: m.ultimoUsoEm?.getTime() ?? 0,
-      daCampanha: marcadosSet.has(m.id),
-    }));
+    .map((m) => paraMaterialDaMarca(m, marcadosSet.has(m.id)));
+}
+
+/**
+ * AS FOTOS QUE A PESSOA ESCOLHEU PARA UM POST (08/10, material próprio,
+ * lib/materiais/material-da-campanha.ts), na ordem dela. A escolha é da
+ * pessoa, então o filtro automático não vale aqui: foto de qualidade baixa ou
+ * ainda sendo lida entra igual (ela viu a foto e quis). Só foto, só do
+ * projeto; a que foi apagada depois sai da lista.
+ */
+export async function materiaisEscolhidos(projectId: string, ids: string[]): Promise<MaterialDaMarca[]> {
+  if (!ids.length) return [];
+  const linhas = await prisma.materialDoCliente.findMany({ where: { projectId, tipo: "foto", id: { in: ids } } }).catch(() => []);
+  const porId = new Map(linhas.map((l) => [l.id, l] as const));
+  return ids.map((id) => porId.get(id)).filter((l): l is LinhaDoMaterial => Boolean(l)).map((l) => paraMaterialDaMarca(l, true));
 }
 
 const escolhas = new Map<string, Promise<MaterialDaMarca | null>>();

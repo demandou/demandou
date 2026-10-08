@@ -20,6 +20,7 @@ import { IdentidadeNaoAprovada, LETRAS, coresDaIdentidade, type LetraId, type Pa
 import { estadoDaIdentidade } from "@/lib/modelos-de-arte/identidade-aprovada";
 import { tratamentoDasFotos, type TratamentoDaFoto } from "@/lib/modelos-de-arte/tratamento";
 import { aplicarTratamento } from "@/lib/media/tratamento-da-foto";
+import { caminhoDaFotoEscolhida, fotoDaLamina, moldeDaFotoEscolhida, type FotoDoPost } from "@/lib/materiais/material-da-campanha";
 
 /**
  * TEXTO EM ARTE GERADA POR IA É SEMPRE CÓDIGO (30/09/2026).
@@ -112,7 +113,51 @@ export type MarcaDaArte = {
    * post, para a regeração seguinte partir deles.
    */
   ajustes?: import("@/lib/modelos-de-arte/ajustes-da-peca").AjustesDaPeca | null;
+  /**
+   * AS FOTOS QUE A PESSOA ESCOLHEU PARA ESTE POST (08/10, "material seu nesta
+   * campanha", lib/materiais/material-da-campanha.ts). Presente, mesmo vazio:
+   * a escolha da pessoa manda, e nenhuma outra foto da biblioteca entra no
+   * post. Cada foto leva o modelo do estilo dela (null: o "Estilo mestre",
+   * que segue o modelo do post). A foto do dia é a primeira; no carrossel, a
+   * de cada lâmina sai da posição dela (`fotoEscolhidaDaPeca`).
+   */
+  fotosDoPost?: FotoEscolhida[];
+  /** A foto DESTA peça, quando quem desenha já decidiu (a lâmina); null: a peça sai sem foto do cliente. */
+  fotoEscolhida?: FotoEscolhida | null;
 };
+
+/** Uma foto escolhida pela pessoa, já lida do banco, com o modelo do estilo dela (id do catálogo do processo). */
+export type FotoEscolhida = {
+  material: import("@/lib/materiais/escolha").MaterialDaMarca;
+  /** O modelo do estilo da foto ("Da biblioteca" ou "Criar o meu"); null no "Estilo mestre". */
+  modeloId: string | null;
+};
+
+/**
+ * A foto escolhida para esta peça: a decidida por quem desenha, senão a da
+ * posição da lâmina (a peça única leva a primeira). Undefined: não houve
+ * escolha, vale a regra de hoje. Null: houve, e esta peça sai sem foto.
+ */
+export function fotoEscolhidaDaPeca(marca: MarcaDaArte): FotoEscolhida | null | undefined {
+  if (marca.fotoEscolhida !== undefined) return marca.fotoEscolhida;
+  if (!marca.fotosDoPost) return undefined;
+  return fotoDaLamina(marca.fotosDoPost, marca.pagina?.i ?? 0, marca.pagina?.total ?? 1);
+}
+
+/** A marca de uma peça com a foto dela decidida: só essa foto entre os materiais (ou nenhuma). */
+export function marcaComFotoDaPeca(marca: MarcaDaArte, foto: FotoEscolhida | null): MarcaDaArte {
+  return { ...marca, fotoEscolhida: foto, materiais: foto ? [foto.material] : [], referenciaDaPessoa: undefined };
+}
+
+/**
+ * A marca de cada lâmina de um carrossel desenhado fora de `desenharCarrossel`
+ * (a semana do vídeo, a Vera, o chat do card), com a foto escolhida para
+ * aquela lâmina. Sem escolha no post, a marca segue como veio (regra de hoje).
+ */
+export function marcaDaLaminaComFoto(marca: MarcaDaArte, i: number, total: number): MarcaDaArte {
+  if (!marca.fotosDoPost) return marca;
+  return marcaComFotoDaPeca(marca, fotoDaLamina(marca.fotosDoPost, i, total));
+}
 
 /** A identidade do projeto em forma de marca da peça. */
 export function marcaDaIdentidade(identidade: IdentidadeVisual): MarcaDaArte {
@@ -135,8 +180,16 @@ export function marcaDaIdentidade(identidade: IdentidadeVisual): MarcaDaArte {
  *     o modelo: vale o estilo do projeto, ou a composição da família.
  * Modelo que o projeto não enxerga mais (apagado, ou de outro cliente e fora
  * da galeria) não vale: a peça volta à regra do projeto, com a trava de sempre.
+ *
+ * `fotosDoPost` (08/10/2026, material próprio): as fotos que a pessoa
+ * escolheu para este post na janela da campanha ou na semana do vídeo
+ * (lib/materiais/material-da-campanha.ts). Lista (mesmo vazia): só elas
+ * entram, cada uma no estilo dela; null ou ausente: a regra de hoje.
  */
-export async function marcaDaArte(projectId?: string | null, opcoes?: { runId?: string; modeloDoPost?: import("@/lib/estilo-dos-posts/tipos").ModeloDoPost | null }): Promise<MarcaDaArte> {
+export async function marcaDaArte(
+  projectId?: string | null,
+  opcoes?: { runId?: string; modeloDoPost?: import("@/lib/estilo-dos-posts/tipos").ModeloDoPost | null; fotosDoPost?: FotoDoPost[] | null }
+): Promise<MarcaDaArte> {
   if (!projectId) {
     // Sem projeto não há identidade: a marca neutra do setor genérico, e não
     // mais o laranja da Demandou.
@@ -149,14 +202,20 @@ export async function marcaDaArte(projectId?: string | null, opcoes?: { runId?: 
   const { materiaisDaMarca } = await import("@/lib/materiais/escolha");
   const { prisma } = await import("@/lib/db/prisma");
   const p = await prisma.project.findUnique({ where: { id: projectId }, select: { name: true, logoUrl: true, colorPalette: true } });
-  const [escolha, materiais, identidade] = await Promise.all([
+  const escolheuFotos = Array.isArray(opcoes?.fotosDoPost);
+  const [escolha, materiais, identidade, fotosEscolhidas] = await Promise.all([
     lerModelosEscolhidos(projectId).catch(() => null),
-    materiaisDaMarca(projectId, opcoes?.runId).catch(() => []),
+    // Com a escolha da pessoa, a biblioteca inteira nem é lida: só as fotos dela entram.
+    escolheuFotos ? Promise.resolve([]) : materiaisDaMarca(projectId, opcoes?.runId).catch(() => []),
     // A IDENTIDADE APROVADA (05/10): letra e papéis das cores que o cliente
     // viu e aprovou. Lida a cada peça (sem cache): aprovou agora, vale agora.
     estadoDaIdentidade(projectId, p?.colorPalette).catch(() => null),
+    escolheuFotos ? fotosEscolhidasDoPost(projectId, opcoes!.fotosDoPost!) : Promise.resolve(null),
   ]);
-  if (materiais.length) marca.materiais = materiais;
+  if (fotosEscolhidas) {
+    marca.fotosDoPost = fotosEscolhidas;
+    marca.materiais = fotosEscolhidas.map((f) => f.material);
+  } else if (materiais.length) marca.materiais = materiais;
   marca.projectId = projectId;
   // O MODELO ESCOLHIDO PARA ESTE POST (08/10): valer é aprovar este post.
   const doPost = opcoes?.modeloDoPost ? await modeloEscolhidoParaOPost(projectId, opcoes.modeloDoPost).catch((e) => {
@@ -191,7 +250,7 @@ export async function marcaDaArte(projectId?: string | null, opcoes?: { runId?: 
         return null;
       });
   const modelos = modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente, book: escolha?.ids });
-  if (!modelos?.length && !materiais.length) return marca;
+  if (!modelos?.length && !marca.materiais?.length) return marca;
   const { lerMidia } = await import("@/lib/media/storage");
   const { logoParaArte } = await import("@/lib/modelos-de-arte/compor");
   const logo = p?.logoUrl ? await lerMidia(p.logoUrl).catch(() => null) : null;
@@ -222,6 +281,38 @@ async function modeloEscolhidoParaOPost(projectId: string, escolhido: import("@/
   if (!modelo) return null;
   registrarModeloDoCliente(modelo);
   return { modeloId: modelo.id };
+}
+
+/**
+ * As fotos escolhidas para o post (08/10), lidas do banco na ordem da pessoa,
+ * cada uma com o modelo do estilo dela já registrado no catálogo do processo.
+ * O estilo que não vale mais (o design sumiu) cai no "Estilo mestre": a foto
+ * continua entrando, no modelo do post. Foto apagada da biblioteca sai.
+ */
+async function fotosEscolhidasDoPost(projectId: string, fotos: FotoDoPost[]): Promise<FotoEscolhida[]> {
+  if (!fotos.length) return [];
+  const { materiaisEscolhidos } = await import("@/lib/materiais/escolha");
+  const materiais = await materiaisEscolhidos(projectId, fotos.map((f) => f.id)).catch((e) => {
+    console.warn("[arte-com-frase] as fotos escolhidas não foram lidas (o post sai sem foto do cliente):", e instanceof Error ? e.message : e);
+    return [];
+  });
+  const porId = new Map(materiais.map((m) => [m.id, m] as const));
+  const out: FotoEscolhida[] = [];
+  for (const f of fotos) {
+    const material = porId.get(f.id);
+    if (!material) {
+      console.warn(`[arte-com-frase] a foto escolhida ${f.id} não está mais na biblioteca; o post segue sem ela`);
+      continue;
+    }
+    let modeloId: string | null = null;
+    if (f.modelo) {
+      const r = await modeloEscolhidoParaOPost(projectId, f.modelo).catch(() => null);
+      modeloId = r?.modeloId ?? null;
+      if (!modeloId) console.warn(`[arte-com-frase] o estilo escolhido para a foto ${f.id} não vale mais; ela entra no estilo do post`);
+    }
+    out.push({ material, modeloId });
+  }
+  return out;
 }
 
 /**
@@ -330,6 +421,12 @@ export async function arteComMaterialDoCliente(o: {
   largura: number;
   altura: number;
   material?: import("@/lib/materiais/escolha").MaterialDaMarca | null;
+  /**
+   * O molde já decidido (08/10, a foto que a pessoa escolheu para o post):
+   * a foto entra sempre, neste modelo (null: a composição da família). Sem
+   * ele, `modeloParaOMaterial` decide, e pode deixar a foto para outra peça.
+   */
+  molde?: { modelo: import("@/lib/modelos-de-arte/catalogo").ModeloDeArte | null };
 }): Promise<{ jpeg: Buffer; materialId: string; modelo: string | null; recorte: boolean } | null> {
   if (!o.marca.materiais?.length && !o.material) return null;
   const { escolherMaterial, registrarPecaComMaterial } = await import("@/lib/materiais/escolha");
@@ -337,7 +434,7 @@ export async function arteComMaterialDoCliente(o: {
     o.material ??
     (await escolherMaterial({ materiais: o.marca.materiais ?? [], frase: o.frase, contexto: o.marca.contexto, projectId: o.marca.projectId }));
   if (!material) return null;
-  const { usar, modelo } = await modeloParaOMaterial(o.marca, material, o.largura, o.altura, o.frase);
+  const { usar, modelo } = o.molde ? { usar: true, modelo: o.molde.modelo } : await modeloParaOMaterial(o.marca, material, o.largura, o.altura, o.frase);
   if (!usar) return null;
   const { lerMidia } = await import("@/lib/media/storage");
   const { tratarFoto, recorteDoMaterial, marcarUso } = await import("@/lib/materiais/servidor");
@@ -1152,15 +1249,65 @@ export async function pecaNoModeloComPrompt(o: {
   return comporFraseNaArte({ arte: gerada.imagem, frase: o.frase, marca, largura: o.largura, altura: o.altura, recorte: gerada.recorte });
 }
 
+/**
+ * A ARTE COM A FOTO QUE A PESSOA ESCOLHEU PARA O POST (08/10/2026, material
+ * próprio). A foto entra sempre: foi escolhida para esta peça, no estilo
+ * escolhido para ela. O caminho é a regra de cada modelo
+ * (lib/materiais/material-da-campanha.ts, `caminhoDaFotoEscolhida`): a
+ * referência do gerador onde isso já era a regra (a pessoa nos modelos
+ * "você", o produto e o lugar nos modelos com foto), a foto real composta em
+ * código no resto. O modelo é o do estilo da foto; no "Estilo mestre", o do
+ * post (a marca). Null quando o arquivo não pôde ser lido: a peça segue sem
+ * foto do cliente, nunca com outra foto da biblioteca.
+ */
+export async function arteComFotoEscolhida(o: {
+  frase: string;
+  marca: MarcaDaArte;
+  largura: number;
+  altura: number;
+  cena?: string | null;
+  foto: FotoEscolhida;
+}): Promise<Buffer | null> {
+  const { modeloPorId } = await import("@/lib/modelos-de-arte/catalogo");
+  const { promptDoModelo } = await import("@/lib/modelos-de-arte/prompts-com-foto");
+  const marca = marcaComFotoDaPeca(o.marca, o.foto);
+  const modelo = o.foto.modeloId ? (modeloPorId(o.foto.modeloId) ?? null) : await modeloDaMarca(marca, o.largura, o.altura, o.frase);
+  const pessoa = o.foto.material.etiquetas.includes("pessoa");
+  const caminho = caminhoDaFotoEscolhida({ modelo: modelo ? { foto: modelo.foto, porPrompt: Boolean(promptDoModelo(modelo)) } : null, pessoa, rosto: o.foto.material.temRosto });
+  if (caminho === "referencia" && modelo) {
+    // O uso da foto e o registro de qual foto entrou ficam por conta do caminho do modelo, como sempre.
+    const jpeg = await pecaNoModeloComPrompt({ modelo, frase: o.frase, marca: { ...marca, modeloFixo: modelo.id }, largura: o.largura, altura: o.altura, cena: o.cena ?? null, material: o.foto.material });
+    if (jpeg) return jpeg;
+  }
+  const molde = moldeDaFotoEscolhida({ modelo, pessoa });
+  const modeloDoMolde = molde === "modelo" ? modelo : molde === "voce" ? (modeloPorId(MODELO_COM_PROFUNDIDADE) ?? null) : null;
+  const r = await arteComMaterialDoCliente({ frase: o.frase, marca, largura: o.largura, altura: o.altura, material: o.foto.material, molde: { modelo: modeloDoMolde } });
+  return r?.jpeg ?? null;
+}
+
 export function desenharComFraseEmCodigo(
   frase: string,
-  marca: MarcaDaArte,
+  marcaRecebida: MarcaDaArte,
   desenhista: (prompt: string, proporcao: ProporcaoPedida) => Promise<string>
 ): (prompt: string, proporcao: ProporcaoPedida) => Promise<string> {
   return async (prompt, proporcao) => {
     // A TRAVA (05/10): sem identidade aprovada, nada pago sai daqui.
-    exigirIdentidadeAprovada(marca);
+    exigirIdentidadeAprovada(marcaRecebida);
     const { largura, altura } = TAMANHO_DA_PROPORCAO[proporcao];
+    // A FOTO QUE A PESSOA ESCOLHEU PARA ESTE POST (08/10): vem antes de tudo,
+    // no estilo escolhido para ela. Com escolha feita e sem foto para esta
+    // peça, nenhuma outra foto da biblioteca entra (materiais vazios).
+    const escolhida = fotoEscolhidaDaPeca(marcaRecebida);
+    if (escolhida) {
+      const cena = prompt.match(/^Scene: (.+)$/m)?.[1] ?? null;
+      const jpeg = await arteComFotoEscolhida({ frase, marca: marcaRecebida, largura, altura, cena, foto: escolhida }).catch((err) => {
+        if (ehErroDeSaldo(err) || ehSemSaldoDaOpenAI(err) || err instanceof SemChaveDaOpenAI) throw err;
+        console.warn("[arte-com-frase] a foto escolhida não entrou (o arquivo não foi lido); a peça sai sem foto do cliente:", err instanceof Error ? err.message : err);
+        return null;
+      });
+      if (jpeg) return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+    }
+    const marca = escolhida === undefined ? marcaRecebida : marcaComFotoDaPeca(marcaRecebida, null);
     // O MODELO POR PROMPT (05/10): o modelo de imagem desenha a colagem
     // inteira (sem texto), com a foto do cliente de referência quando há; a
     // tipografia entra em código. Sem o fundo (falha que não é de saldo), a

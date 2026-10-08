@@ -35,6 +35,7 @@
 import { FUSO_PADRAO } from "@/lib/fuso";
 import { formatoDaPeca, REDES_COM_CARROSSEL } from "@/lib/media/formatos-das-redes";
 import { modeloParaOFormato, oQueOPostPede, ROTULO_DO_POST, type FormatoDoPost, type ModeloDoPost, type PostVisual } from "@/lib/estilo-dos-posts/tipos";
+import { distribuirFotos, materialProprioValido, type MaterialProprio } from "@/lib/materiais/material-da-campanha";
 
 /**
  * QUANTOS DIAS O PLANO COBRE a partir da data de início. O Bruno pediu "5
@@ -79,6 +80,12 @@ export type DiaDoPlano = { formato: FormatoDoDia; redes: RedeDoPlano[]; modelo?:
 export type SemanaDoVideo = {
   inicio: string | null;
   dias: Partial<Record<ChaveDoDia, DiaDoPlano | null>>;
+  /**
+   * O MATERIAL DO CLIENTE NESTA SEMANA (08/10, lib/materiais/material-da-campanha.ts):
+   * as fotos escolhidas, o post de cada uma e o estilo de cada foto. Ausente:
+   * vale a regra de hoje (o squad escolhe na biblioteca).
+   */
+  material?: MaterialProprio | null;
 };
 
 export const DIAS_DA_SEMANA: Array<{ dia: 1 | 2 | 3 | 4 | 5 | 6 | 7; curto: string; nome: string }> = [
@@ -262,12 +269,38 @@ export function normalizarSemana(bruto: unknown, conectadas?: readonly string[],
     dias[chave] = modelo ? { formato, redes: ordenarRedes(redes), modelo } : { formato, redes: ordenarRedes(redes) };
   }
   const inicio = typeof fonte.inicio === "string" && /^\d{4}-\d{2}-\d{2}$/.test(fonte.inicio) ? fonte.inicio : null;
-  return { inicio: novo ? inicio : null, dias };
+  // O material do cliente (08/10) fica só se ainda é uma escolha válida, e
+  // cada foto só no post que ainda recebe foto: a que estava num dia que
+  // mudou de formato procura outro lugar pela regra padrão; as outras ficam
+  // exatamente onde a pessoa viu.
+  const lido = novo ? materialProprioValido(fonte.material) : null;
+  const material = lido?.usar ? distribuirFotos(lido, postsComFotoDosDias(dias, inicio), LAMINAS_DO_CARROSSEL_DA_SEMANA, { manterValidas: true }) : lido;
+  return material ? { inicio: novo ? inicio : null, dias, material } : { inicio: novo ? inicio : null, dias };
+}
+
+/**
+ * Quantas lâminas tem o carrossel da semana do vídeo: três, as que a Diana
+ * escreve (lib/media/pecas-da-semana.ts, frasesDosSlides). É o teto de fotos
+ * de um carrossel da semana.
+ */
+export const LAMINAS_DO_CARROSSEL_DA_SEMANA = 3;
+
+/** Os dias que recebem foto do cliente (foto e carrossel), na ordem das datas. */
+function postsComFotoDosDias(dias: SemanaDoVideo["dias"], inicio: string | null): PostVisual[] {
+  const posts: PostVisual[] = [];
+  for (const { dia } of ordemDosDias(inicio)) {
+    const d = dias[String(dia) as ChaveDoDia];
+    if (!d) continue;
+    const formato = formatoResolvido(d.formato, dia);
+    if (formato === "image" || formato === "carousel") posts.push({ chave: String(dia), rotulo: "", formato });
+  }
+  return posts;
 }
 
 /** O plano no formato que vai para o banco (projeto ou run). */
 export function planoParaGravar(semana: SemanaDoVideo): Record<string, unknown> {
-  return { versao: 2, inicio: semana.inicio, dias: semana.dias };
+  const material = materialProprioValido(semana.material);
+  return { versao: 2, inicio: semana.inicio, dias: semana.dias, ...(material ? { material } : {}) };
 }
 
 export function ordenarRedes<T extends string>(redes: T[]): T[] {

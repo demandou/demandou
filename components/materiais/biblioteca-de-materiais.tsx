@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
 import Link from "next/link";
 import { Camera, Check, Download, ExternalLink, Film, ImagePlus, Loader2, Play, RefreshCw, Trash2, Images } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { DICA_DA_ETIQUETA, ETIQUETAS, LIMITES_DO_MATERIAL, ROTULO_DA_ETIQUETA, linkDoCard, type CorteNaTela, type Etiqueta, type MaterialNaTela } from "@/lib/materiais/tipos";
+import { subirMaterial } from "@/lib/materiais/subir-no-navegador";
 
 /**
  * SEUS MATERIAIS (03/10/2026), pedido do Bruno: "o uso mais comum é a pessoa
@@ -28,78 +28,6 @@ import { DICA_DA_ETIQUETA, ETIQUETAS, LIMITES_DO_MATERIAL, ROTULO_DA_ETIQUETA, l
  */
 
 const urlDoArquivo = (projectId: string, id: string, v: "mini" | "original" = "mini") => `/api/projects/${projectId}/materiais/${id}/arquivo?v=${v}`;
-
-function paraJpeg(c: HTMLCanvasElement, q = 0.9): Promise<Blob> {
-  return new Promise((ok, erro) => c.toBlob((b) => (b ? ok(b) : erro(new Error("não consegui converter a imagem"))), "image/jpeg", q));
-}
-
-function canvasDe(fonte: CanvasImageSource, w: number, h: number, max: number): HTMLCanvasElement {
-  const s = Math.min(1, max / Math.max(w, h));
-  const c = document.createElement("canvas");
-  c.width = Math.round(w * s);
-  c.height = Math.round(h * s);
-  c.getContext("2d")!.drawImage(fonte, 0, 0, c.width, c.height);
-  return c;
-}
-
-async function prepararFoto(f: File) {
-  const bmp = await createImageBitmap(f, { imageOrientation: "from-image" });
-  const c = canvasDe(bmp, bmp.width, bmp.height, 2560);
-  const grande = await paraJpeg(c, 0.9);
-  const mini = await paraJpeg(canvasDe(bmp, bmp.width, bmp.height, 480), 0.8);
-  bmp.close();
-  return { arquivo: grande, mini, largura: c.width, altura: c.height };
-}
-
-function prepararVideo(f: File): Promise<{ mini: Blob; folha: Blob; duracao: number; largura: number; altura: number }> {
-  return new Promise((ok, erro) => {
-    const v = document.createElement("video");
-    v.muted = true;
-    v.playsInline = true;
-    v.preload = "auto";
-    const url = URL.createObjectURL(f);
-    v.src = url;
-    const quadros: HTMLCanvasElement[] = [];
-    let tempos: number[] = [];
-    const fim = (e?: Error) => {
-      URL.revokeObjectURL(url);
-      if (e) erro(e);
-    };
-    v.onerror = () => fim(new Error("não consegui abrir o vídeo neste aparelho"));
-    v.onloadedmetadata = () => {
-      const d = v.duration;
-      if (!Number.isFinite(d) || d <= 0) return fim(new Error("vídeo sem duração"));
-      if (d > LIMITES_DO_MATERIAL.video.maxSegundos + 1) return fim(new Error(`vídeo de ${Math.round(d)} s; aqui vão vídeos de até ${LIMITES_DO_MATERIAL.video.maxSegundos / 60} minutos`));
-      tempos = [0.15, 0.5, 0.85].map((x) => x * d);
-      v.currentTime = tempos[0];
-    };
-    v.onseeked = async () => {
-      quadros.push(canvasDe(v, v.videoWidth, v.videoHeight, 480));
-      if (quadros.length < tempos.length) {
-        v.currentTime = tempos[quadros.length];
-        return;
-      }
-      try {
-        const mini = await paraJpeg(quadros[1], 0.8);
-        const folha = document.createElement("canvas");
-        folha.width = quadros.reduce((s, q) => s + q.width, 0);
-        folha.height = Math.max(...quadros.map((q) => q.height));
-        let x = 0;
-        for (const q of quadros) {
-          folha.getContext("2d")!.drawImage(q, x, 0);
-          x += q.width;
-        }
-        const out = { mini, folha: await paraJpeg(folha, 0.8), duracao: v.duration, largura: v.videoWidth, altura: v.videoHeight };
-        fim();
-        ok(out);
-      } catch (e) {
-        fim(e instanceof Error ? e : new Error("falha ao ler o vídeo"));
-      }
-    };
-  });
-}
-
-const nomeSeguro = (n: string) => n.normalize("NFD").replace(/[^\w.-]+/g, "-").replace(/-+/g, "-").slice(-60) || "arquivo";
 
 export function BibliotecaDeMateriais({ projectId, compacto = false }: { projectId: string; compacto?: boolean }) {
   const [materiais, setMateriais] = useState<MaterialNaTela[] | null>(null);
@@ -140,38 +68,9 @@ export function BibliotecaDeMateriais({ projectId, compacto = false }: { project
     for (const f of arquivos) {
       setEnvio({ feitos, total: arquivos.length, atual: f.name });
       try {
-        const video = f.type.startsWith("video/");
-        if (!video && !f.type.startsWith("image/")) throw new Error("só foto ou vídeo");
-        const base = `materiais/${projectId}/${Date.now()}-${nomeSeguro(f.name.replace(/\.[^.]+$/, ""))}`;
-        const subirUm = (caminho: string, dado: Blob, tipo: "foto" | "video" | "miniatura", contentType: string) =>
-          upload(caminho, dado, {
-            access: "private",
-            handleUploadUrl: `/api/projects/${projectId}/materiais/upload`,
-            clientPayload: JSON.stringify({ tipo, tamanho: dado.size }),
-            contentType,
-            multipart: dado.size > 20 * 1024 * 1024,
-          });
-        let corpo: Record<string, unknown>;
-        if (video) {
-          if (f.size > LIMITES_DO_MATERIAL.video.maxBytes) throw new Error("vídeo acima de 400 MB");
-          const p = await prepararVideo(f);
-          const tipoDoVideo = f.type === "video/quicktime" || f.type === "video/webm" ? f.type : "video/mp4";
-          const [arq, mini, folha] = [
-            await subirUm(`${base}.${tipoDoVideo === "video/quicktime" ? "mov" : tipoDoVideo === "video/webm" ? "webm" : "mp4"}`, f, "video", tipoDoVideo),
-            await subirUm(`${base}-mini.jpg`, p.mini, "miniatura", "image/jpeg"),
-            await subirUm(`${base}-folha.jpg`, p.folha, "miniatura", "image/jpeg"),
-          ];
-          corpo = { tipo: "video", url: arq.url, miniaturaUrl: mini.url, folhaUrl: folha.url, duracaoSec: p.duracao, largura: p.largura, altura: p.altura, sizeBytes: f.size, mimeType: tipoDoVideo, nome: f.name };
-        } else {
-          const p = await prepararFoto(f);
-          const arq = await subirUm(`${base}.jpg`, p.arquivo, "foto", "image/jpeg");
-          const mini = await subirUm(`${base}-mini.jpg`, p.mini, "miniatura", "image/jpeg");
-          corpo = { tipo: "foto", url: arq.url, miniaturaUrl: mini.url, largura: p.largura, altura: p.altura, sizeBytes: p.arquivo.size, mimeType: "image/jpeg", nome: f.name };
-        }
-        const r = await fetch(`/api/projects/${projectId}/materiais`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error ?? "não registrou");
-        setMateriais((atual) => [j.material as MaterialNaTela, ...(atual ?? [])]);
+        // O mesmo envio da janela da campanha (08/10): lib/materiais/subir-no-navegador.ts.
+        const material = await subirMaterial(projectId, f);
+        setMateriais((atual) => [material, ...(atual ?? [])]);
         feitos++;
       } catch (e) {
         falhas.push(`${f.name}: ${e instanceof Error ? e.message : "falhou"}`);
