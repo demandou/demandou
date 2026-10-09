@@ -95,6 +95,7 @@ import { montarCortePelaJornada, type MidiasDoCompleto } from "@/lib/media/jorna
 import type { DirecaoDaEdicao } from "@/lib/media/jornada/direcao";
 import { contextoDoProjeto, jevDaJornada, redatorDaJornada } from "@/lib/media/jornada/servidor";
 import { dependenciasDaGeracao } from "@/lib/media/jornada/geracao-servidor";
+import { CaixaDaEdicao, TETO_USD_DO_CORTE } from "@/lib/media/teto-da-edicao";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { leituraNoCorte } from "@/lib/media/editor-por-comando/leitura-no-plano";
@@ -973,6 +974,8 @@ async function editarCortePelaJornada(
   }
   const leg = normalizarLegenda((video.project.videoEstiloEscolha as { legenda?: unknown } | null)?.legenda);
   const contextoJ = await contextoDoProjeto(video.projectId, "9:16", fala.duracao);
+  // O TETO DO CORTE (08/10): US$ 1 por corte para o que ele gera sozinho (as mídias do completo não custam de novo).
+  const caixa = new CaixaDaEdicao(TETO_USD_DO_CORTE);
   const feito = await montarCortePelaJornada({
     aprovados: j.aprovados,
     falaDoPlano: j.falaDoPlano,
@@ -986,11 +989,12 @@ async function editarCortePelaJornada(
     contexto: contextoJ,
     legenda: leg.modo === "sem" ? { mostrar: false } : leg.modo === "estilo" && leg.estilo ? { mostrar: true, estilo: leg.estilo, automatica: false } : { mostrar: true, estilo: "limpa", automatica: true },
     temTrilha: Boolean(video.project.videoMusicUrl),
-    redator: redatorDaJornada(video.projectId, "jornada-corte"),
-    jev: jevDaJornada(),
-    geracao: dependenciasDaGeracao({ projectId: video.projectId, videoId: video.id, edicaoId: `corte-${indice}` }),
+    redator: redatorDaJornada(video.projectId, "jornada-corte", caixa),
+    jev: jevDaJornada(caixa),
+    geracao: dependenciasDaGeracao({ projectId: video.projectId, videoId: video.id, edicaoId: `corte-${indice}`, caixa }),
     projectId: video.projectId,
     direcao: j.direcao,
+    caixa,
   });
   const novo: SobMedidaDoCorte = {
     ...sm,

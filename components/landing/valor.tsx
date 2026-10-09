@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Clock, Film, PenLine, Scissors, Search, Send } from "lucide-react";
 import { contaDoStarter, emReais } from "@/lib/calculadora/custos";
-import { ENTREGAS as ENTREGAS_DO_PLANO } from "@/lib/entregas-do-plano";
+import { ENTREGAS as ENTREGAS_DO_PLANO, horasDeTrabalhoDoStarter } from "@/lib/entregas-do-plano";
 import { CtaDupla } from "@/components/landing/cta-dupla";
 
 /**
@@ -115,8 +115,8 @@ export function Valor() {
             <span>A conta do mês</span>
           </div>
           <h2 className="text-4xl lg:text-5xl font-black text-[var(--text-primary)] mb-4">
-            {/* 3 horas desde 02/10, noite: a mesma conta da hero e da faixa. */}
-            3 horas suas no mês.{" "}
+            {/* As horas saem do plano (08/10): a mesma conta da hero e da faixa. */}
+            {horasDeTrabalhoDoStarter()} horas suas no mês.{" "}
             <span className="text-orange-500">Cerca de {HORAS_DEVOLVIDAS} horas de trabalho devolvidas.</span>
           </h2>
           {/* A ECONOMIA (02/10, noite, pedido do Matheus), em frases curtas e

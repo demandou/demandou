@@ -142,6 +142,8 @@ export type EstadoDaJornada = {
   erro?: string | null;
   avisos?: string[];
   custoUsd?: number;
+  /** O que o PLANO gastou em ideias e decisões (08/10): entra no teto da edição; a montagem parte daqui. */
+  custoDoPlanoUsd?: number;
   tempos?: Record<string, number>;
   /**
    * O AJUSTE PEDIDO NO CARD (E6): as mídias DESTA edição que ficam (os

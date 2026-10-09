@@ -119,8 +119,8 @@ export const PLANS = {
     ...daTabela("business"),
     priceId: process.env.STRIPE_BUSINESS_PRICE_ID,
     annualPriceId: process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID,
-    // Pro: R$ 1.530 de custo se usar tudo, contra R$ 3.997 (2,6x).
-    // 4 vídeos de 30 s no Cheio (10 no Rápido). Era 16.640 até a noite de 28/09.
+    // Pro: 08/10, 32.000 créditos e a carteira de vídeo do Starter (4.160):
+    // R$ 1.046 de custo máximo contra R$ 3.569 líquidos (29%). Ver lib/planos.ts.
     extraCreditPrice: 0.10,
     limits: { projects: 2, postsPerMonth: -1, credits: planoPublico("business").creditosPorMes },
   },
@@ -128,9 +128,8 @@ export const PLANS = {
     ...daTabela("studio"),
     priceId: process.env.STRIPE_STUDIO_PRICE_ID,
     annualPriceId: process.env.STRIPE_STUDIO_ANNUAL_PRICE_ID,
-    // Enterprise: R$ 2.580 de custo se usar tudo, contra R$ 5.667 (2,2x).
-    // 10 vídeos de 30 s no Cheio (26 no Rápido). Era 41.600 (20 no Cheio) até a
-    // noite de 28/09, quando o vídeo por IA de todos os planos caiu pela metade.
+    // Enterprise: 08/10, 48.000 créditos e a carteira de vídeo do Starter
+    // (4.160): R$ 1.497 de custo máximo contra R$ 5.061 líquidos (30%). Ver lib/planos.ts.
     extraCreditPrice: 0.08,
     limits: { projects: 5, postsPerMonth: -1, credits: planoPublico("studio").creditosPorMes },
   },

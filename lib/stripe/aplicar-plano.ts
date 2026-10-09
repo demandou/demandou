@@ -165,7 +165,7 @@ export async function aplicarPlanoDaAssinatura(sub: Stripe.Subscription): Promis
       // A chave e o guarda vivem DENTRO da trava de concederCiclo (05/10): a
       // volta do checkout e os dois eventos do Stripe chegam juntos, e o guarda
       // lido aqui fora deixava os três passarem. Ver lib/credits/ciclo.ts.
-      // Os acessos extras da equipe somam 2.000 créditos cada ao ciclo (01/10).
+      // Os acessos extras da equipe somam ACESSO_EXTRA.creditosPorMes cada ao ciclo (01/10; 1.800 desde 08/10).
       await concederCiclo({
         userId: u.id,
         creditos: creditosDoCiclo(creditos, u.acessosExtras),

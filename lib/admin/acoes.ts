@@ -133,7 +133,7 @@ export async function planoDeCortesia(admin: Admin, userId: string, plano: "free
  *
  * Enquanto o preço do acesso extra não existir no Stripe (decisão de 01/10: não
  * criar preço com a chave de produção sem o Bruno), quem vende o acesso extra
- * cobra por fora e o admin ativa aqui. Cada acesso a mais soma 2.000 créditos
+ * cobra por fora e o admin ativa aqui. Cada acesso a mais soma os créditos de ACESSO_EXTRA (1.800 desde 08/10)
  * na hora (o ciclo em curso, sem proporcional: é a regra mais simples de
  * explicar ao cliente) e passa a entrar em toda reposição. Diminuir não tira
  * créditos do ciclo em curso: crédito dado não se toma de volta sem motivo

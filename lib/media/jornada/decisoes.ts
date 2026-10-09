@@ -1,6 +1,7 @@
 import type { perguntarAoJev, PerguntaDoJev, RespostaDoJev } from "@/lib/jev/cliente";
 import type { GeneroDoVideo, LeituraDoVideo, TrechoLido } from "@/lib/media/leitura-do-video";
 import { DOLAR_POR_IMAGEM, DOLAR_POR_RECORTE, DOLAR_POR_SEGUNDO_DE_VIDEO } from "@/lib/credits/higgsfield-tabela";
+import { tetoDasMidiasUsd } from "@/lib/media/teto-da-edicao";
 import type { ContextoDaJornada } from "@/lib/media/jornada/contexto";
 import type { IdeiaCrua } from "@/lib/media/jornada/ideias";
 import type { Frase } from "@/lib/media/jornada/linha-do-tempo";
@@ -124,12 +125,20 @@ export function custoDoElementoDaJornada(midia: MidiaDaJornada, comTexto: boolea
   return +(imagem + leitura).toFixed(4);
 }
 
-/** O teto de custo das mídias por vídeo (mostrado ao cliente na tela do passo 5). */
+/**
+ * O teto de custo das MÍDIAS por vídeo (mostrado ao cliente na tela do passo 5).
+ *
+ * Até 08/10 era US$ 1,70 por minuto só para as mídias (subiu de 0,6 em 07/10
+ * com a imagem em qualidade alta), e o diretor não tinha teto. Desde 08/10
+ * (Bruno: "qualquer vídeo custa no máximo US$ 1 por minuto") o teto é o da
+ * EDIÇÃO INTEIRA (lib/media/teto-da-edicao.ts): o plano orça as mídias até o
+ * teto menos a reserva do diretor, e a montagem soma o custo real de tudo.
+ * JORNADA_TETO_USD_POR_MINUTO continua valendo para prova local, por cima.
+ */
 export function tetoDoVideoUsd(duracao: number): number {
-  // 1,7 desde 07/10: a imagem foi para a qualidade ALTA (2,8x o preço do medium) e o teto subiu na mesma
-  // proporção, para a quantidade de elementos não cair com a troca (o Bruno pediu qualidade alta, sem corte).
-  const porMinuto = Number(process.env.JORNADA_TETO_USD_POR_MINUTO ?? 1.7);
-  return +Math.max(1, (duracao / 60) * porMinuto).toFixed(2);
+  const porMinuto = Number(process.env.JORNADA_TETO_USD_POR_MINUTO);
+  if (Number.isFinite(porMinuto) && porMinuto > 0) return +Math.max(1, (duracao / 60) * porMinuto).toFixed(2);
+  return tetoDasMidiasUsd(duracao);
 }
 
 // ─────────────────────────────── as perguntas ───────────────────────────────

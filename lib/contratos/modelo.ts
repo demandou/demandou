@@ -199,6 +199,7 @@ export function lerModelo(): string {
 const HISTORICO: Record<string, string> = {
   "1.2": "condicoes-gerais-1.2.md",
   "1.3": "condicoes-gerais-1.3.md",
+  "1.4": "condicoes-gerais-1.4.md",
 };
 
 export class ModeloNaoGuardado extends Error {}

@@ -67,8 +67,8 @@ export function ComoContamos({ className = "" }: { className?: string }) {
               <tr className="text-[var(--text-primary)]">
                 <th className="py-1 pr-3 font-semibold">Plano</th>
                 <th className="py-1 pr-3 font-semibold">Saldo do mês, em créditos</th>
-                <th className="py-1 pr-3 font-semibold">Cada gravação, em créditos</th>
-                <th className="py-1 font-semibold">Gravações</th>
+                <th className="py-1 pr-3 font-semibold">Parte fixa de cada gravação, em créditos</th>
+                <th className="py-1 font-semibold">Minutos de vídeo no mês</th>
               </tr>
             </thead>
             <tbody>

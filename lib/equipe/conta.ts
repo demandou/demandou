@@ -335,8 +335,8 @@ export async function consumoDoMembro(
   autorId: string,
   desde: Date,
   db: Leitor = prisma
-): Promise<{ creditos: number; gravacoes: number }> {
-  const [soma, gravacoes] = await Promise.all([
+): Promise<{ creditos: number; gravacoes: number; minutos: number }> {
+  const [soma, gravacoes, videos] = await Promise.all([
     db.creditTransaction.aggregate({
       where: { userId: contaId, autorId, carteira: "plano", createdAt: { gte: desde } },
       _sum: { amount: true },
@@ -344,6 +344,9 @@ export async function consumoDoMembro(
     db.creditTransaction.count({
       where: { userId: contaId, autorId, operation: "gravacao_enviada", createdAt: { gte: desde } },
     }),
+    // Os MINUTOS DE VÍDEO da pessoa (08/10, Bruno: "o titular vê quem está gastando mais"): a duração medida
+    // das gravações que ela mesma enviou neste ciclo (video_jobs.userId é quem enviou).
+    db.videoJob.aggregate({ where: { userId: autorId, createdAt: { gte: desde } }, _sum: { durationSec: true } }),
   ]);
-  return { creditos: Math.max(0, -(soma._sum.amount ?? 0)), gravacoes };
+  return { creditos: Math.max(0, -(soma._sum.amount ?? 0)), gravacoes, minutos: Math.round((videos._sum.durationSec ?? 0) / 60) };
 }

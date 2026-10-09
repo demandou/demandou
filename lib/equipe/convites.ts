@@ -435,6 +435,14 @@ export async function equipeNaTela(userId: string): Promise<EquipeNaTela> {
   });
   const creditosDe = (autor: string | null) => Math.max(0, -(porAutor.find((p) => p.autorId === autor)?._sum.amount ?? 0));
   const gravacoesDe = (autor: string | null) => gravPorAutor.find((p) => p.autorId === autor)?._count._all ?? 0;
+  // OS MINUTOS DE VÍDEO POR PESSOA (08/10, Bruno: "o titular e o admin veem quem está gastando mais"): a duração
+  // medida das gravações do ciclo, por quem enviou (video_jobs.userId), nos projetos desta conta.
+  const minutosPorAutor = await prisma.videoJob.groupBy({
+    by: ["userId"],
+    where: { createdAt: { gte: ciclo.inicio }, OR: [{ userId }, { project: { userId } }] },
+    _sum: { durationSec: true },
+  });
+  const minutosDe = (autor: string | null) => Math.round((minutosPorAutor.find((p) => p.userId === (autor ?? userId))?._sum.durationSec ?? 0) / 60);
   // As contas ligadas ao contrato desta conta (08/10): o consumo delas aparece
   // por pessoa, e não somado em "quem saiu da equipe".
   const idsLigadas = await contasLigadasA(userId);
@@ -462,19 +470,23 @@ export async function equipeNaTela(userId: string): Promise<EquipeNaTela> {
       gravacoesUsadas: uso.usadas,
       gravacoesDoCiclo: uso.limite || gravacoesDoCiclo(publico?.gravacoesPorMes ?? 0, dono.acessosExtras),
       renovaEm: uso.renovaEm,
-      consumoDoDono: { creditos: Math.max(0, -(somaDoDono._sum.amount ?? 0)), gravacoes: gravacoesDe(null) },
+      consumoDoDono: { creditos: Math.max(0, -(somaDoDono._sum.amount ?? 0)), gravacoes: gravacoesDe(null), minutos: minutosDe(null) },
       // Quem saiu da equipe neste ciclo continua tendo gastado da conta: a
       // soma aparece numa linha só, para o painel fechar com a cota (01/10).
       consumoDeQuemSaiu: (() => {
-        const vivos = new Set([...(membros.map((m) => m.userId).filter(Boolean) as string[]), ...idsLigadas]);
-        const autores = new Set([...porAutor.map((p) => p.autorId), ...gravPorAutor.map((p) => p.autorId)].filter((a): a is string => Boolean(a) && !vivos.has(a as string)));
+        const vivos = new Set([...(membros.map((m) => m.userId).filter(Boolean) as string[]), ...idsLigadas, userId]);
+        const autores = new Set(
+          [...porAutor.map((p) => p.autorId), ...gravPorAutor.map((p) => p.autorId), ...minutosPorAutor.map((p) => p.userId)].filter((a): a is string => Boolean(a) && !vivos.has(a as string))
+        );
         let creditos = 0;
         let gravacoes = 0;
+        let minutos = 0;
         for (const a of autores) {
           creditos += creditosDe(a);
           gravacoes += gravacoesDe(a);
+          minutos += minutosDe(a);
         }
-        return { creditos, gravacoes };
+        return { creditos, gravacoes, minutos };
       })(),
     },
     projetos: projetos.map((p) => ({ id: p.id, nome: p.name })),
@@ -488,8 +500,8 @@ export async function equipeNaTela(userId: string): Promise<EquipeNaTela> {
       projetos: m.projetos.map((p) => p.projectId),
       tetoGravacoes: m.tetoGravacoes,
       tetoCreditos: m.tetoCreditos,
-      consumo: m.userId ? { creditos: creditosDe(m.userId), gravacoes: gravacoesDe(m.userId) } : { creditos: 0, gravacoes: 0 },
+      consumo: m.userId ? { creditos: creditosDe(m.userId), gravacoes: gravacoesDe(m.userId), minutos: minutosDe(m.userId) } : { creditos: 0, gravacoes: 0, minutos: 0 },
     })),
-    ligadas: ligadas.map((u) => ({ id: u.id, email: u.email, nome: u.name, consumo: { creditos: creditosDe(u.id), gravacoes: gravacoesDe(u.id) } })),
+    ligadas: ligadas.map((u) => ({ id: u.id, email: u.email, nome: u.name, consumo: { creditos: creditosDe(u.id), gravacoes: gravacoesDe(u.id), minutos: minutosDe(u.id) } })),
   };
 }

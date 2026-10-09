@@ -119,6 +119,13 @@ export type PlanoPublico = {
    * longo, que passam disso. 1 h, 2 h e 5 h separam os planos pelo tipo de
    * conteúdo, e não só pelo volume: quem grava aula de 40 minutos cabe no
    * Starter, quem grava podcast de três horas precisa do Enterprise.
+   *
+   * 08/10 (Bruno): é o teto do TITULAR; membro da equipe e conta ligada ao
+   * contrato enviam até 5 minutos por gravação (lib/media/limits.ts). O
+   * Enterprise caiu de 5 h para 3 h ("podcast de até 3 horas"), e o envio
+   * ainda é limitado pelos minutos que sobram no mês (lib/limites-do-plano.ts).
+   * O cliente não lê este número como promessa: o cartão mostra só os minutos
+   * do mês.
    */
   duracaoMaximaMin: number;
   /**
@@ -290,6 +297,25 @@ export function referenciasDoPlano(args: {
  * O que ainda está em implantação vem escrito assim na própria linha: o
  * cliente paga um ano adiantado, e prometer sem dizer que falta seria vender o
  * que não existe.
+ *
+ * O SALDO DE 08/10 (decisão do Bruno: "limitar os minutos dos planos,
+ * diminuir para a margem permanecer dentro de 70%"). O crédito passou a ser a
+ * moeda única na régua de R$ 0,027 de IA por crédito, inclusive o minuto de
+ * vídeo editado (230 créditos, lib/media/limits.ts). Com isso, o custo máximo
+ * de um plano é o saldo vezes a régua mais a carteira de vídeo por IA ao
+ * custo dela (US$ 3,20 por geração cheia de 520), e os saldos foram
+ * dimensionados para esse máximo ficar em até 30% do LÍQUIDO (mensal menos
+ * 6% de imposto e 4,69% mais R$ 0,39 do Stripe), com o dólar a R$ 5,60:
+ *
+ *   Starter     20.000 + 4.160 de vídeo: R$ 708 de R$ 2.676 líquidos, 26,4%
+ *   Pro         32.000 + 4.160 (era 40.000 + 8.320): R$ 1.046 de 3.569, 29,3%
+ *   Enterprise  48.000 + 4.160 (era 60.000 + 20.800): R$ 1.497 de 5.061, 29,6%
+ *
+ * A carteira de vídeo por IA ficou a do Starter nos três: o vídeo por IA é o
+ * crédito mais caro para nós (US$ 0,0062 contra 0,0050 da régua) e o
+ * resultado ainda não compensa (decisão de 28/09). Os MINUTOS de cada plano
+ * não são escritos aqui: saem do saldo em lib/entregas-do-plano.ts, e um
+ * teste (scripts/testes/planos-margem-0810.test.mts) confere os 30%.
  */
 export const PLANOS_PUBLICOS: PlanoPublico[] = [
   {
@@ -306,6 +332,7 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
     arquivoMaximoGb: 4,
     // Saldo e carteira de vídeo do Starter (vieram de lib/stripe/index.ts em
     // 06/10, sem mudar valor). O porquê de cada número continua comentado lá.
+    // 08/10: ficou em 20.000 (26% do líquido no uso máximo, ver a nota acima).
     creditosPorMes: 20000,
     creditosDeVideoPorMes: 4160,
     referenciasPorProjeto: REFERENCIAS_POR_PROJETO.pro,
@@ -335,8 +362,9 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
     armazenamentoGb: 96,
     duracaoMaximaMin: 120,
     arquivoMaximoGb: 8,
-    creditosPorMes: 40000,
-    creditosDeVideoPorMes: 8320,
+    // Até 08/10: 40.000 e 8.320. Ver a nota "O SALDO DE 08/10" acima.
+    creditosPorMes: 32000,
+    creditosDeVideoPorMes: 4160,
     referenciasPorProjeto: REFERENCIAS_POR_PROJETO.business,
     destaque: true,
     features: [
@@ -358,10 +386,13 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
     marcas: 5,
     videosPorDia: 9,
     armazenamentoGb: 192,
-    duracaoMaximaMin: 300,
+    // 300 até 08/10. O podcast de até 3 horas é o do Enterprise, e só o titular
+    // o envia (lib/media/limits.ts, duracaoMaximaDaGravacaoMin).
+    duracaoMaximaMin: 180,
     arquivoMaximoGb: 20,
-    creditosPorMes: 60000,
-    creditosDeVideoPorMes: 20800,
+    // Até 08/10: 60.000 e 20.800. Ver a nota "O SALDO DE 08/10" acima.
+    creditosPorMes: 48000,
+    creditosDeVideoPorMes: 4160,
     referenciasPorProjeto: REFERENCIAS_POR_PROJETO.studio,
     destaque: false,
     features: [
@@ -369,7 +400,10 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
       // 06/10: números em lib/entregas-do-plano.ts (ver o Starter).
       "Tudo do Pro",
       "Acessos e marcas para o time comercial inteiro",
-      "Gravações longas, para podcast e evento",
+      // 08/10: saiu "Gravações longas, para podcast e evento". Os minutos de
+      // vídeo por mês são derivados do saldo (lib/entregas-do-plano.ts) e
+      // ficaram abaixo de um podcast; prometer o que o saldo não paga é
+      // vender o que não existe.
       "Reunião mensal de estratégia e gerente dedicado",
     ],
     extras: [demandaDay(3), DEMANDA_CAST],

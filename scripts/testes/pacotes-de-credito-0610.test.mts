@@ -33,7 +33,9 @@ test("a regra contra a assinatura: menor um pouco mais caro, médio perto, maior
   const [menor, medio, maior] = pacotes.pacotesNaTela();
   assert.ok(menor.contraOPlanoPorcento < 0 && menor.contraOPlanoPorcento >= -15, `menor: ${menor.contraOPlanoPorcento}%`);
   assert.ok(Math.abs(medio.contraOPlanoPorcento) <= 5, `médio: ${medio.contraOPlanoPorcento}%`);
-  assert.ok(maior.contraOPlanoPorcento >= 20, `maior: ${maior.contraOPlanoPorcento}%`);
+  // 08/10: o Pro ficou a 20% do Starter em crédito por real (8,0 contra 6,67), então o maior pacote
+  // compensa "claramente" com 15% ou mais, sem passar do Pro (teste abaixo).
+  assert.ok(maior.contraOPlanoPorcento >= 15, `maior: ${maior.contraOPlanoPorcento}%`);
 });
 
 test("nenhum pacote chega ao crédito do Pro, e a margem fica acima de 70% no teto de custo", () => {
@@ -49,11 +51,12 @@ test("o ganho em linguagem simples e o que rende", () => {
   const [menor, medio, maior] = pacotes.pacotesNaTela();
   assert.equal(menor.ganho, null);
   assert.equal(medio.ganho, "11% a mais de crédito por real que o pacote de R$ 97");
-  assert.equal(maior.ganho, "41% a mais de crédito por real que o pacote de R$ 97");
-  assert.equal(menor.rende, "1 corte vertical a mais");
-  assert.equal(medio.rende, "3 cortes verticais a mais");
-  assert.equal(maior.rende, "1 gravação de 30 minutos com a semana inteira e mais 2 cortes verticais");
-  assert.equal(creditosDaGravacao(30), 4150);
+  assert.equal(maior.ganho, "27% a mais de crédito por real que o pacote de R$ 97");
+  // 08/10: o corte vale 260 créditos e a gravação de 30 min, 8.350 (230 por minuto mais os fixos).
+  assert.equal(menor.rende, "2 cortes verticais a mais");
+  assert.equal(medio.rende, "5 cortes verticais a mais");
+  assert.equal(maior.rende, "18 cortes verticais a mais");
+  assert.equal(creditosDaGravacao(30), 8350);
 });
 
 test("nenhum texto da tabela tem travessão", () => {
@@ -111,7 +114,7 @@ function sessaoPaga(over: Record<string, unknown> = {}) {
     mode: "payment",
     payment_status: "paid",
     amount_total: 59700,
-    metadata: { userId: "dono", tipo: TIPO_DO_CHECKOUT, pacoteId: "creditos-597", creditos: "5200" },
+    metadata: { userId: "dono", tipo: TIPO_DO_CHECKOUT, pacoteId: "creditos-597", creditos: "4700" },
     ...over,
   };
 }
@@ -121,12 +124,12 @@ test("webhook: o pacote pago entra no saldo pela lib/credits, com extrato", asyn
   const ev = eventoAssinado(sessaoPaga());
   const r = await creditarPacoteDaSessao(ev.data.object as Stripe.Checkout.Session, b as never);
   assert.deepEqual(r, { creditado: true, motivo: "creditado" });
-  assert.equal(b.user.linhas[0].creditsBalance, 5320);
+  assert.equal(b.user.linhas[0].creditsBalance, 4820);
   const linha = b.creditTransaction.linhas[0];
   assert.equal(linha.operation, OPERACAO_DA_COMPRA);
-  assert.equal(linha.amount, 5200);
+  assert.equal(linha.amount, 4700);
   assert.equal(linha.refId, "cs_test_pacote_1");
-  assert.match(String(linha.note), /Pacote de R\$ 597: 5\.200 créditos, pagos R\$\s?597,00 no Stripe/);
+  assert.match(String(linha.note), /Pacote de R\$ 597: 4\.700 créditos, pagos R\$\s?597,00 no Stripe/);
 });
 
 test("webhook: o Stripe reenvia o mesmo evento (até ao mesmo tempo) e o crédito entra uma vez", async () => {
@@ -134,7 +137,7 @@ test("webhook: o Stripe reenvia o mesmo evento (até ao mesmo tempo) e o crédit
   const s = eventoAssinado(sessaoPaga()).data.object as Stripe.Checkout.Session;
   const rs = await Promise.all([creditarPacoteDaSessao(s, b as never), creditarPacoteDaSessao(s, b as never), creditarPacoteDaSessao(s, b as never)]);
   assert.equal(rs.filter((r) => r.creditado).length, 1);
-  assert.equal(b.user.linhas[0].creditsBalance, 5200);
+  assert.equal(b.user.linhas[0].creditsBalance, 4700);
   assert.equal(b.creditTransaction.linhas.length, 1);
 });
 

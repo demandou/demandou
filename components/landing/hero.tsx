@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BotaoDeCaptura } from "@/components/landing/botao-de-captura";
 import { SquadNaHero } from "@/components/landing/squad-na-hero";
 import { VIDEO_PITCH_PRONTO } from "@/components/landing/video-pitch";
+import { horasDeTrabalhoDoStarter } from "@/lib/entregas-do-plano";
 import {
   ArrowRight,
   Zap,
@@ -44,7 +45,9 @@ export function Hero() {
               <Zap className="w-3.5 h-3.5 shrink-0" />
               {/* A frase de plataforma no selo (02/10, noite): "IA" no topo
                   assustava, e o empresário lia "conteúdo genérico". */}
-              <span>A plataforma que gera 30 dias de conteúdo em 3 horas</span>
+              {/* As horas saem do plano (08/10, lib/entregas-do-plano.ts): os
+                  minutos de vídeo do Starter mais a hora de aprovação. */}
+              <span>A plataforma que gera 30 dias de conteúdo em {horasDeTrabalhoDoStarter()} horas</span>
             </div>
 
             <h1
@@ -63,9 +66,9 @@ export function Hero() {
               <span className="destaque-prata">Sem férias.</span>
             </h1>
 
-            {/* A frase das 3 horas mora no selo, acima do título (02/10, noite);
-                a linha que ficava aqui saiu para não repetir. A conta: 4
-                gravações de até 30 minutos no Starter mais a aprovação. */}
+            {/* A frase das horas mora no selo, acima do título (02/10, noite);
+                a linha que ficava aqui saiu para não repetir. A conta (08/10):
+                os minutos de vídeo do Starter mais a hora de aprovação. */}
             <div className="lp-sobe space-y-1.5 mb-6 max-w-lg" style={{ animationDelay: "0.32s" }}>
               <p className="text-xl font-semibold text-[var(--text-primary)]">O mais visto sempre vence o melhor.</p>
               <p className="text-xl text-[var(--text-muted)]">Quantas vezes o seu cliente te viu nos últimos 7 dias?</p>

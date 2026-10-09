@@ -11,9 +11,12 @@
  *   vídeo); quando ela acaba, ninguém gera até renovar ou recarregar. É isso
  *   que segura a margem: o gasto nunca passa do que o plano paga;
  * - acessos inclusos, contando o dono: Starter 2, Pro 5, Enterprise 10;
- * - acesso extra a R$ 197 por mês, que soma 2.000 créditos e 1 gravação por
- *   mês à cota (cada crédito extra custa no pior caso R$ 0,027 de IA: R$ 54
- *   contra R$ 197, 72,6% de margem no acesso extra).
+ * - acesso extra a R$ 197 por mês, que soma créditos e 1 gravação por mês à
+ *   cota. Eram 2.000 créditos até 08/10 (R$ 54 de IA contra R$ 197 brutos,
+ *   72,6%); com a régua conferida sobre o LÍQUIDO (R$ 175,55 depois de 6% de
+ *   imposto e do Stripe) e o dólar a R$ 5,60, 2.000 davam 32% de custo, e
+ *   1.800 dão 28,9% (margem de 71%). O número vale para a cota e para a
+ *   frase do cartão; o contrato (Anexo I) cita o mesmo.
  */
 
 /** Acessos inclusos por plano, CONTANDO o dono. Chaves são o `User.plan`. */
@@ -25,7 +28,8 @@ export const ACESSOS_INCLUSOS: Record<string, number> = {
 
 export const ACESSO_EXTRA = {
   precoMensal: 197,
-  creditosPorMes: 2000,
+  // Até 08/10: 2000.
+  creditosPorMes: 1800,
   gravacoesPorMes: 1,
 } as const;
 
@@ -272,7 +276,7 @@ export type MembroNoPainel = {
   projetos: string[];
   tetoGravacoes: number | null;
   tetoCreditos: number | null;
-  consumo: { creditos: number; gravacoes: number };
+  consumo: { creditos: number; gravacoes: number; minutos: number };
 };
 
 export type PainelDaEquipe = {
@@ -288,9 +292,9 @@ export type PainelDaEquipe = {
     gravacoesDoCiclo: number;
     renovaEm: string | null;
     /** O dono também gasta: o consumo dele no ciclo, para o painel fechar. */
-    consumoDoDono: { creditos: number; gravacoes: number };
+    consumoDoDono: { creditos: number; gravacoes: number; minutos: number };
     /** O que membros que já saíram gastaram neste ciclo. */
-    consumoDeQuemSaiu: { creditos: number; gravacoes: number };
+    consumoDeQuemSaiu: { creditos: number; gravacoes: number; minutos: number };
   };
   projetos: { id: string; nome: string }[];
   membros: MembroNoPainel[];
@@ -298,7 +302,7 @@ export type PainelDaEquipe = {
    * As contas próprias que o admin ligou ao contrato desta conta (08/10): usam
    * o saldo dela, cada uma no próprio projeto. A titular vê o uso de cada uma.
    */
-  ligadas?: Array<{ id: string; email: string; nome: string | null; consumo: { creditos: number; gravacoes: number } }>;
+  ligadas?: Array<{ id: string; email: string; nome: string | null; consumo: { creditos: number; gravacoes: number; minutos: number } }>;
 };
 
 export type EquipeNaTela =
@@ -308,7 +312,7 @@ export type EquipeNaTela =
       dono: string;
       tetoGravacoes: number | null;
       tetoCreditos: number | null;
-      consumo: { creditos: number; gravacoes: number };
+      consumo: { creditos: number; gravacoes: number; minutos: number };
       /** Conta ligada ao contrato (08/10): `dono` é o contrato por extenso, com a titular. */
       contrato?: boolean;
     };

@@ -375,6 +375,8 @@ export function VideoUpload({
           blobUrl: blob.url,
           originalName: arquivo.file.name,
           sizeBytes: arquivo.file.size,
+          // A duração lida aqui (08/10): a trava dos minutos do mês vale já no registro.
+          duracaoSeg: Number.isFinite(arquivo.duracao) && arquivo.duracao > 0 ? arquivo.duracao : null,
         }),
       });
 
@@ -479,8 +481,11 @@ export function VideoUpload({
                 {/* O número vem da constante, e não escrito à mão. O limite
                     subiu de 60 para 120 em 22/08 e este texto ficou para trás,
                     prometendo metade do que a plataforma aceita. */}
-                MP4, MOV, MKV ou WebM. Até {duracaoPorExtenso(envio.duracaoMaximaSeg)}
-                {envio.plano ? ` no ${envio.plano}` : ""}.
+                {/* OS MINUTOS DO MÊS (08/10): o teto do envio é o que sobra dos
+                    minutos do cartão; zerado, a frase diz isso em vez de "até 0 minutos". */}
+                {envio.minutos && envio.minutos.restantes <= 0
+                  ? `MP4, MOV, MKV ou WebM. Os ${envio.minutos.porMes} minutos de vídeo deste mês${envio.plano ? ` do ${envio.plano}` : ""} já foram usados.`
+                  : `MP4, MOV, MKV ou WebM. Até ${duracaoPorExtenso(envio.duracaoMaximaSeg)}${envio.plano ? ` no ${envio.plano}` : ""}${envio.minutos ? ` (${envio.minutos.porMes} minutos de vídeo por mês)` : ""}.`}
               </span>
               <span className="block text-xs text-[var(--text-muted)] mt-1">
                 Gravou em partes? Escolha todos os arquivos de uma vez e diga a ordem em seguida.

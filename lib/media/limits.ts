@@ -47,13 +47,42 @@ export const MAX_DURACAO_SEGUNDOS = 300 * 60;
  * Mora aqui, e não em `lib/limites-do-plano.ts`, porque o navegador precisa
  * dele para recusar ANTES de subir um byte, e aquele módulo importa o banco.
  */
+/**
+ * A DURAÇÃO DE CADA GRAVAÇÃO POR PAPEL (08/10, decisão do Bruno): "vendedor
+ * ligado ao contrato não sobe vídeo acima de 5 minutos; vídeo longo só o
+ * titular; podcast de 3 horas só o titular do Enterprise". Quem envia pela
+ * equipe ou pelo contrato é "membro"; quem paga é "titular". A duração do
+ * plano (1 h, 2 h, 3 h) só vale para o titular.
+ */
+export type PapelDoEnvio = "titular" | "membro";
+export const MINUTOS_POR_GRAVACAO_DO_MEMBRO = 5;
+
+export function duracaoMaximaDaGravacaoMin(papel: PapelDoEnvio, duracaoMaximaDoPlanoMin: number): number {
+  return papel === "membro" ? Math.min(MINUTOS_POR_GRAVACAO_DO_MEMBRO, duracaoMaximaDoPlanoMin) : duracaoMaximaDoPlanoMin;
+}
+
+/** "Vídeos acima de 5 minutos só a titular do contrato envia." A mesma frase na tela de envio e na recusa do servidor. */
+export function fraseDoVideoLongoDoMembro(limiteMin: number, contrato: boolean, dono: string | null | undefined): string {
+  const quem = contrato ? "a titular do contrato" : dono?.trim() ? `${dono.trim()}, que administra a conta,` : "quem administra a conta";
+  return `Vídeos acima de ${limiteMin} minutos só ${quem} envia.`;
+}
+
 export type LimitesDoEnvio = {
+  /** O que ESTE envio pode ter: o menor entre a duração que o papel permite e os minutos que sobram no mês. */
   duracaoMaximaSeg: number;
   bytesMaximo: number;
   /** O nome que o cliente vê. Null para acesso interno ou sem plano. */
   plano: string | null;
-  /** Quem resolve se não couber: nome e duração do plano de cima. */
-  proximo: { nome: string; duracaoMaximaMin: number; arquivoMaximoGb: number } | null;
+  /** Quem resolve se não couber: nome, duração e minutos por mês do plano de cima. */
+  proximo: { nome: string; duracaoMaximaMin: number; arquivoMaximoGb: number; minutosPorMes?: number } | null;
+  /**
+   * OS MINUTOS DE VÍDEO DO MÊS (08/10): o teto do plano e o que ainda sobra no
+   * ciclo. Null para acesso interno. É o mesmo número do cartão do plano
+   * (lib/entregas-do-plano.ts, `minutosPorMesDoPlano`).
+   */
+  minutos?: { porMes: number; usados: number; restantes: number } | null;
+  /** O PAPEL de quem envia (08/10) e a duração que ele permite por gravação; `dono` é quem envia o vídeo longo. */
+  papel?: { tipo: PapelDoEnvio; duracaoMaximaMin: number; dono: string | null; contrato: boolean } | null;
 };
 
 /** Sem plano conhecido, vale o maior teto: quem barra de verdade é o servidor. */
@@ -62,7 +91,20 @@ export const LIMITES_SEM_PLANO: LimitesDoEnvio = {
   bytesMaximo: MAX_BYTES,
   plano: null,
   proximo: null,
+  minutos: null,
+  papel: null,
 };
+
+/**
+ * O TETO DE DURAÇÃO DE UM ENVIO (08/10), sem banco: o menor entre a duração
+ * máxima técnica do plano e os minutos que sobram no mês. Quem já usou os
+ * minutos do mês não sobe mais nada (0 s), e a tela diz por quê.
+ */
+export function duracaoMaximaDoEnvioSeg(duracaoMaximaMin: number, minutosRestantes: number | null | undefined): number {
+  const doPlano = duracaoMaximaMin * 60;
+  if (minutosRestantes === null || minutosRestantes === undefined) return doPlano;
+  return Math.max(0, Math.min(doPlano, Math.floor(minutosRestantes) * 60));
+}
 
 /** "1 hora", "2 horas", "90 minutos": duração como gente fala. */
 export function duracaoPorExtenso(segundos: number): string {
@@ -107,8 +149,10 @@ export const MAX_X = 280;
 // Até 30/09: export const CREDITOS_POR_MINUTO = 17;
 // Até 02/10: 2140 (550 + 390 + 3 x 400).
 // Até 03/10: 2200. Imagens em qualidade média (aprovado pelo Bruno em 03/10).
-export const CREDITOS_FIXOS_DA_EDICAO = 2300; // 590 + 390 + 3 x 440 (03/10)
-export const CREDITOS_POR_MINUTO = 61; // 25 + 36 (03/10, era 25 + 28)
+// Até 08/10: 2300 (590 + 390 + 3 x 440) e 61 por minuto (25 + 36).
+// Desde 08/10 os dois saem das partes abaixo, para nunca mais divergirem delas.
+export const CREDITOS_FIXOS_DA_EDICAO = 1430; // 590 + 60 + 3 x 260 (08/10); conferido num teste contra as partes
+export const CREDITOS_POR_MINUTO = 230; // 25 + 205 (08/10); CREDITOS_POR_MINUTO_DE_VIDEO, abaixo
 
 /**
  * OS CRÉDITOS EM DUAS PARTES (30/09, tela de roteiro). O Bruno: "essa etapa
@@ -148,6 +192,35 @@ export const CREDITOS_POR_MINUTO = 61; // 25 + 36 (03/10, era 25 + 28)
  *
  * Conferência: 22 min com 3 cortes dá 3.174 créditos e US$ 14,40 no modelo; o
  * medido reprecificado foi US$ 11,83. O modelo erra para cima, do lado seguro.
+ *
+ * O PREÇO DE 08/10 (decisão do Bruno: "qualquer vídeo custa no máximo US$ 1
+ * por minuto" e "a margem combinada de 70% nunca é prejudicada"). O crédito
+ * é a MOEDA ÚNICA e a régua de R$ 0,027 de IA por crédito (US$ 0,005037,
+ * DOLAR_POR_CREDITO) vale para toda ação, inclusive o minuto de vídeo
+ * editado, que até aqui furava a régua: 61 créditos por minuto deixavam
+ * gastar US$ 0,31 num minuto que custava US$ 1,34 medido (R$ 0,12 de IA por
+ * crédito). A conta do minuto (lib/media/teto-da-edicao.ts):
+ *
+ * - a EDIÇÃO inteira (plano, prompts, textos, direção, geração, montagem)
+ *   tem teto de US$ 1,00 por minuto, somado em tempo real na montagem;
+ * - FORA da edição rodam transcrição, leitura do vídeo, seleção, radar,
+ *   limpeza, capas e enquadramento: medido US$ 0,10 a 0,13 por minuto na
+ *   jornada de 07 e 08/10; entra 0,15;
+ * - US$ 1,15 por minuto na régua são 228,3 créditos; cobra-se 230, repartidos
+ *   entre as duas partes: 25 no roteiro (o que roda antes de aprovar) e 205
+ *   no completo (a edição sob o teto, US$ 1,03 na régua);
+ * - os FIXOS por gravação cobrem o que não escala com o minuto: a semana de
+ *   peças escritas, a seleção e o radar no roteiro (590, ~US$ 2,6 medido); as
+ *   capas, o enquadramento e a redação do completo (60, US$ 0,30); cada corte
+ *   (260): o corte reaproveita as mídias do completo e gera sozinho no máximo
+ *   US$ 1 (TETO_USD_DO_CORTE), mais textos, capa, redação e revisão (~0,2);
+ *   260 créditos deixam gastar US$ 1,31. O 390 fixo do completo (as 4 cenas
+ *   de cinema do Kling) saiu: as cenas agora estão dentro do teto por minuto.
+ *
+ * Um minuto de vídeo editado com a semana sugerida custa então 1.450 fixos
+ * (590 + 60 + 3 x 260 + 20 da abertura) mais 230 por minuto. É deste número
+ * que saem os minutos de cada plano (lib/entregas-do-plano.ts), e não o
+ * contrário.
  */
 // Até 30/09 (escala de 29/09, sem a margem):
 // export const CREDITOS_DO_ROTEIRO_FIXOS = 90;
@@ -158,28 +231,38 @@ export const CREDITOS_POR_MINUTO = 61; // 25 + 36 (03/10, era 25 + 28)
 // 550 até 03/10; a semana de artes subiu para o GPT Image 2 medium (prova A/B de 02/10).
 export const CREDITOS_DO_ROTEIRO_FIXOS = 590;
 export const CREDITOS_DO_ROTEIRO_POR_MINUTO = 25;
-export const CREDITOS_DO_COMPLETO_FIXOS = 390;
+// 390 até 08/10 (as 4 cenas de cinema do Kling, hoje dentro do teto por minuto).
+export const CREDITOS_DO_COMPLETO_FIXOS = 60;
 // 22 até 01/10 à tarde. Subiu para 28 por decisão do Bruno: o diretor do
 // completo passou a cobrir o vídeo inteiro (cotas por minuto, o dobro de
 // inserções) e custou cerca de US$ 2,5 num vídeo de 22 min, o que deixava a
 // soma de roteiro e completo encostada no teto de R$ 0,027 por crédito.
 // 28 até 03/10; imagens do completo em medium (+US$ 0,07 por minuto).
-export const CREDITOS_DO_COMPLETO_POR_MINUTO = 36;
+// 36 até 08/10; desde então o minuto editado paga o teto de US$ 1 na régua.
+export const CREDITOS_DO_COMPLETO_POR_MINUTO = 205;
+/**
+ * O MINUTO DE VÍDEO EDITADO, em créditos: a soma das duas partes por minuto.
+ * É o número que vira "minutos de vídeo por mês" no cartão do plano.
+ */
+export const CREDITOS_POR_MINUTO_DE_VIDEO = CREDITOS_DO_ROTEIRO_POR_MINUTO + CREDITOS_DO_COMPLETO_POR_MINUTO;
 // 400 até 02/10. Subiu para 420 com a aprovação do Bruno: a revisão visual
 // (~US$ 0,08 por corte) deixava o corte 3% acima da régua de R$ 0,027 por crédito.
 // 420 até 03/10; 2 a 3 imagens por corte em medium.
-export const CREDITOS_POR_CORTE_APROVADO = 440;
+// 440 até 08/10. Desde a jornada (08/10) o corte usa as mídias do completo e
+// o que gera sozinho cabe em US$ 1 (TETO_USD_DO_CORTE): 260 na régua.
+export const CREDITOS_POR_CORTE_APROVADO = 260;
 /**
  * A DEVOLUÇÃO DA EDIÇÃO NÃO ENTREGUE (02/10, prometida ao Bruno): quando a
  * montagem de efeitos falha por erro nosso ou a revisão visual entrega a
  * versão segura (sem inserção), volta a parte que não foi entregue. No
  * completo, a parte do completo inteira (fixo e por minuto, e a abertura se
  * ela saiu): o corte limpo de fala já vinha da primeira parte. No corte, a
- * MONTAGEM: 250 dos 420 (a cena de cinema e as imagens, que o comentário de
- * cima diz serem o grosso do corte); capa, enquadramento, revisão e redação
- * foram entregues. Número aprovado pelo Bruno em 02/10.
+ * MONTAGEM: era 250 dos 420 (a cena de cinema e as imagens, o grosso do
+ * corte); desde 08/10, 200 dos 260 (as mídias e a montagem sob o teto de
+ * US$ 1); capa, enquadramento, revisão e redação foram entregues.
  */
-export const CREDITOS_DA_MONTAGEM_DO_CORTE = 250;
+// Até 08/10: 250 (de 440).
+export const CREDITOS_DA_MONTAGEM_DO_CORTE = 200;
 /**
  * A ABERTURA COM OS MELHORES MOMENTOS do completo (01/10, estilo MrBeast):
  * a escolha das frases no Sonnet (~US$ 0,05 com o vídeo de 22 min) e ~1 min
@@ -432,6 +515,28 @@ export function validarVideo(
   if (duracaoSegundos > limites.duracaoMaximaSeg) {
     const min = Math.round(duracaoSegundos / 60);
     const doPlano = limites.plano ? ` no ${limites.plano}` : "";
+    // O PAPEL (08/10): membro e conta ligada ao contrato só enviam até 5 minutos; a frase diz quem envia o longo.
+    const papel = limites.papel;
+    if (papel?.tipo === "membro" && duracaoSegundos > papel.duracaoMaximaMin * 60) {
+      return {
+        ok: false,
+        motivo: `Esse vídeo tem ${min} minutos. ${fraseDoVideoLongoDoMembro(papel.duracaoMaximaMin, papel.contrato, papel.dono)}`,
+        dica: `Corte no trecho mais forte e envie de novo, ou peça a ${papel.contrato ? "titular do contrato" : papel.dono?.trim() || "quem administra a conta"} para enviar o vídeo inteiro.`,
+      };
+    }
+    // OS MINUTOS DO MÊS (08/10): quando o que barra é o total de minutos do
+    // ciclo, e não o tamanho do arquivo, a frase diz isso, com o número do
+    // cartão, e aponta o plano de cima pelos minutos dele.
+    const m = limites.minutos;
+    if (m && duracaoSegundos > m.restantes * 60 - 1e-9) {
+      const sobe = limites.proximo?.minutosPorMes && duracaoSegundos <= (limites.proximo.minutosPorMes - m.usados) * 60 ? ` O ${limites.proximo.nome} tem ${limites.proximo.minutosPorMes} minutos por mês.` : "";
+      const restam = m.restantes > 0 ? `ainda cabem ${duracaoPorExtenso(Math.floor(m.restantes) * 60)} este mês` : "os minutos deste mês já foram usados";
+      return {
+        ok: false,
+        motivo: `Esse vídeo tem ${min} minutos; o ${limites.plano ?? "plano"} inclui ${duracaoPorExtenso(m.porMes * 60)} de vídeo editado por mês, e ${restam}.`,
+        dica: `Corte no trecho mais forte e envie de novo, ou espere a próxima reposição.${sobe}`,
+      };
+    }
     const sobe =
       limites.proximo && duracaoSegundos <= limites.proximo.duracaoMaximaMin * 60
         ? ` O ${limites.proximo.nome} aceita até ${duracaoPorExtenso(limites.proximo.duracaoMaximaMin * 60)}.`

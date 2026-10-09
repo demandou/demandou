@@ -77,6 +77,8 @@ export function Equipe({ inicial }: { inicial: EquipeNaTela }) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Uso rotulo="Créditos que você usou neste mês" usado={m.consumo.creditos} teto={m.tetoCreditos} ajuda={ajudaDoTetoDeCreditos()} />
           <Uso rotulo="Vídeos gravados que você enviou neste mês" usado={m.consumo.gravacoes} teto={m.tetoGravacoes} ajuda={TETO_DE_GRAVACOES.ajuda} />
+          {/* Os minutos de vídeo que a pessoa enviou (08/10): a unidade que o plano promete. */}
+          <Uso rotulo="Minutos de vídeo que você enviou neste mês" usado={m.consumo.minutos} teto={null} ajuda="A duração medida das gravações que você enviou neste mês, somada. Os minutos saem do saldo da conta." />
         </div>
       </section>
     );
@@ -281,6 +283,8 @@ function PainelDoDono({ inicial }: { inicial: PainelDaEquipe }) {
                 <th className="pb-2 pr-3 font-medium">Pessoa</th>
                 <th className="pb-2 pr-3 font-medium">{TETO_DE_CREDITOS.curto}</th>
                 <th className="pb-2 pr-3 font-medium" title={TETO_DE_GRAVACOES.ajuda}>{TETO_DE_GRAVACOES.curto}</th>
+                {/* Os minutos de vídeo por pessoa (08/10, Bruno: "o titular vê quem está gastando mais"). */}
+                <th className="pb-2 pr-3 font-medium" title="A duração medida das gravações que a pessoa enviou neste mês, somada.">Minutos de vídeo</th>
                 <th className="pb-2 font-medium">Projetos</th>
               </tr>
             </thead>
@@ -289,6 +293,7 @@ function PainelDoDono({ inicial }: { inicial: PainelDaEquipe }) {
                 <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{c.nome} <span className="text-xs" style={{ color: "var(--text-muted)" }}>(você)</span></td>
                 <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDoDono.creditos)}</td>
                 <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDoDono.gravacoes)}</td>
+                <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDoDono.minutos)} min</td>
                 <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>Todos</td>
               </tr>
               {eq.membros.map((m) => (
@@ -305,14 +310,16 @@ function PainelDoDono({ inicial }: { inicial: PainelDaEquipe }) {
                   </td>
                   <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.creditos)}</td>
                   <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.gravacoes)}</td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.minutos)} min</td>
                   <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>O próprio</td>
                 </tr>
               ))}
-              {(c.consumoDeQuemSaiu.creditos > 0 || c.consumoDeQuemSaiu.gravacoes > 0) && (
+              {(c.consumoDeQuemSaiu.creditos > 0 || c.consumoDeQuemSaiu.gravacoes > 0 || c.consumoDeQuemSaiu.minutos > 0) && (
                 <tr className="border-t" style={{ borderColor: "var(--border)" }}>
                   <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--text-muted)" }}>Quem saiu da equipe neste mês</td>
                   <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDeQuemSaiu.creditos)}</td>
                   <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDeQuemSaiu.gravacoes)}</td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDeQuemSaiu.minutos)} min</td>
                   <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>Acesso removido</td>
                 </tr>
               )}
@@ -405,11 +412,12 @@ function LinhaDoMembro({ m, projetos, aoMudar }: { m: MembroNoPainel; projetos: 
           {n(m.consumo.gravacoes)}
           {m.tetoGravacoes !== null && <span className="text-xs" style={{ color: "var(--text-muted)" }}> de {n(m.tetoGravacoes)}</span>}
         </td>
+        <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(m.consumo.minutos)} min</td>
         <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>{nomesDosProjetos}</td>
       </tr>
       {editando && (
         <tr>
-          <td colSpan={4} className="pb-4">
+          <td colSpan={5} className="pb-4">
             <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: "var(--border)", background: "var(--bg-primary)" }}>
               <CamposDoMembro f={f} setF={setF} projetos={projetos} />
               <Button size="sm" loading={ocupado} onClick={() => void agir("PATCH", corpoDoForm(f), "Acesso atualizado.")}>

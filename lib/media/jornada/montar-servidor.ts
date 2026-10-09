@@ -11,6 +11,7 @@ import { elementosAprovados } from "@/lib/media/jornada/revisao";
 import { escreverTextos, type TextoDoElemento } from "@/lib/media/jornada/textos";
 import { direcaoDaEdicao, type DirecaoDaEdicao } from "@/lib/media/jornada/direcao";
 import type { AmostraDaJornada, EstadoDaJornada } from "@/lib/media/jornada/estado";
+import type { CaixaDaEdicao } from "@/lib/media/teto-da-edicao";
 
 /**
  * OS PASSOS 6 E 7 DA JORNADA, juntos (E5): da lista APROVADA (congelada) à
@@ -41,6 +42,11 @@ export type EntradaDaMontagemDaJornada = {
   projectId?: string | null;
   /** A direção já escolhida (os cortes usam a do completo); ausente, é escrita e escolhida aqui. */
   direcao?: DirecaoDaEdicao | null;
+  /**
+   * A CAIXA DO TETO DA EDIÇÃO (08/10): a mesma que o redator, o JEV e a geração
+   * (`geracao.caixa`) somam. Aqui ela só é lida, para o resumo do custo.
+   */
+  caixa?: CaixaDaEdicao | null;
 };
 
 export type MontagemDaJornada = {
@@ -55,7 +61,10 @@ export type MontagemDaJornada = {
   /** A direção visual escolhida para esta edição (08/10). */
   direcao: DirecaoDaEdicao | null;
   trilha: boolean;
-  custoUsd: { geracao: number };
+  /** `geracao`: o que as mídias custaram; `edicao`: tudo o que a caixa somou (plano, diretor, JEV e mídias), quando há caixa. */
+  custoUsd: { geracao: number; edicao: number | null; tetoUsd: number | null };
+  /** Os elementos que ficaram de fora por teto (08/10), para o aviso do admin. */
+  foraDoTeto: string[];
   tempos: Record<string, number>;
 };
 
@@ -128,9 +137,13 @@ export async function montarPelaJornada(e: EntradaDaMontagemDaJornada): Promise<
   // falha da esteira, não um vídeo. Para aqui com o motivo, para o admin ver e o vídeo poder ser refeito.
   // Os gráficos não têm mídia: entram como "gerados" sem url, e a montagem os desenha pelo texto.
   for (const x of entradas.filter((y) => y.midia === "grafico")) g.gerados.push({ id: x.id, url: null, tipo: null, formato: "grafico", proporcao: null, custoUsd: 0, modelo: "grafico em código", rodadas: 0, prompt: "", avisoAdmin: null, avisoCliente: null, tempos: { gerar: 0, recorte: 0, leitura: 0 } });
-  if (paraGerar.length > 0 && !g.gerados.some((x) => x.url) && !entradas.some((x) => x.midia === "grafico")) {
-    throw new Error(`nenhum dos ${paraGerar.length} elementos aprovados foi gerado (${[...erros, ...g.gerados.map((x) => x.avisoAdmin).filter(Boolean)].slice(0, 3).join("; ")})`);
+  // O TETO (08/10) nunca é falha: o que ficou de fora por teto não conta como "não gerado"; a montagem segue com o que há.
+  const foraDoTeto = g.gerados.filter((x) => x.foraDoTeto).map((x) => x.id);
+  const tentados = g.gerados.filter((x) => !x.foraDoTeto && x.modelo !== "grafico em código" && x.modelo !== "mantida desta edição");
+  if (tentados.length > 0 && !g.gerados.some((x) => x.url) && !entradas.some((x) => x.midia === "grafico")) {
+    throw new Error(`nenhum dos ${tentados.length} elementos aprovados foi gerado (${[...erros, ...g.gerados.map((x) => x.avisoAdmin).filter(Boolean)].slice(0, 3).join("; ")})`);
   }
+  if (foraDoTeto.length && e.caixa) erros.push(`teto da edição: ${foraDoTeto.length} elemento(s) de fora (${e.caixa.resumo()})`);
   const geradoDe = new Map(g.gerados.map((x) => [x.id, x]));
   // PASSO 7: as opções pelo código, a escolha pelo JEV, a edição.
   const m = await montarEdicao({
@@ -162,7 +175,8 @@ export async function montarPelaJornada(e: EntradaDaMontagemDaJornada): Promise<
     textos: txt.textos,
     direcao: dir.direcao,
     trilha: m.trilha,
-    custoUsd: { geracao: g.custoUsd },
+    custoUsd: { geracao: g.custoUsd, edicao: e.caixa ? e.caixa.gasto : null, tetoUsd: e.caixa ? e.caixa.tetoUsd : null },
+    foraDoTeto,
     tempos,
   };
 }
