@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, CalendarDays, Sparkles, Loader2, CheckCircle2, PencilLine, ArrowRight,
   X, Clock, MessageCircle, Send, ThumbsDown, Image as ImageIcon,
   Video, LayoutGrid, AlarmClock, Zap, Ban, RotateCcw, Download, AlertCircle,
-  FileText, Search, Pencil, Globe, Bot, ShieldAlert,
+  FileText, Search, Pencil, Globe, Bot,
   BarChart2, List, BookOpen, Archive, PieChart, Eye, MoreVertical, RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,6 +58,8 @@ import { lerMontagem } from "@/lib/media/estado-da-montagem";
 import { TentarMontagem } from "@/components/video/tentar-montagem";
 import { AvisoDaMontagem, type FalhaDaMontagem } from "@/components/video/aviso-da-montagem";
 import { alcanceDaReprovacao, rotuloDaReprovacao, avisoDaReprovacao, ESTADOS_MORTOS } from "@/lib/content/reprovacao";
+import { JanelaDeReprovacao, type ResultadoNaTela } from "@/components/posts/janela-de-reprovacao";
+import { EstadoDaReprovacaoNoCard } from "@/components/posts/estado-da-reprovacao";
 import { etiquetaDaPeca } from "@/lib/posts/etiqueta-da-peca";
 import { cardsDaPeca, chaveDaPeca, familiaDaChave } from "@/lib/posts/cards-da-peca";
 import { chaveDaPecaDoVideo, pecaDoPost, postsDaMesmaPeca } from "@/lib/posts/peca-do-video";
@@ -1366,7 +1368,6 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
   const [chamadoAberto, setChamadoAberto] = useState<string | null>(null);
   const [abrindoChamado] = useState(false); // a janela de ajuda cuida do envio (02/10)
   const [publicandoComoImagem, setPublicandoComoImagem] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0); // for carousel navigation
   const [publishResult, setPublishResult] = useState<{
     platform: string;
@@ -2264,38 +2265,40 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
    * que é o comportamento antigo, mas dito antes no rótulo do botão), e o card
    * só cai para `rejected` quando não sobra nenhum post vivo no dia.
    */
-  async function handleRejectFlow() {
+  /**
+   * REPROVAR PEDE MOTIVO (decisão do Bruno em 08/10): o clique abre a janela
+   * (components/posts/janela-de-reprovacao.tsx), que grava cada peça pela rota
+   * POST /api/posts/[id]/reprovar com a categoria e o texto; o servidor
+   * confere o motivo contra as provas, devolve os créditos quando o erro é
+   * confirmado e responde a situação. Aqui fica só o que é do DIA: o card
+   * cai quando não sobra post vivo, e o aviso do alcance.
+   */
+  function handleRejectFlow() {
     if (!localCard.postId) return;
-    if (!showRejectForm) {
-      setShowRejectForm(true);
-      return;
-    }
-    const alcance = alcanceReprovacao;
-    if (alcance.alvos.length === 0) {
+    if (alcanceReprovacao.alvos.length === 0) {
       toast.error("Nada para reprovar: os posts deste dia já foram publicados ou arquivados.");
       return;
     }
+    setShowRejectForm(true);
+  }
+
+  async function concluirReprovacao(resultados: ResultadoNaTela[]) {
+    const alcance = alcanceReprovacao;
+    if (!resultados.length) return;
     setApproving(true);
     try {
-      const ids = alcance.alvos.map((p) => p.id);
-      for (const pid of ids) {
-        await fetch(`/api/posts/${pid}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "rejected" }),
-        });
-      }
-      if (rejectReason.trim()) {
-        await fetch(`/api/campaign-cards/${localCard.id}/feedback`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "rejection",
-            reason: rejectReason,
-            cardType: localCard.cardType,
-          }),
-        }).catch(() => {});
-      }
+      // O feedback do card continua alimentando a memória antiga da campanha
+      // (type "rejection"), com o motivo por extenso.
+      const primeiro = resultados[0];
+      await fetch(`/api/campaign-cards/${localCard.id}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "rejection",
+          reason: `${primeiro.estado.categoria}${primeiro.estado.texto ? `: ${primeiro.estado.texto}` : ""}`,
+          cardType: localCard.cardType,
+        }),
+      }).catch(() => {});
 
       /**
        * O DIA SÓ É "REJEITADO" QUANDO NÃO SOBRA NADA DE PÉ NELE, e isso agora
@@ -2314,7 +2317,7 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
        * redator, revisão, publicação) e o calendário lê o do publicador, não o
        * que estava aberto.
        */
-      if (!alcance.sobrouVivo) {
+      if (!alcance.sobrouVivo && resultados.length === alcance.alvos.length) {
         const updated = { ...localCard, status: "rejected" };
         setLocalCard(updated);
         onCardUpdate(updated);
@@ -2328,11 +2331,14 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
       }
 
       setShowRejectForm(false);
-      setRejectReason("");
       setEscolhidos(new Set());
       await refreshDayPosts();
       onWeekRefresh?.();
-      toast.success(avisoDaReprovacao(alcance));
+      // A situação do crédito, dita na hora: devolvido, em análise ou mantido.
+      const devolvidos = resultados.reduce((s, r) => s + (r.estado.situacao === "devolvido" ? r.estado.creditos : 0), 0);
+      const emAnalise = resultados.filter((r) => r.estado.situacao === "em_analise").length;
+      const detalhe = devolvidos > 0 ? ` ${devolvidos} créditos devolvidos.` : emAnalise > 0 ? ` ${emAnalise === 1 ? "A peça foi" : `${emAnalise} peças foram`} para a análise do admin.` : resultados[0]?.estado.situacao === "devolvido" ? " Erro confirmado: refazer é grátis." : " O crédito fica; refazer cobra.";
+      toast.success(`${avisoDaReprovacao({ ...alcance, alvos: alcance.alvos.filter((a) => resultados.some((r) => r.id === a.id)) })}${detalhe}`);
     } catch {
       toast.error("Erro.");
     } finally {
@@ -3813,6 +3819,14 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                       );
                     })()}
 
+                    {/* A SITUAÇÃO DE CADA PEÇA REPROVADA COM MOTIVO (08/10): em
+                        análise, créditos devolvidos ou mantido, com o X de descartar. */}
+                    {postsDoDia
+                      .filter((p) => p.status === "rejected")
+                      .map((p) => (
+                        <EstadoDaReprovacaoNoCard key={`reprovacao-${p.id}`} postId={p.id} metadata={p.metadata} />
+                      ))}
+
                     {/* A lista do dia: uma linha por post, com a rede, o que
                         é, o estado e a marcação. As ações embaixo valem para o
                         que está marcado. Ela continua visível depois da
@@ -4200,63 +4214,27 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                     {/* ── Rejeitar ── */}
                     {localCard.status === "pending" && (
                       <div className="space-y-2">
-                        <AnimatePresence>
-                          {showRejectForm && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="rounded-xl border p-3 space-y-2"
-                              style={{ background: "var(--bg-primary)", borderColor: "rgba(245,158,11,0.3)" }}
-                            >
-                              <div className="flex items-center gap-2 text-sm text-amber-400">
-                                <ShieldAlert className="w-4 h-4 shrink-0" />
-                                <span className="font-medium">
-                                  {/* O alcance dito antes do clique, e não depois: quem
-                                      marcou uma peça reprova uma peça. */}
-                                  {alcanceReprovacao.porMarcacao
-                                    ? `Motivo da reprovação de ${alcanceReprovacao.alvos.length === 1 ? nomeDaRede(alcanceReprovacao.alvos[0].platform) : `${alcanceReprovacao.alvos.length} posts marcados`}`
-                                    : "Motivo da reprovação do dia inteiro"}
-                                </span>
-                              </div>
-                              <textarea
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                                rows={3}
-                                autoFocus
-                                placeholder="Ex: sem imagem, tom muito formal, dados sem fonte, fora do nicho..."
-                                className="w-full text-sm px-3 py-2 rounded-xl border outline-none resize-none"
-                                style={{ background: "var(--bg-input)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-                              />
-                              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                                O feedback ajuda a IA a melhorar as próximas campanhas.
-                              </p>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="destructive" className="flex-1" onClick={() => void handleRejectFlow()} loading={approving}>
-                                  <ThumbsDown className="w-3.5 h-3.5 mr-1" />
-                                  {rotuloDaReprovacao(alcanceReprovacao, nomeDaRede)}
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => { setShowRejectForm(false); setRejectReason(""); }}>
-                                  Cancelar
-                                </Button>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                        {!showRejectForm && (
-                          <button
-                            type="button"
-                            disabled={approving}
-                            onClick={() => void handleRejectFlow()}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-medium transition-all hover:border-red-500/40 hover:bg-red-500/5 disabled:opacity-50"
-                            style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-                          >
-                            <ThumbsDown className="w-3.5 h-3.5 text-red-400" />
-                            {/* O rótulo diz o alcance: marcou uma peça, reprova uma
-                                peça; não marcou nada, reprova o dia e avisa. */}
-                            {rotuloDaReprovacao(alcanceReprovacao, nomeDaRede)}
-                          </button>
-                        )}
+                        {/* A JANELA DO MOTIVO (08/10): categoria, texto e microfone.
+                            Cada peça vai pela rota de reprovação com o motivo; o
+                            servidor confere e decide o crédito. */}
+                        <JanelaDeReprovacao
+                          aberta={showRejectForm}
+                          alvos={alcanceReprovacao.alvos.map((p) => ({ id: p.id, platform: p.platform }))}
+                          onFechar={() => setShowRejectForm(false)}
+                          onReprovado={concluirReprovacao}
+                        />
+                        <button
+                          type="button"
+                          disabled={approving}
+                          onClick={() => handleRejectFlow()}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-medium transition-all hover:border-red-500/40 hover:bg-red-500/5 disabled:opacity-50"
+                          style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+                        >
+                          <ThumbsDown className="w-3.5 h-3.5 text-red-400" />
+                          {/* O rótulo diz o alcance: marcou uma peça, reprova uma
+                              peça; não marcou nada, reprova o dia e avisa. */}
+                          {rotuloDaReprovacao(alcanceReprovacao, nomeDaRede)}
+                        </button>
                       </div>
                     )}
                   </div>

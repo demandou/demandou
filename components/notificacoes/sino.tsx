@@ -45,6 +45,8 @@ function IconeDoTipo({ tipo }: { tipo: string }) {
   if (tipo === "falha") return <AlertTriangle className="w-4 h-4 text-orange-400" />;
   if (tipo === "completo") return <CheckCircle2 className="w-4 h-4 text-green-500" />;
   if (tipo === "estorno") return <Coins className="w-4 h-4 text-amber-500" />;
+  // A resposta à reprovação com motivo (08/10): em análise, mantido, erro confirmado.
+  if (tipo === "reprovacao") return <ClipboardCheck className="w-4 h-4 text-orange-400" />;
   // O gêmeo digital (03/10): pedir a confirmação, e o pronto ou recusado.
   if (tipo === "gemeo") return <ShieldCheck className="w-4 h-4 text-orange-400" />;
   if (tipo === "gemeo-aviso") return <Sparkles className="w-4 h-4 text-orange-400" />;
