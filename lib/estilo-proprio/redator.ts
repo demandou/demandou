@@ -66,6 +66,8 @@ Regras de cada campo:
   Na thumb e no vertical o apresentador é uma pessoa fictícia e genérica, de frente, com o rosto natural e em foco (nunca desfocado); o que não pode é pessoa real ou famosa.
 - A cor da marca entra só nos detalhes e acentos (objetos, luz, roupa, um elemento), nunca tingindo a foto inteira. Escreva "brand colors only as small accents" em cada prompt de prévia.
 - Fidelidade: traduza o que o cliente quis, sem trocar por outro estilo. O que ele disse que tem, tem; o que ele disse que não quer, não aparece em lugar nenhum.
+- Os campos em português são SÓ em português, sem palavra em inglês no meio ("like", "mood", "clean"); o inglês fica só em "previas".
+- O contexto das redes do cliente serve para entender quem ele é; nunca cite peças, cards, posts ou materiais antigos dele ("os cards antigos", "o post de ontem"): descreva só o estilo que vale daqui para a frente.
 - Sem travessão (o sinal "—") em texto nenhum; use vírgula, dois-pontos ou ponto.`;
 
 function coresEmTexto(paleta: string[] | undefined): string {

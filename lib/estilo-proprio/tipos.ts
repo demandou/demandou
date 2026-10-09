@@ -114,6 +114,16 @@ export function textoLimpo(v: unknown, teto: number): string {
   return cortarEmPalavra(semTravessao(String(v ?? "")).replace(/\s+/g, " ").trim(), teto);
 }
 
+/**
+ * O item que fala de peça antiga do cliente ("cards antigos com texto
+ * apertado", "o post de ontem") não é estilo: veio da leitura do perfil nas
+ * redes e saiu nas duas rodadas reais de 08/10 mesmo com o redator avisado.
+ * O estilo descreve só o que vale daqui para a frente. Puro.
+ */
+export function falaDePecaAntiga(t: string): boolean {
+  return /\b(cards?|posts?|pe[cç]as?|artes?|materia(l|is)|v[ií]deos?)\b[^.]{0,40}\bantig[oa]s?\b|\bantig[oa]s?\b[^.]{0,40}\b(cards?|posts?|pe[cç]as?|artes?|v[ií]deos?)\b|\b(de ontem|da semana passada|que (ele|voc[eê]) j[aá] (tem|usa|usou|postou))\b/i.test(t);
+}
+
 function listaLimpa(v: unknown, teto: number, tetoDoItem: number): string[] {
   if (!Array.isArray(v)) return [];
   const vistos = new Set<string>();
@@ -121,7 +131,7 @@ function listaLimpa(v: unknown, teto: number, tetoDoItem: number): string[] {
   for (const x of v) {
     const t = textoLimpo(x, tetoDoItem).replace(/[.;]+$/, "");
     const k = t.toLowerCase();
-    if (!t || vistos.has(k)) continue;
+    if (!t || vistos.has(k) || falaDePecaAntiga(t)) continue;
     vistos.add(k);
     saida.push(t);
     if (saida.length >= teto) break;

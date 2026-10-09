@@ -27,6 +27,7 @@ import {
   rodadaParaTela,
   textoDoComando,
   type EstadoDoMeuEstilo,
+  type PecaDaPrevia,
   type RodadaDoMeuEstilo,
 } from "@/lib/estilo-proprio/tipos";
 
@@ -161,7 +162,7 @@ function letraId(nome: string | null | undefined): string | null {
  * prévias não gera de novo (devolve as que tem).
  */
 export async function gerarPreviasDaRodada(
-  o: { projectId: string; userId: string; rodada?: number | null },
+  o: { projectId: string; userId: string; rodada?: number | null; pecas?: PecaDaPrevia[] | null },
   s: Servicos = SERVICOS_DE_VERDADE,
   dinheiro: { debitar: typeof debitar; creditar: typeof creditar } = { debitar, creditar }
 ): Promise<{ ok: true; rodada: RodadaDoMeuEstilo; avisos: string[] } | { ok: false; erro: string }> {
@@ -173,14 +174,14 @@ export async function gerarPreviasDaRodada(
   await dinheiro.debitar({ userId: o.userId, quantidade: CREDITOS_RESERVADOS_DA_RODADA, operation: OPERACAO_DAS_PREVIAS, projectId: o.projectId, refId, note: `Prévias do meu estilo, rodada ${rodada.n} (reserva; o que sobrar volta)` });
   let r: Awaited<ReturnType<typeof gerarPreviasDoEstilo>>;
   try {
-    r = await gerarPreviasDoEstilo({ projectId: o.projectId, rodada: rodada.n, estilo: rodada.estilo }, s.previas);
+    r = await gerarPreviasDoEstilo({ projectId: o.projectId, rodada: rodada.n, estilo: rodada.estilo, pecas: o.pecas?.length ? o.pecas : undefined }, s.previas);
   } catch (e) {
-    await dinheiro.creditar({ userId: o.userId, quantidade: CREDITOS_RESERVADOS_DA_RODADA, operation: OPERACAO_DA_DEVOLUCAO, refId, unico: true, note: "Nenhuma prévia saiu: a reserva voltou inteira" }).catch(() => undefined);
+    await dinheiro.creditar({ userId: o.userId, quantidade: CREDITOS_RESERVADOS_DA_RODADA, operation: OPERACAO_DA_DEVOLUCAO, projectId: o.projectId, refId, unico: true, note: "Nenhuma prévia saiu: a reserva voltou inteira" }).catch(() => undefined);
     return { ok: false, erro: `Não consegui gerar as prévias agora (${e instanceof Error ? e.message.slice(0, 120) : String(e)}). Nada foi cobrado.` };
   }
   const acerto = acertoDaRodada(CREDITOS_RESERVADOS_DA_RODADA, r.custoUsd, r.geradas);
   if (acerto.devolver > 0) {
-    await dinheiro.creditar({ userId: o.userId, quantidade: acerto.devolver, operation: OPERACAO_DA_DEVOLUCAO, refId, unico: true, note: `Prévias do meu estilo, rodada ${rodada.n}: ${acerto.cobrado} crédito(s) usados, o resto voltou` }).catch((e) => console.warn("[meu-estilo] a devolução não saiu:", e instanceof Error ? e.message : e));
+    await dinheiro.creditar({ userId: o.userId, quantidade: acerto.devolver, operation: OPERACAO_DA_DEVOLUCAO, projectId: o.projectId, refId, unico: true, note: `Prévias do meu estilo, rodada ${rodada.n}: ${acerto.cobrado} crédito(s) usados, o resto voltou` }).catch((e) => console.warn("[meu-estilo] a devolução não saiu:", e instanceof Error ? e.message : e));
   }
   const pronta: RodadaDoMeuEstilo = { ...rodada, previas: r.previas, previasTiradas: r.tiradas, previasEm: new Date().toISOString(), custoUsd: r.custoUsd, creditos: acerto.cobrado };
   await s.deposito.gravar(o.projectId, comRodadaTrocada(await s.deposito.ler(o.projectId), pronta));

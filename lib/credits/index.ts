@@ -254,8 +254,10 @@ export async function creditar(args: {
    * ou nenhum.
    */
   junto?: (tx: Prisma.TransactionClient, saldoDepois: number) => Promise<void>;
+  /** O projeto do estorno (08/10): a devolução fica no extrato do mesmo projeto que o débito. */
+  projectId?: string;
 }, db: BancoDoSaldo = prisma): Promise<{ balance: number; duplicado: boolean; contaId: string }> {
-  const { quantidade, operation, refId, note, unico } = args;
+  const { quantidade, operation, refId, note, unico, projectId } = args;
   if (quantidade <= 0) throw new Error("Quantidade a creditar precisa ser positiva.");
   if (unico && !refId) throw new Error("Crédito único precisa de refId.");
 
@@ -284,6 +286,7 @@ export async function creditar(args: {
       data: {
         userId,
         autorId,
+        projectId,
         amount: quantidade,
         operation,
         refId,

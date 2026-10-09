@@ -17,6 +17,7 @@ import {
   estadoValido,
   estimativaDaRodadaUsd,
   exemplosDaCaixa,
+  falaDePecaAntiga,
   falasDaRodada,
   falaServe,
   fonteDoEstilo,
@@ -70,6 +71,10 @@ test("o estilo escrito é conferido em código: tetos, sem travessão, repetido 
   assert.equal(normalizarEstiloEscrito(null), null);
   const longo = normalizarEstiloEscrito({ ...ESTILO_CRU, titulo: "um dois três quatro cinco seis sete oito nove dez" })!;
   assert.equal(longo.titulo.split(" ").length, 8);
+  // A peça antiga do cliente não é estilo (saiu nas duas rodadas reais de 08/10): o item cai em código.
+  const comAntigo = normalizarEstiloEscrito({ ...ESTILO_CRU, evitar: ["Cards antigos com texto apertado", "Cores saturadas tipo amarelo vivo ou azul forte dos cards antigos", "o post de ontem", "Estúdio escuro"] })!;
+  assert.deepEqual(comAntigo.evitar, ["Estúdio escuro"]);
+  assert.equal(falaDePecaAntiga("Ambiente claro com luz natural"), false);
 });
 
 test("o comando do vídeo e os pedidos da biblioteca saem do estilo, com o que ele evita", () => {
@@ -278,14 +283,14 @@ test("o servidor: escrever grava a rodada, o ajuste continua a conversa, as pré
   const curta = await escreverRodada({ projectId: "p1", fala: "oi", ajuste: false, origem: "escrito" }, s);
   assert.equal(curta.ok, false);
   // As prévias: a reserva antes, o acerto depois.
-  const movimentos: Array<{ tipo: string; quantidade: number; operation: string; refId?: string }> = [];
+  const movimentos: Array<{ tipo: string; quantidade: number; operation: string; refId?: string; projectId?: string }> = [];
   const dinheiro = {
-    debitar: (async (a: { quantidade: number; operation: string; refId?: string }) => {
-      movimentos.push({ tipo: "debito", quantidade: a.quantidade, operation: a.operation, refId: a.refId });
+    debitar: (async (a: { quantidade: number; operation: string; refId?: string; projectId?: string }) => {
+      movimentos.push({ tipo: "debito", quantidade: a.quantidade, operation: a.operation, refId: a.refId, projectId: a.projectId });
       return { balance: 100, txId: "t" };
     }) as never,
-    creditar: (async (a: { quantidade: number; operation: string; refId?: string }) => {
-      movimentos.push({ tipo: "credito", quantidade: a.quantidade, operation: a.operation, refId: a.refId });
+    creditar: (async (a: { quantidade: number; operation: string; refId?: string; projectId?: string }) => {
+      movimentos.push({ tipo: "credito", quantidade: a.quantidade, operation: a.operation, refId: a.refId, projectId: a.projectId });
       return { balance: 100, duplicado: false, contaId: "u" };
     }) as never,
   };
@@ -297,6 +302,8 @@ test("o servidor: escrever grava a rodada, o ajuste continua a conversa, as pré
   assert.equal(movimentos[0].refId, "p1:2");
   assert.equal(movimentos[1].tipo, "credito");
   assert.equal(movimentos[1].quantidade, 80 - creditosDoCusto(0.24), "o que sobrou volta");
+  assert.equal(movimentos[1].projectId, "p1", "a devolução fica no extrato do mesmo projeto (pendência da primeira rodada real)");
+  assert.ok(fonte("lib/credits/index.ts").includes("const { quantidade, operation, refId, note, unico, projectId } = args;"), "creditar grava o projectId");
   assert.equal(p.rodada.creditos, creditosDoCusto(0.24));
   assert.equal(s.estados.get("p1")?.rodadas[1].custoUsd, 0.24, "o custo real fica gravado para o admin");
   // De novo na mesma rodada: nada gerado, nada cobrado.
@@ -310,6 +317,13 @@ test("o servidor: escrever grava a rodada, o ajuste continua a conversa, as pré
   assert.equal(falhou.ok, false);
   assert.equal(movimentos[3].tipo, "credito");
   assert.equal(movimentos[3].quantidade, 80);
+  // Só algumas peças (a prova da segunda rodada real): gera e cobra só elas.
+  const r4 = await escreverRodada({ projectId: "p1", fala: "de novo, só para provar a thumb e o vertical", ajuste: false, origem: "escrito" }, s);
+  assert.ok(r4.ok);
+  const duas = await gerarPreviasDaRodada({ projectId: "p1", userId: "u", rodada: 4, pecas: ["thumb", "vertical"] }, s, dinheiro);
+  assert.ok(duas.ok);
+  assert.deepEqual(duas.rodada.previas?.map((x) => x.peca), ["thumb", "vertical"]);
+  assert.equal(duas.rodada.creditos, creditosDoCusto(0.12));
 });
 
 test("as telas e a esteira: a caixa no topo do passo e em Configurações; confirmar grava onde a esteira lê", () => {
