@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { identidadeDoProjeto } from "@/lib/media/identidade-visual";
+import { identidadeDoProjeto, setorEmIngles } from "@/lib/media/identidade-visual";
 import { regrasAprovadas } from "@/lib/referencias/regras";
 import type { PadraoDeRitmoDoNicho } from "@/lib/media/metas-do-estilo";
 import { GUARDA_DE_PROMESSA_FINANCEIRA } from "@/lib/media/promessas-proibidas";
@@ -26,7 +26,7 @@ export type PerfilDoProjeto = {
   tom?: string;
   /** As regras do setor que valem por cima do estilo. */
   guardas: string[];
-  /** Em inglês, para as descrições de imagem: o mundo do cliente e o que evitar. */
+  /** Em inglês, para as descrições de imagem: o RAMO do cliente (só o ramo, sem lista de objetos, desde 08/10) e o que evitar. */
   mundo: string;
   evitarNaImagem: string;
   /** Traços abstratos de imagem que rendem no nicho (nunca imagem de terceiro). */
@@ -115,7 +115,7 @@ export async function perfilDoProjeto(projectId: string | null | undefined): Pro
       publico: id.publico?.slice(0, 400),
       tom: id.tom?.slice(0, 300),
       guardas: [...(GUARDAS[id.setor.id] ?? []), GUARDA_GERAL, GUARDA_DE_IMAGEM],
-      mundo: id.setor.mundo,
+      mundo: setorEmIngles(id.setor.id),
       evitarNaImagem: id.setor.evitar,
       // O cartão "visual:imagem" da medida já chega pela identidade (padroesVisuais).
       olharDoNicho: (id.padroesVisuais ?? []).slice(0, 6),
@@ -136,7 +136,7 @@ export function perfilNoPrompt(p: PerfilDoProjeto | null): string {
     p.publico ? `Público: ${p.publico}` : "",
     p.tom ? `Tom da marca: ${p.tom}` : "",
     `GUARDAS DO SETOR (valem por cima das regras do estilo):\n${p.guardas.map((g) => `- ${g}`).join("\n")}`,
-    `Nas descrições de imagem: o mundo do cliente é "${p.mundo}"; evite ${p.evitarNaImagem}.`,
+    `Nas descrições de imagem: o cliente trabalha com "${p.mundo}"; o objeto de cada cena sai do que a fala diz naquele momento, nunca de um objeto típico do setor; evite ${p.evitarNaImagem}.`,
     p.olharDoNicho.length
       ? `OLHAR QUE RENDE NO NICHO (só características abstratas; use nas descrições de imagem quando couber, nunca como cópia de alguém): ${p.olharDoNicho.join("; ")}.`
       : "",

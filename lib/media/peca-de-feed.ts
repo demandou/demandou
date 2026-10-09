@@ -1,4 +1,5 @@
 import { askClaude } from "@/lib/claude";
+import { estiloComoLinguagem, usadosEmTexto, type ElementoUsado } from "@/lib/media/elemento-sem-repeticao";
 
 /**
  * O QUE FAZ UMA ARTE SER POST, E NÃO ILUSTRAÇÃO.
@@ -41,6 +42,20 @@ export interface MancheteDaPeca {
   manchete: string;
   /** A cena, em inglês, para o modelo de imagem. */
   visual: string;
+  /** O elemento central e o cenário da cena, declarados por quem a escreveu (08/10, a guarda de repetição). */
+  elemento?: string;
+  cenario?: string;
+}
+
+/**
+ * O estilo na manchete (08/10): a linguagem, nunca o objeto, e o ramo do
+ * cliente numa linha própria. Antes ia tudo como "ESTILO VISUAL OBRIGATÓRIO
+ * (aplique na cena)", com a lista de objetos do setor dentro, e a cena saía
+ * com o estúdio da lista. Pura.
+ */
+export function estiloNaManchete(estiloVisual: string, opcoes: { estiloDoPost?: boolean } = {}): string {
+  const mundo = estiloVisual.match(/CLIENT'S WORLD:[^.]*\./)?.[0] ?? "";
+  return [estiloComoLinguagem(estiloVisual, { escolhidoParaOPost: opcoes.estiloDoPost }), mundo].filter(Boolean).join("\n");
 }
 
 /**
@@ -56,24 +71,32 @@ export async function mancheteDaPeca(opcoes: {
   nicho?: string | null;
   projectId?: string;
   runId?: string;
+  /** O estilo veio do design escolhido para o post (08/10): ele manda na aparência. */
+  estiloDoPost?: boolean;
+  /** O estilo escolhido pede figuras (silhuetas, personagens): a cena pode tê-las, estilizadas. */
+  pessoas?: boolean;
+  /** O que a campanha e as últimas já usaram (08/10): a cena não repete. */
+  usados?: ElementoUsado[];
 }): Promise<MancheteDaPeca> {
   const bruto = await askClaude(
     `Você escreve a arte de um post de rede social. A arte tem UMA manchete e mais nada escrito.
 
 Responda SÓ com JSON, sem texto antes nem depois, neste formato exato:
-{"manchete":"...","visual":"..."}
+{"manchete":"...","visual":"...","elemento":"...","cenario":"..."}
 
 Regras que não se negociam:
 - "manchete" em PORTUGUÊS, no máximo 9 palavras, é o que vai DESENHADO na arte. É a frase que faz a pessoa parar de rolar o feed. Nunca uma frase cortada pela metade, nunca uma pergunta genérica;
 - "visual" em INGLÊS, descrevendo a cena que acompanha a manchete: composição, luz, materiais, mood. UMA cena só, não uma sequência e não painéis;
+- o ELEMENTO CENTRAL da cena (um objeto ou uma situação simples) e o CENÁRIO saem do que ESTE post fala, nunca de um objeto típico do setor; "elemento" e "cenario" são esse elemento e esse cenário, em inglês, de 2 a 5 palavras cada;
+- a linguagem visual abaixo diz só como a imagem parece (cor, luz, técnica, tratamento); ela não escolhe o objeto nem o lugar${opcoes.estiloDoPost ? ", mas o estilo escolhido para o post manda na aparência e o motivo que ele pede entra em volta do elemento central" : ""};
+- ${opcoes.pessoas ? "gente só como o estilo escolhido descreve (figuras estilizadas, silhuetas), nunca uma pessoa real reconhecível" : "sem gente na cena: a ideia vem de objetos, lugares e luz"};
 - NUNCA invente número, percentual, data ou nome que não esteja no post abaixo. Sem dado, a manchete fala qualitativo;
 - a cena NÃO é um gráfico, não é um painel de dados, não é uma tela de aplicativo e não é um storyboard. É uma cena fotográfica ou uma composição editorial;
 - nada de travessão em português.`,
-    `ESTILO VISUAL OBRIGATÓRIO (em inglês, aplique na cena):
-${opcoes.estiloVisual}
+    `${estiloNaManchete(opcoes.estiloVisual, { estiloDoPost: opcoes.estiloDoPost })}
 
 NICHO: ${opcoes.nicho ?? "negócios"}
-
+${opcoes.usados?.length ? `\n${usadosEmTexto(opcoes.usados)}\n` : ""}
 POST QUE ESTA ARTE ACOMPANHA:
 ${opcoes.textoDoPost.slice(0, 3000)}`,
     {
@@ -83,7 +106,7 @@ ${opcoes.textoDoPost.slice(0, 3000)}`,
   );
 
   const recorte = bruto.slice(bruto.indexOf("{"), bruto.lastIndexOf("}") + 1);
-  let lido: { manchete?: unknown; visual?: unknown };
+  let lido: { manchete?: unknown; visual?: unknown; elemento?: unknown; cenario?: unknown };
   try {
     lido = JSON.parse(recorte);
   } catch {
@@ -92,7 +115,7 @@ ${opcoes.textoDoPost.slice(0, 3000)}`,
   const manchete = String(lido.manchete ?? "").trim();
   const visual = String(lido.visual ?? "").trim();
   if (!manchete || !visual) throw new Error("A manchete da peça veio incompleta.");
-  return { manchete, visual };
+  return { manchete, visual, elemento: String(lido.elemento ?? "").trim().slice(0, 80), cenario: String(lido.cenario ?? "").trim().slice(0, 80) };
 }
 
 /**
