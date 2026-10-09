@@ -681,6 +681,8 @@ async function cuidarDoAvatar(projectId: string, c: CadastroGuardado): Promise<v
       console.warn(`[gemeo][${projectId}] criar o gêmeo na HeyGen:`, tecnico);
       const limite = e instanceof ErroDoFornecedor && e.tipo === "limite";
       const recusado = e instanceof ErroDoFornecedor && e.tipo === "recusado";
+      // Sem saldo não conta como tentativa (09/10, o mesmo caso do gêmeo de foto do Vitor).
+      const semSaldo = e instanceof ErroDoFornecedor && e.tipo === "sem-saldo";
       // O motivo é o que a pessoa lê; o erro do fornecedor fica em `erroTecnico` (log e admin).
       const depois = await mudarCadastro(projectId, (x) =>
         x?.avatar?.origem === origem && x.avatar.estado === "enviando"
@@ -692,11 +694,14 @@ async function cuidarDoAvatar(projectId: string, c: CadastroGuardado): Promise<v
                 desde: limite || recusado ? agora() : x.avatar.desde,
                 semVaga: limite,
                 erroTecnico: tecnico,
+                ...(semSaldo ? { tentativas: Math.max(0, (x.avatar.tentativas ?? 1) - 1) } : {}),
                 motivo: limite
                   ? MOTIVO_SEM_VAGA
                   : recusado
                     ? "O gerador não aceitou o vídeo de treino."
-                    : "O gerador não respondeu; tentamos de novo em alguns minutos.",
+                    : semSaldo
+                      ? "O seu gêmeo está na fila do gerador. Avisamos aqui quando ficar pronto."
+                      : "O gerador não respondeu; tentamos de novo em alguns minutos.",
               },
             }
           : undefined
@@ -958,6 +963,11 @@ async function cuidarDoAvatarDaFoto(projectId: string, c: CadastroGuardado): Pro
     const tecnico = mensagem(e).slice(0, 600);
     console.warn(`[gemeo][${projectId}] criar o gêmeo de foto na HeyGen:`, tecnico);
     const recusado = e instanceof ErroDoFornecedor && (e.tipo === "recusado" || e.tipo === "limite");
+    // SEM SALDO NÃO É TENTATIVA DO CLIENTE (09/10). O gêmeo do Vitor ficou
+    // "falhou" de vez depois de três 402 da HeyGen, e nem a recarga o
+    // destravava. Saldo é assunto da Demandou (o admin já é avisado): a
+    // tentativa não conta, e a passada seguinte tenta de novo até a recarga.
+    const semSaldo = e instanceof ErroDoFornecedor && e.tipo === "sem-saldo";
     await mudarCadastro(projectId, (x) =>
       x?.avatarFoto?.origem === origem && x.avatarFoto.estado === "criando" && !x.avatarFoto.lookId
         ? {
@@ -967,7 +977,12 @@ async function cuidarDoAvatarDaFoto(projectId: string, c: CadastroGuardado): Pro
               estado: recusado ? "falhou" : "criando",
               desde: recusado ? agora() : x.avatarFoto.desde,
               erroTecnico: tecnico,
-              motivo: recusado ? "O gerador não aceitou a foto. Envie outra, de frente e com luz no rosto." : "O gerador não respondeu; tentamos de novo em alguns minutos.",
+              ...(semSaldo ? { tentativas: Math.max(0, (x.avatarFoto.tentativas ?? 1) - 1) } : {}),
+              motivo: recusado
+                ? "O gerador não aceitou a foto. Envie outra, de frente e com luz no rosto."
+                : semSaldo
+                  ? "O seu gêmeo está na fila do gerador. Avisamos aqui quando ficar pronto."
+                  : "O gerador não respondeu; tentamos de novo em alguns minutos.",
             },
           }
         : undefined
