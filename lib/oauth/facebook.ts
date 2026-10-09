@@ -8,7 +8,8 @@
  * feed da página é erro.
  *
  * Permissões (conferidas na doc em 21/08/2026): pages_show_list para listar,
- * pages_read_engagement e pages_manage_posts para publicar. O token de página
+ * pages_read_engagement e pages_manage_posts para publicar, e read_insights
+ * (09/10) para as estatísticas da página. O token de página
  * obtido a partir de um token de usuário de longa duração não expira por
  * tempo; morre por troca de senha, revogação ou auditoria da Meta, e nesse
  * caso a publicação falha com erro claro pedindo reconexão.
@@ -17,10 +18,21 @@
 const FB = "https://www.facebook.com/v23.0";
 const GRAPH = "https://graph.facebook.com/v23.0";
 
+/**
+ * `read_insights` (09/10): as estatísticas da PÁGINA (page_media_view, as
+ * visualizações) pedem `read_insights` E `pages_read_engagement`, com o token
+ * da página de quem pode analisar (tarefa ANALYZE), segundo a referência de
+ * Page Insights conferida em 09/10. `pages_read_engagement` sozinha não basta.
+ *
+ * Atenção: com FACEBOOK_CONFIG_ID (o login para empresas, que é o de
+ * produção), a lista abaixo NÃO é enviada. Quem manda é a Configuração criada
+ * no painel do app, e é nela que `read_insights` precisa entrar.
+ */
 export const FACEBOOK_SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
   "pages_manage_posts",
+  "read_insights",
 ].join(",");
 
 export function facebookConfigured(): boolean {

@@ -109,6 +109,8 @@ export const PREFIXOS_DAS_TELAS = [
   "reprovacao-peca",
   // O pedido de ajuste do chat do card que parou no saldo (09/10).
   "ajuste-sem-saldo",
+  // O convite para reconectar e liberar as estatísticas da conta (09/10).
+  "estatisticas-conta",
 ] as const;
 
 /**
@@ -491,6 +493,16 @@ export function chaveDaCota(renovaEm: string | null | undefined, restantes: numb
 
 export function chaveDaContaAReconectar(accountId: string, needsReconnectAt: string | null | undefined): string | null {
   return montar("conta-reconectar", accountId, needsReconnectAt);
+}
+
+/**
+ * O aviso das estatísticas da conta (09/10): falta permissão, a Meta ainda não
+ * liberou, ou a leitura falhou. A ocorrência é o instante da tentativa: uma
+ * tentativa nova (depois de reconectar, ou no dia seguinte) com o mesmo
+ * problema volta a avisar.
+ */
+export function chaveDoAvisoDeEstatisticas(accountId: string, estado: string, tentativaEm: string | null | undefined): string | null {
+  return montar("estatisticas-conta", accountId, estado, tentativaEm);
 }
 
 export function chaveDasPaginasDoLinkedin(projectId: string, resultado: string): string | null {

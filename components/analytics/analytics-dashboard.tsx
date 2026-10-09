@@ -26,6 +26,8 @@ import {
   type ResultadosDoProjeto,
   type ResumoDoPeriodo,
 } from "@/lib/analytics/tipos-dos-resultados";
+import type { EstatisticasDoProjeto } from "@/lib/analytics/tipos-da-conta";
+import { PainelDasContas } from "@/components/analytics/estatisticas-da-conta";
 
 /**
  * A ABA RESULTADOS (reescrita em 01/10 sobre a tela de "Analytics").
@@ -56,6 +58,9 @@ interface PipelineRun {
 interface Props {
   project: { id: string; name: string };
   resultados: ResultadosDoProjeto;
+  /** As estatísticas da conta inteira (09/10), acima dos números post a post. */
+  estatisticas: EstatisticasDoProjeto;
+  souDono: boolean;
   recentRuns: PipelineRun[];
 }
 
@@ -227,7 +232,7 @@ function LinhaDoPost({ p }: { p: PostNosResultados }) {
   );
 }
 
-export function AnalyticsDashboard({ project, resultados, recentRuns }: Props) {
+export function AnalyticsDashboard({ project, resultados, estatisticas, souDono, recentRuns }: Props) {
   const [syncing, setSyncing] = useState(false);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [loadingInsight, setLoadingInsight] = useState(false);
@@ -314,6 +319,13 @@ export function AnalyticsDashboard({ project, resultados, recentRuns }: Props) {
           Sincronizar números
         </Button>
       </div>
+
+      {/* A CONTA INTEIRA PRIMEIRO (09/10): o que a rede mostra no painel
+          profissional (visualizações, seguidores e não seguidores, formatos,
+          principais conteúdos), e depois os posts da Demandou. */}
+      <PainelDasContas projectId={project.id} estatisticas={estatisticas} souDono={souDono} />
+
+      <h2 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Posts da Demandou</h2>
 
       {/* Período */}
       <div className="inline-flex rounded-xl border p-0.5 mb-4" style={{ borderColor: "var(--border)", background: "var(--bg-card)" }} role="tablist" aria-label="Período do resumo">

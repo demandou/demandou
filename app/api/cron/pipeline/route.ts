@@ -11,6 +11,7 @@ import { vaiPeloBlotato } from "@/lib/publish/roteador";
 import { conferirEnviosPendentes, PREFIXO_DO_ENVIO } from "@/lib/publish/via-blotato";
 import { medirPostsVencidos } from "@/lib/analytics/agenda-de-medicao";
 import { varrerInventarios } from "@/lib/analytics/inventario-das-redes";
+import { lerEstatisticasVencidas } from "@/lib/analytics/estatisticas-da-conta";
 import { repescarFeedbacksSemClasse } from "@/lib/feedback/captura";
 
 /**
@@ -139,6 +140,18 @@ export async function GET(req: NextRequest) {
   });
 
   /**
+   * AS ESTATÍSTICAS DA CONTA (09/10): visualizações, alcance, seguidores e não
+   * seguidores, por formato e os principais conteúdos de 30 dias, pela API da
+   * Meta (sem custo), cada conta no máximo uma vez a cada 20 h, até 4 contas e
+   * 25 s por passada (lib/analytics/estatisticas-da-conta.ts). Nenhum cron
+   * novo; falha aqui não derruba o resto.
+   */
+  const estatisticas = await lerEstatisticasVencidas({ orcamentoMs: 25_000, maxContas: 4 }).catch((e) => {
+    console.error("[cron] estatísticas da conta falharam:", e instanceof Error ? e.message : e);
+    return null;
+  });
+
+  /**
    * A repescagem do feedback sem classe (06/10, tarde): o que o JEV não
    * classificou na captura volta para ele, até 20 por passada
    * (lib/feedback/captura.ts). Por último e sem derrubar nada.
@@ -154,6 +167,7 @@ export async function GET(req: NextRequest) {
     ...(envios.length ? { envios } : {}),
     ...(medicao && medicao.vencidos ? { medicao } : {}),
     ...(inventario && inventario.olhados ? { inventario } : {}),
+    ...(estatisticas && estatisticas.olhadas ? { estatisticas } : {}),
     ...(repescagem && repescagem.tentados ? { repescagem } : {}),
     timestamp: now.toISOString(),
   });
