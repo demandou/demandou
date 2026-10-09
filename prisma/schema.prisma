@@ -1942,3 +1942,17 @@ model GrupoDeFeedback {
   @@index([situacao, atualizadoEm])
   @@map("feedbacks_grupos")
 }
+
+/// O CONTADOR DE LIMITE DE TAXA (08/10/2026), compartilhado entre as instâncias
+/// da Vercel. Uma linha por chave ("auth:<rota>:<ip>", "conta:llm:<userId>"),
+/// janela fixa a partir de `inicioMs`. Quem usa: lib/seguranca/limite.ts (o
+/// better-auth guarda aqui o limitador dele, no lugar da memória).
+model LimiteDeTaxa {
+  chave    String @id
+  contagem Int    @default(0)
+  /// Início da janela corrente, em milissegundos desde a época.
+  inicioMs BigInt
+
+  @@index([inicioMs])
+  @@map("limites_de_taxa")
+}

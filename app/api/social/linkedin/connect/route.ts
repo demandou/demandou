@@ -32,9 +32,9 @@ export async function GET(req: NextRequest) {
   const authUrl = getLinkedInAuthUrl(redirectUri, state, forPages);
 
   const res = NextResponse.redirect(authUrl);
-  res.cookies.set("oauth_state", state, { httpOnly: true, maxAge: 600, path: "/" });
-  res.cookies.set("oauth_project_id", projectId, { httpOnly: true, maxAge: 600, path: "/" });
-  res.cookies.set("oauth_for_pages", forPages ? "1" : "0", { httpOnly: true, maxAge: 600, path: "/" });
-  res.cookies.set("oauth_return_to", returnTo, { httpOnly: true, maxAge: 600, path: "/" });
+  res.cookies.set("oauth_state", state, { httpOnly: true, maxAge: 600, path: "/", sameSite: "lax" as const, secure: process.env.NODE_ENV === "production" });
+  res.cookies.set("oauth_project_id", projectId, { httpOnly: true, maxAge: 600, path: "/", sameSite: "lax" as const, secure: process.env.NODE_ENV === "production" });
+  res.cookies.set("oauth_for_pages", forPages ? "1" : "0", { httpOnly: true, maxAge: 600, path: "/", sameSite: "lax" as const, secure: process.env.NODE_ENV === "production" });
+  res.cookies.set("oauth_return_to", returnTo, { httpOnly: true, maxAge: 600, path: "/", sameSite: "lax" as const, secure: process.env.NODE_ENV === "production" });
   return res;
 }

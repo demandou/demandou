@@ -106,7 +106,7 @@ export type Veredito =
   | { ok: false; status: 400 | 429; motivo: string; mensagem: string };
 
 /** E-mail com sal, normalizado (as variações do Gmail viram a mesma chave). */
-function hashDoEmail(email: string): string {
+export function hashDoEmail(email: string): string {
   const sal = process.env.BETTER_AUTH_SECRET ?? "demandou";
   return createHash("sha256").update(`${sal}:email:${chaveDoEmail(email)}`).digest("hex").slice(0, 32);
 }

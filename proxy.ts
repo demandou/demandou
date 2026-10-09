@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { metodoEscreve, origemPermitida } from "@/lib/seguranca/origem";
 
 const PUBLIC_ROUTES: RegExp[] = [
   /^\/$/,
@@ -40,6 +41,16 @@ const PUBLIC_ROUTES: RegExp[] = [
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // ESCRITA NA API SÓ DE ORIGEM CONHECIDA (08/10). O navegador carimba o
+  // `Origin` em todo POST/PUT/PATCH/DELETE; se ele existe e não é a Demandou
+  // nem o próprio host, é outro site tentando usar o cookie da pessoa. Vale
+  // antes de qualquer rota, inclusive /api/auth. Ver lib/seguranca/origem.ts.
+  if (pathname.startsWith("/api/") && metodoEscreve(req.method)) {
+    if (!origemPermitida(req.headers.get("origin"), req.headers.get("host"))) {
+      return NextResponse.json({ error: "Origem não permitida." }, { status: 403 });
+    }
+  }
 
   if (PUBLIC_ROUTES.some((r) => r.test(pathname))) {
     return NextResponse.next();

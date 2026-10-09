@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   const state = assinarEstado({ userId, projectId, returnTo });
 
   const res = NextResponse.redirect(getFacebookAuthUrl(redirectUri, state));
-  const cookieOpts = { httpOnly: true, maxAge: 600, path: "/" } as const;
+  const cookieOpts = { httpOnly: true, maxAge: 600, path: "/", sameSite: "lax", secure: process.env.NODE_ENV === "production" } as const;
   res.cookies.set("oauth_state", state, cookieOpts);
   res.cookies.set("oauth_user_id", userId, cookieOpts);
   res.cookies.set("oauth_project_id", projectId, cookieOpts);

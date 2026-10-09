@@ -156,12 +156,16 @@ function origemDasFotos(urls: string[]): string {
  * a sua foto (e a revogação apagaria o arquivo do outro).
  */
 export function urlDoProjeto(url: unknown, projectId: string): url is string {
-  return (
-    typeof url === "string" &&
-    url.startsWith("https://") &&
-    url.includes(".blob.vercel-storage.com/") &&
-    url.includes(`/gemeo/${projectId}/`)
-  );
+  // Pela URL analisada, e não por substring (08/10): "https://outro.host/x
+  // .blob.vercel-storage.com/gemeo/<id>/" passava no `includes` e mandava o
+  // worker buscar em qualquer servidor.
+  if (typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname.endsWith(".blob.vercel-storage.com") && u.pathname.includes(`/gemeo/${projectId}/`);
+  } catch {
+    return false;
+  }
 }
 
 export class ErroDoCadastro extends Error {

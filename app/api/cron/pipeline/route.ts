@@ -23,8 +23,11 @@ import { repescarFeedbacksSemClasse } from "@/lib/feedback/captura";
  * precisa sair às 10h, e não "no próximo dia em que o relógio passar por aqui".
  */
 export async function GET(req: NextRequest) {
+  // Sem CRON_SECRET no ambiente a rota fica FECHADA (08/10): antes,
+  // "Bearer undefined" passava quando a variável faltava.
+  const segredoDoCron = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!segredoDoCron || authHeader !== `Bearer ${segredoDoCron}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -64,8 +64,13 @@ export function eixoDoTempo(dias: Periodo, agora = new Date()) {
   return { baldes, porSemana, desde, diasPorBalde, balde: (dia: string) => indice.get(dia) };
 }
 
-/** A mesma conta do dia, feita dentro do Postgres (coluna sem fuso, em UTC). */
-const DIA_SQL = (coluna: string) =>
+/**
+ * A mesma conta do dia, feita dentro do Postgres (coluna sem fuso, em UTC).
+ * O nome da coluna é de uma lista FECHADA (08/10): a expressão vai colada na
+ * SQL, e um tipo aberto convidaria alguém a passar texto de fora um dia.
+ */
+type ColunaDeData = '"createdAt"' | '"publishedAt"';
+const DIA_SQL = (coluna: ColunaDeData) =>
   `to_char(((${coluna} AT TIME ZONE 'UTC') AT TIME ZONE '${FUSO}')::date, 'YYYY-MM-DD')`;
 
 const zeros = (n: number) => Array.from({ length: n }, () => 0);

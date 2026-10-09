@@ -22,8 +22,16 @@ import type { NextConfig } from "next";
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  // `base-uri` e `object-src` entraram em 08/10: os dois também dispensam
+  // nonce. O primeiro impede que um <base> injetado redirecione todo script
+  // relativo para outro domínio; o segundo fecha plugins (Flash, PDF em
+  // <object>), que são vetor clássico de XSS. `script-src` continua de fora,
+  // pelo motivo do comentário acima.
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // HSTS explícito (08/10): a Vercel já manda, mas um proxy ou domínio novo
+  // (dev.demandou.com) não pode depender disso. Dois anos, com subdomínios.
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   // Câmera e microfone liberados para a PRÓPRIA origem em todo o site (01/10).
   // A política vale para o documento inteiro, não por rota: quem entrava no
   // painel (que negava) e ia ao gêmeo por link interno continuava com a regra

@@ -3,6 +3,7 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@/lib/db/prisma";
 import { emailHabilitado, enviarEmail, emailDeConfirmacao, emailDeSenha } from "@/lib/email";
+import { armazemDoBetterAuth } from "@/lib/seguranca/limite";
 
 // Cada provedor entra sozinho quando as credenciais existem no ambiente, e o
 // botão correspondente é gateado por NEXT_PUBLIC_*_AUTH=1 no cliente. Assim o
@@ -117,6 +118,18 @@ export const auth = betterAuth({
      * entrou só pelo Google e pediu senha recebe o texto normal, que é o certo.
      */
     resetPasswordTokenExpiresIn: 60 * 60,
+    /**
+     * CADASTRO COM E-MAIL QUE JÁ TEM CONTA (08/10). O better-auth responde
+     * igual ao cadastro de verdade (não ensina quem tem conta), e a pessoa
+     * recebe na caixa dela o aviso "você já tem conta, entre aqui". Assim a
+     * tela não precisa perguntar antes se o e-mail existe para a pessoa não
+     * ficar presa, que foi o achado de 23/09.
+     */
+    async onExistingUserSignUp({ user }) {
+      const { emailDeContaJaExiste } = await import("@/lib/email/seguranca");
+      const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
+      await enviarEmail({ ...emailDeContaJaExiste({ nome: user.name ?? null, url: `${base}/sign-in` }), para: user.email });
+    },
     async sendResetPassword({ user, url }) {
       // BOAS-VINDAS DO CONTRATO (04/10): o link pedido pela ativação de um
       // contrato pago vai dentro do e-mail de boas-vindas, e não num segundo
@@ -220,6 +233,42 @@ export const auth = betterAuth({
       maxAge: 60 * 5, // 5 min sem bater no banco a cada request
     },
   },
+  /**
+   * O LIMITADOR NATIVO, LIGADO E NO BANCO (08/10). Por padrão ele só liga em
+   * produção e conta em memória, que na Vercel é por instância e zera a cada
+   * partida a frio. Aqui vale em todo ambiente (a prova de ponta a ponta roda
+   * no dev local) e conta na tabela `limites_de_taxa`, por IP e por rota.
+   * Cobre TODA rota do better-auth, inclusive as que a porta anti-robô não
+   * olha: redefinição de senha pelo token, confirmação do e-mail, troca de
+   * senha e de e-mail, callbacks sociais. Ver lib/seguranca/limite.ts.
+   */
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 60,
+    customStorage: armazemDoBetterAuth(),
+    customRules: {
+      "/sign-in/email": { window: 60, max: 10 },
+      "/sign-in/social": { window: 60, max: 10 },
+      "/sign-up/email": { window: 60, max: 5 },
+      "/request-password-reset": { window: 60, max: 3 },
+      "/forget-password": { window: 60, max: 3 },
+      "/send-verification-email": { window: 60, max: 3 },
+      // O token da redefinição e o da confirmação chegam pela URL: quem
+      // chuta token em laço bate aqui.
+      "/reset-password": { window: 60, max: 5 },
+      "/reset-password/*": { window: 60, max: 10 },
+      "/verify-email": { window: 60, max: 10 },
+      "/change-password": { window: 60, max: 5 },
+      "/change-email": { window: 60, max: 5 },
+      "/delete-user": { window: 60, max: 5 },
+      "/callback/*": { window: 60, max: 20 },
+      // Leitura da sessão: o cliente pergunta a cada tela e o cookie em cache
+      // responde sem banco. Contar isso seria uma ida ao banco por tela.
+      "/get-session": false,
+      "/ok": false,
+    },
+  },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       const porta = PORTAS_DO_AUTH[ctx.path];
@@ -227,14 +276,15 @@ export const auth = betterAuth({
       // Sem requisição é chamada interna (auth.api no servidor, como o convite
       // do admin pedindo o link de senha): não é porta pública, não passa aqui.
       if (!ctx.request || !ctx.headers) return;
-      const { conferirEnvio } = await import("@/lib/anti-robo/porta");
+      const { conferirEnvio, hashDoEmail } = await import("@/lib/anti-robo/porta");
       const { lerProva, CABECALHO_DA_PROVA } = await import("@/lib/anti-robo/regras");
       const corpo = (ctx.body ?? {}) as { email?: unknown; name?: unknown };
+      const email = typeof corpo.email === "string" ? corpo.email : null;
       const veredito = await conferirEnvio({
         porta,
         headers: ctx.headers,
         prova: lerProva(ctx.headers.get(CABECALHO_DA_PROVA)),
-        email: typeof corpo.email === "string" ? corpo.email : null,
+        email,
         nome: typeof corpo.name === "string" ? corpo.name : null,
       });
       if (!veredito.ok) {
@@ -243,6 +293,42 @@ export const auth = betterAuth({
           code: `ANTI_ROBO_${veredito.motivo.toUpperCase()}`,
         });
       }
+      // O BLOQUEIO PROGRESSIVO (08/10): depois de 5 senhas erradas seguidas o
+      // e-mail espera, e a espera cresce. Ver lib/seguranca/bloqueio-de-login.ts.
+      if (porta === "login" && email && email.includes("@")) {
+        const { conferirBloqueio, mensagemDoBloqueio } = await import("@/lib/seguranca/bloqueio-de-login");
+        const estado = await conferirBloqueio(hashDoEmail(email));
+        if (estado.bloqueado) {
+          throw new APIError("TOO_MANY_REQUESTS", {
+            message: mensagemDoBloqueio(estado.esperarS),
+            code: "LOGIN_BLOQUEADO",
+          });
+        }
+      }
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      // Só o login por senha tem "falha" que interessa contar. Chamada interna
+      // (sem requisição) não é tentativa de ninguém.
+      if (ctx.path !== "/sign-in/email" || !ctx.request || !ctx.headers) return;
+      const corpo = (ctx.body ?? {}) as { email?: unknown };
+      const email = typeof corpo.email === "string" ? corpo.email.trim().toLowerCase() : "";
+      if (!email.includes("@")) return;
+      const devolvido = ctx.context.returned;
+      // 401 é senha errada (ou e-mail sem conta: a resposta é a mesma). 403 é
+      // e-mail não confirmado, que só aparece com a senha certa: não é falha.
+      const falhou = devolvido instanceof APIError && devolvido.statusCode === 401;
+      const sucesso = !(devolvido instanceof APIError);
+      if (!falhou && !sucesso) return;
+      const { hashDoEmail } = await import("@/lib/anti-robo/porta");
+      const { extrairIp, hashIp } = await import("@/lib/demo/rate-limit");
+      const { registrarResultadoDoLogin } = await import("@/lib/seguranca/bloqueio-de-login");
+      await registrarResultadoDoLogin({
+        email,
+        emailHash: hashDoEmail(email),
+        ipHash: hashIp(extrairIp(ctx.headers)),
+        falhou,
+        agente: ctx.headers.get("user-agent")?.slice(0, 200) ?? null,
+      });
     }),
   },
   databaseHooks: {
