@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { debitoIsento } from "@/lib/credits/isencao";
-import { contaDoPlano } from "@/lib/equipe/conta";
+import { carteiraDeQuemFaz } from "@/lib/equipe/conta";
 import { debitar, SaldoInsuficiente } from "@/lib/credits";
 import {
   calcularNovoCorte,
@@ -135,8 +134,9 @@ async function ler(videoId: string, userId: string, indice: number): Promise<Lid
 }
 
 async function saldoDa(userId: string): Promise<{ saldo: number | null; interno: boolean }> {
-  const u = await prisma.user.findUnique({ where: { id: await contaDoPlano(userId) }, select: { creditsBalance: true, role: true } });
-  return { saldo: u?.creditsBalance ?? null, interno: debitoIsento(u?.role) };
+  // A carteira que paga; a conta ligada ao contrato nunca herda a isenção da titular (08/10).
+  const c = await carteiraDeQuemFaz(userId);
+  return { saldo: c.saldo, interno: c.interno };
 }
 
 /** O que acontece com a edição depois do re-corte, em português. */

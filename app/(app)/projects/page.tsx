@@ -14,7 +14,10 @@ export default async function ProjectsPage() {
 
   // Os projetos que esta pessoa vê, e se ela é membro da equipe (01/10):
   // membro usa os projetos que o dono liberou e não cria projeto novo.
-  const membro = await membroAtivo(userId);
+  // A conta ligada ao contrato (08/10) é dona do próprio projeto (um por
+  // pessoa): vê a tela de quem cria, e a cota do contrato diz quando parar.
+  const participacao = await membroAtivo(userId);
+  const membro = participacao && participacao.origem !== "contrato" ? participacao : null;
   const projects = await prisma.project.findMany({
     where: projetoVisivel(userId),
     orderBy: { updatedAt: "desc" },

@@ -5,8 +5,8 @@ import { debitoIsento } from "@/lib/credits/isencao";
 import { auth } from "@/lib/auth/server";
 import { prisma } from "@/lib/db/prisma";
 import { PLANS } from "@/lib/stripe";
-import { membroAtivo, nomeDoDono, projetoVisivel } from "@/lib/equipe/conta";
-import { creditosDoCiclo } from "@/lib/equipe/regras";
+import { consumoDoMembro, ehLigadaAoContrato, membroAtivo, nomeDaCarteira, projetoVisivel } from "@/lib/equipe/conta";
+import { creditosDoCiclo, planoQueValeNaConta } from "@/lib/equipe/regras";
 import { cicloAtual } from "@/lib/ciclo-de-credito";
 import { consumoSimulado } from "@/lib/credits/consumo-simulado";
 
@@ -41,8 +41,10 @@ export async function GET() {
   const membro = await membroAtivo(userId);
   const contaId = membro?.donoId ?? userId;
   // O nome do dono vai junto (01/10, acabamento): as telas de cliente trocam o
-  // "comprar créditos" por "peça a <dono> para adicionar mais".
-  const donoDaEquipe = membro ? await nomeDoDono(membro.donoId) : null;
+  // "comprar créditos" por "peça a <dono> para adicionar mais". A conta ligada
+  // ao contrato (08/10) recebe o contrato por extenso, com a titular.
+  const donoDaEquipe = membro ? await nomeDaCarteira(membro) : null;
+  const ligada = ehLigadaAoContrato(membro);
   const meusProjetos = (
     await prisma.project.findMany({ where: projetoVisivel(userId), select: { id: true } })
   ).map((p) => p.id);
@@ -92,8 +94,13 @@ export async function GET() {
   const simulado =
     user && debitoIsento(user.role) && !membro ? await consumoSimulado(contaId, cicloAtual(user.creditsResetAt ?? null).inicio) : null;
 
-  // Com os acessos extras da equipe somados (2.000 cada, 01/10).
-  const doPlano = creditosDoCiclo(PLANS[user?.plan as keyof typeof PLANS]?.credits ?? 0, user?.acessosExtras ?? 0);
+  // Com os acessos extras da equipe somados (2.000 cada, 01/10). Para a conta
+  // ligada ao contrato (08/10), o plano que vale é o do contrato.
+  const vale = user ? planoQueValeNaConta(user, membro?.contrato) : null;
+  const doPlano = creditosDoCiclo(PLANS[vale?.plan as keyof typeof PLANS]?.credits ?? 0, vale?.acessosExtras ?? 0);
+  // Quanto ESTA pessoa usou no ciclo da conta que paga (08/10): é o que a conta
+  // ligada ao contrato vê ao lado do saldo do contrato.
+  const usadoNoMes = membro && user ? (await consumoDoMembro(contaId, userId, cicloAtual(user.creditsResetAt ?? null).inicio)).creditos : null;
 
   return NextResponse.json({
     saldo: user?.creditsBalance ?? 0,
@@ -106,7 +113,8 @@ export async function GET() {
      * mostra "cobra 688 creditos" e o saldo parado, e quem olha conclui que a
      * cobranca quebrou. Foi o que aconteceu com o Bruno em 21/09.
      */
-    contaInterna: debitoIsento(user?.role),
+    // A conta ligada ao contrato nunca herda a isenção da titular (08/10).
+    contaInterna: debitoIsento(user?.role) && !ligada,
     /**
      * O que a IA custou de verdade. É o número de calibrar preço, e o único
      * que diz alguma coisa para quem tem bypass de admin.
@@ -126,14 +134,14 @@ export async function GET() {
     },
     doPlano,
     resetadoEm: user?.creditsResetAt,
-    plano: user?.plan ?? "free",
+    plano: vale?.plan ?? "free",
     // A tela precisa saber que é acesso interno para não desenhar barra de
     // consumo nem oferta de plano para quem não é cobrado.
-    admin: user?.role === "admin",
+    admin: user?.role === "admin" && !ligada,
     /** Só admin: o que o ciclo teria cobrado, somado das notas "custaria N". */
     consumoSimulado: simulado,
     /** Membro da equipe: de quem é o saldo. Null para o dono. */
-    equipe: membro ? { dono: donoDaEquipe ?? "quem administra a conta" } : null,
+    equipe: membro ? { dono: donoDaEquipe ?? "quem administra a conta", contrato: ligada, usadoNoMes } : null,
     extrato: extrato.map((t) => ({
       ...t,
       createdAt: t.createdAt.toISOString(),

@@ -53,13 +53,27 @@ export function Equipe({ inicial }: { inicial: EquipeNaTela }) {
     const m = inicial;
     return (
       <section className="rounded-xl border p-6 space-y-3" style={cartao}>
-        <p className="rotulo">Sua equipe</p>
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          Você faz parte da equipe de <span className="destaque">{m.dono}</span>
-        </h2>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          O que você gera sai da cota da conta da equipe. Plano, cobrança e convites ficam com quem administra a conta.
-        </p>
+        <p className="rotulo">{m.contrato ? "Seu contrato" : "Sua equipe"}</p>
+        {m.contrato ? (
+          <>
+            {/* A conta ligada ao contrato (08/10): deixar claro de onde saem os créditos. */}
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+              Você usa os créditos do <span className="destaque">{m.dono}</span>
+            </h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Tudo o que você gera sai do saldo do contrato, que o time inteiro divide. Quando ele acaba, ninguém do time gera até a titular repor. Plano e cobrança ficam com a titular.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+              Você faz parte da equipe de <span className="destaque">{m.dono}</span>
+            </h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              O que você gera sai da cota da conta da equipe. Plano, cobrança e convites ficam com quem administra a conta.
+            </p>
+          </>
+        )}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Uso rotulo="Créditos que você usou neste mês" usado={m.consumo.creditos} teto={m.tetoCreditos} ajuda={ajudaDoTetoDeCreditos()} />
           <Uso rotulo="Vídeos gravados que você enviou neste mês" usado={m.consumo.gravacoes} teto={m.tetoGravacoes} ajuda={TETO_DE_GRAVACOES.ajuda} />
@@ -279,6 +293,20 @@ function PainelDoDono({ inicial }: { inicial: PainelDaEquipe }) {
               </tr>
               {eq.membros.map((m) => (
                 <LinhaDoMembro key={m.id} m={m} projetos={eq.projetos} aoMudar={setEq} />
+              ))}
+              {/* As contas ligadas ao contrato pelo admin (08/10): usam este saldo, cada uma no próprio projeto. */}
+              {(eq.ligadas ?? []).map((l) => (
+                <tr key={l.id} className="border-t" style={{ borderColor: "var(--border)" }}>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>
+                    {l.nome ?? l.email}{" "}
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      (ligada ao contrato)
+                    </span>
+                  </td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.creditos)}</td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.gravacoes)}</td>
+                  <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>O próprio</td>
+                </tr>
               ))}
               {(c.consumoDeQuemSaiu.creditos > 0 || c.consumoDeQuemSaiu.gravacoes > 0) && (
                 <tr className="border-t" style={{ borderColor: "var(--border)" }}>

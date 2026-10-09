@@ -1,8 +1,16 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { membroAtivo, consumoDoMembro } from "@/lib/equipe/conta";
-import { acessosDaConta, ACESSOS_INCLUSOS, creditosDoCiclo, fraseDaAssinaturaPausada, gravacoesDoCiclo, type EquipeNaTela } from "@/lib/equipe/regras";
+import { membroAtivo, consumoDoMembro, contasLigadasA } from "@/lib/equipe/conta";
+import {
+  acessosDaConta,
+  ACESSOS_INCLUSOS,
+  creditosDoCiclo,
+  fraseDaAssinaturaPausada,
+  gravacoesDoCiclo,
+  nomeDaCarteiraDoContrato,
+  type EquipeNaTela,
+} from "@/lib/equipe/regras";
 export type { EquipeNaTela, PainelDaEquipe, MembroNoPainel } from "@/lib/equipe/regras";
 import { cicloAtual } from "@/lib/ciclo-de-credito";
 import { usoDeGravacoes } from "@/lib/limites-do-plano";
@@ -371,6 +379,10 @@ export async function equipeNaTela(userId: string): Promise<EquipeNaTela> {
   if (souMembro) {
     const dono = await prisma.user.findUniqueOrThrow({ where: { id: souMembro.donoId }, select: { name: true, email: true, creditsResetAt: true } });
     const consumo = await consumoDoMembro(souMembro.donoId, userId, cicloAtual(dono.creditsResetAt).inicio);
+    // A conta ligada ao contrato (08/10) vê o contrato por extenso, com a titular.
+    if (souMembro.contrato) {
+      return { papel: "membro", dono: nomeDaCarteiraDoContrato(souMembro.contrato), tetoGravacoes: null, tetoCreditos: null, consumo, contrato: true };
+    }
     return { papel: "membro", dono: dono.name || dono.email, tetoGravacoes: souMembro.tetoGravacoes, tetoCreditos: souMembro.tetoCreditos, consumo };
   }
 
@@ -423,6 +435,12 @@ export async function equipeNaTela(userId: string): Promise<EquipeNaTela> {
   });
   const creditosDe = (autor: string | null) => Math.max(0, -(porAutor.find((p) => p.autorId === autor)?._sum.amount ?? 0));
   const gravacoesDe = (autor: string | null) => gravPorAutor.find((p) => p.autorId === autor)?._count._all ?? 0;
+  // As contas ligadas ao contrato desta conta (08/10): o consumo delas aparece
+  // por pessoa, e não somado em "quem saiu da equipe".
+  const idsLigadas = await contasLigadasA(userId);
+  const ligadas = idsLigadas.length
+    ? await prisma.user.findMany({ where: { id: { in: idsLigadas } }, select: { id: true, email: true, name: true }, orderBy: { email: "asc" } })
+    : [];
 
   const temPlano = Boolean(dono.plan && dono.plan !== "free");
   const publico = PLANOS_PUBLICOS.find((p) => p.id === dono.plan);
@@ -448,7 +466,7 @@ export async function equipeNaTela(userId: string): Promise<EquipeNaTela> {
       // Quem saiu da equipe neste ciclo continua tendo gastado da conta: a
       // soma aparece numa linha só, para o painel fechar com a cota (01/10).
       consumoDeQuemSaiu: (() => {
-        const vivos = new Set(membros.map((m) => m.userId).filter(Boolean) as string[]);
+        const vivos = new Set([...(membros.map((m) => m.userId).filter(Boolean) as string[]), ...idsLigadas]);
         const autores = new Set([...porAutor.map((p) => p.autorId), ...gravPorAutor.map((p) => p.autorId)].filter((a): a is string => Boolean(a) && !vivos.has(a as string)));
         let creditos = 0;
         let gravacoes = 0;
@@ -472,5 +490,6 @@ export async function equipeNaTela(userId: string): Promise<EquipeNaTela> {
       tetoCreditos: m.tetoCreditos,
       consumo: m.userId ? { creditos: creditosDe(m.userId), gravacoes: gravacoesDe(m.userId) } : { creditos: 0, gravacoes: 0 },
     })),
+    ligadas: ligadas.map((u) => ({ id: u.id, email: u.email, nome: u.name, consumo: { creditos: creditosDe(u.id), gravacoes: gravacoesDe(u.id) } })),
   };
 }

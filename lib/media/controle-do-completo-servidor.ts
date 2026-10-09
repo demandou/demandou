@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { debitoIsento } from "@/lib/credits/isencao";
-import { contaDoPlano } from "@/lib/equipe/conta";
+import { carteiraDeQuemFaz } from "@/lib/equipe/conta";
 import { debitar, SaldoInsuficiente } from "@/lib/credits";
 import { estornarRefacaoDoCompleto, refDaRefacaoDoCompleto } from "@/lib/credits/estorno-da-refacao";
 import { indicesDaFala, lerVideo, levarPlanoParaFalaNova, type VideoLido } from "@/lib/media/ajuste-pelo-chat";
@@ -180,8 +179,9 @@ async function ler(videoId: string, userId: string): Promise<Lido> {
 }
 
 async function saldoDa(userId: string): Promise<{ saldo: number | null; interno: boolean }> {
-  const u = await prisma.user.findUnique({ where: { id: await contaDoPlano(userId) }, select: { creditsBalance: true, role: true } });
-  return { saldo: u?.creditsBalance ?? null, interno: debitoIsento(u?.role) };
+  // A carteira que paga; a conta ligada ao contrato nunca herda a isenção da titular (08/10).
+  const c = await carteiraDeQuemFaz(userId);
+  return { saldo: c.saldo, interno: c.interno };
 }
 
 /** A edição do completo vai ser remontada sobre a base nova (o editado está no ar e a montagem está ligada)? */

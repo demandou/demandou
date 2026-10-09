@@ -254,6 +254,8 @@ export function familiaDaOperacao(operation: string): Familia {
   if (op.startsWith("jev-selecao") || op.startsWith("jev-retomadas") || op.startsWith("jev-limpeza") || op.startsWith("jev-diretor") || op.startsWith("jev-referencias"))
     return "roteiro";
   if (op.startsWith("referencias")) return "incluido";
+  // A classificação dos perfis no admin (08/10) é do JEV e não é edição de vídeo.
+  if (op.startsWith("jev-perfis")) return "incluido";
   if (OPERACOES_INCLUIDAS.has(op)) return "incluido";
   // Tudo o que sobra de vídeo é a edição aprovada: montagem-*, editor-sob-medida-*,
   // video_capa*, video_efeitos, video_fecho, refacao-do-corte, revisao-do-corte,

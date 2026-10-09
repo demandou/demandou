@@ -15,7 +15,10 @@ export async function POST(req: NextRequest) {
   // Membro da equipe não cria projeto (01/10): o dono cria e libera para ele.
   // É também o que mantém a regra "membro ativo não tem projeto próprio", da
   // qual a conta que paga depende (lib/equipe/conta.ts).
-  if (await membroAtivo(userId)) {
+  // A conta LIGADA ao contrato de outra (08/10) cria o próprio projeto, um por
+  // pessoa (conferirMarca confere): ela não usa os projetos da titular.
+  const membro = await membroAtivo(userId);
+  if (membro && membro.origem !== "contrato") {
     return NextResponse.json(
       { error: "Quem cria projetos é quem administra a conta da sua equipe. Peça para liberar um projeto para você." },
       { status: 403 }

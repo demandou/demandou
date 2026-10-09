@@ -44,7 +44,7 @@ import {
   segundosEntregues,
 } from "@/lib/credits/video-tabela";
 import { estimarCampanha } from "@/lib/credits/estimativa";
-import { fraseDosCreditosDaEquipe } from "@/lib/equipe/regras";
+import { fraseSemCreditosDaCarteira } from "@/lib/equipe/regras";
 
 export type ContentType = "text" | "image" | "video" | "carousel" | "infographic" | "poll" | "article" | "thread" | "free";
 export type CampaignMode = "single" | "weekly" | "biweekly" | "recurring";
@@ -1266,7 +1266,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
    */
   // `dono` (01/10, acabamento): quem vê é membro da equipe, e a caixa de saldo
   // troca o "Comprar créditos" pela frase de a quem pedir.
-  const [saldos, setSaldos] = useState<{ plano: number; video: number; interna: boolean; dono: string | null } | null>(null);
+  // `contrato` (08/10): quem vê é conta ligada ao contrato, e o saldo é do contrato.
+  const [saldos, setSaldos] = useState<{ plano: number; video: number; interna: boolean; dono: string | null; contrato: boolean } | null>(null);
   useEffect(() => {
     let vivo = true;
     fetch("/api/credits")
@@ -1278,6 +1279,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
             video: Number(d.saldoDeVideo ?? 0),
             interna: Boolean(d.contaInterna),
             dono: typeof d.equipe?.dono === "string" ? d.equipe.dono : null,
+            contrato: d.equipe?.contrato === true,
           });
       })
       .catch(() => {});
@@ -2958,7 +2960,10 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                         quando não cabe, porque a esteira vai barrar de qualquer
                         jeito e é melhor saber aqui. */}
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>Você tem no plano</span>
+                      {/* Conta ligada ao contrato (08/10): o saldo é do contrato, dividido pelo time. */}
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        {saldos?.contrato && saldos.dono ? `Créditos do ${saldos.dono}` : "Você tem no plano"}
+                      </span>
                       <span
                         className="text-xs font-semibold"
                         style={{ color: faltamCreditos > 0 ? "#f87171" : "var(--text-muted)" }}
@@ -3015,7 +3020,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                           {Math.max(1, redesDaCampanha.length)} rede(s){quinzenal ? ", em duas semanas" : ""}.
                           {" "}
                           {saldos?.dono
-                            ? `${fraseDosCreditosDaEquipe(saldos.dono, { necessario: totalCredits, disponivel: saldos.plano })} Ou tire um dia e rode o resto agora.`
+                            ? `${fraseSemCreditosDaCarteira({ dono: saldos.dono, contrato: saldos.contrato }, { necessario: totalCredits, disponivel: saldos.plano })} Ou tire um dia e rode o resto agora.`
                             : "Com mais créditos, a semana sai completa; sem eles, dá para tirar um dia e rodar o resto agora."}
                         </p>
                         <div className="flex gap-2 mt-2.5">

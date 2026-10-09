@@ -45,7 +45,9 @@ export default async function DashboardPage() {
   const primeiroProjeto = await garantirPrimeiroProjeto(userId);
   if (primeiroProjeto) redirect(`/projects/${primeiroProjeto}/setup`);
 
-  const [{ user, projects }, numeros, membro] = await Promise.all([getDashboardData(userId), numerosDoPainel(userId), membroAtivo(userId)]);
+  const [{ user, projects }, numeros, participacao] = await Promise.all([getDashboardData(userId), numerosDoPainel(userId), membroAtivo(userId)]);
+  // A conta ligada ao contrato (08/10) é dona do próprio projeto: segue a tela de quem cria.
+  const membro = participacao && participacao.origem !== "contrato" ? participacao : null;
 
   // MEMBRO DA EQUIPE sem projeto liberado (01/10): quem cria projeto é o dono,
   // então o convite para criar seria um botão que não funciona para ele.

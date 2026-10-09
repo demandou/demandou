@@ -217,6 +217,8 @@ export default async function AdminPage({
               { href: "/admin/agenda", nome: `Demonstrações${totalDeProximas ? ` (${totalDeProximas})` : ""}` },
               { href: "/admin/chamados", nome: "Chamados" },
               { href: "/admin/contratos", nome: "Contratos" },
+              { href: "/admin/contas", nome: "Contratos e contas, caso a caso" },
+              { href: "/admin/perfis", nome: "Perfis dos clientes" },
               { href: "/admin/redes", nome: "Redes dos clientes" },
             ].map((l) => (
               <Link

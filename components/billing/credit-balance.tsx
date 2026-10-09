@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, TrendingDown, TrendingUp } from "lucide-react";
-import { fraseDosCreditosDaEquipe } from "@/lib/equipe/regras";
+import { fraseSemCreditosDaCarteira, rotuloDosCreditosDaCarteira } from "@/lib/equipe/regras";
 import { creditosDaNota } from "@/lib/credits/nota-simulada";
 import { ComprarCreditos } from "@/components/billing/comprar-creditos";
 import { BotaoDescartar, Descartavel } from "@/components/ui/descartar";
@@ -30,8 +30,12 @@ type Dados = {
   resetadoEm: string | null;
   plano: string;
   extrato: Movimento[];
-  /** Membro da equipe (01/10): o saldo é da conta do dono, e quem repõe é ele. */
-  equipe?: { dono: string } | null;
+  /**
+   * Membro da equipe (01/10): o saldo é da conta do dono, e quem repõe é ele.
+   * Conta ligada ao contrato (08/10): `contrato` vem true e `dono` é o contrato
+   * por extenso, com a titular.
+   */
+  equipe?: { dono: string; contrato?: boolean } | null;
   /** Só admin (03/10): o que o ciclo teria cobrado, somado das linhas de valor zero. */
   consumoSimulado?: { total: number; desde: string; porOperacao: Array<{ operacao: string; creditos: number }> } | null;
   /** A última recarga da conta (07/10): a marca dos avisos de saldo baixo. */
@@ -116,7 +120,7 @@ export function CreditBalance() {
       <div className="flex items-baseline justify-between gap-4 flex-wrap mb-2">
         <div>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            {dados.equipe ? `Créditos da equipe, na conta de ${dados.equipe.dono}` : "Créditos disponíveis"}
+            {dados.equipe ? rotuloDosCreditosDaCarteira(dados.equipe) : "Créditos disponíveis"}
           </p>
           <p className="text-4xl font-black" style={{ color: "var(--text-primary)" }}>
             {dados.saldo.toLocaleString("pt-BR")}
@@ -151,7 +155,7 @@ export function CreditBalance() {
         // lembrado até a próxima recarga do dono.
         <Descartavel chave={chaveDosCreditosAcabando(dados.ultimaRecarga ?? "sem-recarga", "zerado")}>
           <div className="flex items-start gap-1 mb-2">
-            <p className="flex-1 text-sm text-orange-400">{fraseDosCreditosDaEquipe(dados.equipe.dono)}</p>
+            <p className="flex-1 text-sm text-orange-400">{fraseSemCreditosDaCarteira(dados.equipe)}</p>
             <BotaoDescartar compacto />
           </div>
         </Descartavel>
@@ -160,7 +164,7 @@ export function CreditBalance() {
         <Descartavel chave={chaveDosCreditosAcabando(dados.ultimaRecarga ?? "sem-recarga")}>
           <div className="flex items-start gap-1 mb-2">
             <p className="flex-1 text-sm text-orange-400">
-              {dados.equipe ? "Os créditos da equipe estão acabando." : "Seus créditos estão acabando."} Uma campanha semanal completa consome
+              {dados.equipe ? (dados.equipe.contrato ? "Os créditos do contrato estão acabando." : "Os créditos da equipe estão acabando.") : "Seus créditos estão acabando."} Uma campanha semanal completa consome
               cerca de 450.
             </p>
             <BotaoDescartar compacto />
