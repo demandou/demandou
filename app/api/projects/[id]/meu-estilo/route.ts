@@ -11,7 +11,7 @@ import { SaldoInsuficiente } from "@/lib/credits";
 import { lerMidia } from "@/lib/media/storage";
 import { registrarNota } from "@/lib/cerebro/captura";
 import { confirmarRodada, escreverRodada, estadoDoMeuEstilo, gerarPreviasDaRodada } from "@/lib/estilo-proprio/servidor";
-import { EVENTO_DO_ESTILO_CONFIRMADO, rodadaParaTela } from "@/lib/estilo-proprio/tipos";
+import { EVENTO_DO_ESTILO_CONFIRMADO, PECAS_DA_PREVIA, rodadaParaTela, type PecaDaPrevia } from "@/lib/estilo-proprio/tipos";
 
 /**
  * O MEU ESTILO (08/10/2026): a caixa "descreva o seu estilo do seu jeito".
@@ -70,7 +70,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ ok: true, rodada: rodadaParaTela(res.rodada) });
     }
     if (corpo.acao === "previas") {
-      const res = await gerarPreviasDaRodada({ projectId: id, userId: r.userId, rodada });
+      // Só algumas peças (opcional): a prova de uma peça, ou refazer só a que saiu.
+      const pecas = Array.isArray((corpo as { pecas?: unknown }).pecas) ? ((corpo as { pecas: unknown[] }).pecas.filter((p): p is PecaDaPrevia => PECAS_DA_PREVIA.some((f) => f.id === p))) : null;
+      const res = await gerarPreviasDaRodada({ projectId: id, userId: r.userId, rodada, pecas });
       if (!res.ok) return NextResponse.json({ error: res.erro }, { status: 502 });
       return NextResponse.json({ ok: true, rodada: rodadaParaTela(res.rodada), avisos: res.avisos });
     }
