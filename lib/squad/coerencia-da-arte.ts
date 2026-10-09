@@ -168,3 +168,116 @@ export async function infograficoRepeteDado(p: {
     return { repete: null, nota: null };
   }
 }
+
+/** A partir disto o JEV diz que repete (o mesmo corte do "cortado" e da escrita: na dúvida, segue). */
+export const REPETE_A_PARTIR_DE = 0.6;
+
+/**
+ * A CENA REPETE O ELEMENTO DE OUTRA PEÇA? (08/10/2026). Antes de pagar a
+ * imagem, o JEV compara o elemento central e o cenário que o redator declarou
+ * (e a cena inteira) com os das outras peças da campanha e das últimas
+ * campanhas do projeto. O caso: as quatro artes da semana de 08/10 do Demandou
+ * com o mesmo ring light. Com veto, o redator reescreve só o campo vetado
+ * (lib/media/elemento-sem-repeticao.ts). Sem JEV ou com erro: `undefined`, e a
+ * guarda pura continua valendo. O JEV decide; o Claude só escreve.
+ */
+export async function elementoRepetidoPeloJev(p: {
+  projectId?: string | null;
+  nova: { cena: string; elemento: string; cenario: string };
+  usados: Array<{ peca: string; elemento: string; cenario: string }>;
+  uso?: UsoDoJev;
+}): Promise<{ campo: "elemento" | "cenario"; indice?: number; notas: { elemento: number | null; cenario: number | null } } | null | undefined> {
+  if (!p.usados.length) return null;
+  if (!jevLigado()) return undefined;
+  const usados = p.usados.slice(-24);
+  try {
+    const r = await perguntarAoJev(
+      {
+        projectId: p.projectId,
+        etapa: "elemento-repetido",
+        state: {
+          contexto:
+            "Uma campanha de rede social tem várias peças com imagem, cada uma com a sua cena. O estilo da marca dá a LINGUAGEM (cor, luz, tratamento), e isso pode se repetir; o que NÃO pode se repetir é o OBJETO CENTRAL nem o LUGAR da cena: cada peça tem o seu, tirado do próprio conteúdo. Repetir é usar o mesmo objeto ou o mesmo lugar, mesmo com outras palavras (\"ring light\" e \"luz de anel\"; \"estúdio de gravação\" e \"set de criador\"), ou o objeto central de outra peça aparecer de novo como detalhe.",
+          nova: { elemento_central: p.nova.elemento.slice(0, 120), cenario: p.nova.cenario.slice(0, 120), cena: p.nova.cena.slice(0, 600) },
+          ja_usados: usados.map((u, i) => ({ id: `u${i + 1}`, peca: u.peca.slice(0, 60), elemento_central: u.elemento.slice(0, 120), cenario: u.cenario.slice(0, 120) })),
+        },
+        uso: p.uso,
+      },
+      {
+        elemento: {
+          type: "noul",
+          instructions:
+            "O elemento central da `nova` (ou um objeto visível na `nova.cena`) é o MESMO objeto que o elemento central ou um objeto do cenário de alguma peça em `ja_usados`, mesmo com outras palavras? Responda não quando são objetos diferentes, ainda que do mesmo assunto.",
+        },
+        cenario: {
+          type: "noul",
+          instructions:
+            "O cenário da `nova` é o MESMO lugar que o cenário de alguma peça em `ja_usados`, mesmo com outras palavras? Responda não quando são lugares diferentes.",
+        },
+        qual: {
+          type: "choice",
+          instructions: "Se a `nova` repete alguma peça de `ja_usados`, qual é a mais parecida?",
+          criteria: Object.fromEntries(usados.map((u, i) => [`u${i + 1}`, `${u.elemento}${u.cenario ? `, em ${u.cenario}` : ""}`.slice(0, 200)])),
+        },
+      }
+    );
+    const notas = { elemento: probabilidadeDeSim(r.elemento), cenario: probabilidadeDeSim(r.cenario) };
+    if (notas.elemento === null && notas.cenario === null) return undefined;
+    const ids = usados.map((_, i) => `u${i + 1}`);
+    const escolhido = decidirChoice(r.qual, ids, "", 0.3);
+    const indice = escolhido ? ids.indexOf(escolhido) : -1;
+    const base = { notas, ...(indice >= 0 ? { indice: p.usados.length - usados.length + indice } : {}) };
+    if ((notas.elemento ?? 0) >= REPETE_A_PARTIR_DE) return { campo: "elemento", ...base };
+    if ((notas.cenario ?? 0) >= REPETE_A_PARTIR_DE) return { campo: "cenario", ...base };
+    return null;
+  } catch (e) {
+    console.warn("[coerencia-da-arte] JEV do elemento repetido falhou (fica a guarda pura):", e instanceof Error ? e.message : e);
+    return undefined;
+  }
+}
+
+/**
+ * O ESTILO ESCOLHIDO PEDE FIGURAS? (08/10/2026). O estilo criado por voz no
+ * post único do Demandou ("os agentes andando, estilo tecnológico") pedia
+ * silhuetas de profissionais andando, e a conferência reprovou "pessoa" três
+ * vezes por proporção, pagando seis imagens a mais, porque a regra da casa é
+ * arte sem gente. O estilo escolhido manda: quando a linguagem dele pede
+ * figuras, a peça pode tê-las (como o estilo descreve). O JEV decide; sem
+ * JEV, a leitura das palavras da linguagem (`estiloPedeFigurasPelaRegra`).
+ */
+export async function estiloPedeFigurasPeloJev(p: { projectId?: string | null; linguagem: string; uso?: UsoDoJev }): Promise<boolean | null> {
+  if (!p.linguagem.trim() || !jevLigado()) return null;
+  try {
+    const r = await perguntarAoJev(
+      {
+        projectId: p.projectId,
+        etapa: "estilo-pede-figuras",
+        state: {
+          contexto: "A linguagem visual que o cliente escolheu para as artes dos posts dele. A casa só desenha gente quando o estilo escolhido pede.",
+          linguagem: p.linguagem.slice(0, 1200),
+        },
+        uso: p.uso,
+      },
+      {
+        figuras: {
+          type: "noul",
+          instructions:
+            "Esta linguagem visual pede figuras humanas na imagem (pessoas, silhuetas, personagens, profissionais, uma equipe, figuras andando), como parte do que deve aparecer? Responda não quando ela só fala de objetos, lugares, luz e cor, ou quando proíbe gente.",
+        },
+      }
+    );
+    const nota = probabilidadeDeSim(r.figuras);
+    return nota === null ? null : nota >= 0.5;
+  } catch (e) {
+    console.warn("[coerencia-da-arte] JEV das figuras do estilo falhou (fica a leitura das palavras):", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+/** A leitura das palavras, para quando o JEV está fora: a linguagem fala de gente sem proibir gente. Pura. */
+export function estiloPedeFigurasPelaRegra(linguagem: string | null | undefined): boolean {
+  const t = (linguagem ?? "").toLowerCase();
+  if (!t.trim()) return false;
+  if (/\b(no people|without people|no humans|no person|no figures|sem pessoas|sem gente)\b/.test(t)) return false;
+  return /\b(people|person|persons|human|humans|silhouettes?|figures?|characters?|professionals?|team|crowd|pessoas?|silhuetas?|figuras?|personagens?|equipe|agentes)\b/.test(t);
+}

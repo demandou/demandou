@@ -81,6 +81,8 @@ export interface PedidoDeArte {
    */
   textoDesenhadoPeloModelo?: boolean;
   usarOlho?: boolean;
+  /** Gente na arte é permitida (08/10): as figuras que o estilo escolhido para o post pede. */
+  permitirPessoas?: boolean;
   projectId?: string;
   runId?: string;
   /** Quem confere. Só o teste troca (scripts/testes/infografico-pelo-modelo-0810.test.mts). */
@@ -190,6 +192,7 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
         // lib/materiais) continua fora: o olho reprova gente e letreiro, e ali
         // a gente e a placa são do cliente.
         usarOlho: pecaUsaMaterial(pedido.textoEsperado) ? false : pedido.usarOlho,
+        permitirPessoas: pedido.permitirPessoas,
         projectId: pedido.projectId,
         runId: pedido.runId,
       });

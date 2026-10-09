@@ -1,6 +1,7 @@
 import { askClaude } from "@/lib/claude";
 import { gerarImagem } from "@/lib/media/nano-banana";
-import { avisoDoRecuoDaArte } from "@/lib/media/peca-de-feed";
+import { avisoDoRecuoDaArte, estiloNaManchete } from "@/lib/media/peca-de-feed";
+import { usadosEmTexto, type ElementoUsado } from "@/lib/media/elemento-sem-repeticao";
 import { ajustarParaFormato } from "@/lib/media/margem-de-seguranca";
 import { formatoDaPeca, MAXIMO_DE_LAMINAS, REDES_COM_CARROSSEL } from "@/lib/media/formatos-das-redes";
 import {
@@ -47,6 +48,9 @@ export interface LaminaDoCarrossel {
   frase: string;
   /** O que a lâmina mostra, em inglês, para o modelo de imagem. */
   visual: string;
+  /** O elemento central e o cenário da lâmina, declarados por quem a escreveu (08/10, a guarda de repetição). */
+  elemento?: string;
+  cenario?: string;
 }
 
 /** As redes do dia que aceitam carrossel. O X não aceita. */
@@ -85,6 +89,12 @@ export async function roteiroDoCarrossel(opcoes: {
    * lib/media/checkpoint-do-carrossel.ts.
    */
   chave?: string;
+  /** O estilo veio do design escolhido para o post (08/10): ele manda na aparência. */
+  estiloDoPost?: boolean;
+  /** O estilo escolhido pede figuras: as lâminas podem tê-las, estilizadas. */
+  pessoas?: boolean;
+  /** O que a campanha e as últimas já usaram (08/10): nenhuma lâmina repete. */
+  usados?: ElementoUsado[];
 }): Promise<LaminaDoCarrossel[]> {
   const n = Math.max(3, Math.min(opcoes.laminas, 20));
 
@@ -96,20 +106,24 @@ export async function roteiroDoCarrossel(opcoes: {
     `Você escreve carrossel para rede social. Um carrossel é uma sequência: a primeira lâmina faz a pessoa parar, as do meio entregam o argumento uma ideia por vez, e a última pede uma ação.
 
 Responda SÓ com JSON, sem texto antes nem depois, neste formato exato:
-[{"frase":"...","visual":"..."}]
+[{"frase":"...","visual":"...","elemento":"...","cenario":"..."}]
 
 Regras que não se negociam:
 - exatamente ${n} lâminas;
 - "frase" em PORTUGUÊS, no máximo 12 palavras, é o que vai DESENHADO na lâmina. Nunca uma frase cortada pela metade;
 - "visual" em INGLÊS, descrevendo a cena da lâmina: composição, luz, materiais, mood. Coerente entre as lâminas: mesma paleta, mesmo tratamento, mesma família tipográfica;
+- cada lâmina tem o SEU elemento central (um objeto ou uma situação simples) e o seu cenário, tirados do que a frase dela diz, nunca de um objeto típico do setor; duas lâminas nunca mostram o mesmo objeto nem o mesmo lugar; "elemento" e "cenario" são esse elemento e esse cenário, em inglês, de 2 a 5 palavras cada;
+- a linguagem visual abaixo diz só como a imagem parece (cor, luz, técnica, tratamento); ela não escolhe o objeto nem o lugar${opcoes.estiloDoPost ? ", mas o estilo escolhido para o post manda na aparência e o motivo que ele pede entra em volta do elemento central" : ""};
+- ${opcoes.pessoas ? "gente só como o estilo escolhido descreve (figuras estilizadas, silhuetas), nunca uma pessoa real reconhecível" : "sem gente nas cenas: a ideia vem de objetos, lugares e luz"};
 - NUNCA invente número, percentual, data ou nome que não esteja no post abaixo. Sem dado, a lâmina fala qualitativo;
 - a última lâmina pede UMA ação, e só uma;
 - nada de travessão em português.`,
-    `ESTILO VISUAL OBRIGATÓRIO (em inglês, aplique nas ${n} lâminas):
-${opcoes.estiloVisual}
+    `${estiloNaManchete(opcoes.estiloVisual, { estiloDoPost: opcoes.estiloDoPost })}
 
 NICHO: ${opcoes.nicho ?? "negócios"}
-
+${opcoes.usados?.length ? `
+${usadosEmTexto(opcoes.usados)}
+` : ""}
 POST QUE ESTE CARROSSEL ACOMPANHA:
 ${opcoes.textoDoPost.slice(0, 3000)}`,
     {
@@ -131,7 +145,7 @@ ${opcoes.textoDoPost.slice(0, 3000)}`,
   if (!Array.isArray(lido) || lido.length === 0) throw new Error("O roteiro do carrossel veio vazio.");
 
   const laminas = (lido as Array<Record<string, unknown>>)
-    .map((l) => ({ frase: String(l.frase ?? "").trim(), visual: String(l.visual ?? "").trim() }))
+    .map((l) => ({ frase: String(l.frase ?? "").trim(), visual: String(l.visual ?? "").trim(), elemento: String(l.elemento ?? "").trim().slice(0, 80), cenario: String(l.cenario ?? "").trim().slice(0, 80) }))
     .filter((l) => l.frase && l.visual);
 
   if (laminas.length < 3) throw new Error(`O roteiro do carrossel veio com ${laminas.length} lâmina(s) válida(s).`);

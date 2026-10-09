@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getMediaStylePromptFragment, type MediaStyleId } from "@/lib/media/media-style";
 import { estiloDoCatalogo, normalizarEscolha, type EscolhaDeEstilo, type EstiloDoCatalogo } from "@/lib/media/catalogo-de-estilos";
 import { lerEstiloDoCliente } from "@/lib/media/estilo-do-cliente";
-import { identidadeDoProjeto } from "@/lib/media/identidade-visual";
+import { identidadeDoProjeto, setorEmIngles } from "@/lib/media/identidade-visual";
 
 /**
  * A direção de arte de cada peça visual: QUAL ESTILO e QUAIS CORES.
@@ -470,9 +470,9 @@ export async function direcaoDaPeca(opcoes: {
   const paleta = paletaDoProjeto(`${acento},${escuro},${claro}`);
   // O mundo do cliente vai junto do estilo para quem escreve a cena (a
   // manchete da esteira e o roteiro do carrossel) desenhar no ramo certo. A
-  // marca "CLIENT'S WORLD:" é o que `lookSemTexto` tira na hora da arte, onde
-  // o mundo entra numa linha própria.
-  const mundo = `CLIENT'S WORLD: ${identidade.setor.mundo}.`;
+  // marca "CLIENT'S WORLD:" é o que `lookSemTexto` tira na hora da arte.
+  // Desde 08/10 é só o RAMO, sem a lista de objetos (ver `mundoDaDirecao`).
+  const mundo = mundoDaDirecao(identidade.setor.id);
   const linguagem = linguagemDoProjeto(projeto?.videoEstiloEscolha);
   const daCampanha = estiloDaCampanha(opcoes.preferido, opcoes.infografico);
 
@@ -537,6 +537,51 @@ export async function direcaoDaPeca(opcoes: {
     // gravado nos posts desde 21/09.
     visualStyle: origem === "estilo-proprio" ? "proprio" : origem === "campanha" ? (opcoes.preferido as string) : estilo.id,
     resumo,
+  };
+}
+
+/**
+ * O MUNDO DO CLIENTE NA DIREÇÃO, SEM OBJETOS (08/10/2026).
+ *
+ * Até aqui era `CLIENT'S WORLD: ${setor.mundo}.`, a lista de objetos do setor
+ * ("a creator studio with a microphone on a boom arm and a switched-off ring
+ * light, a camera on a tripod, ..." no de marketing). A direção vai como
+ * "ESTILO VISUAL OBRIGATÓRIO" à manchete da peça, ao roteiro do carrossel e
+ * ao pedido da Diana, e cada um obedecia: o post único do Demandou de 08/10,
+ * com um estilo que o cliente criou por voz, saiu com o estúdio inteiro da
+ * lista, e a semana do mesmo dia com o ring light em quatro artes. Agora vai
+ * só o ramo e a regra: o elemento central nasce do conteúdo de cada peça.
+ * Uma frase só, sem ponto no meio (`lookSemTexto` a tira até o primeiro ponto).
+ */
+export function mundoDaDirecao(setorId: string | null | undefined): string {
+  return `CLIENT'S WORLD: the brand works in ${setorEmIngles(setorId)}; the central element and the setting of each piece come from that piece's own content, never from a stock prop of the sector.`;
+}
+
+/** De onde veio a direção de uma peça com o estilo escolhido para o post. */
+export type DirecaoComEstiloDoPost = Omit<DirecaoDaPeca, "origem"> & { origem: OrigemDaDirecao | "estilo-do-post" };
+
+/**
+ * O ESTILO ESCOLHIDO PARA O POST MANDA (08/10/2026, noite). Pura.
+ *
+ * O post único do Demandou (run cmv03t72a) tinha `modelosDosPosts` com o
+ * design "Agentes Tecnológicos em Movimento", criado por voz minutos antes, e
+ * a direção de arte seguiu o `mediaStyle` "photorealistic" da janela (o log
+ * dizia "Direção visual: estilo escolhido na campanha, Colagem com foto
+ * real"). O design só entrava no prompt final; quem escreve a cena nunca o via.
+ * O estilo escolhido para o post é a escolha mais específica que existe:
+ * ele vira a base da direção, no lugar do estilo da janela e da linguagem do
+ * vídeo. A paleta e o ramo continuam.
+ */
+export function direcaoComEstiloDoPost(direcao: DirecaoDaPeca, estilo: { nome: string; linguagem: string } | null | undefined): DirecaoComEstiloDoPost {
+  const linguagem = estilo?.linguagem?.replace(/\s+/g, " ").trim();
+  if (!estilo || !linguagem) return direcao;
+  const base: EstiloVisual = { id: "estilo-do-post", nome: estilo.nome || "Estilo escolhido para o post", prompt: linguagem, serveParaInfografico: true };
+  return {
+    ...direcao,
+    estilo: base,
+    styleHint: `${linguagem} ${direcao.paleta} ${direcao.mundo}`,
+    origem: "estilo-do-post",
+    resumo: `o estilo escolhido para este post, "${base.nome}"${direcao.resumo.includes("Identidade:") ? `. ${direcao.resumo.slice(direcao.resumo.indexOf("Identidade:"))}` : ""}`,
   };
 }
 

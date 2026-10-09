@@ -14,7 +14,9 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { enfileirar, cutucar, estadoDoGrupo } from "@/lib/fila/trabalhos";
-import { direcaoDaPeca } from "@/lib/media/direcao-de-arte";
+import { direcaoComEstiloDoPost, direcaoDaPeca } from "@/lib/media/direcao-de-arte";
+import { cenaGarantida, roteiroGarantido, usadosDaCampanha } from "@/lib/media/elementos-da-campanha";
+import { estiloComoLinguagem, metadataDoElemento } from "@/lib/media/elemento-sem-repeticao";
 import { debitar, saldo, jaCobrado, SaldoInsuficiente, TetoDoMembro, restanteDoTeto } from "@/lib/credits";
 import { fraseDoTetoDeCreditos } from "@/lib/equipe/regras";
 import { custoTotal, estimarCampanha } from "@/lib/credits/pricing";
@@ -3080,16 +3082,13 @@ ${postDoLinkedIn.content}`,
       // por cima; so sem nada disso vale a rotacao. Antes o estilo proprio
       // substituia tudo e o infografico usava o sorteio, entao imagem e
       // infografico do mesmo projeto podiam sair com caras diferentes.
-      const direcao = await direcaoDaPeca({
+      const direcaoDoProjeto = await direcaoDaPeca({
         projectId: project.id,
         runId,
         dayOfWeek,
         infografico: isInfographicType,
         preferido: config.mediaStyle,
       });
-      const estiloDoDia = direcao.estilo;
-      const paleta = direcao.paleta;
-      let styleHintEn = direcao.styleHint;
       // A família da linguagem e as cores da marca: a manchete e o infográfico
       // são compostos em código com elas desde 30/09 (lib/media/arte-com-frase).
       //
@@ -3107,6 +3106,23 @@ ${postDoLinkedIn.content}`,
       });
       const modeloDoDia = escolhaDaArte.modeloDoPost;
       const marcaDaPeca = await marcaDaArte(project.id, { runId, modeloDoPost: modeloDoDia, fotosDoPost: escolhaDaArte.fotos });
+      // O ESTILO ESCOLHIDO PARA O POST MANDA NA DIREÇÃO (08/10, noite). Até aqui
+      // a direção seguia o estilo da janela ("photorealistic") ou a linguagem do
+      // vídeo, e o design que o cliente criou para o post só entrava no prompt
+      // final; a cena, escrita sem ele, vencia (o post único do Demandou de
+      // 08/10 saiu com o estúdio do setor em vez dos "agentes andando").
+      const direcao = direcaoComEstiloDoPost(direcaoDoProjeto, marcaDaPeca.estiloDoPost);
+      const estiloDoDia = direcao.estilo;
+      const paleta = direcao.paleta;
+      let styleHintEn = direcao.styleHint;
+      const estiloDoPost = Boolean(marcaDaPeca.estiloDoPost?.linguagem);
+      const figurasDoEstilo = Boolean(marcaDaPeca.estiloDoPost?.pedeFiguras);
+      const avisosDaGuarda: string[] = [];
+      /** A cena da peça pela guarda da campanha (08/10): o elemento central não repete outra peça. */
+      const cenaDaPecaGarantida = async (frase: string, visual: string, elemento?: string, cenario?: string) => {
+        const r = await cenaGarantida({ runId, projectId: project.id, peca: `${dayKey}|${frase}`, rotulo: `${dayName}, "${frase.slice(0, 40)}"`, frase, cena: { cena: visual, elemento: elemento ?? "", cenario: cenario ?? "" }, avisos: avisosDaGuarda });
+        return r.cena;
+      };
       if (modeloDoDia) {
         await appendLog(runId, {
           agent: "Diana Design",
@@ -3297,10 +3313,9 @@ ${postDoLinkedIn.content}`,
 
 ${visualPromptSource}
 
-ESTILO VISUAL ESCOLHIDO PELO USUÁRIO (obrigatório):
-${styleHintEn}
+${estiloComoLinguagem(styleHintEn, { escolhidoParaOPost: estiloDoPost })}
 
-O prompt deve ser específico: composição, iluminação, materiais, mood, e a cena precisa nascer do TEMA deste post, não de uma cena genérica de negócios.
+O prompt deve ser específico: composição, iluminação, materiais, mood, e a cena precisa nascer do TEMA deste post, não de uma cena genérica de negócios nem de um objeto típico do setor.
 As cores acima são da marca do cliente e valem mais que o nicho (${project.niche ?? "business"}).
 Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
           contextWithResearch,
@@ -3477,7 +3492,11 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                   nicho: project.niche,
                   projectId: project.id,
                   runId,
+                  estiloDoPost,
+                  pessoas: figurasDoEstilo,
+                  usados: await usadosDaCampanha(runId, project.id),
                 });
+                pecaDoQuadro.visual = await cenaDaPecaGarantida(pecaDoQuadro.manchete, pecaDoQuadro.visual, pecaDoQuadro.elemento, pecaDoQuadro.cenario);
                 const arte = await produzirArtePorRede({
                   redes: redesDoDia,
                   contentType: "video",
@@ -3496,6 +3515,7 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                    * enxergar a única arte que o cliente vai ver.
                    */
                   usarOlho: true,
+                  permitirPessoas: figurasDoEstilo,
                   projectId: project.id,
                   runId,
                   desenhar: desenharComFraseEmCodigo(pecaDoQuadro.manchete, { ...marcaDaPeca, contexto: pecaBase?.content }, (prompt, proporcao) =>
@@ -3510,7 +3530,8 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                   ),
                 });
                 dianaFinalUrl = arte.principal;
-                mediaByDayKey[dayKey] = { imageUrl: dianaFinalUrl, imagemPorRede: arte.porRede, imagePrompt: visualPrompt, foto: metadataDaFoto([pecaDoQuadro.manchete]) };
+                for (const aviso of avisosDaGuarda.splice(0)) await appendLog(runId, { agent: "Diana Design", message: aviso, status: "running" });
+                mediaByDayKey[dayKey] = { imageUrl: dianaFinalUrl, imagemPorRede: arte.porRede, imagePrompt: visualPrompt, foto: { ...metadataDaFoto([pecaDoQuadro.manchete]), ...metadataDoElemento([pecaDoQuadro.manchete]) } };
               } catch (erroDoQuadro) {
                 // Saldo zerado não é "falha ao gerar": é a plataforma parada, e a fila precisa saber.
                 if (ehErroDeSaldo(erroDoQuadro) || ehSemSaldoDaOpenAI(erroDoQuadro)) throw erroDoQuadro;
@@ -3640,7 +3661,7 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                */
               const chaveDoCarrossel = `${runId}-${dayKey}`;
 
-              const roteiro = await roteiroDoCarrossel({
+              const roteiroEscrito = await roteiroDoCarrossel({
                 textoDoPost: pecaBase?.content ?? visualPromptSource,
                 laminas: pedidas,
                 estiloVisual: styleHintEn,
@@ -3648,7 +3669,13 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                 projectId: project.id,
                 runId,
                 chave: chaveDoCarrossel,
+                estiloDoPost,
+                pessoas: figurasDoEstilo,
+                usados: await usadosDaCampanha(runId, project.id),
               });
+              // Cada lâmina pela guarda (08/10): nem repete outra lâmina, nem outra peça da campanha.
+              const roteiro = await roteiroGarantido({ runId, projectId: project.id, dia: dayName, roteiro: roteiroEscrito, avisos: avisosDaGuarda });
+              for (const aviso of avisosDaGuarda.splice(0)) await appendLog(runId, { agent: "Diana Design", message: aviso, status: "running" });
               await appendLog(runId, {
                 agent: "Diana Design",
                 message: `Roteiro do carrossel de ${dayName}: ${roteiro.map((l, i) => `${i + 1}. ${l.frase}`).join(" · ")}`,
@@ -3689,7 +3716,7 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                 // usam a mesma proporção, então não há o que variar.
                 imagemPorRede: Object.fromEntries(redesDoDia.map((r) => [r, dianaFinalUrl!])),
                 imagePrompt: visualPrompt,
-                foto: metadataDaFoto(roteiro.map((l) => l.frase)),
+                foto: { ...metadataDaFoto(roteiro.map((l) => l.frase)), ...metadataDoElemento(roteiro.map((l) => l.frase)) },
               };
               for (const aviso of carrossel.avisos) {
                 await appendLog(runId, { agent: "Diana Design", message: aviso, status: "running" });
@@ -3733,10 +3760,15 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                 nicho: project.niche,
                 projectId: project.id,
                 runId,
+                estiloDoPost,
+                pessoas: figurasDoEstilo,
+                usados: await usadosDaCampanha(runId, project.id),
               });
+              peca.visual = await cenaDaPecaGarantida(peca.manchete, peca.visual, peca.elemento, peca.cenario);
+              for (const aviso of avisosDaGuarda.splice(0)) await appendLog(runId, { agent: "Diana Design", message: aviso, status: "running" });
               await appendLog(runId, {
                 agent: "Diana Design",
-                message: `Manchete da arte de ${dayName}: "${peca.manchete}"`,
+                message: `Manchete da arte de ${dayName}: "${peca.manchete}"${peca.elemento ? ` (elemento central: ${peca.elemento})` : ""}`,
                 status: "running",
               });
 
@@ -3749,6 +3781,7 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                 promptBase: promptDaArteSemTexto({ visual: peca.visual, estilo: styleHintEn, marca: marcaDaPeca }),
                 textoEsperado: [peca.manchete],
                 textoDoPost: pecaBase?.content,
+                permitirPessoas: figurasDoEstilo,
                 projectId: project.id,
                 runId,
                 desenhar: desenharComFraseEmCodigo(peca.manchete, { ...marcaDaPeca, contexto: pecaBase?.content }, (prompt, proporcao) =>
@@ -3784,7 +3817,7 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                 imagemPorRede: arte.porRede,
                 conferenciaDaArte: arte.algumaReprovada ? arte.avisos.join(" ") : undefined,
                 imagePrompt: visualPrompt,
-                foto: metadataDaFoto([peca.manchete]),
+                foto: { ...metadataDaFoto([peca.manchete]), ...metadataDoElemento([peca.manchete]) },
               };
               refazerArteDoDia = async (motivo: string) => {
                 const avisosDaRefeita: string[] = [];
@@ -3797,6 +3830,7 @@ Formato: uma descrição detalhada em inglês, sem marcadores, sem listas.`,
                   promptBase: `${promptDaArteSemTexto({ visual: peca.visual, estilo: styleHintEn, marca: marcaDaPeca })}\n\nCORRECTION REQUESTED BY THE REVIEWER (fix this in the scene; the headline is added later in code): ${motivo}`,
                   textoEsperado: [peca.manchete],
                   textoDoPost: pecaBase?.content,
+                  permitirPessoas: figurasDoEstilo,
                   projectId: project.id,
                   runId,
                   desenhar: desenharComFraseEmCodigo(peca.manchete, { ...marcaDaPeca, contexto: pecaBase?.content }, (prompt, proporcao) =>

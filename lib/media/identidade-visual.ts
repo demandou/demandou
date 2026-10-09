@@ -39,7 +39,7 @@ import { regrasAprovadas } from "@/lib/referencias/regras";
  *     O banco não é alterado: a paleta efetiva é calculada a cada arte, e a
  *     origem vai junto para a tela poder dizer "sugerida, confirme".
  *   - O SETOR, lido do nicho, do nome e do público, sem chamada paga: ele traz
- *     o mundo do cliente (cenários e objetos), a luz, o que nunca aparece, a
+ *     a luz, o que nunca aparece, a
  *     tipografia e a família de composição de quem não escolheu linguagem.
  *   - A FAMÍLIA, respeitando a escolha: a linguagem do vídeo escolhida pelo
  *     cliente manda; sem escolha, vale a do setor (consultório não é pôster de
@@ -66,8 +66,6 @@ export interface SetorVisual {
   cores: CoresDaMarca;
   familia: FamiliaDaArte;
   tipografia: Tipografia;
-  /** Em inglês: lugares, objetos e materiais do mundo do cliente. Sem ponto final no meio (ver lookSemTexto). */
-  mundo: string;
   /** Em inglês: luz e clima. */
   luz: string;
   /** Em inglês: o que não pode aparecer, para não parecer outro tipo de negócio. */
@@ -90,8 +88,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#0E8C8C", escuro: "#123B4A", claro: "#F3F8F8" },
     familia: "claro",
     tipografia: "sem-serifa",
-    mundo:
-      "a bright, spotless consultation room, a stethoscope resting on crisp folded linen, medical instruments neatly lined on a white tray, a glass of water and a small green plant by a window, an empty examination bed with fresh paper, a wall-mounted blood pressure gauge, an anatomical model of a heart or spine, clean pharmacy shelves with unlabeled bottles",
     luz: "soft, even daylight, airy and calm, cool clean whites with gentle shadows, reassuring and hygienic",
     evitar: "dramatic dark moody lighting, neon, fire, megaphones, rockets, social media icons, anything that looks like a marketing agency or a startup",
     estilo:
@@ -105,8 +101,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#B08D57", escuro: "#16233B", claro: "#F5F1E8" },
     familia: "sobrio",
     tipografia: "serifada",
-    mundo:
-      "a law library with tall shelves of bound volumes with plain spines, brass scales of justice on a walnut desk, a wooden gavel, a fountain pen on a leather desk pad, sealed envelopes with a wax seal, marble columns of a courthouse, a classic office with tall windows and heavy curtains, a closed briefcase",
     luz: "warm, controlled side light, deep shadows, rich wood and leather tones, serious and dignified",
     evitar: "playful or cartoon look, neon, bright saturated pop colors, startup or marketing props, casual clutter",
     estilo:
@@ -120,8 +114,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#C8963E", escuro: "#2A2119", claro: "#F4ECDF" },
     familia: "sobrio",
     tipografia: "serifada",
-    mundo:
-      "an old wooden fishing boat resting on the shore of a calm lake at dawn, fishing nets drying on a post, a simple stone chapel among hills, morning light through a plain window onto a worn wooden bench, olive branches, a loaf of bread and a clay jar, a path through a golden wheat field, a small shop door opening at sunrise, a carpenter's workbench with hand tools",
     luz: "warm golden-hour light, hopeful and quiet, earthy tones, soft haze",
     evitar: "kitsch religious clip art, glowing crosses, neon, dark horror mood, stock-photo hands raised, corporate office cliches",
     estilo:
@@ -135,8 +127,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#F2B33D", escuro: "#0D2A3F", claro: "#EEF3F6" },
     familia: "sobrio",
     tipografia: "sem-serifa",
-    mundo:
-      "rows of solar panels stretching across a dry plain, wind turbines on a ridge, high-voltage transmission towers and power lines against a wide sky, a substation with transformers and insulators, close-up of cables and connectors, an aerial view of a solar farm, a meteorological mast, a control room cabinet with indicator lights",
     luz: "clear, crisp daylight or blue hour, big sky, technical precision, clean industrial tones",
     evitar: "fantasy sci-fi effects, glowing magic circles, fire, cozy desk props, marketing agency cliches",
     estilo:
@@ -156,8 +146,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#D62839", escuro: "#14213D", claro: "#F5F3EE" },
     familia: "impacto",
     tipografia: "condensada",
-    mundo:
-      "a set of new house keys on a wooden desk next to a signed contract and a pen, car keys resting on a closed folder, a bright modern sales office with a meeting table and two empty chairs, a small house model beside a calculator, a calendar on a desk, a neat folder of documents with no readable text, the front door of a new house in daylight, a parked new car in a clean showroom without logos",
     luz: "clean bright daylight, warm and confident, credible and real",
     evitar: "piles of cash, money flying, gold bars, luxury sports cars, yachts, mansions, casino or lottery imagery, neon, dark dramatic mood, anything that looks like a get-rich-quick ad",
     estilo:
@@ -171,8 +159,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#1F8A5B", escuro: "#10212E", claro: "#F2F5F1" },
     familia: "claro",
     tipografia: "sem-serifa",
-    mundo:
-      "neatly stacked coins, a closed ledger and a calculator on a clean desk, a glass office facade reflecting the sky, a small plant growing from a jar of coins, a safe deposit box, keys on a table, a house model, a piggy bank on a shelf",
     luz: "clean, bright and balanced light, orderly and reassuring",
     evitar: "piles of cash, gambling imagery, neon, dark dramatic mood",
     estilo:
@@ -186,8 +172,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#2F6FDB", escuro: "#1B2440", claro: "#F7F5EF" },
     familia: "claro",
     tipografia: "sem-serifa",
-    mundo:
-      "a sunlit classroom with an empty blank chalkboard, stacked books with plain covers, sharpened pencils in a cup, a globe, a backpack on a chair, a library corner with reading lamps, colorful building blocks",
     luz: "bright, warm daylight, friendly and optimistic",
     evitar: "dark moody mood, neon, corporate cliches",
     estilo: "Bright, friendly editorial photography: warm daylight, tidy and colorful details, optimistic and clear.",
@@ -200,8 +184,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#D2462E", escuro: "#2A1C15", claro: "#FAF3E7" },
     familia: "sobrio",
     tipografia: "serifada",
-    mundo:
-      "a flour-dusted wooden counter with fresh bread, steam rising from a cup, a rustic kitchen with copper pans, a market crate of vegetables, a plated dish on linen, an oven with glowing embers",
     luz: "warm, appetizing natural light, rich textures",
     evitar: "clinical cold light, neon, office props",
     estilo: "Appetizing food and kitchen photography: warm light, rich textures, close and inviting.",
@@ -214,8 +196,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#C46F7E", escuro: "#2E2328", claro: "#FBF1EF" },
     familia: "claro",
     tipografia: "serifada",
-    mundo:
-      "a calm salon interior with a round mirror, folded towels and glass bottles without labels, dried flowers in a vase, marble and soft fabric, brushes in a cup, a robe on a hook",
     luz: "soft, flattering diffused light, pastel and creamy tones",
     evitar: "harsh contrast, neon, office props, dark dramatic mood",
     estilo: "Soft, elegant beauty editorial photography: diffused light, creamy tones, marble and fabric textures.",
@@ -228,8 +208,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#C2703D", escuro: "#1E2A32", claro: "#F1EEE9" },
     familia: "sobrio",
     tipografia: "sem-serifa",
-    mundo:
-      "a bright empty living room with large windows, a modern facade at dusk, architectural blueprints rolled on a table without readable marks, a hard hat on concrete, a staircase with strong lines, keys hanging on a door",
     luz: "natural light with strong architectural lines, warm interiors, clean exteriors",
     evitar: "neon, cartoon look, marketing agency props",
     estilo: "Architectural photography: strong lines, natural light, spacious and aspirational.",
@@ -242,8 +220,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#E0A100", escuro: "#1C2329", claro: "#ECEEF0" },
     familia: "impacto",
     tipografia: "condensada",
-    mundo:
-      "a factory floor with machines and steel beams, sparks from a welding station, stacked pallets in a warehouse, a conveyor belt, a forklift, shipping containers at a port, a truck on an open highway",
     luz: "strong directional industrial light, steel and concrete tones, energetic",
     evitar: "soft pastel decor, cozy desk props, cartoon look",
     estilo: "Bold industrial photography: steel, concrete and motion, strong directional light, energetic and solid.",
@@ -256,8 +232,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#7FA142", escuro: "#243020", claro: "#F4F1E4" },
     familia: "sobrio",
     tipografia: "sem-serifa",
-    mundo:
-      "an open crop field at sunrise, rows of soybeans or corn, a tractor on red soil, a silo against the sky, cattle on a green pasture, a rustic farm gate, rich soil in close-up",
     luz: "golden natural light, wide horizons, earthy greens and browns",
     evitar: "office props, neon, cartoon look",
     estilo: "Wide documentary photography of the field: golden light, big horizons, earthy and authentic.",
@@ -270,8 +244,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#F97316", escuro: "#1E1F22", claro: "#F2EFE8" },
     familia: "impacto",
     tipografia: "condensada",
-    mundo:
-      "a creator studio with a microphone on a boom arm and a switched-off ring light, a camera on a tripod, a wall of blank sticky notes in a weekly grid shape, a stage with an empty spotlight, a crowd-less auditorium, a megaphone resting on a stool, paper planes",
     luz: "punchy contrast, colored rim light, energetic",
     evitar: "medical, legal or religious imagery",
     estilo: "Bold, high-contrast creator-studio photography: one strong object, colored rim light, punchy and direct.",
@@ -284,8 +256,6 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#4C6FFF", escuro: "#0F1630", claro: "#F1F3FA" },
     familia: "claro",
     tipografia: "sem-serifa",
-    mundo:
-      "a minimal workspace with a closed laptop and a keyboard, server racks with indicator lights, a circuit board in macro, fiber optic cables, a clean meeting room with a whiteboard left blank, modular cubes",
     luz: "cool, clean light, crisp and modern",
     evitar: "fantasy sci-fi holograms, neon overload, cozy rustic props",
     estilo: "Clean, modern technology photography: crisp cool light, minimal surfaces, precise geometric details.",
@@ -298,13 +268,47 @@ export const SETORES: SetorVisual[] = [
     cores: { acento: "#2D5BD7", escuro: "#141A26", claro: "#F4F3EF" },
     familia: "claro",
     tipografia: "sem-serifa",
-    mundo:
-      "a bright meeting room with a long table and empty chairs, a storefront at opening time, a handshake-free deal symbolized by two coffee cups facing each other, a city skyline from an office window, a staircase going up, a compass on a map without labels",
     luz: "clean, natural daylight, confident and calm",
     evitar: "neon, fantasy effects, dark horror mood",
     estilo: "Clean editorial business photography: natural daylight, calm confident composition, one clear subject.",
   },
 ];
+
+/**
+ * O setor como o modelo de imagem entende, em inglês: SÓ o ramo, sem objetos.
+ *
+ * Cada setor tinha um `mundo`, uma lista de objetos e lugares, e até 08/10
+ * ela ia inteira a todo redator de cena, como "cenário" ou "mundo do cliente".
+ * Resultado medido no Demandou (setor "marketing"): as quatro artes da semana
+ * de 08/10 e o post único da mesma noite saíram com o ring light, a câmera no
+ * tripé, o microfone e os post-its em grade, os objetos da lista, por cima até
+ * do estilo que o cliente escolheu. Lista fixa de objetos é estilo fixo no
+ * código. O redator recebe o RAMO (isto), o público e o tom; o objeto central
+ * de cada peça sai do conteúdo dela (lib/media/elemento-sem-repeticao.ts).
+ * A lista saiu do setor de vez (o diretor do vídeo, lib/media/perfil-do-projeto.ts,
+ * também recebe só o ramo).
+ */
+export const SETOR_EM_INGLES: Record<string, string> = {
+  saude: "healthcare and medical practice",
+  juridico: "law firm",
+  fe: "faith-based (Christian church and ministry)",
+  energia: "renewable energy and power generation",
+  consorcio: "consortium sales and credit for buying a home or a car (Brazilian consórcio)",
+  financas: "finance and accounting",
+  educacao: "education",
+  alimentacao: "food and hospitality",
+  beleza: "beauty and wellness",
+  imoveis: "real estate and construction",
+  industria: "industry and logistics",
+  agro: "agribusiness",
+  marketing: "content creation and marketing",
+  tecnologia: "technology",
+  negocios: "business consulting",
+};
+
+export function setorEmIngles(id: string | null | undefined): string {
+  return (id && SETOR_EM_INGLES[id]) || "business";
+}
 
 /** Sem acento e em minúsculas: as palavras do setor são escritas assim. */
 function semAcento(t: string): string {

@@ -427,7 +427,8 @@ test("a esteira entrega o modelo de cada post à arte, e o refazer parte dele", 
   assert.ok(semana.includes("modeloDoPost: modelo ?? null"), "a semana do vídeo parte do modelo escolhido para o dia");
   assert.ok(/marcaDaArte\(video\.projectId, \{ runId: run\.id, modeloDoPost: escolhaDaArte\.modeloDoPost[,}]/.test(semana), "e o entrega à marca do dia");
   const arte = fonte("lib/media/arte-com-frase.tsx");
-  assert.ok(arte.includes("modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente, book: escolha?.ids })"));
+  // 08/10 (noite): o design do cliente volta com a linguagem (para a cena), e o id dele é o que vai ao book.
+  assert.ok(arte.includes("modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente?.id ?? null, book: escolha?.ids })"));
   assert.ok(arte.includes("pecaAprovada({ identidadeAprovada: identidade?.aprovada, escolhidoParaOPost: Boolean(doPost) })"));
   const chat = fonte("lib/media/pedido-do-card.ts");
   assert.equal((chat.match(/modeloDoPost: modeloDosPosts\(/g) ?? []).length, 3, "trava, carrossel refeito e arte refeita");
