@@ -67,6 +67,7 @@ export const PREFIXOS_DAS_TELAS = [
   "estilo-aguardando",
   "arte-falhou",
   "andamento-parado",
+  "peca-falhou",
   "nao-revisado",
   "video-da-peca",
   "dia-reprovado",
@@ -329,6 +330,15 @@ export function chaveDaArteQueFalhou(postId: string, em: string | null | undefin
 
 export function chaveDoAndamentoParado(runId: string, dia: number | string, fase: string): string | null {
   return montar("andamento-parado", runId, dia, fase);
+}
+
+/**
+ * A PEÇA PEDIDA que não saiu (08/10, lib/pipeline/pecas-pedidas.ts): o cartão
+ * do dia com o motivo e o "Refazer". A marca é a do motivo: a mesma falha não
+ * volta; uma falha nova do mesmo dia volta.
+ */
+export function chaveDaPecaQueFalhou(runId: string, data: string, motivo: string | null | undefined): string | null {
+  return montar("peca-falhou", runId, data, motivo ? marca(motivo) : null);
 }
 
 export function chaveDoNaoRevisado(cardId: string, postIds: readonly string[]): string | null {

@@ -12,7 +12,10 @@ import { estadoDoPost, horaCurta, NOMES_DAS_REDES, type PostParaEstado } from "@
 import type { EtiquetaDaPeca } from "@/lib/posts/etiqueta-da-peca";
 import type { AndamentoDoDia } from "@/lib/pipeline/andamento-dos-dias";
 import { BotaoDescartar, Descartavel, useDescarte } from "@/components/ui/descartar";
-import { chaveDaArteQueFalhou, chaveDoEstiloAguardando } from "@/lib/avisos/chaves";
+import { chaveDaArteQueFalhou, chaveDaPecaQueFalhou, chaveDoAndamentoParado, chaveDoEstiloAguardando } from "@/lib/avisos/chaves";
+import { MINUTOS_PARADA, type PecaPedida } from "@/lib/pipeline/pecas-pedidas";
+import { AvatarDoAgente } from "@/components/escritorio/avatar-do-agente";
+import { agentePorId } from "@/lib/squad/estado-do-squad";
 
 /**
  * A semana, um cartão por dia, e dentro de cada dia as PEÇAS PRONTAS.
@@ -144,7 +147,134 @@ export type DiaDaSemana = {
    * o corte ainda não chegou. Ver lib/media/espera-do-corte.ts.
    */
   esperasDoCorte?: EsperaDoCorte[];
+  /**
+   * AS PEÇAS PEDIDAS que ainda não viraram card (08/10): o cartão "em
+   * produção" no dia e na hora que o cliente pediu, desde o minuto do pedido,
+   * com quem está com ela e a etapa. Vem de lib/pipeline/pecas-pedidas.ts,
+   * a mesma lista que o escritório lê. Quando a peça fica pronta, o cartão de
+   * verdade entra no lugar e este some.
+   */
+  pedidas?: PecaPedida[];
 };
+
+const ROTULO_DA_ETAPA: Record<PecaPedida["etapa"], string> = {
+  fila: "na fila",
+  pesquisa: "pesquisando",
+  texto: "escrevendo",
+  arte: "desenhando",
+  revisao: "revisando",
+  publicacao: "arrumando",
+  tentando: "tentando de novo",
+  pausada: "pausada",
+  falhou: "não saiu",
+  pronta: "pronta",
+};
+
+/**
+ * O CARTÃO DA PEÇA PEDIDA (08/10/2026).
+ *
+ * Pedido do Bruno, testando como cliente: "pedi um post para segunda, dia 12:
+ * eu queria ver um cardzinho, porque aí eu sei que eles entenderam o que eu
+ * pedi, estão trabalhando nessa peça". Tracejado como o da espera do corte,
+ * para não ser lido como peça pronta; diz o formato, a hora, as redes, quem
+ * está com ela (o rosto) e a etapa. Em produção, a barrinha corre. Se falhou,
+ * o motivo e o "Refazer", com o X que descarta (toda notificação tem
+ * descartar). Clicar na peça em produção abre a ficha de quem está com ela.
+ */
+function CartaoDaPecaPedida({ p, onVerAgente, onRefazer }: { p: PecaPedida; onVerAgente?: (agentId: string) => void; onRefazer?: () => void }) {
+  const falhou = p.etapa === "falhou";
+  const parada = !falhou && p.etapa !== "fila" && p.etapa !== "pausada" && p.semNovidadeHaMin >= MINUTOS_PARADA;
+  const chaveDaParada = useDescarte(parada ? chaveDoAndamentoParado(p.runId, p.dayOfWeek, p.etapa) : null);
+  const andando = !falhou && p.etapa !== "fila" && p.etapa !== "pausada" && p.etapa !== "tentando";
+  const agente = agentePorId(p.agente);
+  const redes = p.redes;
+  const corpo = (
+    <>
+      <span className="flex items-center gap-1.5">
+        {agente ? (
+          <AvatarDoAgente agenteId={agente.id} tamanho={20} />
+        ) : (
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-dashed" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }} aria-hidden>
+            {falhou ? <AlertCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+          </span>
+        )}
+        <span className="min-w-0 text-[11.5px] font-semibold leading-snug" style={{ color: "var(--text-primary)" }}>
+          {p.formato}
+          {p.hora && <b className="font-semibold tabular-nums"> · {p.hora}</b>}
+        </span>
+      </span>
+      {redes.length > 0 && (
+        <span className="flex flex-wrap items-center gap-1.5" aria-label="Redes desta peça">
+          {redes.map((r) => (
+            <RedeIcone key={r} plataforma={r} className="h-3.5 w-3.5" />
+          ))}
+        </span>
+      )}
+      {p.tema && (
+        <span className="line-clamp-2 text-[10.5px] leading-snug" style={{ color: "var(--text-secondary)" }} title={p.tema}>
+          {p.tema}
+        </span>
+      )}
+      <span className={cn("flex items-center gap-1 text-[10.5px] font-semibold", falhou ? "text-red-400" : andando ? "text-orange-400" : "text-[var(--text-muted)]")}>
+        {falhou ? <AlertCircle className="h-3 w-3 shrink-0" /> : andando ? <Loader2 className="h-3 w-3 shrink-0 animate-spin motion-reduce:animate-none" /> : <Clock className="h-3 w-3 shrink-0" />}
+        {falhou ? "não saiu" : p.detalhe || ROTULO_DA_ETAPA[p.etapa]}
+      </span>
+      {p.etapa === "tentando" && p.motivo && (
+        <span className="line-clamp-2 text-[10px] leading-snug" style={{ color: "var(--text-muted)" }} title={p.motivo}>
+          {p.motivo}
+        </span>
+      )}
+      {parada && !chaveDaParada.descartado && (
+        <span className="flex items-start gap-1 rounded-md border px-1.5 py-1 text-[9.5px] leading-tight" style={{ borderColor: "rgba(245,158,11,.5)", background: "rgba(245,158,11,.08)", color: "var(--text-muted)" }} role="status">
+          <span className="flex-1">Sem novidade há {p.semNovidadeHaMin} min. A fila retoma sozinha; se passar de 15 min, abra a ficha e peça ajuda.</span>
+          <BotaoDescartar compacto aoDescartar={() => chaveDaParada.descartar()} className="-my-1 -mr-1" />
+        </span>
+      )}
+      {andando && (
+        <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden">
+          <span className="block h-full w-1/3 animate-[correBarra_1.4s_ease-in-out_infinite] motion-reduce:hidden" style={{ background: "var(--accent-orange)" }} />
+        </span>
+      )}
+    </>
+  );
+  const classe = "relative flex w-full flex-col gap-1.5 overflow-hidden rounded-lg border border-dashed px-2.5 py-2 text-left transition-colors";
+  const estilo = { background: "var(--bg-input)", borderColor: falhou ? "rgba(248,113,113,.55)" : andando ? "rgba(246,128,61,.45)" : "var(--border)" };
+  if (falhou) {
+    return (
+      <Descartavel chave={chaveDaPecaQueFalhou(p.runId, p.data, p.motivo)} modo="sumir">
+        <div data-peca-pedida={p.etapa} role="status" className={classe} style={estilo}>
+          <div className="flex items-start gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">{corpo}</div>
+            <BotaoDescartar compacto className="-my-1 -mr-1" />
+          </div>
+          <span className="line-clamp-3 text-[10px] leading-snug" style={{ color: "var(--text-muted)" }} title={p.motivo ?? undefined}>
+            {p.motivo ?? "A geração falhou."} Nada foi cobrado por esta peça.
+          </span>
+          {onRefazer && (
+            <button
+              type="button"
+              data-refazer-peca
+              onClick={onRefazer}
+              className="flex w-full items-center justify-center gap-1 rounded-md bg-orange-500 px-2 py-1 text-[10.5px] font-semibold text-white hover:bg-orange-600"
+            >
+              <RefreshCw className="h-3 w-3" /> Refazer
+            </button>
+          )}
+        </div>
+      </Descartavel>
+    );
+  }
+  const abrir = agente && onVerAgente ? () => onVerAgente(agente.id) : undefined;
+  return abrir ? (
+    <button type="button" data-peca-pedida={p.etapa} onClick={abrir} title={`${agente!.nome}: ${p.detalhe}`} className={cn(classe, "hover:border-orange-500/60")} style={estilo}>
+      {corpo}
+    </button>
+  ) : (
+    <div data-peca-pedida={p.etapa} role="status" className={classe} style={estilo}>
+      {corpo}
+    </div>
+  );
+}
 
 /**
  * O CARTÃO DE ESPERA DO CORTE (05/10).
@@ -791,6 +921,8 @@ export function SemanaDoQuadro({
   onAbrirCorte,
   projectId,
   onTentarArte,
+  onVerAgente,
+  onRefazerPedida,
 }: {
   dias: DiaDaSemana[];
   /** O projeto, para o botão "Escolher e aprovar" da identidade levar ao book (05/10). */
@@ -811,6 +943,10 @@ export function SemanaDoQuadro({
   onVerVideo?: () => void;
   /** Abrir o corte pronto que o cartão "Corte pronto: aprovar" aponta (05/10). */
   onAbrirCorte?: (cardId: string, data: string) => void;
+  /** A ficha de quem está com a peça pedida, pelo cartão em produção (08/10). */
+  onVerAgente?: (agentId: string) => void;
+  /** "Refazer" a peça pedida que não saiu (08/10): abre a campanha com o tema dela. */
+  onRefazerPedida?: (peca: PecaPedida) => void;
 }) {
   // A peça cuja mídia está aberta no visor. Estado da semana, e não do
   // cartão, porque o visor cobre a tela inteira.
@@ -887,10 +1023,17 @@ export function SemanaDoQuadro({
             </span>
           )}
 
-          {dia.andamento && <FaixaDoAndamento a={dia.andamento} chave={dia.chaveDoAndamentoParado} />}
+          {/* A faixa do andamento só sem o cartão da peça pedida (08/10): o
+              cartão já diz a etapa, quem está nela e o "sem novidade". */}
+          {dia.andamento && !dia.pedidas?.length && <FaixaDoAndamento a={dia.andamento} chave={dia.chaveDoAndamentoParado} />}
 
-          {dia.pecas.length > 0 || dia.esperasDoCorte?.length ? (
+          {dia.pecas.length > 0 || dia.esperasDoCorte?.length || dia.pedidas?.length ? (
             <div className="relative flex flex-col gap-2">
+              {/* AS PEÇAS PEDIDAS (08/10), antes das prontas: o cartão "em
+                  produção" no dia e na hora do pedido, desde o minuto zero. */}
+              {dia.pedidas?.map((p) => (
+                <CartaoDaPecaPedida key={p.id} p={p} onVerAgente={onVerAgente} onRefazer={onRefazerPedida ? () => onRefazerPedida(p) : undefined} />
+              ))}
               {dia.pecas.map((p) => (
                 <CartaoDaPeca key={p.id} p={p} onAbrir={() => onAbrirPeca(p.id)} onVerMidia={p.midia ? () => setVisor(p) : undefined} onArquivar={onArquivarPeca ? () => onArquivarPeca(p.id) : undefined} onCancelar={onCancelarPeca ? () => onCancelarPeca(p.id) : undefined} projectId={projectId} onTentarArte={onTentarArte ? () => onTentarArte(p.id) : undefined} />
               ))}

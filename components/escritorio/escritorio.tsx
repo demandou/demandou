@@ -22,6 +22,14 @@ import { bastaoDoVideo, videoDaVez, type VideoParaOBastao } from "@/lib/squad/ba
 import { useUmaAUma } from "@/components/escritorio/pecas-uma-a-uma";
 import { BotaoDescartar, useDescartes } from "@/components/ui/descartar";
 import { chaveDaDica, chaveDaSugestao, chaveDaVisitaDaPeca } from "@/lib/avisos/chaves";
+import {
+  ajudandoNaPeca,
+  cardsNaCabeca,
+  donosDasPecas,
+  haProjetoAcontecendo,
+  passagensDoCard,
+  type PecaPedida,
+} from "@/lib/pipeline/pecas-pedidas";
 
 /** A dica dos controles da cena 3D (07/10): descarte permanente por pessoa. */
 const CHAVE_DOS_CONTROLES = chaveDaDica("controles-escritorio") as string;
@@ -124,8 +132,11 @@ export function SquadEmLinha({
   );
 }
 
+const SEM_PECAS_PEDIDAS: PecaPedida[] = [];
+
 export function Escritorio({
   pecas,
+  pecasPedidas = SEM_PECAS_PEDIDAS,
   runId,
   titulo,
   projectId,
@@ -135,6 +146,13 @@ export function Escritorio({
   videos,
 }: {
   pecas: PecaDoSquad[];
+  /**
+   * AS PEÇAS PEDIDAS da semana (08/10, lib/pipeline/pecas-pedidas.ts): as
+   * mesmas do calendário. É delas que sai o card na cabeça de cada agente,
+   * quem anda (só quem entrega o card ao próximo) e se é horário de trabalho
+   * (todo mundo na mesa, sem café e sem visita).
+   */
+  pecasPedidas?: PecaPedida[];
   /** O run em andamento, ou nulo quando o squad está parado. */
   runId: string | null;
   titulo: string;
@@ -205,14 +223,18 @@ export function Escritorio({
           clearInterval(intervalo);
           // A semana está pronta: o Paulo leva até a nossa mesa. A cena é
           // estado próprio, então sobrevive ao run virar nulo logo abaixo.
-          contador.current += 1;
-          setCena({
-            de: "paulo-publicador",
-            para: "voce",
-            humor: "entrega",
-            fala: "Pronto. Levando a semana para você.",
-            n: contador.current,
-          });
+          // Com as peças pedidas acompanhadas (08/10), cada peça pronta já
+          // foi levada à sua mesa com o card; aqui só fica a fala da mesa.
+          if (!Object.keys(donos.current).length) {
+            contador.current += 1;
+            setCena({
+              de: "paulo-publicador",
+              para: "voce",
+              humor: "entrega",
+              fala: "Pronto. Levando a semana para você.",
+              n: contador.current,
+            });
+          }
           setTimeout(() => setFalaDaMesa("Chegou. A semana está no calendário, esperando você."), 3500);
           setTimeout(() => setFalaDaMesa(null), 16000);
           setTimeout(onRunTerminou, 1500);
@@ -280,10 +302,37 @@ export function Escritorio({
   // As peças novas entram na sala uma de cada vez (ver pecas-uma-a-uma.ts).
   const pecasNaSala = useUmaAUma(pecas, (p) => p.id);
 
+  /**
+   * O CARD NA CABEÇA DE CADA UM (08/10): a peça pedida que o agente está
+   * fazendo, a mesma do calendário. Quem ajuda (o Xavier na thread do Lucas)
+   * leva um documentinho, não o card. Com projeto acontecendo, é horário de
+   * trabalho: todo mundo na mesa.
+   */
+  const cabecas = useMemo(() => cardsNaCabeca(pecasPedidas), [pecasPedidas]);
+  const ajudando = useMemo(() => ajudandoNaPeca(pecasPedidas), [pecasPedidas]);
+  const emProducao = useMemo(() => pecasPedidas.filter((p) => p.etapa !== "pronta" && p.etapa !== "falhou"), [pecasPedidas]);
+  const emHorarioDeTrabalho = Boolean(runId) || haVideoAndando || haProjetoAcontecendo(pecasPedidas);
+
   const situacao = useMemo(() => {
     const base = bastao
       ? situacaoDoSquad({ pecas: pecasNaSala, logs: bastao.logs, rodando: true, agora })
-      : situacaoDoSquad({ pecas: pecasNaSala, logs, rodando: Boolean(runId) });
+      : situacaoDoSquad({ pecas: pecasNaSala, logs, rodando: Boolean(runId) || emProducao.length > 0 });
+    // A peça pedida manda (08/10): quem está com o card trabalha, com a etapa
+    // dela na plaqueta; quem ajuda trabalha junto. Vale também sem `runId`
+    // (a página recarregada no meio da campanha), porque a lista vem do banco.
+    const comCard = emProducao.find((p) => p.agente)?.agente ?? null;
+    if (comCard || Object.keys(ajudando).length) {
+      const detalheDe = (id: string) => emProducao.find((p) => p.agente === id)?.detalhe;
+      return {
+        ...base,
+        trabalhando: comCard ?? base.trabalhando,
+        agentes: base.agentes.map((s) => {
+          if (cabecas[s.agente.id]?.length) return { ...s, estado: "trabalhando" as const, detalhe: detalheDe(s.agente.id) ?? s.detalhe };
+          if (ajudando[s.agente.id]) return { ...s, estado: "trabalhando" as const, detalhe: "trabalhando junto" };
+          return s.estado === "trabalhando" ? { ...s, estado: "esperando" as const, detalhe: "esperando a vez" } : s;
+        }),
+      };
+    }
     if (!bastao || bastao.ajudantes.length === 0) return base;
     // Quem trabalha JUNTO (a Diana no enquadramento, o Roberto pesquisando)
     // senta e trabalha também, sem levar o bastão: `situacaoDoSquad` só sabe
@@ -296,7 +345,36 @@ export function Escritorio({
           : s
       ),
     };
-  }, [pecasNaSala, logs, runId, bastao, agora]);
+  }, [pecasNaSala, logs, runId, bastao, agora, emProducao, cabecas, ajudando]);
+
+  /**
+   * SÓ ANDA QUEM ENTREGA O CARD (08/10, pedido do Bruno: "só anda quem está
+   * levando o card que está na cabeça dele para o próximo"). A cada leitura,
+   * o dono de cada peça é comparado com o da leitura anterior: mudou, quem
+   * tinha leva o card até quem tem agora; virou peça pronta, o Paulo leva até
+   * a sua mesa. Várias entregas de uma vez saem em fila, uma a cada 5 s. A
+   * primeira leitura não anda ninguém.
+   */
+  const donos = useRef<Record<string, string | null>>({});
+  useEffect(() => {
+    const passagens = passagensDoCard(donos.current, pecasPedidas);
+    donos.current = donosDasPecas(pecasPedidas);
+    const timers = passagens.map((p, i) =>
+      setTimeout(() => {
+        contador.current += 1;
+        const nome = p.para === "voce" ? "você" : AGENTES.find((a) => a.id === p.para)?.primeiroNome;
+        setCena({
+          de: p.de,
+          para: p.para,
+          humor: "entrega",
+          fala: nome ? `Levando ${p.card.formato.toLowerCase()} de ${p.card.dia} para ${nome}.` : "Levando adiante.",
+          card: p.card,
+          n: contador.current,
+        });
+      }, i * 5000)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [pecasPedidas]);
 
   // A semana do vídeo chegou: quando o bastão do vídeo some depois de passar
   // pelo Paulo, ele leva até a sua mesa, como no fim do run de texto.
@@ -314,9 +392,13 @@ export function Escritorio({
     }
   }, [faseDoBastao]);
 
-  // O bastão passou: quem tinha entrega para quem tem agora.
+  // O bastão passou: quem tinha entrega para quem tem agora. Só na esteira
+  // do VÍDEO (08/10): na campanha de texto quem anda é quem entrega o card
+  // da peça pedida (acima), e o "último log running" pulava entre o Lucas e
+  // o Xavier, que escrevem juntos, com gente andando sem parar.
+  const faseDoVideoAgora = bastao?.fase ?? null;
   useEffect(() => {
-    const agora = situacao.trabalhando;
+    const agora = faseDoVideoAgora ? situacao.trabalhando : null;
     const antes = anterior.current;
     anterior.current = agora;
     if (antes && agora && antes !== agora) {
@@ -330,7 +412,7 @@ export function Escritorio({
         n: contador.current,
       });
     }
-  }, [situacao.trabalhando]);
+  }, [situacao.trabalhando, faseDoVideoAgora]);
 
   /**
    * A BRONCA: a Vera reprovou e volta na mesa de quem escreveu.
@@ -354,12 +436,16 @@ export function Escritorio({
   // situação vai por ref: com o vídeo andando ela muda a cada tique do
   // relógio (1,5 s), e como dependência reiniciaria os 9 s para sempre.
   const situacaoAtual = useRef(situacao);
+  const trabalhandoAgora = useRef(emHorarioDeTrabalho);
   useEffect(() => {
     situacaoAtual.current = situacao;
-  }, [situacao]);
+    trabalhandoAgora.current = emHorarioDeTrabalho;
+  }, [situacao, emHorarioDeTrabalho]);
   useEffect(() => {
     if (modo !== "3d") return;
     const t = setInterval(() => {
+      // Em horário de trabalho ninguém acena (08/10): todo mundo na mesa.
+      if (trabalhandoAgora.current) return;
       const parados = situacaoAtual.current.agentes.filter((s) => s.estado !== "trabalhando");
       if (parados.length === 0) return;
       const s = parados[Math.floor(Math.random() * parados.length)];
@@ -444,7 +530,8 @@ export function Escritorio({
   }, [projectId]);
 
   useEffect(() => {
-    if (modo !== "3d" || runId || haVideoAndando) return;
+    // Com projeto acontecendo ninguém sai da mesa (08/10): visita é para o ócio.
+    if (modo !== "3d" || runId || haVideoAndando || emHorarioDeTrabalho) return;
     const visitar = (primeira = false) => {
       const d = descartesRef.current;
       const pedidos = situacao.agentes
@@ -479,7 +566,7 @@ export function Escritorio({
       clearTimeout(primeira);
       clearInterval(t);
     };
-  }, [modo, runId, haVideoAndando, situacao.agentes, sugestoes]);
+  }, [modo, runId, haVideoAndando, emHorarioDeTrabalho, situacao.agentes, sugestoes]);
 
   async function decidir(acao: "aceitar" | "recusar") {
     if (!sugestaoAberta) return;
@@ -611,6 +698,9 @@ export function Escritorio({
             onPerguntar={perguntar}
             onComentarSobre={comentarSobre}
             minhaAparencia={minhaAparencia}
+            cabecas={cabecas}
+            ajudando={ajudando}
+            emHorarioDeTrabalho={emHorarioDeTrabalho}
           />
         ) : null}
         {/* Personalizar o seu boneco: corpo, cabelo, pele, roupa e detalhes. */}

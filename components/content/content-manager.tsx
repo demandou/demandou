@@ -74,6 +74,7 @@ import { JanelaDoConteudoPronto } from "@/components/posts/janela-do-conteudo-pr
 import { fraseDaRecorrencia, type Recorrencia } from "@/lib/posts/conteudo-pronto";
 import { andamentoDosDias } from "@/lib/pipeline/andamento-dos-dias";
 import { esperasDoCorteNoDia, type PlanoDoVideo } from "@/lib/media/espera-do-corte";
+import { haProjetoAcontecendo, pecasEmProducaoNoDia, pecasPedidas, type EntregaDaProgramacao, type PecaPedida, type RunDaProgramacao } from "@/lib/pipeline/pecas-pedidas";
 import { FichaDoAgente, type TrabalhoDoAgente } from "@/components/escritorio/ficha-do-agente";
 import { LinhaDoTempoDoParecer } from "@/components/escritorio/linha-do-tempo-do-parecer";
 import type { EtapaDoParecer } from "@/lib/squad/parecer-da-peca";
@@ -4495,6 +4496,12 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
   // Os planos de vídeo que tocam a semana aberta (05/10): é deles que sai o
   // lugar guardado do corte nos dias de vídeo curto (lib/media/espera-do-corte.ts).
   const [planosDoVideo, setPlanosDoVideo] = useState<PlanoDoVideo[]>([]);
+  /**
+   * AS CAMPANHAS QUE TOCAM A SEMANA e as entregas delas (08/10): é daqui que
+   * saem as PEÇAS PEDIDAS, o cartão no dia certo desde o minuto do pedido, e o
+   * card na cabeça de cada agente no escritório (lib/pipeline/pecas-pedidas.ts).
+   */
+  const [programacao, setProgramacao] = useState<{ runs: RunDaProgramacao[]; entregas: EntregaDaProgramacao[]; fuso: string | null }>({ runs: [], entregas: [], fuso: null });
   const [loadingCards, setLoadingCards] = useState(false);
   const [runningPipelineId, setRunningPipelineId] = useState<string | null>(activeRun?.status === "running" ? activeRun.id : null);
   const [generating, setGenerating] = useState(activeRun?.status === "running");
@@ -4691,6 +4698,11 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
       setPostsSemana(data.posts ?? []);
       setRunDaSemana(data.run ? { id: data.run.id, status: data.run.status, logs: data.run.logs } : null);
       setPlanosDoVideo(Array.isArray(data.planosDoVideo) ? data.planosDoVideo : []);
+      setProgramacao({
+        runs: Array.isArray(data.runsDaSemana) ? data.runsDaSemana : [],
+        entregas: Array.isArray(data.entregasDaSemana) ? data.entregasDaSemana : [],
+        fuso: typeof data.fuso === "string" ? data.fuso : null,
+      });
     } catch {
       // silent
     } finally {
@@ -4727,7 +4739,19 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
     () => (runDaSemana ? andamentoDosDias(runDaSemana.logs, runDaSemana.status) : {}),
     [runDaSemana]
   );
-  const algoAndando = Object.values(andamento).some((a) => a.fase === "video");
+  /**
+   * AS PEÇAS PEDIDAS da semana (08/10): uma por dia de cada campanha que toca
+   * a semana, com a etapa e quem está com o card. O quadro desenha as que
+   * ainda não viraram card; o escritório põe o mesmo cartão na cabeça de quem
+   * está com ele. Uma lista, duas telas, a mesma história.
+   */
+  const pecasPedidasDaSemana: PecaPedida[] = useMemo(
+    () => pecasPedidas({ runs: programacao.runs, entregas: programacao.entregas, fuso: programacao.fuso }),
+    [programacao]
+  );
+  // Algo andando: um vídeo refeito, ou uma peça pedida em produção (a campanha
+  // que outra aba pediu, ou a que continua depois de recarregar a página).
+  const algoAndando = Object.values(andamento).some((a) => a.fase === "video") || haProjetoAcontecendo(pecasPedidasDaSemana);
 
   // Real-time polling while pipeline is running
   useEffect(() => {
@@ -5072,6 +5096,18 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
       setPendingConfig(null);
       // A semana vai nascer de tema: o painel de gravacao sai da frente.
       setEnviarAberto(false);
+      /**
+       * O QUADRO VAI PARA A SEMANA DA CAMPANHA, NA HORA (08/10). O Bruno pediu
+       * um post para segunda 12 numa quinta 08 e o quadro, na semana de 05/10,
+       * ficou vazio: a peça estava na semana seguinte. O servidor já devolveu
+       * o `weekStart` acertado (o post único vira a segunda da data dele); a
+       * tela abre essa semana e recarrega, e o cartão da peça pedida aparece
+       * no dia certo antes de qualquer card nascer.
+       */
+      const inicio = (data.run?.config as { weekStart?: string } | null)?.weekStart;
+      const semanaDaCampanha = /^\d{4}-\d{2}-\d{2}/.test(inicio ?? "") ? getMonday(new Date(`${inicio!.slice(0, 10)}T12:00:00.000Z`)) : null;
+      if (semanaDaCampanha && toIsoDate(semanaDaCampanha) !== weekStartIso) setSelectedMonday(semanaDaCampanha);
+      else void loadCardsForWeek(weekStartIso);
       toast.success("Campanha iniciada!");
     } catch (e) {
       toast.error(`Erro: ${e instanceof Error ? e.message : "tente novamente"}`);
@@ -5687,12 +5723,22 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
       });
     }
 
+    /**
+     * AS PEÇAS PEDIDAS DESTE DIA (08/10): o cartão em produção desde o minuto
+     * do pedido. Fica de fora a campanha que JÁ tem peça neste dia (pronta ou
+     * em espera, acima): um cartão por peça, sem duplicar nem piscar quando a
+     * peça real entra no lugar.
+     */
+    const runsComPeca = new Set<string>([...esperaPorRun.keys(), ...postsDoDia.map((p) => p.runId).filter((r): r is string => Boolean(r))]);
+    const pedidas = pecasEmProducaoNoDia(pecasPedidasDaSemana, iso).filter((p) => !runsComPeca.has(p.runId));
+
     return {
       dayOfWeek: day.dayOfWeek,
       curto: day.short,
       // `dayDate` e meia-noite UTC: o `getDate()` local, em Sao Paulo, cai no
       // dia ANTERIOR (21h). Em 18/09 a segunda 14 apareceu como 13.
       numero: String(dayDate.getUTCDate()).padStart(2, "0"),
+      pedidas,
       // "Hoje" e o dia em que a pessoa esta, e ela esta em Sao Paulo. O UTC
       // vira o dia as 21h daqui, e as 22h de quinta a tela destacava a sexta.
       hoje: iso === hojeEmSaoPaulo,
@@ -6182,6 +6228,7 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
           antiga (`pipeline-live.tsx`). */}
       <Escritorio
         pecas={pecasDoSquad}
+        pecasPedidas={pecasPedidasDaSemana}
         runId={generating && runningPipelineId ? runningPipelineId : null}
         titulo={tituloDoEscritorio}
         projectId={projectId}
@@ -6261,6 +6308,13 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
         // O corte já pronto abre direto, na semana dele (05/10): sem subir
         // até a faixa e voltar.
         onAbrirCorte={abrirPecaDoVideo}
+        // O cartão da peça pedida (08/10): a ficha de quem está com ela, e o
+        // "Refazer" da que não saiu abre a campanha com o tema dela.
+        onVerAgente={(id) => abrirAgente(id)}
+        onRefazerPedida={(p) => {
+          setTopic(p.tema ?? "");
+          openNewCampaign();
+        }}
         // A peça que falhou se arquiva no próprio cartão (01/10): só os posts
         // dela que falharam; o que já saiu ou está na fila fica.
         onArquivarPeca={(id) => void arquivarPostsComFalha((postsDaPeca.get(id) ?? []).filter((p) => p.status === "failed").map((p) => p.id))}
