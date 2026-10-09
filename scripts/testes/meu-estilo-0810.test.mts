@@ -162,6 +162,7 @@ test("o redator: a fala e o contexto (marca, letra, perfil) vão ao Claude; sem 
 
 test("as prévias: quatro peças na proporção certa, o olho descreve, o JEV decide, a refação cabe no teto", async () => {
   const estilo = normalizarEstiloEscrito(ESTILO_CRU)!;
+  const reservaComPessoa = estiloDeReserva("sou pastor, madeira e luz natural", {});
   const gerados: Array<{ prompt: string; proporcao: string }> = [];
   const guardados: string[] = [];
   let olhadas = 0;
@@ -180,7 +181,7 @@ test("as prévias: quatro peças na proporção certa, o olho descreve, o JEV de
       // A primeira olhada: o post saiu com texto, a thumb virou colagem; a segunda: tudo limpo.
       const ruim = olhadas === 1;
       return {
-        json: { imagens: p.imagens.map((im) => ({ colagem: ruim && /Thumb/.test(im.rotulo ?? ""), paineis: ruim && /Thumb/.test(im.rotulo ?? "") ? 3 : 1, temTexto: ruim && /Post/.test(im.rotulo ?? ""), textoLido: "", pessoaReconhecivel: false, assunto: "farmácia clara", proibidosVistos: [], ambiente: "claro, luz natural" })) },
+        json: { imagens: p.imagens.map((im) => ({ colagem: ruim && /Thumb/.test(im.rotulo ?? ""), paineis: ruim && /Thumb/.test(im.rotulo ?? "") ? 3 : 1, temTexto: ruim && /Post/.test(im.rotulo ?? ""), textoLido: "", pessoaReconhecivel: false, rostoDesfocado: false, assunto: "farmácia clara", proibidosVistos: [], ambiente: "claro, luz natural" })) },
         custoUsd: 0.004,
       };
     },
@@ -216,10 +217,18 @@ test("as prévias: quatro peças na proporção certa, o olho descreve, o JEV de
   // Nenhuma imagem: lança (nada é cobrado por quem chama).
   await assert.rejects(gerarPreviasDoEstilo({ projectId: "p1", rodada: 3, estilo }, { ...servicos, gerar: async () => { throw new Error("fora"); } }), /nenhuma prévia saiu/);
   // As puras.
-  assert.equal(decisaoDeReserva({ colagem: false, paineis: 1, temTexto: true, textoLido: "x", pessoaReconhecivel: false, assunto: "", proibidosVistos: [], defeitos: "", ambiente: "" }, false), "refazer");
-  assert.equal(decisaoDeReserva({ colagem: false, paineis: 1, temTexto: true, textoLido: "x", pessoaReconhecivel: false, assunto: "", proibidosVistos: [], defeitos: "", ambiente: "" }, true), "tirar");
+  const limpa = { colagem: false, paineis: 1, temTexto: false, textoLido: "", pessoaReconhecivel: false, rostoDesfocado: false, assunto: "", proibidosVistos: [], defeitos: "", ambiente: "" };
+  assert.equal(decisaoDeReserva({ ...limpa, temTexto: true }, false), "refazer");
+  assert.equal(decisaoDeReserva({ ...limpa, temTexto: true }, true), "tirar");
+  assert.equal(decisaoDeReserva(limpa, false), "aprovar", "o apresentador fictício de frente não é motivo");
+  assert.equal(decisaoDeReserva({ ...limpa, rostoDesfocado: true }, false), "refazer", "rosto desfocado é defeito (a primeira rodada real passou um)");
+  assert.match(promptRefeito("base", { ...limpa, rostoDesfocado: true }, []), /never blurred/);
   assert.equal(lerDescricoes({ imagens: [{ paineis: 2, assunto: "a" }] }, 2)[1], null);
+  assert.equal(lerDescricoes({ imagens: [{ paineis: 1, rostoDesfocado: true }] }, 1)[0]?.rostoDesfocado, true);
   assert.match(promptRefeito("base", null, ["ring light"]), /Never include: ring light/);
+  // A guarda certa por peça (aprendida na primeira rodada real): com apresentador, o rosto natural; sem ele, a guarda do vídeo.
+  assert.match(reservaComPessoa.previas.thumb, /generic fictional person.*never blurred/);
+  assert.match(reservaComPessoa.previas.post, /people only anonymous, from behind/);
 });
 
 function servidorEmMemoria(): Servicos & { estados: Map<string, EstadoDoMeuEstilo>; chamadas: string[] } {
