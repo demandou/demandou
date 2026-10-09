@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Check, Sparkles } from "lucide-react";
 import { EstiloDoProjeto } from "@/components/video/estilo-do-projeto";
+import { CaixaDoMeuEstilo } from "@/components/estilo-proprio/caixa-do-meu-estilo";
 import { ESCOLHAS_DOS_POSTS, type ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
 
 /**
@@ -121,6 +122,8 @@ export function PassoDoEstiloMestre({
           É a linguagem do vídeo, nas cores e na letra da sua marca: escolha um pronto (como Autoridade high ticket ou Vox) ou crie o seu a partir de uma ideia. A edição do vídeo e as artes saem dele.
         </p>
       </div>
+      {/* A CAIXA "CRIE O SEU ESTILO" (08/10, teste do Bruno): em destaque, antes da grade de estilos prontos. Confirmar grava o comando do vídeo, e a tela abaixo relê. */}
+      <CaixaDoMeuEstilo projectId={projectId} />
       <EstiloDoProjeto projectId={projectId} inicial={estilo} musicaInicial={musica} termosIniciais={termos} mostrar="estilo" semCenario={!comCenario} />
       <EscolhaDosPosts valor={modo} aoMudar={aoMudarModo} />
       {depoisDaEscolha}
