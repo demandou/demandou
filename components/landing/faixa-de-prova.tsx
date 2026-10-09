@@ -1,5 +1,6 @@
 import { PLANOS_PUBLICOS } from "@/lib/planos";
 import { pecasDoPlano, REDES } from "@/lib/calculadora/custos";
+import { ENTREGAS, horasDeTrabalhoDoStarter } from "@/lib/entregas-do-plano";
 
 /**
  * A FAIXA DE PROVA (02/10, pedido do Bruno), logo abaixo da hero: as frases
@@ -18,14 +19,15 @@ import { pecasDoPlano, REDES } from "@/lib/calculadora/custos";
 export function FaixaDeProva() {
   const starter = PLANOS_PUBLICOS[0];
   const pecas = pecasDoPlano(starter);
-  // AS 3 HORAS (02/10, noite, pedido do Matheus, que prefere o número que sabe
-  // ser real): 4 gravações de até 30 minutos são 2 h; a aprovação das peças,
-  // perto de 1 minuto e meio cada, fecha a terceira hora.
-  const horasGravando = Math.round((starter.gravacoesPorMes * 30) / 60);
-  const horas = horasGravando + 1;
+  // AS HORAS DE TRABALHO (02/10, noite, pedido do Matheus, que prefere o número
+  // que sabe ser real): as horas gravando mais 1 hora de aprovação das peças
+  // (perto de 1 minuto e meio cada). Eram "3 horas" com "4 gravações de até 30
+  // minutos" escritos à mão; desde 08/10 os minutos saem do saldo do plano
+  // (lib/entregas-do-plano.ts), e a hero e "A conta do mês" leem o mesmo número.
+  const e = ENTREGAS[starter.id];
+  const horas = horasDeTrabalhoDoStarter();
   const numeros = [
-    // "3 horas de trabalho no mês" (02/10, noite, texto aprovado pelo Matheus).
-    { n: `${horas} horas`, rotulo: "de trabalho no mês", detalhe: `${starter.gravacoesPorMes} gravações de até 30 minutos e a aprovação` },
+    { n: `${horas} horas`, rotulo: "de trabalho no mês", detalhe: `${e.gravacoes} gravações de até ${e.minutosPorGravacao} minutos e a aprovação` },
     { n: `~${pecas}`, rotulo: "peças prontas", detalhe: "vídeos, cortes, posts e carrosséis" },
     { n: `${REDES.length}`, rotulo: "redes, cada uma no formato dela", detalhe: REDES.map((r) => r.nome).join(", ") },
     // Saiu "0 post sem a sua aprovação" (02/10, noite, pedido do Matheus).

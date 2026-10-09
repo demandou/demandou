@@ -11,6 +11,7 @@ import { jevLigado, perguntarAoJev } from "@/lib/jev/cliente";
 import { GRAVACAO_DA_JORNADA, nomeDaMidia } from "@/lib/media/jornada/estado";
 import { ESQUEMA_DA_LEITURA_DO_TEXTO, SISTEMA_DA_LEITURA_DO_TEXTO } from "@/lib/media/jornada/leitura-do-texto";
 import type { DependenciasDaGeracao, MidiaGerada } from "@/lib/media/jornada/geracao";
+import type { CaixaDaEdicao } from "@/lib/media/teto-da-edicao";
 
 /**
  * As dependências DE VERDADE da geração da jornada (passo 6). Toda chamada
@@ -158,10 +159,13 @@ export function dependenciasDaGeracao(o: {
   /** A prova local grava em disco em vez do Blob. */
   local?: (nome: string, dados: Buffer) => Promise<string>;
   concorrencia?: number;
+  /** A caixa do teto da edição (08/10): a geração confere antes e soma o real depois. */
+  caixa?: CaixaDaEdicao | null;
 }): DependenciasDaGeracao {
   const ctx = { projectId: o.projectId };
   return {
     projectId: o.projectId,
+    caixa: o.caixa ?? null,
     concorrencia: o.concorrencia ?? Math.max(1, Number(process.env.JORNADA_GERACOES_JUNTAS ?? 4)),
     async imagem(prompt, proporcao) {
       const r = await gerarNaHiggsfield({ gerador: modeloDaImagemDaJornada(), prompt, proporcao, ctx: { projectId: o.projectId ?? undefined, operation: "jornada-elemento" }, fundoVerde: true });

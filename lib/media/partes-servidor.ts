@@ -7,6 +7,7 @@ import {
   nomeDaGravacaoEmPartes,
   partesPorJuntar,
   registroDasPartes,
+  somaDasDuracoes,
   somaDosBytes,
   type ParteRegistrada,
   type PartesDaGravacao,
@@ -105,6 +106,8 @@ export async function registrarGravacaoEmPartes(args: {
     blobUrl: itens[0].url,
     originalName: nomeDaGravacaoEmPartes(itens.map((p) => p.nome)),
     sizeBytes: somaDosBytes(itens),
+    // A duração somada das partes (08/10): a trava dos minutos do mês vale já no registro.
+    duracaoSeg: somaDasDuracoes(itens) || null,
     partes: registroDasPartes(itens, args.criterio),
   });
 }

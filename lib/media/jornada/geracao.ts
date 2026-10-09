@@ -2,6 +2,7 @@ import type { Jev } from "@/lib/media/jornada/decisoes";
 import { promptFinal, type EntradaDoPrompt } from "@/lib/media/jornada/prompts";
 import { reforcoDoTexto, textoConfere } from "@/lib/media/jornada/leitura-do-texto";
 import { mmss } from "@/lib/media/jornada/estado";
+import { estimativaDaMidiaUsd, type CaixaDaEdicao } from "@/lib/media/teto-da-edicao";
 
 /**
  * O PASSO 6 DA JORNADA, a geração (E4): cada elemento aprovado vira UMA mídia
@@ -40,6 +41,12 @@ export type DependenciasDaGeracao = {
   projectId?: string | null;
   /** Quantos elementos ao mesmo tempo (a Higgsfield ainda limita pelas vagas da conta). */
   concorrencia?: number;
+  /**
+   * A CAIXA DO TETO DA EDIÇÃO (08/10, lib/media/teto-da-edicao.ts): cada
+   * elemento só é gerado se a estimativa dele cabe no que sobra; o custo
+   * real entra na caixa depois. Sem caixa, nada é recusado (provas locais).
+   */
+  caixa?: CaixaDaEdicao | null;
 };
 
 export type ElementoGerado = {
@@ -57,7 +64,44 @@ export type ElementoGerado = {
   tempos: { gerar: number; recorte: number; leitura: number };
   /** O que o Gemini leu na arte (a conferência do texto), quando houve texto pedido. */
   textoLido?: string[];
+  /** Ficou de fora porque a edição chegou ao teto de custo (08/10): nada foi gerado nem pago. */
+  foraDoTeto?: boolean;
 };
+
+/** A ESTIMATIVA DE UM ELEMENTO antes de gerar, pela tabela (B-roll de 3 s; imagem em alta; o recorte soma o fundo). */
+export function estimativaDoElementoUsd(e: Pick<EntradaDoPrompt, "midia">): number {
+  return estimativaDaMidiaUsd(e.midia, 3);
+}
+
+/**
+ * A ORDEM DA GERAÇÃO sob o teto (08/10): as imagens e os recortes primeiro,
+ * os B-rolls (as cenas de cinema, as mais caras) por último. Quando o teto
+ * aperta, são as cenas que ficam de fora, e nunca a imagem do momento.
+ * Dentro de cada grupo, a ordem do vídeo.
+ */
+export function ordemDaGeracao<T extends Pick<EntradaDoPrompt, "midia"> & { t: number }>(entradas: T[]): T[] {
+  return [...entradas].sort((a, b) => Number(a.midia === "video") - Number(b.midia === "video") || a.t - b.t);
+}
+
+/** O elemento que ficou de fora por teto: sem url, sem custo, com o aviso ao admin. */
+function foraDoTeto(e: EntradaDoPrompt & { t: number }, caixa: CaixaDaEdicao, estimativa: number): ElementoGerado {
+  caixa.recusar(estimativa, `${e.midia === "video" ? "B-roll" : e.midia} ${e.id}`);
+  return {
+    id: e.id,
+    url: null,
+    tipo: null,
+    formato: e.formato,
+    proporcao: null,
+    custoUsd: 0,
+    modelo: null,
+    rodadas: 0,
+    prompt: "",
+    avisoAdmin: `${e.id} (${mmss(e.t)}, ${e.midia}) ficou de fora: a edição chegou ao teto de US$ ${caixa.tetoUsd.toFixed(2)} (gasto US$ ${caixa.gasto.toFixed(2)}, este custaria ~US$ ${estimativa.toFixed(2)})`,
+    avisoCliente: null,
+    tempos: { gerar: 0, recorte: 0, leitura: 0 },
+    foraDoTeto: true,
+  };
+}
 
 const seg = (t0: number) => +((Date.now() - t0) / 1000).toFixed(1);
 
@@ -183,14 +227,31 @@ export async function gerarElementoDaJornada(e: EntradaDoPrompt & { t: number },
 /** Todos os elementos, em paralelo até a concorrência; o que tem prompt do Sonnet. */
 export async function gerarTodos(entradas: Array<EntradaDoPrompt & { t: number }>, prompts: Record<string, string>, deps: DependenciasDaGeracao): Promise<{ gerados: ElementoGerado[]; custoUsd: number; ms: number }> {
   const t0 = Date.now();
-  const fila = entradas.filter((e) => prompts[e.id]);
+  // Sob o teto, as cenas de cinema vão por último (ver `ordemDaGeracao`).
+  const fila = ordemDaGeracao(entradas.filter((e) => prompts[e.id]));
   const gerados: ElementoGerado[] = [];
   const n = Math.max(1, Math.min(deps.concorrencia ?? 4, fila.length));
   let i = 0;
+  const caixa = deps.caixa ?? null;
   await Promise.all(
     Array.from({ length: n }, async () => {
       while (i < fila.length) {
         const e = fila[i++];
+        // O TETO DA EDIÇÃO (08/10): o que não cabe não é gerado nem pago; o que já foi gerado fica.
+        if (caixa) {
+          const estimativa = estimativaDoElementoUsd(e);
+          if (!caixa.cabe(estimativa)) {
+            gerados.push(foraDoTeto(e, caixa, estimativa));
+            continue;
+          }
+          // Reserva a estimativa enquanto gera (as gerações correm em paralelo); depois acerta pelo real.
+          caixa.gastar(estimativa, `reserva ${e.id}`);
+          const g = await gerarElementoDaJornada(e, prompts[e.id], deps);
+          if (g.custoUsd > estimativa) caixa.gastar(g.custoUsd - estimativa, `acerto ${e.id}`);
+          else caixa.devolver(estimativa - g.custoUsd, `acerto ${e.id}`);
+          gerados.push(g);
+          continue;
+        }
         gerados.push(await gerarElementoDaJornada(e, prompts[e.id], deps));
       }
     })

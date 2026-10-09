@@ -5,6 +5,7 @@ import { FICHAS } from "@/lib/media/editor-sob-medida/pecas";
 import { resolverAncora, type Frase } from "@/lib/media/editor-sob-medida/resolver";
 import type { MomentoDoEditor } from "@/lib/media/editor-sob-medida/tipos";
 import type { ComandoDoVideo } from "@/lib/media/editor-por-comando/comando";
+import { TETO_USD_POR_MINUTO_DE_EDICAO } from "@/lib/media/teto-da-edicao";
 import { LINGUAGEM_DOS_ESTILOS, linguagemDoEstilo } from "@/lib/media/editor-por-comando/comando-dos-estilos";
 import { validarPlano, type ElementoDoPlano, type PlanoDoDiretor } from "@/lib/media/editor-por-comando/diretor";
 import {
@@ -163,10 +164,14 @@ export function diretorPorLlm(): boolean {
   return process.env.EDITOR_POR_COMANDO_DIRETOR === "opus";
 }
 
-/** O teto de custo das imagens e vídeos gerados, em US$ por minuto de vídeo (padrão 1,20). */
+/**
+ * O teto de custo das imagens e vídeos gerados, em US$ por minuto de vídeo.
+ * Era 1,20 até 08/10; desde então é o teto único da edição (US$ 1 por minuto,
+ * lib/media/teto-da-edicao.ts), o mesmo da jornada.
+ */
 export function tetoUsdPorMinuto(): number {
   const v = Number(process.env.EDITOR_TETO_USD_POR_MINUTO);
-  return Number.isFinite(v) && v >= 0 ? v : 1.2;
+  return Number.isFinite(v) && v >= 0 ? v : TETO_USD_POR_MINUTO_DE_EDICAO;
 }
 
 /** O teto de B-roll em vídeo por minuto quando o comando pede muito (padrão 2 no corte, 0,6 no longo). */

@@ -23,6 +23,14 @@ export const DOLAR_POR_GERACAO_HIGGSFIELD = 0.336;
 export const REAIS_POR_DOLAR = 5.36;
 export const REAIS_POR_CREDITO = 0.027;
 
+/**
+ * A RÉGUA EM DÓLAR (08/10): quanto de IA, em US$, um crédito pode custar no
+ * máximo. R$ 0,027 a R$ 5,36 dão US$ 0,005037. É o número que converte o
+ * teto de custo de qualquer ação (inclusive o minuto de vídeo editado, ver
+ * lib/media/limits.ts) em créditos: créditos = custo em US$ / esta régua.
+ */
+export const DOLAR_POR_CREDITO = REAIS_POR_CREDITO / REAIS_POR_DOLAR;
+
 export const CREDITOS_POR_GERACAO_HIGGSFIELD = Math.ceil(
   (DOLAR_POR_GERACAO_HIGGSFIELD * REAIS_POR_DOLAR) / REAIS_POR_CREDITO
 );

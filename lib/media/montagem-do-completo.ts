@@ -100,6 +100,7 @@ import { estadoComRecorte, montagemDoRecorte, type RecorteNaMontagem } from "@/l
 import { estornarRefacaoDoCompleto } from "@/lib/credits/estorno-da-refacao";
 import { apagarMidias } from "@/lib/media/faxina";
 import { dependenciasDaGeracao } from "@/lib/media/jornada/geracao-servidor";
+import { CaixaDaEdicao, tetoDaEdicaoUsd } from "@/lib/media/teto-da-edicao";
 import { contextoDoProjeto, jevDaJornada, redatorDaJornada } from "@/lib/media/jornada/servidor";
 import type { EdicaoDaJornada } from "@/lib/media/jornada/montagem";
 import type { DirecaoDaEdicao } from "@/lib/media/jornada/direcao";
@@ -345,6 +346,12 @@ export type EstadoDaJornadaNaMontagem = {
   avisosDoAdmin?: string[];
   escolhas?: Array<Record<string, unknown>>;
   custoUsd?: number;
+  /** O custo da edição inteira somado na caixa do teto (08/10): plano, diretor, JEV e mídias. */
+  custoDaEdicaoUsd?: number;
+  /** O teto desta edição em US$ (08/10): US$ 1 por minuto, mínimo US$ 1. */
+  tetoUsd?: number;
+  /** Os elementos aprovados que ficaram de fora por teto (08/10). */
+  foraDoTeto?: string[];
   tempos?: Record<string, number>;
   reenviar?: boolean;
   falhas?: number;
@@ -2189,6 +2196,10 @@ async function gerarEMontarPelaJornada(v: VideoDoCompleto, lido: MontagemDoCompl
     const fala = lido.fala!;
     const contexto = await contextoDoProjeto(v.projectId, formato, fala.duracao);
     const leg = normalizarLegenda((v.videoEstiloEscolha as { legenda?: unknown } | null)?.legenda);
+    // O TETO DA EDIÇÃO INTEIRA (08/10, Bruno: "qualquer vídeo custa no máximo US$ 1 por minuto"): uma caixa
+    // só para o diretor (Sonnet), o JEV e a geração, partindo do que o plano já gastou no roteiro. O que não
+    // cabe não é gerado; o que já foi pago fica; a montagem nunca falha por teto (lib/media/teto-da-edicao.ts).
+    const caixa = new CaixaDaEdicao(tetoDaEdicaoUsd(fala.duracao), rj?.custoDoPlanoUsd ?? 0);
     const m = await montarPelaJornada({
       estado: { aprovado: rj?.aprovado ?? null, leitura: rj?.leitura ?? null, midiasMantidas: rj?.midiasMantidas ?? null },
       falaDoPlano: lido.roteiro?.completo?.fala?.palavras ?? fala.palavras,
@@ -2202,10 +2213,11 @@ async function gerarEMontarPelaJornada(v: VideoDoCompleto, lido: MontagemDoCompl
       contexto,
       legenda: leg.modo === "sem" ? { mostrar: false } : leg.modo === "estilo" && leg.estilo ? { mostrar: true, estilo: leg.estilo, automatica: false } : { mostrar: true, estilo: "limpa", automatica: true },
       temTrilha: Boolean(v.videoMusicUrl),
-      redator: redatorDaJornada(v.projectId, "jornada-prompts"),
-      jev: jevDaJornada(),
-      geracao: dependenciasDaGeracao({ projectId: v.projectId, videoId: v.id, edicaoId: rj?.edicaoId ?? "sem-edicao" }),
+      redator: redatorDaJornada(v.projectId, "jornada-prompts", caixa),
+      jev: jevDaJornada(caixa),
+      geracao: dependenciasDaGeracao({ projectId: v.projectId, videoId: v.id, edicaoId: rj?.edicaoId ?? "sem-edicao", caixa }),
       projectId: v.projectId,
+      caixa,
     });
     const jornada: EstadoDaJornadaNaMontagem = {
       ...(lido.jornada as EstadoDaJornadaNaMontagem),
@@ -2213,7 +2225,11 @@ async function gerarEMontarPelaJornada(v: VideoDoCompleto, lido: MontagemDoCompl
       edicao: m.edicao,
       trilha: m.trilha,
       avisosDoCliente: m.avisosDoCliente,
-      avisosDoAdmin: m.avisosDoAdmin.slice(0, 40),
+      avisosDoAdmin: [caixa.resumo(), ...m.avisosDoAdmin].slice(0, 40),
+      // O custo da EDIÇÃO inteira (plano, diretor, JEV e mídias) contra o teto (08/10).
+      custoDaEdicaoUsd: caixa.gasto,
+      tetoUsd: caixa.tetoUsd,
+      foraDoTeto: m.foraDoTeto,
       escolhas: m.escolhas,
       // A direção visual da edição (08/10): os cortes do mesmo vídeo usam esta.
       direcao: m.direcao,

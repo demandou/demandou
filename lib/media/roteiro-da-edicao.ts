@@ -2,6 +2,7 @@ import { cenarioDaEscolha } from "@/lib/media/cenario-do-video";
 import type { Prisma } from "@prisma/client";
 import { debitoIsento } from "@/lib/credits/isencao";
 import { contaDoPlano } from "@/lib/equipe/conta";
+import { conferirMinutos, fraseDoEstouro } from "@/lib/limites-do-plano";
 import { prisma } from "@/lib/db/prisma";
 import { debitar } from "@/lib/credits";
 import { aplicarTermos, comTroca, lerTroca, parseTermos } from "@/lib/media/termos";
@@ -1485,6 +1486,10 @@ export async function aprovarRoteiro(
   // Sem o completo planejado (pelo plano antigo ou pelo editor por comando, 06/10) não há o que aprovar.
   if (!lista.length && !r.completo?.plano && !r.completo?.comando && !r.jornada?.plano?.elementos?.length) throw new RecusaDoRoteiro("Escolha pelo menos um corte: este vídeo não tem o completo planejado.", 400);
   if (lista.length > MAX_CORTES_APROVADOS) throw new RecusaDoRoteiro(`Escolha no máximo ${MAX_CORTES_APROVADOS} cortes.`, 400);
+  // OS MINUTOS DO MÊS, com a duração MEDIDA (08/10): a trava de segurança do plano. A gravação já conta com a
+  // medida dela; se o mês passou do teto do cartão com ela, a edição não é gerada (lib/limites-do-plano.ts).
+  const estouroDeMinutos = await conferirMinutos(v.userId);
+  if (estouroDeMinutos) throw new RecusaDoRoteiro(fraseDoEstouro(estouroDeMinutos), 403);
   // SEM PLANO DE EFEITOS, NADA DE APROVAR (08/10): com a jornada ligada, o completo (e agora os cortes) só ganham
   // efeito pelo plano aprovado. Aprovar com o plano ainda lendo, com erro ou vazio entregava o vídeo "pronto" sem
   // efeito nenhum, já cobrado (o mapa de 08/10). Agora a aprovação espera o plano, ou diz o que falta.

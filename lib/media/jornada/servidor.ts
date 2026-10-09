@@ -1,18 +1,23 @@
 import { prisma } from "@/lib/db/prisma";
 import { askClaude } from "@/lib/claude";
-import { jevLigado, perguntarAoJev } from "@/lib/jev/cliente";
+import { jevLigado, perguntarAoJev, usoVazio } from "@/lib/jev/cliente";
 import { coresDaMarca } from "@/lib/media/capa-composta";
 import { perfilDoProjeto } from "@/lib/media/perfil-do-projeto";
 import { destinoDoVideo, type ContextoDaJornada } from "@/lib/media/jornada/contexto";
 import { cenarioDaEscolha } from "@/lib/media/cenario-do-video";
 import { MODELO_DAS_IDEIAS, type Redator } from "@/lib/media/jornada/ideias";
 import type { Jev } from "@/lib/media/jornada/decisoes";
+import type { CaixaDaEdicao } from "@/lib/media/teto-da-edicao";
 
 /**
  * As dependências DE VERDADE da jornada que tocam banco e IA paga: o contexto
  * do projeto, o redator (Sonnet, só escreve) e o JEV (decide). Os módulos
  * puros (planejar, revisao, prompts, geracao, montagem) recebem isto por
  * injeção; os testes passam simulações.
+ *
+ * A CAIXA DA EDIÇÃO (08/10): quem cria o redator e o JEV pode passar a caixa
+ * do teto (lib/media/teto-da-edicao.ts), e cada chamada paga soma o custo
+ * real nela. É assim que o diretor entra no teto de US$ 1 por minuto.
  */
 
 /** O comando de estilo que o cliente escreveu, literal ("" sem comando). */
@@ -43,13 +48,28 @@ export async function contextoDoProjeto(projectId: string, formato: "9:16" | "16
   };
 }
 
-/** O redator da jornada: uma chamada por texto, esforço baixo (o trabalho é escrever, não decidir). */
-export function redatorDaJornada(projectId: string | null | undefined, operacao: string): Redator {
-  return (sistema, pedido) => askClaude(sistema, pedido, { model: MODELO_DAS_IDEIAS, maxTokens: 8000, effort: "low", timeoutMs: 120_000, usage: { projectId: projectId ?? undefined, operation: operacao } });
+/** O redator da jornada: uma chamada por texto, esforço baixo (o trabalho é escrever, não decidir). Com a caixa, cada chamada soma o custo nela. */
+export function redatorDaJornada(projectId: string | null | undefined, operacao: string, caixa?: CaixaDaEdicao | null): Redator {
+  return (sistema, pedido) =>
+    askClaude(sistema, pedido, {
+      model: MODELO_DAS_IDEIAS,
+      maxTokens: 8000,
+      effort: "low",
+      timeoutMs: 120_000,
+      usage: { projectId: projectId ?? undefined, operation: operacao },
+      ...(caixa ? { onCusto: (usd: number) => caixa.gastar(usd, operacao) } : {}),
+    });
 }
 
-/** O JEV da jornada. Sem o JEV não há decisão: lança (nada de decisão escondida em código). */
-export function jevDaJornada(): Jev {
+/** O JEV da jornada. Sem o JEV não há decisão: lança (nada de decisão escondida em código). Com a caixa, o custo de cada lote entra nela. */
+export function jevDaJornada(caixa?: CaixaDaEdicao | null): Jev {
   if (!jevLigado()) throw new Error("a jornada precisa do JEV ligado (TYPESAFE_API_KEY): as decisões são dele");
-  return perguntarAoJev;
+  if (!caixa) return perguntarAoJev;
+  return async (ctx, perguntas) => {
+    const uso = ctx.uso ?? usoVazio();
+    const antes = uso.custoUsd;
+    const r = await perguntarAoJev({ ...ctx, uso }, perguntas);
+    caixa.gastar(uso.custoUsd - antes, `jev-${ctx.etapa}`);
+    return r;
+  };
 }

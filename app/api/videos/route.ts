@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { projectId, blobUrl, originalName, sizeBytes, partes: partesBrutas, criterio } = await req.json();
+  const { projectId, blobUrl, originalName, sizeBytes, duracaoSeg, partes: partesBrutas, criterio } = await req.json();
   if (!projectId || (!blobUrl && partesBrutas === undefined)) {
     return NextResponse.json(
       { error: "projectId e blobUrl são obrigatórios" },
@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ video: registroDasPartesFeito.video, partes: itens.length });
   }
 
-  const registro = await registrarGravacao({ userId, projectId, blobUrl, originalName, sizeBytes });
+  // A duração lida pelo navegador (08/10) entra na trava dos minutos do mês; a medida do worker confere de novo na aprovação.
+  const registro = await registrarGravacao({ userId, projectId, blobUrl, originalName, sizeBytes, duracaoSeg: Number(duracaoSeg) > 0 ? Number(duracaoSeg) : null });
   if (!registro.ok) {
     await descartarGravacaoRecusada(blobUrl, projectId);
     return NextResponse.json(

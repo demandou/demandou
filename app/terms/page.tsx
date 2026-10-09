@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BrandMarkImg } from "@/components/brand-mark";
+import { ACESSO_EXTRA } from "@/lib/equipe/regras";
 
 export const metadata: Metadata = {
   title: "Termos de Uso da demandou",
@@ -281,7 +282,7 @@ export default function TermsPage() {
               <div>
                 <h3 className="mb-2 font-medium text-[var(--text-primary)]">5.9 Acessos extras</h3>
                 <p>
-                  Além dos acessos incluídos no plano, o Usuário pode contratar acessos extras. Como o plano, o acesso extra é anual: custa R$ 2.364 por ano (o equivalente a R$ 197 por mês) e soma, a cada ciclo mensal, 2.000 créditos, 1 gravação e 1 marca ao saldo da conta. Contratado no meio do contrato, é cobrado à vista, proporcionalmente ao período que falta até o fim dos 12 meses em curso, e depois renova junto com o plano.
+                  Além dos acessos incluídos no plano, o Usuário pode contratar acessos extras. Como o plano, o acesso extra é anual: custa R$ 2.364 por ano (o equivalente a R$ 197 por mês) e soma, a cada ciclo mensal, {ACESSO_EXTRA.creditosPorMes.toLocaleString("pt-BR")} créditos, 1 gravação e 1 marca ao saldo da conta. Contratado no meio do contrato, é cobrado à vista, proporcionalmente ao período que falta até o fim dos 12 meses em curso, e depois renova junto com o plano.
                 </p>
               </div>
               <div>

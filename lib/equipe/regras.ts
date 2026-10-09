@@ -11,9 +11,12 @@
  *   vídeo); quando ela acaba, ninguém gera até renovar ou recarregar. É isso
  *   que segura a margem: o gasto nunca passa do que o plano paga;
  * - acessos inclusos, contando o dono: Starter 2, Pro 5, Enterprise 10;
- * - acesso extra a R$ 197 por mês, que soma 2.000 créditos e 1 gravação por
- *   mês à cota (cada crédito extra custa no pior caso R$ 0,027 de IA: R$ 54
- *   contra R$ 197, 72,6% de margem no acesso extra).
+ * - acesso extra a R$ 197 por mês, que soma créditos e 1 gravação por mês à
+ *   cota. Eram 2.000 créditos até 08/10 (R$ 54 de IA contra R$ 197 brutos,
+ *   72,6%); com a régua conferida sobre o LÍQUIDO (R$ 175,55 depois de 6% de
+ *   imposto e do Stripe) e o dólar a R$ 5,60, 2.000 davam 32% de custo, e
+ *   1.800 dão 28,9% (margem de 71%). O número vale para a cota e para a
+ *   frase do cartão; o contrato (Anexo I) cita o mesmo.
  */
 
 /** Acessos inclusos por plano, CONTANDO o dono. Chaves são o `User.plan`. */
@@ -25,7 +28,8 @@ export const ACESSOS_INCLUSOS: Record<string, number> = {
 
 export const ACESSO_EXTRA = {
   precoMensal: 197,
-  creditosPorMes: 2000,
+  // Até 08/10: 2000.
+  creditosPorMes: 1800,
   gravacoesPorMes: 1,
 } as const;
 

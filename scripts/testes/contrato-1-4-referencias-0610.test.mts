@@ -109,9 +109,12 @@ function textoDoAlvo(mapa: Map<string, string>, alvo: string): string | undefine
   return mapa.get(alvo.replace(/\([a-z]\)$/, ""));
 }
 
-test("versão 1.4, de 06/10/2026, no topo do modelo", () => {
-  assert.equal(versaoDoModelo(BRUTO), "Versão 1.4, de 06 de outubro de 2026");
-  assert.equal(versaoDoModelo(lerModelo()), "Versão 1.4, de 06 de outubro de 2026");
+// 08/10: o modelo do dia é a 1.5 (só o Anexo I e a cláusula 4.9 mudaram, pelo preço de 08/10); a 1.4 foi para o histórico.
+const VERSAO_DO_DIA = "Versão 1.5, de 08 de outubro de 2026";
+
+test("versão 1.5, de 08/10/2026, no topo do modelo", () => {
+  assert.equal(versaoDoModelo(BRUTO), VERSAO_DO_DIA);
+  assert.equal(versaoDoModelo(lerModelo()), VERSAO_DO_DIA);
 });
 
 test("as cláusulas vão de 1 a 23, sem buraco, e cada item segue a ordem", () => {
@@ -163,11 +166,12 @@ test("nenhuma referência sobrou com a numeração antiga (24 não existe; 9.10,
   }
 });
 
-test("anotações: as da 1.3 continuam, a da 1.4 entrou, e nenhuma vai para o cliente", () => {
+test("anotações: as da 1.3 e da 1.4 continuam, a da 1.5 entrou, e nenhuma vai para o cliente", () => {
   const notas = BRUTO.match(/\[REVISAR COM ADVOGADO[^\]]*\]/g) ?? [];
   const da13 = readFileSync("lib/contratos/modelos/historico/condicoes-gerais-1.3.md", "utf8").match(/\[REVISAR COM ADVOGADO[^\]]*\]/g) ?? [];
-  assert.equal(notas.length, da13.length + 3, "esperava as notas da 1.3 mais 3 da 1.4 (topo, 7.3 e Anexo III)");
+  assert.equal(notas.length, da13.length + 3 + 1, "esperava as notas da 1.3, mais 3 da 1.4 (topo, 7.3 e Anexo III), mais 1 da 1.5 (topo)");
   assert.ok(notas.some((n) => /vers[aã]o 1\.4 retira a garantia de 30 dias/.test(n)));
+  assert.ok(notas.some((n) => /vers[aã]o 1\.5 muda s[oó] o Anexo I e a cl[aá]usula 4\.9/.test(n)));
   assert.ok(notas.some((n) => /vers[aã]o 1\.3 acrescenta/.test(n)));
   const limpo = lerModelo();
   assert.doesNotMatch(limpo, /\[(REVISAR|CONFIRMAR)/);
@@ -178,22 +182,28 @@ test("nenhum travessão no modelo", () => {
   assert.ok(!BRUTO.includes("—"));
 });
 
-test("contrato novo sai na 1.4; o restante parcelado cita a cláusula 8.6 (inadimplemento)", () => {
+test("contrato novo sai na versão do dia; o restante parcelado cita a cláusula 8.6 (inadimplemento)", () => {
   assert.equal(clausulaDoCancelamento(lerModelo()), "8");
   const t = montarTexto({
     numero: 9, empresa: "X", documento: "1", endereco: "R", representante: "A", email: "a@b.c", plano: "Pro", valorCentavos: 100, inicioVigencia: null, acessosExtras: 0,
     condicao: { entradaCentavos: 10, restanteCentavos: 90, parcelas: 3, parcelaCentavos: 30, formaDaEntrada: "pix", formaDoRestante: "cartao_recorrente", primeiraParcelaEm: null, links: { entrada: null, restante: "https://x/r" }, chavePix: null },
   });
-  assert.equal(t.versao, "Versão 1.4, de 06 de outubro de 2026");
+  assert.equal(t.versao, VERSAO_DO_DIA);
   assert.match(t.texto, /cl[aá]usulas 6\.5 e 8\.6\./);
   assert.doesNotMatch(t.texto, /GARANTIA DE 30 DIAS/);
 });
 
-test("contrato que já saiu fica no modelo com que saiu (1.2 e 1.3 guardados sem edição)", () => {
+test("contrato que já saiu fica no modelo com que saiu (1.2, 1.3 e 1.4 guardados sem edição)", () => {
   // O conteúdo das versões guardadas não muda nunca: o hash dos contratos enviados depende dele.
   const sha = (f: string) => createHash("sha256").update(readFileSync(f, "utf8").replace(/\r\n/g, "\n")).digest("hex");
   assert.equal(sha("lib/contratos/modelos/historico/condicoes-gerais-1.2.md"), "927e9ab1c78e0cda615703e198a23d6431f1dea6c1d0e00eb6ac8588f93473dd");
   assert.equal(sha("lib/contratos/modelos/historico/condicoes-gerais-1.3.md"), "7c15923a7498dd60186d0ac68a239523b4f3d49c0481bc668fce66acd3faa65f");
+  assert.equal(sha("lib/contratos/modelos/historico/condicoes-gerais-1.4.md"), "93058d7650e318d101715875e980ec26949993b3c606dab81bbc63aca971d40f");
+  // A 1.4 (o Matheus assinou o nº 2 na 1.3; contrato novo de 06 a 08/10 saiu na 1.4) ainda diz "1 hora / 2 horas / 5 horas" e 2.000 créditos.
+  const v14 = lerModeloDaVersao("Versão 1.4, de 06 de outubro de 2026");
+  assert.equal(versaoDoModelo(v14), "Versão 1.4, de 06 de outubro de 2026");
+  assert.match(v14, /\| Dura[cç][aã]o m[aá]xima de cada Grava[cç][aã]o \| 1 hora \| 2 horas \| 5 horas \|/);
+  assert.match(v14, /2\.000 \(dois mil\) Cr[eé]ditos/);
   const v13 = lerModeloDaVersao("Versão 1.3, de 06 de outubro de 2026");
   assert.equal(versaoDoModelo(v13), "Versão 1.3, de 06 de outubro de 2026");
   assert.match(v13, /## 8\. GARANTIA DE 30 DIAS/);
@@ -201,7 +211,7 @@ test("contrato que já saiu fica no modelo com que saiu (1.2 e 1.3 guardados sem
   const v12 = lerModeloDaVersao("Versão 1.2, de 04 de outubro de 2026");
   assert.equal(versaoDoModelo(v12), "Versão 1.2, de 04 de outubro de 2026");
   // Sem versão gravada (rascunho que nunca saiu), vale o modelo do dia.
-  assert.equal(versaoDoModelo(lerModeloDaVersao(null)), "Versão 1.4, de 06 de outubro de 2026");
+  assert.equal(versaoDoModelo(lerModeloDaVersao(null)), VERSAO_DO_DIA);
   // Versão que não está guardada é recusada, nunca trocada por outra.
   assert.throws(() => lerModeloDaVersao("Versão 1.1, de 02 de outubro de 2026"), ModeloNaoGuardado);
   // O mesmo contrato montado na 1.3 dá o mesmo texto de antes (restante cita 9.6).

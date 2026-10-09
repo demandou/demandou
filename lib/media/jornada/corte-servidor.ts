@@ -10,6 +10,7 @@ import { escreverTextos } from "@/lib/media/jornada/textos";
 import { montarEdicao, type EdicaoDaJornada, type LegendaDaJornada } from "@/lib/media/jornada/montagem";
 import { amostrasDoCorte, elementosNoCorte, geradoDoCompleto, paraMontarNoCorte } from "@/lib/media/jornada/corte";
 import type { DirecaoDaEdicao } from "@/lib/media/jornada/direcao";
+import type { CaixaDaEdicao } from "@/lib/media/teto-da-edicao";
 
 /**
  * O CORTE PELA JORNADA, do plano aprovado à edição que o worker renderiza
@@ -49,6 +50,8 @@ export async function montarCortePelaJornada(o: {
   projectId: string;
   /** A direção visual do completo (08/10): o corte mantém a identidade do vídeo. */
   direcao?: DirecaoDaEdicao | null;
+  /** A caixa do teto do CORTE (08/10, TETO_USD_DO_CORTE): só o que o corte gera sozinho e os textos dele. */
+  caixa?: CaixaDaEdicao | null;
 }): Promise<CorteMontado> {
   const avisos: string[] = [];
   const W = 1080;
@@ -101,5 +104,6 @@ export async function montarCortePelaJornada(o: {
     textos: txt.textos,
     direcao: o.direcao ?? null,
   });
-  return { edicao: m.edicao, elementos: elementos.length, gerados: [...gerados.values()], avisos: [...avisos, ...m.avisos], escolhas: m.escolhas, trilha: m.trilha, custoUsd: +custoUsd.toFixed(4) };
+  if (o.caixa) avisos.push(o.caixa.resumo());
+  return { edicao: m.edicao, elementos: elementos.length, gerados: [...gerados.values()], avisos: [...avisos, ...m.avisos], escolhas: m.escolhas, trilha: m.trilha, custoUsd: +(o.caixa ? o.caixa.gasto : custoUsd).toFixed(4) };
 }

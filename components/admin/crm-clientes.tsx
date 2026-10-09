@@ -7,6 +7,7 @@ import { NOME_DO_SEGMENTO, type Segmento } from "@/lib/admin/segmentos";
 // o banco, nunca chega ao navegador.
 import type { ClienteDoCrm, FichaDoCliente } from "@/lib/admin/crm";
 import { ConcederCreditos } from "@/components/admin/conceder-creditos";
+import { ACESSO_EXTRA } from "@/lib/equipe/regras";
 
 /**
  * O CRM DO PAINEL (pedido do Bruno em 23/09).
@@ -563,7 +564,7 @@ function Ficha({ id, onFechar }: { id: string; onFechar: () => void }) {
                     {extras.trim() === "" ? "Definir acessos extras" : `Definir ${Number(extras)} acesso(s) extra(s)`}
                   </button>
                   <p className="text-xs mt-1" style={fraco}>
-                    R$ 197 por mês cada, cobrado por fora até o preço existir no Stripe. Cada acesso a mais soma 2.000 créditos na hora e em toda renovação, e 1 gravação por mês.
+                    R$ 197 por mês cada, cobrado por fora até o preço existir no Stripe. Cada acesso a mais soma {ACESSO_EXTRA.creditosPorMes.toLocaleString("pt-BR")} créditos na hora e em toda renovação, e 1 gravação por mês.
                   </p>
                 </>
               )}

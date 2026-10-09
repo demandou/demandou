@@ -2,7 +2,9 @@
 
 Licença de uso da plataforma Demandou, software de conteúdo com inteligência artificial
 
-Versão 1.4, de 06 de outubro de 2026
+Versão 1.5, de 08 de outubro de 2026
+
+[REVISAR COM ADVOGADO ANTES DE ASSINAR: a versão 1.5 muda só o Anexo I e a cláusula 4.9, pelo preço de 08/10: o minuto de vídeo editado passou a custar 230 Créditos, os Créditos por Ciclo do Pro e do Enterprise caíram para 32.000 e 48.000, os Créditos de vídeo dos três Planos ficaram em 4.160, a linha "Duração máxima de cada Gravação" virou "Minutos de vídeo editado por Ciclo" (60, 88 e 96) e o acesso extra passou a somar 1.800 Créditos. Contrato já enviado fica na versão em que saiu. Nada disso passou por advogado.]
 
 [REVISAR COM ADVOGADO ANTES DE ASSINAR: a versão 1.4 retira a garantia de 30 dias (o antigo item 8 da versão 1.3) e deixa só o direito de arrependimento de 7 dias do art. 49 do Código de Defesa do Consumidor (cláusula 7). Do antigo item 9 em diante, a numeração desce um número (o 9 vira 8, e assim até o 24, que vira 23), com as referências cruzadas renumeradas; mudam as cláusulas 7.3, 8.2, 15.3 e 17.2(a) e o Anexo III. Nada disso passou por advogado.]
 
@@ -84,7 +86,7 @@ Quem aceita estas Condições em nome de uma empresa declara ter poderes para re
 
 **4.3.** Os Créditos de vídeo de pacotes comprados à parte, fora do Plano, não são apagados na reposição do Ciclo e continuam disponíveis enquanto houver contrato vigente. No fim do contrato, o saldo de pacote avulso não usado expira, salvo quando o contrato terminar por culpa da Demandou ou por descontinuação (cláusulas 8.5 e 8.9), casos em que esse saldo é reembolsado em dinheiro, proporcionalmente.
 
-**4.4.** Por limitação técnica dos Fornecedores de vídeo, cada Plano tem um número máximo de gerações de vídeo por inteligência artificial por dia, uma duração máxima de Gravação, um tamanho máximo de arquivo e um espaço de armazenamento, indicados no Anexo I.
+**4.4.** Por limitação técnica dos Fornecedores de vídeo, cada Plano tem um número máximo de gerações de vídeo por inteligência artificial por dia, um total de minutos de vídeo editado por Ciclo, um tamanho máximo de arquivo e um espaço de armazenamento, indicados no Anexo I. Os minutos de vídeo editado por Ciclo valem para a soma das Gravações do Ciclo, numa Gravação só ou em várias.
 
 **4.5. Devolução de Créditos por falha da Demandou.** Quando uma operação for cobrada e não for entregue por falha técnica da Plataforma ou de um Fornecedor, os Créditos correspondentes à parte não entregue voltam ao saldo do Cliente. A Plataforma faz essa devolução automaticamente nos casos que identifica, como a montagem de edição que não pôde ser concluída e a entrega da versão sem efeitos, e a diferença entre o reservado e o efetivamente usado no Gêmeo Digital. Nos demais casos, o Cliente pode pedir a devolução pelo e-mail contato@demandou.com em até 30 (trinta) dias da operação. A nova tentativa de uma operação que falhou por culpa da Demandou não é cobrada.
 
@@ -94,7 +96,7 @@ Quem aceita estas Condições em nome de uma empresa declara ter poderes para re
 
 **4.8.** A Demandou pode ajustar quantos Créditos cada operação consome, com aviso de 30 (trinta) dias, por mudança de custo ou de tecnologia dos Fornecedores. O ajuste não pode impedir o Cliente de realizar, em cada Ciclo, o número de Gravações do seu Plano. Se o ajuste reduzir de forma relevante o que o Plano entrega, o Cliente pode rescindir sem multa (cláusula 8.5).
 
-**4.9. Acessos extras.** Além dos acessos incluídos no Plano, o Cliente pode contratar acessos extras. Como o Plano, o acesso extra é anual: custa R$ 2.364,00 (dois mil, trezentos e sessenta e quatro reais) por ano, o equivalente a R$ 197,00 (cento e noventa e sete reais) por mês, e soma, a cada Ciclo, 2.000 (dois mil) Créditos, 1 (uma) Gravação e 1 (uma) marca ao limite da conta. Contratado durante a Vigência, é cobrado à vista, proporcionalmente ao período que falta até o fim da Vigência em curso, e a partir daí renova junto com o Plano, pelo valor anual. Valores sujeitos ao reajuste da cláusula 5.4.
+**4.9. Acessos extras.** Além dos acessos incluídos no Plano, o Cliente pode contratar acessos extras. Como o Plano, o acesso extra é anual: custa R$ 2.364,00 (dois mil, trezentos e sessenta e quatro reais) por ano, o equivalente a R$ 197,00 (cento e noventa e sete reais) por mês, e soma, a cada Ciclo, 1.800 (mil e oitocentos) Créditos, 1 (uma) Gravação e 1 (uma) marca ao limite da conta. Contratado durante a Vigência, é cobrado à vista, proporcionalmente ao período que falta até o fim da Vigência em curso, e a partir daí renova junto com o Plano, pelo valor anual. Valores sujeitos ao reajuste da cláusula 5.4.
 
 **4.10.** Todos os acessos, do Titular da Conta e dos Membros, consomem o mesmo saldo da conta. Quando o saldo do Ciclo acaba, ninguém da conta gera novas operações até a próxima reposição ou até a compra de mais saldo.
 
@@ -419,18 +421,18 @@ Todos os Planos são anuais e pagos à vista. O valor mensal equivalente é apen
 | Acessos incluídos (contando o Titular) | 2 | 5 | 10 |
 | Marcas ou porta-vozes | 1 | 2 | 5 |
 | Gravações ou campanhas por Ciclo | 4 | 8 | 16 |
-| Créditos por Ciclo | 20.000 | 40.000 | 60.000 |
-| Créditos de vídeo por Ciclo | 4.160 | 8.320 | 20.800 |
-| Vídeos por inteligência artificial de 30 s por Ciclo (qualidade Cheia / Rápida) | 2 / 5 | 4 / 10 | 10 / 26 |
+| Créditos por Ciclo | 20.000 | 32.000 | 48.000 |
+| Créditos de vídeo por Ciclo | 4.160 | 4.160 | 4.160 |
+| Vídeos por inteligência artificial de 30 s por Ciclo (qualidade Cheia / Rápida) | 2 / 5 | 2 / 5 | 2 / 5 |
 | Gerações de vídeo por inteligência artificial por dia | 4 | 6 | 9 |
-| Duração máxima de cada Gravação | 1 hora | 2 horas | 5 horas |
+| Minutos de vídeo editado por Ciclo (numa Gravação só ou em várias; cada minuto editado consome 230 Créditos) | 60 minutos | 88 minutos | 96 minutos |
 | Tamanho máximo de arquivo | 4 GB | 8 GB | 20 GB |
 | Armazenamento | 48 GB | 96 GB | 192 GB |
 | Redes para publicação | LinkedIn, Instagram, Facebook, X, YouTube e TikTok | Iguais ao Starter | Iguais ao Starter |
 | Apoio incluído | Reunião de implantação | Implantação e relatório mensal | Implantação, reunião mensal de estratégia e gerente dedicado |
 | Demanda Day | Não incluído | 1 ingresso | 3 ingressos |
 | Demanda Cast | Não incluído | 1 hora | 1 hora |
-| Acesso extra (anual) | R$ 2.364,00 por ano (R$ 197,00 por mês equivalente); contratado no meio da Vigência, cobrado à vista e proporcional ao período restante; renova com o Plano; soma 2.000 Créditos, 1 Gravação e 1 marca por Ciclo | Igual | Igual |
+| Acesso extra (anual) | R$ 2.364,00 por ano (R$ 197,00 por mês equivalente); contratado no meio da Vigência, cobrado à vista e proporcional ao período restante; renova com o Plano; soma 1.800 Créditos, 1 Gravação e 1 marca por Ciclo | Igual | Igual |
 
 O número aproximado de peças por Gravação (cerca de 11) é uma estimativa de uso típico e não um limite nem uma promessa.
 

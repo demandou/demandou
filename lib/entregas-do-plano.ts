@@ -26,10 +26,16 @@
  * peças de feed) e com a abertura ligada, que é o padrão. A duração é a maior
  * que faz todas caberem no saldo, limitada pela duração máxima do plano.
  *
+ * OS MINUTOS SÃO DERIVADOS, NÃO PROMESSA SOLTA (08/10, decisão do Bruno): o
+ * minuto de vídeo editado custa 230 créditos (lib/media/limits.ts, na régua de
+ * R$ 0,027 de IA por crédito com o teto de US$ 1 por minuto na edição), e os
+ * minutos do cartão são o que o saldo paga nessa premissa. O MESMO número é o
+ * teto de minutos por mês que o servidor aplica (`minutosPorMesDoPlano`).
+ *
  * Sem banco e sem SDK: componente de cliente importa daqui.
  */
 import { PLANOS_PUBLICOS, reais, type PlanoId, type PlanoPublico } from "@/lib/planos";
-import { CORTES_SUGERIDOS, CREDITOS_POR_CORTE_APROVADO, creditosEmDuasPartes } from "@/lib/media/limits";
+import { CORTES_SUGERIDOS, CREDITOS_POR_CORTE_APROVADO, CREDITOS_POR_MINUTO_DE_VIDEO, creditosEmDuasPartes } from "@/lib/media/limits";
 import { custoDoVideo, geracoesDoVideo, SEGUNDOS_DA_PRIMEIRA_GERACAO, SEGUNDOS_POR_EXTENSAO } from "@/lib/credits/video-tabela";
 import { ACESSO_EXTRA, ACESSOS_INCLUSOS, marcasDaConta } from "@/lib/equipe/regras";
 import { normalizarSemana } from "@/lib/media/semana-do-video";
@@ -197,9 +203,42 @@ export function numerosDoCartao(plano: PlanoPublico): NumeroDoCartao[] {
   ];
 }
 
-/** A lista de baixo do cartão: a duração máxima da gravação e o que não é número. */
+/**
+ * OS MINUTOS DE VÍDEO POR MÊS DE UM PLANO (08/10): o número do cartão, e o
+ * MESMO que o servidor aplica como teto (lib/limites-do-plano.ts, na emissão
+ * do token de envio, no registro da gravação e na aprovação do roteiro). Sai
+ * do saldo: créditos / créditos por minuto, na premissa do cartão. Uma
+ * promessa só, nos dois lados.
+ */
+export function minutosPorMesDoPlano(id: PlanoId): number {
+  return ENTREGAS[id].minutosDeVideo;
+}
+
+/** "60 minutos de vídeo editado por mês, numa gravação ou em até 4". A linha do cartão (08/10). */
+export function linhaDosMinutos(plano: PlanoPublico): string {
+  const e = ENTREGAS[plano.id];
+  return `${duracaoDaGravacao(e.minutosDeVideo)} de vídeo editado por mês, numa gravação só ou em até ${e.gravacoes}`;
+}
+
+/**
+ * A lista de baixo do cartão: os minutos do mês e o que não é número.
+ *
+ * Até 08/10 a primeira linha era "Gravações de até 1 hora / 2 horas / 5 horas
+ * cada", a duração máxima técnica do arquivo, que prometia mais do que o
+ * saldo paga. O que vale é o total de minutos do mês.
+ */
 export function listaDoCartao(plano: PlanoPublico): string[] {
-  return [`Gravações de até ${duracaoDaGravacao(plano.duracaoMaximaMin)} cada`, ...plano.features];
+  return [linhaDosMinutos(plano), ...plano.features];
+}
+
+/**
+ * AS HORAS DE TRABALHO DO CLIENTE NO MÊS, no Starter: as horas gravando (os
+ * minutos de vídeo do plano) mais 1 hora de aprovação (a conta de 02/10 com o
+ * Matheus: perto de 1 minuto e meio por peça). A hero, a faixa de prova e "A
+ * conta do mês" dizem o mesmo número, derivado daqui. Nunca menos de 2.
+ */
+export function horasDeTrabalhoDoStarter(): number {
+  return Math.max(2, Math.round(ENTREGAS.pro.minutosDeVideo / 60) + 1);
 }
 
 /**
@@ -236,7 +275,7 @@ export function comoContamos(): { linhas: string[]; tabela: Array<{ plano: strin
     linhas: [
       `Cada plano tem um saldo mensal de produção, medido em créditos. O cartão mostra o que esse saldo vira na prática.`,
       `A conta supõe todas as gravações do mês com a mesma duração e a semana sugerida: um vídeo completo, ${CORTES_SUGERIDOS} cortes verticais e ${semana.feed} peças para o feed por gravação.`,
-      `Uma gravação de ${exemplo} minutos com essa semana usa ${reais(creditosDaGravacao(exemplo))} créditos. Gravar mais longo ou aprovar mais cortes usa mais saldo; gravar mais curto sobra saldo para outros cortes e peças.`,
+      `Cada minuto de vídeo editado usa ${CREDITOS_POR_MINUTO_DE_VIDEO} créditos; uma gravação de ${exemplo} minutos com essa semana usa ${reais(creditosDaGravacao(exemplo))}. Gravar mais longo ou aprovar mais cortes usa mais saldo; gravar mais curto sobra saldo para outros cortes e peças. Os minutos do cartão são o total que o saldo paga no mês, e valem numa gravação só ou em várias.`,
       `O vídeo por IA tem carteira própria e é contado por geração: ${SEGUNDOS_DO_VIDEO_POR_IA} segundos pedem ${geracoesDoVideo(SEGUNDOS_DO_VIDEO_POR_IA)} gerações (os ${SEGUNDOS_DA_PRIMEIRA_GERACAO} segundos iniciais e extensões de ${SEGUNDOS_POR_EXTENSAO}).`,
       `Ajustes pelo chat, abertura por IA nos cortes e o gêmeo digital usam o mesmo saldo e não entram nos números do cartão.`,
     ],

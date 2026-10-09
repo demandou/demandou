@@ -10,8 +10,9 @@
  * dividido pelos créditos de 12 ciclos; ver lib/media/limits.ts):
  *
  *   Starter     R$ 35.964 / 240.000 = R$ 0,150 por crédito (6,67 por real)
- *   Pro         R$ 47.964 / 480.000 = R$ 0,100 por crédito (10,0 por real)
- *   Enterprise  R$ 68.004 / 720.000 = R$ 0,094 por crédito (10,6 por real)
+ *   Pro         R$ 47.964 / 384.000 = R$ 0,125 por crédito (8,0 por real)
+ *   Enterprise  R$ 68.004 / 576.000 = R$ 0,118 por crédito (8,5 por real)
+ *   (saldos de 08/10: 20.000, 32.000 e 48.000 por ciclo; ver lib/planos.ts)
  *
  * A RÉGUA é o Starter: é o plano de entrada e o de crédito mais caro, então um
  * pacote que respeita o Starter respeita todos. A regra (proposta do Bruno em
@@ -20,14 +21,15 @@
  *   - o MENOR paga um pouco mais por crédito que a assinatura, para o pacote não
  *     virar o jeito barato de não assinar: R$ 97 por 600 = R$ 0,162 (8% acima);
  *   - o MÉDIO fica perto da assinatura: R$ 197 por 1.350 = R$ 0,146 (3% abaixo);
- *   - o MAIOR compensa claramente: R$ 597 por 5.200 = R$ 0,115 (23% abaixo, ou
- *     30% a mais de crédito por real que o Starter).
+ *   - o MAIOR compensa claramente: R$ 597 por 4.700 = R$ 0,127 (15% abaixo, ou
+ *     18% a mais de crédito por real que o Starter). Era 5.200 até 08/10.
  *
- * Nenhum pacote chega ao crédito do Pro (R$ 0,100): quem precisa de volume todo
+ * Nenhum pacote chega ao crédito do Pro (R$ 0,125): quem precisa de volume todo
  * mês continua tendo no plano de cima o melhor negócio, e o pacote não come a
  * venda do plano. A margem também fica: o teto de custo de IA é R$ 0,027 por
- * crédito (lib/media/limits.ts), então o pior pacote para nós (o de R$ 597)
- * guarda 76% de margem bruta.
+ * crédito (lib/media/limits.ts; desde 08/10 vale também para o minuto de
+ * vídeo), então o pior pacote para nós (o de R$ 597) custa no máximo R$ 147
+ * de IA contra R$ 533 líquidos (27,5%, margem de 72%).
  *
  * O GANHO NA TELA é contado contra o menor pacote ("41% a mais de crédito"),
  * que é a comparação que a pessoa faz olhando os três lado a lado. O que o
@@ -61,7 +63,10 @@ export type PacoteDeCredito = {
 export const PACOTES_DE_CREDITO: readonly PacoteDeCredito[] = [
   { id: "creditos-97", nome: "Para completar o mês", reais: 97, creditos: 600, lookupKey: "demandou_creditos_97", variavel: "STRIPE_PACOTE_97_PRICE_ID" },
   { id: "creditos-197", nome: "Uma semana a mais", reais: 197, creditos: 1350, lookupKey: "demandou_creditos_197", variavel: "STRIPE_PACOTE_197_PRICE_ID" },
-  { id: "creditos-597", nome: "O mês turbinado", reais: 597, creditos: 5200, lookupKey: "demandou_creditos_597", variavel: "STRIPE_PACOTE_597_PRICE_ID" },
+  // 5.200 até 08/10. Com o Pro em 32.000 créditos (8,0 por real), 5.200 por
+  // R$ 597 (8,7 por real) passava do plano de cima; 4.700 (7,9 por real, 18%
+  // acima do Starter) fica abaixo do Pro e ainda compensa. Preço no Stripe igual.
+  { id: "creditos-597", nome: "O mês turbinado", reais: 597, creditos: 4700, lookupKey: "demandou_creditos_597", variavel: "STRIPE_PACOTE_597_PRICE_ID" },
 ];
 
 export function pacoteDeCredito(id: string): PacoteDeCredito | undefined {

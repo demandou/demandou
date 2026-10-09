@@ -9,7 +9,8 @@ import {
   SEM_TESTE,
   type LimiteDoTeste,
 } from "@/lib/teste-gratis";
-import { LIMITES_SEM_PLANO, type LimitesDoEnvio } from "@/lib/media/limits";
+import { LIMITES_SEM_PLANO, duracaoMaximaDoEnvioSeg, duracaoPorExtenso, type LimitesDoEnvio } from "@/lib/media/limits";
+import { minutosPorMesDoPlano } from "@/lib/entregas-do-plano";
 import { fraseDaCotaDeGravacoes } from "@/lib/frase-da-cota";
 import { apagarMidias } from "@/lib/media/faxina";
 import { cicloAtual } from "@/lib/ciclo-de-credito";
@@ -58,13 +59,14 @@ import type { PartesDaGravacao } from "@/lib/media/partes-da-gravacao";
 export type Cota = { marcas: number; gravacoesPorMes: number; armazenamentoGb: number };
 
 export type Estouro = {
-  recurso: "marcas" | "gravacoes" | "armazenamento";
+  /** "minutos" (08/10): os minutos de vídeo editado do mês, o mesmo número do cartão do plano. */
+  recurso: "marcas" | "gravacoes" | "armazenamento" | "minutos";
   usado: number;
   limite: number;
   /** O nome que o cliente ve do plano ATUAL. Null quando nao ha plano. */
   plano: string | null;
   /** Para onde subir, e o que muda. Null quando ja esta no maior plano. */
-  sugestao: { planoId: PlanoId; nome: string; marcas: number; gravacoesPorMes: number; armazenamentoGb: number } | null;
+  sugestao: { planoId: PlanoId; nome: string; marcas: number; gravacoesPorMes: number; armazenamentoGb: number; minutosPorMes: number } | null;
   /**
    * ISO da proxima reposicao, so para gravacoes.
    *
@@ -184,7 +186,7 @@ export function cotaDoPlano(plan: string | null | undefined, acessosExtras = 0):
  */
 function proximoQueResolve(
   atual: string | null | undefined,
-  recurso: "marcas" | "gravacoes" | "armazenamento",
+  recurso: Estouro["recurso"],
   precisa: number
 ): Estouro["sugestao"] {
   const ordem = PLANOS_PUBLICOS;
@@ -195,7 +197,9 @@ function proximoQueResolve(
       ? p.marcas >= precisa
       : recurso === "gravacoes"
         ? p.gravacoesPorMes >= precisa
-        : p.armazenamentoGb >= precisa
+        : recurso === "minutos"
+          ? minutosPorMesDoPlano(p.id) >= precisa
+          : p.armazenamentoGb >= precisa
   );
   if (!achado) return null;
   return {
@@ -204,6 +208,7 @@ function proximoQueResolve(
     marcas: achado.marcas,
     gravacoesPorMes: achado.gravacoesPorMes,
     armazenamentoGb: achado.armazenamentoGb,
+    minutosPorMes: minutosPorMesDoPlano(achado.id),
   };
 }
 
@@ -424,6 +429,12 @@ export async function registrarGravacao(args: {
   originalName?: string | null;
   sizeBytes?: number | null;
   /**
+   * A DURAÇÃO lida pelo navegador (08/10), para a trava dos minutos do mês
+   * valer já no registro. Ela é conferida de novo na aprovação do roteiro,
+   * com a duração medida pelo worker (quem manda é a medida).
+   */
+  duracaoSeg?: number | null;
+  /**
    * A GRAVAÇÃO EM PARTES (08/10): a lista na ordem confirmada, gravada na
    * mesma transação da criação. `blobUrl` é a primeira parte, e é ela que
    * resolve a corrida entre o aviso do storage e o registro do navegador.
@@ -458,6 +469,11 @@ export async function registrarGravacao(args: {
       const avaliacao = await avaliarGravacao(contaId, tx, membroQueEnvia);
       if (!avaliacao) throw new Error("Usuário não encontrado");
       if (avaliacao.estouro) return { ok: false as const, estouro: avaliacao.estouro };
+      // OS MINUTOS DO MÊS (08/10): com a duração que o navegador leu, a gravação só entra se couber.
+      if (args.duracaoSeg && args.duracaoSeg > 0) {
+        const estouroDeMinutos = await conferirMinutos(contaId, { duracaoSegNova: args.duracaoSeg }, tx);
+        if (estouroDeMinutos) return { ok: false as const, estouro: estouroDeMinutos };
+      }
 
       const video = await tx.videoJob.create({
         data: {
@@ -548,6 +564,12 @@ export function fraseDoEstouro(e: Estouro): string {
   if (e.recurso === "armazenamento") {
     const sobe = e.sugestao ? ` O ${e.sugestao.nome} sobe para ${e.sugestao.armazenamentoGb} GB.` : " Apague uma gravação antiga para liberar espaço.";
     return `O ${e.plano} guarda ${e.limite} GB de gravações, e você já usa ${e.usado} GB.${sobe}`;
+  }
+  if (e.recurso === "minutos") {
+    // O número é o do cartão do plano (08/10): "60 minutos de vídeo editado por mês".
+    const libera = e.renovaEm ? ` A próxima reposição é em ${diaEMes(e.renovaEm)}.` : "";
+    const sobe = e.sugestao ? ` O ${e.sugestao.nome} tem ${duracaoPorExtenso(e.sugestao.minutosPorMes * 60)} por mês.` : "";
+    return `O ${e.plano} inclui ${duracaoPorExtenso(e.limite * 60)} de vídeo editado por mês, e com esta gravação você passaria de ${Math.round(e.usado)} minutos.${libera}${sobe}`;
   }
   // A frase aprovada em 30/09, a mesma que a tela mostra antes do envio.
   return fraseDaCotaDeGravacoes({ usado: e.usado, limite: e.limite, renovaEm: e.renovaEm, sugestao: e.sugestao });
@@ -663,6 +685,89 @@ export async function conferirArmazenamento(
 }
 
 /**
+ * OS MINUTOS DE VÍDEO DO CICLO (08/10, decisão do Bruno: "limitar os minutos
+ * dos planos"). O teto por plano é o MESMO número do cartão
+ * (lib/entregas-do-plano.ts, `minutosPorMesDoPlano`): os minutos que o saldo
+ * paga, derivados de 230 créditos por minuto. Aqui ele vira trava de
+ * segurança: na emissão do token, no registro da gravação (com a duração que
+ * o navegador leu) e na aprovação do roteiro (com a duração medida).
+ *
+ * O que conta: a duração medida de cada gravação da conta no ciclo
+ * (`VideoJob.durationSec`, inclusive as dos membros) mais, para as gravações
+ * de projeto apagado, os minutos da linha `video_roteiro` do extrato ("N min:
+ * transcrição..."), que sobrevive à faxina do projeto como a marca da cota.
+ * Gravação ainda sem medida (subindo, transcrevendo) conta zero aqui; a
+ * aprovação dela confere de novo com a medida.
+ */
+export type UsoDeMinutos = {
+  porMes: number;
+  usados: number;
+  restantes: number;
+  renovaEm: string | null;
+  semPlano: boolean;
+  admin: boolean;
+};
+
+async function minutosDoCiclo(userId: string, desde: Date, db: Leitor = prisma): Promise<number> {
+  const [vivas, roteiros] = await Promise.all([
+    db.videoJob.findMany({
+      where: { createdAt: { gte: desde }, OR: [{ userId }, { project: { userId } }] },
+      select: { id: true, durationSec: true },
+    }),
+    db.creditTransaction.findMany({
+      where: { userId, operation: "video_roteiro", createdAt: { gte: desde }, amount: { lt: 0 } },
+      select: { refId: true, note: true },
+    }),
+  ]);
+  const vivos = new Set(vivas.map((v) => v.id));
+  let segundos = vivas.reduce((s, v) => s + (v.durationSec ?? 0), 0);
+  for (const r of roteiros) {
+    if (r.refId && vivos.has(r.refId)) continue;
+    const min = Number(String(r.note ?? "").match(/^(\d+) min/)?.[1] ?? 0);
+    segundos += min * 60;
+  }
+  return segundos / 60;
+}
+
+/** Quantos minutos de vídeo a conta já usou neste ciclo, e quantos faltam. */
+export async function usoDeMinutos(userIdDeQuemPede: string, db: Leitor = prisma): Promise<UsoDeMinutos> {
+  const userId = await contaDoPlano(userIdDeQuemPede, db);
+  const user = await db.user.findUnique({ where: { id: userId }, select: { plan: true, role: true, creditsResetAt: true } });
+  const vazio: UsoDeMinutos = { porMes: 0, usados: 0, restantes: 0, renovaEm: null, semPlano: true, admin: false };
+  if (!user) return vazio;
+  if (user.role === "admin") return { ...vazio, semPlano: false, admin: true };
+  const ciclo = cicloAtual(user.creditsResetAt);
+  const usados = await minutosDoCiclo(userId, ciclo.inicio, db);
+  const publico = PLANOS_PUBLICOS.find((p) => p.id === user.plan);
+  if (!publico) return { ...vazio, usados };
+  const porMes = minutosPorMesDoPlano(publico.id);
+  return { porMes, usados, restantes: Math.max(0, porMes - usados), renovaEm: ciclo.renovaEm, semPlano: false, admin: false };
+}
+
+/**
+ * Cabe mais esta duração nos minutos do mês? `null` quando cabe (ou quando
+ * não há plano: aí quem recusa é a cota de gravações). Com `duracaoSegNova`
+ * zero, confere só o que já está medido (a aprovação do roteiro, em que a
+ * gravação já conta com a duração medida).
+ */
+export async function conferirMinutos(userIdDeQuemPede: string, o: { duracaoSegNova?: number } = {}, db: Leitor = prisma): Promise<Estouro | null> {
+  const uso = await usoDeMinutos(userIdDeQuemPede, db);
+  if (uso.admin || uso.semPlano) return null;
+  const nova = Math.max(0, o.duracaoSegNova ?? 0) / 60;
+  if (uso.usados + nova <= uso.porMes + 1e-9) return null;
+  const userId = await contaDoPlano(userIdDeQuemPede, db);
+  const user = await db.user.findUnique({ where: { id: userId }, select: { plan: true } });
+  return {
+    recurso: "minutos",
+    usado: Math.round((uso.usados + nova) * 10) / 10,
+    limite: uso.porMes,
+    plano: planoPublico(user?.plan as PlanoId).nome,
+    sugestao: proximoQueResolve(user?.plan, "minutos", Math.ceil(uso.usados + nova)),
+    renovaEm: uso.renovaEm,
+  };
+}
+
+/**
  * O QUE UM ENVIO PODE TER no plano desta pessoa (duração e tamanho do arquivo).
  *
  * Nasceu em 29/09 com os tetos de 1, 2 e 5 horas. Devolve também o plano de
@@ -670,6 +775,10 @@ export async function conferirArmazenamento(
  * (o do Starter): o portão de entrada já manda essa pessoa escolher um plano, e
  * o menor teto é o lado seguro de errar numa rota que emite token de upload.
  * Acesso interno recebe o maior teto e nenhuma oferta.
+ *
+ * Desde 08/10 a duração máxima do envio é o menor entre o teto técnico do
+ * arquivo e os MINUTOS QUE SOBRAM NO MÊS (`usoDeMinutos`): o navegador recusa
+ * antes de subir um byte, com a frase dos minutos do cartão.
  */
 export async function limitesDoEnvio(userIdDeQuemPede: string): Promise<LimitesDoEnvio> {
   // O teto do envio é o do plano da CONTA (01/10, acesso de equipe).
@@ -680,13 +789,16 @@ export async function limitesDoEnvio(userIdDeQuemPede: string): Promise<LimitesD
   const indice = PLANOS_PUBLICOS.findIndex((p) => p.id === user?.plan);
   const plano = PLANOS_PUBLICOS[indice] ?? PLANOS_PUBLICOS[0];
   const proximo = indice >= 0 ? PLANOS_PUBLICOS[indice + 1] : PLANOS_PUBLICOS[1];
+  const uso = indice >= 0 ? await usoDeMinutos(userId) : null;
+  const minutos = uso && !uso.semPlano ? { porMes: uso.porMes, usados: Math.round(uso.usados * 10) / 10, restantes: Math.round(uso.restantes * 10) / 10 } : null;
   return {
-    duracaoMaximaSeg: plano.duracaoMaximaMin * 60,
+    duracaoMaximaSeg: duracaoMaximaDoEnvioSeg(plano.duracaoMaximaMin, minutos?.restantes ?? null),
     bytesMaximo: plano.arquivoMaximoGb * BYTES_POR_GB,
     plano: indice >= 0 ? plano.nome : null,
     proximo: proximo
-      ? { nome: proximo.nome, duracaoMaximaMin: proximo.duracaoMaximaMin, arquivoMaximoGb: proximo.arquivoMaximoGb }
+      ? { nome: proximo.nome, duracaoMaximaMin: proximo.duracaoMaximaMin, arquivoMaximoGb: proximo.arquivoMaximoGb, minutosPorMes: minutosPorMesDoPlano(proximo.id) }
       : null,
+    minutos,
   };
 }
 

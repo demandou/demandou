@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { recordUsage, type UsageContext } from "@/lib/claude/usage";
+import { computeCostUsd, recordUsage, type UsageContext } from "@/lib/claude/usage";
 import { AVISO_NEUTRO_AO_CLIENTE } from "@/lib/fornecedores/saldo";
 
 let _client: Anthropic | null = null;
@@ -111,6 +111,13 @@ export type AskOptions = {
   /** Metadados para registrar consumo e custo no banco. */
   usage?: UsageContext;
   /**
+   * O CUSTO DESTA CHAMADA, em dólar, entregue a quem chama (08/10): a edição
+   * de vídeo soma o diretor no teto de US$ 1 por minuto
+   * (lib/media/teto-da-edicao.ts), e para somar precisa saber quanto cada
+   * chamada custou. Só em `askClaude`; o número é o mesmo gravado em ai_usage.
+   */
+  onCusto?: (custoUsd: number) => void;
+  /**
    * Teto de tempo desta chamada. Sobe para tarefa pesada, desce para tarefa
    * interativa em que esperar muito é pior que falhar rápido.
    */
@@ -208,6 +215,13 @@ export async function askClaude(
   }
 
   void recordUsage(model, message.usage, options?.usage);
+  if (options?.onCusto) {
+    try {
+      options.onCusto(computeCostUsd(model, message.usage));
+    } catch {
+      // Quem soma o custo nunca derruba a chamada.
+    }
+  }
 
   return extrairTexto(message.content, message.stop_reason, maxTokens);
 }
