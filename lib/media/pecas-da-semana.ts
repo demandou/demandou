@@ -4,7 +4,9 @@ import { askClaude } from "@/lib/claude";
 import { generateImage } from "@/lib/media/nano-banana";
 import { direcaoDaPeca, escolherEstilo, paletaDoProjeto } from "@/lib/media/direcao-de-arte";
 import { desenharInfografico, extrairConteudoDoInfografico } from "@/lib/media/infographic";
-import { cenaDaFrase, fotoEscolhidaDaPeca, layoutDaPeca, marcaDaArte, marcaDaLaminaComFoto, modeloDaMarca, pecaComFraseEmCodigo } from "@/lib/media/arte-com-frase";
+import { cenaDaPeca, fotoEscolhidaDaPeca, layoutDaPeca, marcaDaArte, marcaDaLaminaComFoto, modeloDaMarca, pecaComFraseEmCodigo } from "@/lib/media/arte-com-frase";
+import { cenaGarantida } from "@/lib/media/elementos-da-campanha";
+import { metadataDoElemento } from "@/lib/media/elemento-sem-repeticao";
 import { escolhaDaArteDoPost, fotosDoPost, metadataDasFotosEscolhidas } from "@/lib/materiais/material-da-campanha";
 import { avisoDoRecuo } from "@/lib/media/aviso-da-arte";
 import { fotoDaPeca, metadataDaFoto } from "@/lib/media/foto-da-peca";
@@ -813,7 +815,7 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
           const artes = await artesPorRede((f) => arteDoDia(video, frase, direcao.styleHint, f, { projectId: video.projectId, runId: run.id }, undefined, marcaDoDia ?? undefined));
           const url = artes.get(principal) ?? [...artes.values()][0];
           // Qual foto entrou na arte (08/10): a da biblioteca, gerada ou nenhuma; nunca o quadro do vídeo.
-          const foto = metadataDaFoto([frase]);
+          const foto = { ...metadataDaFoto([frase]), ...metadataDoElemento([frase]) };
           const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: url, extra: { frase, ...foto, ...doModelo } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
           await gravarCard(AGENTES.diana, { content: conteudoDaDiana(`Imagem com a frase: "${frase}"`, [frase]), mediaType: "image", mediaUrl: url, postId, extra: { rede: principal, frase, ...foto } });
@@ -887,7 +889,7 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
           const urls = await Promise.all(
             frases.map((frase, i) => arteDoDia(video, frase, direcao.styleHint, formatoDaPeca(principal, "carousel"), { projectId: video.projectId, runId: run.id }, frases[0], marcaDoDia ? marcaDaLaminaComFoto(marcaDoDia, i, frases.length) : undefined))
           );
-          const fotos = metadataDaFoto(frases);
+          const fotos = { ...metadataDaFoto(frases), ...metadataDoElemento(frases) };
           const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: urls.join("|"), extra: { carrossel: true, slides: frases, ...fotos, ...doModelo } });
           // A legenda também ganha o card do redator, como no dia de imagem.
           // Sem ele, o quadro não tinha de onde tirar o título da peça e o
@@ -1184,8 +1186,33 @@ export async function arteDoDia(
   // print da gravação nos modelos "você". Regra do Bruno: só foto enviada
   // pelo usuário. A marca segue sem o vídeo; sem foto, a peça sai sem pessoa.
   const marca: Awaited<ReturnType<typeof marcaDaArte>> = { ...base, ...(layoutDe ? { variante: layoutDaPeca(base, layoutDe).variante } : {}) };
-  // A cena nasce do mundo, do público e do tom do projeto (01/10), e não só do nicho.
-  const visual = await cenaDaFrase(frase, video.project.niche, ctx, base.identidade);
+  // A cena nasce do público e do tom do projeto (01/10), e não só do nicho.
+  // 08/10: o elemento central sai da frase (sem a lista de objetos do setor),
+  // o estilo entra só como linguagem (o escolhido para o post manda) e a guarda
+  // da campanha veta o elemento que outra peça já usou, pelo JEV
+  // (lib/media/elementos-da-campanha.ts). A mesma frase em duas proporções
+  // paga uma cena só.
+  const estiloDoPost = marca.estiloDoPost;
+  const chaveDaPeca = `${ctx.runId}|${frase}`;
+  const garantida = await cenaGarantida({
+    runId: ctx.runId,
+    projectId: ctx.projectId,
+    peca: chaveDaPeca,
+    rotulo: `"${frase.slice(0, 40)}"`,
+    frase,
+    escrever: (usados) =>
+      cenaDaPeca({
+        frase,
+        nicho: video.project.niche,
+        usage: ctx,
+        identidade: base.identidade,
+        estilo: estiloDoPost?.linguagem ?? estilo,
+        estiloDoPost: Boolean(estiloDoPost),
+        pessoas: Boolean(estiloDoPost?.pedeFiguras),
+        usados,
+      }),
+  });
+  const visual = garantida.cena;
   const desenhar = (correcao?: string) =>
     pecaComFraseEmCodigo({
       frase,
@@ -1214,7 +1241,9 @@ export async function arteDoDia(
   // Pessoa só é permitida quando a foto dela é do cliente (08/10): sem foto da
   // pessoa na biblioteca, o modelo "você" sai sem gente e a conferência cobra isso.
   const { materiaisDaPessoa } = await import("@/lib/media/referencia-da-pessoa");
-  const permitirPessoas = fotoDoClienteEntra(modeloDaPeca) && (Boolean(marca.referenciaDaPessoa) || materiaisDaPessoa(marca.materiais).length > 0);
+  // As figuras que o estilo escolhido pede (08/10) não são "pessoa" proibida.
+  const permitirPessoas =
+    Boolean(estiloDoPost?.pedeFiguras) || (fotoDoClienteEntra(modeloDaPeca) && (Boolean(marca.referenciaDaPessoa) || materiaisDaPessoa(marca.materiais).length > 0));
   const { textoPermitidoComModelo } = await import("@/lib/modelos-de-arte/registro");
   const veredito = await conferirArte(peca, { formato, textoEsperado: textoPermitidoComModelo([frase]), permitirPessoas, usarRegua: false, projectId: ctx.projectId, runId: ctx.runId });
   if (!veredito.aprovada) {

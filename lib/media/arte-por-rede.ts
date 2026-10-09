@@ -73,6 +73,8 @@ export interface PedidoDeArte {
    */
   textoEsperado?: string[];
   usarOlho?: boolean;
+  /** Gente na arte é permitida (08/10): as figuras que o estilo escolhido para o post pede. */
+  permitirPessoas?: boolean;
   projectId?: string;
   runId?: string;
 }
@@ -153,6 +155,7 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
         // A FOTO REAL DO CLIENTE (03/10, lib/materiais) também não vai ao olho:
         // ele reprova gente e letreiro, e ali a gente e a placa são do cliente.
         usarOlho: pedido.contentType === "infographic" || pecaUsaMaterial(pedido.textoEsperado) ? false : pedido.usarOlho,
+        permitirPessoas: pedido.permitirPessoas,
         projectId: pedido.projectId,
         runId: pedido.runId,
       });

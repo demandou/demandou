@@ -11,11 +11,14 @@ import type { ProporcaoPedida } from "@/lib/media/formatos-das-redes";
 import {
   enquadramentoDaPeca,
   identidadeDoProjeto,
+  setorEmIngles,
   varianteDaPeca,
   type FamiliaDaArte,
   type IdentidadeVisual,
   type Tipografia,
 } from "@/lib/media/identidade-visual";
+import { estiloComoLinguagem, lerCenaComElemento, usadosEmTexto, type CenaComElemento, type ElementoUsado } from "@/lib/media/elemento-sem-repeticao";
+export { estiloComoLinguagem };
 import { IdentidadeNaoAprovada, LETRAS, coresDaIdentidade, type LetraId, type PapeisEscolhidos } from "@/lib/modelos-de-arte/identidade";
 import { estadoDaIdentidade } from "@/lib/modelos-de-arte/identidade-aprovada";
 import { tratamentoDasFotos, type TratamentoDaFoto } from "@/lib/modelos-de-arte/tratamento";
@@ -124,6 +127,17 @@ export type MarcaDaArte = {
   fotosDoPost?: FotoEscolhida[];
   /** A foto DESTA peça, quando quem desenha já decidiu (a lâmina); null: a peça sai sem foto do cliente. */
   fotoEscolhida?: FotoEscolhida | null;
+  /**
+   * O ESTILO ESCOLHIDO PARA ESTE POST (08/10, noite): o design que o cliente
+   * criou (por voz, por texto) ou escolheu, com a linguagem em inglês. Ele
+   * manda na aparência da peça, acima do estilo da janela da campanha e da
+   * linguagem do vídeo, e chega a quem escreve a cena (antes só entrava no
+   * prompt final, e a cena, escrita sem ele, vencia: o post único de 08/10
+   * pediu "os agentes andando, estilo tecnológico" e saiu um estúdio com ring
+   * light). `pedeFiguras`: a linguagem pede gente (silhuetas, personagens), e
+   * a conferência deixa passar as figuras que o estilo pede.
+   */
+  estiloDoPost?: { nome: string; linguagem: string; pedeFiguras?: boolean };
 };
 
 /** Uma foto escolhida pela pessoa, já lida do banco, com o modelo do estilo dela (id do catálogo do processo). */
@@ -249,8 +263,13 @@ export async function marcaDaArte(
         console.warn("[arte-com-frase] o design do cliente não foi lido (segue o book):", e instanceof Error ? e.message : e);
         return null;
       });
+  // O ESTILO ESCOLHIDO MANDA NA CENA (08/10, noite): a linguagem do design do
+  // post (ou do design do cliente aprovado para o projeto) vai à marca, e dali
+  // a quem escreve a cena e à conferência (as figuras que ele pede).
+  const designQueManda = doPost?.design ?? (doCliente ? doCliente.design : null);
+  if (designQueManda?.linguagem?.trim()) marca.estiloDoPost = await estiloDoPostDaMarca(projectId, designQueManda);
   // O post no estilo mestre sem o design mestre (08/10): nem o book nem o design do projeto, a direção do vídeo.
-  const modelos = doPost?.semModelo ? undefined : modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente, book: escolha?.ids });
+  const modelos = doPost?.semModelo ? undefined : modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente?.id ?? null, book: escolha?.ids });
   if (!modelos?.length && !marca.materiais?.length) return marca;
   const { lerMidia } = await import("@/lib/media/storage");
   const { logoParaArte } = await import("@/lib/modelos-de-arte/compor");
@@ -264,7 +283,33 @@ export async function marcaDaArte(
  * cliente); sem ele, o dia só foi confirmado na marca. Null quando a escolha
  * não vale (o design sumiu, é de vídeo ou o projeto não o enxerga).
  */
-async function modeloEscolhidoParaOPost(projectId: string, escolhido: import("@/lib/estilo-dos-posts/tipos").ModeloDoPost): Promise<{ modeloId: string | null; semModelo?: boolean } | null> {
+/** O design que manda na peça, com a linguagem em inglês (o que vai a quem escreve a cena). */
+type DesignQueManda = { nome: string; linguagem: string };
+
+/**
+ * O estilo do post na marca: nome, linguagem e se ela pede figuras. Quem
+ * decide as figuras é o JEV (lib/squad/coerencia-da-arte.ts); sem ele, a
+ * leitura das palavras. Uma pergunta por linguagem neste processo.
+ */
+const figurasPorLinguagem = new Map<string, Promise<boolean>>();
+async function estiloDoPostDaMarca(projectId: string, d: DesignQueManda): Promise<NonNullable<MarcaDaArte["estiloDoPost"]>> {
+  const linguagem = d.linguagem.trim();
+  let figuras = figurasPorLinguagem.get(linguagem);
+  if (!figuras) {
+    figuras = (async () => {
+      const { estiloPedeFigurasPeloJev, estiloPedeFigurasPelaRegra } = await import("@/lib/squad/coerencia-da-arte");
+      return (await estiloPedeFigurasPeloJev({ projectId, linguagem })) ?? estiloPedeFigurasPelaRegra(linguagem);
+    })().catch(() => false);
+    figurasPorLinguagem.set(linguagem, figuras);
+    if (figurasPorLinguagem.size > 200) figurasPorLinguagem.delete(figurasPorLinguagem.keys().next().value as string);
+  }
+  return { nome: d.nome, linguagem, pedeFiguras: await figuras };
+}
+
+async function modeloEscolhidoParaOPost(
+  projectId: string,
+  escolhido: import("@/lib/estilo-dos-posts/tipos").ModeloDoPost
+): Promise<{ modeloId: string | null; semModelo?: boolean; design?: DesignQueManda } | null> {
   const { modeloPorId } = await import("@/lib/modelos-de-arte/catalogo");
   const { comoOPostDesenha } = await import("@/lib/estilo-dos-posts/tipos");
   const como = comoOPostDesenha(escolhido);
@@ -282,7 +327,7 @@ async function modeloEscolhidoParaOPost(projectId: string, escolhido: import("@/
     const modelo = modeloDoDesign(feito.design);
     if (!modelo) return { modeloId: null, semModelo: true };
     registrarModeloDoCliente(modelo);
-    return { modeloId: modelo.id };
+    return { modeloId: modelo.id, design: { nome: feito.design.nome, linguagem: feito.design.linguagem } };
   }
   if (como === "marca") return { modeloId: null };
   // Um estilo de vídeo (o vídeo por IA ou o curto, 08/10): a capa sai na marca, sem modelo de imagem.
@@ -304,7 +349,7 @@ async function modeloEscolhidoParaOPost(projectId: string, escolhido: import("@/
   const modelo = modeloDoDesign(design);
   if (!modelo) return null;
   registrarModeloDoCliente(modelo);
-  return { modeloId: modelo.id };
+  return { modeloId: modelo.id, design: { nome: design.nome, linguagem: design.linguagem } };
 }
 
 /**
@@ -343,7 +388,7 @@ async function fotosEscolhidasDoPost(projectId: string, fotos: FotoDoPost[]): Pr
  * O id do modelo do design do cliente que vale para as artes deste projeto,
  * já registrado no catálogo do processo; null quando vale o book.
  */
-async function modeloDoDesignDoCliente(projectId: string, escolhaDoBookEm: string | null): Promise<string | null> {
+async function modeloDoDesignDoCliente(projectId: string, escolhaDoBookEm: string | null): Promise<{ id: string; design: DesignQueManda } | null> {
   const { designDeImagemMaisRecente } = await import("@/lib/biblioteca-de-design/registro");
   const { designDoClienteVale, modeloDoDesign, registrarModeloDoCliente } = await import("@/lib/modelos-de-arte/modelo-do-cliente");
   const atual = await designDeImagemMaisRecente(projectId);
@@ -351,7 +396,7 @@ async function modeloDoDesignDoCliente(projectId: string, escolhaDoBookEm: strin
   const modelo = modeloDoDesign(atual.design);
   if (!modelo) return null;
   registrarModeloDoCliente(modelo);
-  return modelo.id;
+  return { id: modelo.id, design: { nome: atual.design.nome, linguagem: atual.design.linguagem } };
 }
 
 /**
@@ -359,7 +404,7 @@ async function modeloDoDesignDoCliente(projectId: string, escolhaDoBookEm: strin
  * catálogo do processo. Null quando o design não existe mais ou não tem
  * linguagem: aí vale o book (ou a composição da família).
  */
-async function modeloDoDesignAprovado(projectId: string, designId: string): Promise<string | null> {
+async function modeloDoDesignAprovado(projectId: string, designId: string): Promise<{ id: string; design: DesignQueManda } | null> {
   const { designsDoProjeto } = await import("@/lib/biblioteca-de-design/registro");
   const { modeloDoDesign, registrarModeloDoCliente } = await import("@/lib/modelos-de-arte/modelo-do-cliente");
   // Entre os ligados ao projeto: ligado, ele vale mesmo se o autor o tirou da galeria.
@@ -370,7 +415,7 @@ async function modeloDoDesignAprovado(projectId: string, designId: string): Prom
   const modelo = modeloDoDesign(design);
   if (!modelo) return null;
   registrarModeloDoCliente(modelo);
-  return modelo.id;
+  return { id: modelo.id, design: { nome: design.nome, linguagem: design.linguagem } };
 }
 
 /**
@@ -582,24 +627,6 @@ function fundoDaArte(marca: MarcaDaArte, arteInteira: boolean): string {
   if (marca.familia === "claro") return `Background: plain, bright ${nomeDaCor(claro)}, evenly lit, so the image blends into a light page.`;
   return `Background: plain, very dark ${nomeDaCor(escuro)}, fading to black at the edges, so the image blends into a dark page.`;
 }
-/** O setor como o modelo de imagem entende, em inglês. */
-const SETOR_EM_INGLES: Record<string, string> = {
-  saude: "healthcare and medical practice",
-  juridico: "law firm",
-  fe: "faith-based (Christian church and ministry)",
-  energia: "renewable energy and power generation",
-  consorcio: "consortium sales and credit for buying a home or a car (Brazilian consórcio)",
-  financas: "finance and accounting",
-  educacao: "education",
-  alimentacao: "food and hospitality",
-  beleza: "beauty and wellness",
-  imoveis: "real estate and construction",
-  industria: "industry and logistics",
-  agro: "agribusiness",
-  marketing: "content creation and marketing",
-  tecnologia: "technology",
-  negocios: "business consulting",
-};
 const FUNDO_INTEIRO = "Background: FULL-BLEED, the scene continues to every edge of the frame; keep one calmer, less detailed area where a headline can sit.";
 
 /**
@@ -613,14 +640,19 @@ const FUNDO_INTEIRO = "Background: FULL-BLEED, the scene continues to every edge
  * com o muro e 24 para a mesma frase pedida como um diretor de arte pede.
  * Quem barra texto e gente continua sendo a conferência (`conferirArte`).
  */
-export function promptDaArteSemTexto(o: { visual: string; estilo?: string; marca: MarcaDaArte; frase?: string }): string {
-  const look = o.estilo ? lookSemTexto(o.estilo) : "";
+export function promptDaArteSemTexto(o: { visual: string; estilo?: string; marca: MarcaDaArte; frase?: string; pessoas?: boolean }): string {
+  // O estilo ESCOLHIDO para o post manda na aparência (08/10): ele entra no
+  // lugar da direção do projeto, e as figuras que ele pede deixam de ser gente proibida.
+  const doPost = o.marca.estiloDoPost?.linguagem?.trim();
+  const estiloDaPeca = doPost && !(o.estilo ?? "").includes(doPost.slice(0, 60)) ? doPost : o.estilo;
+  const look = estiloDaPeca ? lookSemTexto(estiloDaPeca) : "";
+  o = { ...o, pessoas: o.pessoas ?? Boolean(o.marca.estiloDoPost?.pedeFiguras) };
   const { acento, escuro, claro } = o.marca.cores;
   const id = o.marca.identidade;
   const setor = id?.setor;
   const arteInteira = o.frase !== undefined ? layoutDaPeca(o.marca, o.frase).arteInteira : o.marca.familia === "sobrio";
   return [
-    `Artwork for a social media post${setor ? ` of a ${SETOR_EM_INGLES[setor.id] ?? "business"} brand` : ""}: one scene, one clear focal subject, told with objects, places, materials, light and symbols.`,
+    `Artwork for a social media post${setor ? ` of a ${setorEmIngles(setor.id)} brand` : ""}: one scene, one clear focal subject, told with objects, places, materials, light and symbols.`,
     `Scene: ${o.visual}`,
     // O MUNDO DO CLIENTE (01/10) entra ANTES, em quem escreve a cena
     // (`cenaDaFrase` e o redator da manchete recebem `setor.mundo`): a cena
@@ -646,7 +678,9 @@ export function promptDaArteSemTexto(o: { visual: string; estilo?: string; marca
     // O que é do setor (para não parecer outro ramo) e o clichê da mesa com
     // luminária ficam como direção curta, em uma linha.
     `Steer clear of${setor ? ` ${setor.evitar}, and of` : ""} the generic desk with a lamp, open notebook, lantern or coffee mug unless the scene asks for it.`,
-    `The headline is added later in code, so the image carries no words, numbers or interface panels; no people (suggest them with objects: an empty chair, a coat on a hook, a door left open); no logos.`,
+    // Sem lista de objetos para "sugerir gente" (08/10): a cadeira vazia e a
+    // porta aberta da lista antiga viraram figurinha repetida, como o ring light.
+    `The headline is added later in code, so the image carries no words, numbers or interface panels; ${o.pessoas ? "people only as the chosen style describes them (stylized figures, never a recognizable real person)" : "no people (if the idea needs them, let the scene itself imply their presence)"}; no logos.`,
   ].join("\n");
 }
 
@@ -659,36 +693,72 @@ export async function cenaDaFrase(
   frase: string,
   nicho: string | null | undefined,
   usage?: { projectId?: string; runId?: string; operation?: string },
-  /**
-   * A identidade do projeto (01/10). Com ela a cena sai do mundo do cliente,
-   * pensada para o público dele e no tom dele, e não da mesa com luminária
-   * que servia a qualquer nicho.
-   */
   identidade?: IdentidadeVisual
 ): Promise<string> {
-  // O mundo do cliente é CENÁRIO, não lista de compras (02/10, prova A/B): com
-  // "pick places and objects from here", a Demandou saía sempre como o estúdio
-  // de criador entulhado (ring light, microfone, megafone, post-its, aviões
-  // de papel), fosse qual fosse a frase. Um diretor de arte acha UMA metáfora
-  // para a frase (um objeto, uma situação) e só então decide o cenário.
-  const contexto = identidade
-    ? [
-        `Sector: ${identidade.setor.nome} (Portuguese label).`,
-        `The client's world, as setting cues only (use at most one or two of these, and only if they serve the metaphor): ${identidade.setor.mundo}.`,
-        identidade.publico ? `Who will see this post (Portuguese): ${identidade.publico.slice(0, 400)}` : "",
-        identidade.tom ? `Brand tone of voice (Portuguese): ${identidade.tom.slice(0, 200)}` : "",
-        `Framing to use: ${enquadramentoDaPeca(frase)}.`,
-        identidade.padroesVisuais?.length ? `Measured visual traits that perform in this niche (Portuguese, abstract only): ${identidade.padroesVisuais.join(" | ")}` : "",
-        identidade.regrasDaArte?.length ? `Rules the client approved for this project's art (Portuguese; never against the rules above): ${identidade.regrasDaArte.join(" | ")}` : "",
-        `Steer clear of ${identidade.setor.evitar}, and of the generic desk with a lamp, open notebook, lantern or coffee mug.`,
-      ].filter(Boolean).join("\n")
-    : "";
-  const bruto = await askClaude(
-    "You are an advertising art director briefing a photographer. Find ONE visual metaphor for the sentence: one object or one simple situation that carries the idea on its own (the way a great print ad does), and describe it as a photo brief in English, at most 45 words: subject, setting, light, lens and mood. One clear focal subject, nothing cluttered, no list of props. Tell the idea with objects, places, materials and light only, so the scene works without people in it and without any writing. Return only the description.",
-    `Niche: ${nicho ?? "business"}\n${contexto ? `${contexto}\n` : ""}The Portuguese sentence the scene must evoke (do NOT write it in the scene): "${frase}"`,
-    { maxTokens: 4000, effort: "low", usage: { operation: "cena_da_frase", ...usage } }
-  );
-  return bruto.replace(/\s+/g, " ").trim().slice(0, 400);
+  return (await cenaDaPeca({ frase, nicho, usage, identidade })).cena;
+}
+
+/** O pedido ao redator da cena: o redator acha UMA metáfora no conteúdo da frase e declara o elemento central e o cenário. */
+export const SISTEMA_DA_CENA =
+  'You are an advertising art director briefing a photographer. Find ONE visual metaphor for the sentence, taken from what THIS sentence and its post actually talk about: one central element (one object or one simple situation) that carries the idea on its own, the way a great print ad does, and the one setting where it lives. Describe it as a photo brief in English, at most 45 words: subject, setting, light, lens and mood. One clear focal subject, nothing cluttered, no list of props. The visual language you receive only says how the image looks; it never chooses the subject. Tell the idea with objects, places, materials and light, without any writing. Answer ONLY with JSON: {"cena":"the brief","elemento":"the central element, 2 to 5 English words","cenario":"the setting, 2 to 5 English words"}';
+
+/** O contexto da cena: o RAMO (sem lista de objetos), o público, o tom, o enquadramento e o que evitar. Pura, exportada para a prova. */
+export function pedidoDaCena(o: {
+  frase: string;
+  nicho?: string | null;
+  identidade?: IdentidadeVisual;
+  estilo?: string | null;
+  estiloDoPost?: boolean;
+  pessoas?: boolean;
+  usados?: ElementoUsado[];
+  /** O texto do post, quando quem pede tem (a peça nasce do conteúdo dele). */
+  contexto?: string | null;
+}): string {
+  const id = o.identidade;
+  return [
+    `Niche: ${o.nicho ?? "business"}`,
+    // O RAMO, e só o ramo (08/10): a lista de objetos do setor puxava o ring
+    // light para toda peça da Demandou. O que aparece sai da frase.
+    id ? `Sector: ${setorEmIngles(id.setor.id)}. The scene belongs to this business, but its central element comes from the sentence, never from a stock prop of the sector.` : "",
+    id?.publico ? `Who will see this post (Portuguese): ${id.publico.slice(0, 400)}` : "",
+    id?.tom ? `Brand tone of voice (Portuguese): ${id.tom.slice(0, 200)}` : "",
+    `Framing to use: ${enquadramentoDaPeca(o.frase)}.`,
+    id?.padroesVisuais?.length ? `Measured visual traits that perform in this niche (Portuguese, abstract only): ${id.padroesVisuais.join(" | ")}` : "",
+    id?.regrasDaArte?.length ? `Rules the client approved for this project's art (Portuguese; never against the rules above): ${id.regrasDaArte.join(" | ")}` : "",
+    `Steer clear of ${id ? `${id.setor.evitar}, and of ` : ""}the generic desk with a lamp, open notebook, lantern or coffee mug.`,
+    estiloComoLinguagem(o.estilo, { escolhidoParaOPost: o.estiloDoPost }),
+    o.pessoas
+      ? "People: only as the chosen style describes them (stylized figures, silhouettes), never a recognizable real person."
+      : "People: none in the scene; the idea is told with objects, places and light.",
+    o.usados?.length ? usadosEmTexto(o.usados) : "",
+    o.contexto?.trim() ? `The post this image goes with (Portuguese, for the subject only): ${o.contexto.replace(/\s+/g, " ").trim().slice(0, 1200)}` : "",
+    `The Portuguese sentence the scene must evoke (do NOT write it in the scene): "${o.frase}"`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * A CENA DE UMA PEÇA, com o elemento central e o cenário declarados (08/10).
+ * Uma chamada curta de texto. Quem garante que o elemento não repete outra
+ * peça é a guarda da campanha (lib/media/elementos-da-campanha.ts), que
+ * recebe esta função como a primeira escrita.
+ */
+export async function cenaDaPeca(o: {
+  frase: string;
+  nicho?: string | null;
+  usage?: { projectId?: string; runId?: string; operation?: string };
+  identidade?: IdentidadeVisual;
+  estilo?: string | null;
+  estiloDoPost?: boolean;
+  pessoas?: boolean;
+  usados?: ElementoUsado[];
+  contexto?: string | null;
+}): Promise<CenaComElemento> {
+  const bruto = await askClaude(SISTEMA_DA_CENA, pedidoDaCena(o), { maxTokens: 4000, effort: "low", usage: { operation: "cena_da_frase", ...o.usage } });
+  const lida = lerCenaComElemento(bruto);
+  if (!lida) throw new Error("A cena da peça veio vazia.");
+  return { ...lida, cena: lida.cena.slice(0, 400) };
 }
 
 type Fontes = { anton: Buffer; serif: Buffer; sans: Buffer; sansRegular: Buffer };
