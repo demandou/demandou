@@ -29,7 +29,7 @@ import { MODELOS_DE_ARTE, modeloPorId } from "@/lib/modelos-de-arte/catalogo";
 import { CHAVE_DA_ESCOLHA, TIPO_DA_ESCOLHA } from "@/lib/modelos-de-arte/escolha";
 import { lerLinks, TIPOS_DE_LINK } from "@/lib/projeto/links-do-cliente";
 import { custoDeRefazerPeca, estimarCampanha } from "@/lib/credits/estimativa";
-import { decidirCortesia, cortesiasDeHoje, reprovadaPelaRevisora } from "@/lib/credits/cortesia";
+import { decidirCortesia, cortesiasDeHoje, estadoDaPecaParaCortesia } from "@/lib/credits/cortesia";
 import { instanteLocalSeguro } from "@/lib/fuso";
 import { diaEHora } from "@/lib/posts/horario-da-peca";
 import { artesPendentes, agruparArtes, custoDasArtes, resumoDasArtes } from "@/lib/vera/regerar-arte";
@@ -266,7 +266,7 @@ export function ferramentasDaGerente(ctx: ContextoDaGerente): Ferramenta[] {
       },
       orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
       take: 60,
-      select: { id: true, platform: true, content: true, status: true, mediaType: true, dayOfWeek: true, scheduledAt: true, runId: true, imageUrl: true },
+      select: { id: true, platform: true, content: true, status: true, mediaType: true, dayOfWeek: true, scheduledAt: true, runId: true, imageUrl: true, metadata: true },
     });
     return posts;
   }
@@ -954,10 +954,9 @@ export function ferramentasDaGerente(ctx: ContextoDaGerente): Ferramenta[] {
         if (!post) return "Essa peça não está pendente neste projeto (ou já foi publicada).";
         const laminas = (post.imageUrl ?? "").split("|").filter((u) => u.trim().length > 10).length;
         const tabela = custoDeRefazerPeca({ mediaType: post.mediaType, laminas });
-        const cortesia = decidirCortesia(
-          { status: "rejected", reprovadaPelaRevisora: await reprovadaPelaRevisora({ runId: post.runId, dayOfWeek: post.dayOfWeek }) },
-          await cortesiasDeHoje(projectId)
-        );
+        // Desde 08/10 a cortesia vem só da reprovação com erro verificado
+        // (post.metadata.reprovacao), nunca do status: pedir diferente cobra.
+        const cortesia = decidirCortesia(estadoDaPecaParaCortesia(post), await cortesiasDeHoje(projectId));
         const custo = cortesia ? 0 : tabela;
         const rede = NOME_DA_REDE[post.platform] ?? post.platform;
         plano.acoes.push({

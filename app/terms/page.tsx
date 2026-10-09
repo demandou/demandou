@@ -38,7 +38,7 @@ export default function TermsPage() {
             Termos de Uso e Condições de Serviço
           </h1>
           <p className="text-sm text-[var(--text-muted)]">
-            Última atualização: 06/10/2026
+            Última atualização: 08/10/2026
           </p>
         </div>
 
@@ -323,6 +323,7 @@ export default function TermsPage() {
                   "Os créditos do plano são repostos a cada ciclo mensal e não acumulam: o que não for usado em um ciclo não passa para o seguinte. A reposição completa o saldo até o limite do plano.",
                   "Créditos de vídeo de pacotes comprados à parte não são apagados na reposição e valem enquanto houver contrato. No fim do contrato, o saldo de pacote não usado expira, salvo quando o contrato terminar por culpa da demandou ou por descontinuação, casos em que é reembolsado proporcionalmente.",
                   "Quando uma operação é cobrada e não é entregue por falha técnica da plataforma ou de um fornecedor, os créditos da parte não entregue voltam ao saldo. A plataforma devolve automaticamente nos casos que identifica; nos demais, o Usuário pode pedir em até 30 dias, pelo e-mail de contato. A nova tentativa de uma operação que falhou por culpa da demandou não é cobrada.",
+                  "Cobrança por geração, devolução por erro verificado: cada peça gerada (texto, arte, carrossel, vídeo) consome os créditos da tabela no momento em que é entregue. Ao reprovar uma peça, o Usuário informa o motivo. Quando o motivo é um erro da plataforma e ele é verificado pelas conferências automáticas (ou reconhecido pela equipe da demandou, quando as conferências não bastam), os créditos daquela peça voltam ao saldo uma única vez e refazê-la não é cobrado. Contam como erro da plataforma: palavra cortada ou texto ilegível na arte; formato ou proporção errada para a rede; número, dado ou fonte inventados ou errados; conteúdo próprio inventado (vídeo, post ou link do Usuário que não existe); marca errada (cores, letra ou logo diferentes da identidade aprovada); e outro defeito de entrega demonstrável. Não contam como erro, e não geram devolução: não gostar do resultado entregue, ter pedido ou configurado de outro jeito, ou preferir outra abordagem. Nesses casos refazer é uma geração nova e é cobrada como tal.",
                   "Não há devolução quando a operação foi entregue e o Usuário apenas preferiu outro resultado, quando ele mesmo cancelou a operação depois de iniciada, ou quando a geração violou estes Termos (item 7.3).",
                   "Créditos não têm valor em dinheiro e não são reembolsáveis em espécie, salvo nos casos expressos nestes Termos, e não podem ser vendidos nem transferidos para outra conta.",
                   "A demandou pode ajustar quantos créditos cada operação consome, com aviso de 30 dias, sem impedir o Usuário de editar, em cada ciclo, os minutos de vídeo do seu plano.",

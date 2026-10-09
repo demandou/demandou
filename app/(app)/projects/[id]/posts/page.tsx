@@ -6,6 +6,7 @@ import { whereSocialAccountCanPublish } from "@/lib/social/account-filters";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { chamadoDaFalha, codigoDaFalha, motivoDaRedeNaFrase } from "@/lib/publish/codigos";
 import { chaveDoPostQueFalhou } from "@/lib/avisos/chaves";
+import { lerEstadoDaReprovacao } from "@/lib/credits/reprovacao";
 
 export default async function PostsPage({
   params,
@@ -73,6 +74,8 @@ export default async function PostsPage({
         : null,
     // A chave do descarte da falha (07/10), montada aqui: o metadata não desce.
     chaveDaFalha: p.status === "failed" ? chaveDoPostQueFalhou(p.id, metadata) : null,
+    // A reprovação com motivo (08/10): só o estado dela desce, para o card dizer a situação.
+    reprovacao: p.status === "rejected" ? lerEstadoDaReprovacao(metadata) : null,
   }));
 
   return (

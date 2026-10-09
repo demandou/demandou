@@ -12,7 +12,8 @@
  * ficou pronto ou o gerador recusou o treino, sem ação obrigatória.
  */
 // "cancelado" (05/10): o cliente cancelou um vídeo pela faixa; o registro fica no sino.
-export const TIPOS_DE_NOTIFICACAO = ["roteiro", "pecas", "campanha", "completo", "falha", "estorno", "gemeo", "gemeo-aviso", "cancelado"] as const;
+// "reprovacao" (08/10): a resposta à reprovação com motivo (em análise, mantido, erro confirmado sem crédito a devolver).
+export const TIPOS_DE_NOTIFICACAO = ["roteiro", "pecas", "campanha", "completo", "falha", "estorno", "gemeo", "gemeo-aviso", "cancelado", "reprovacao"] as const;
 export type TipoDeNotificacao = (typeof TIPOS_DE_NOTIFICACAO)[number];
 
 /**

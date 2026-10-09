@@ -86,7 +86,8 @@ export async function textoComEloDoPost(
   return textoComElo(post.content, frases, post.platform);
 }
 
-async function canalDoProjeto(projectId: string): Promise<{ canal: string | null; permitidos: string[] }> {
+/** Exportado (08/10) para a conferência da reprovação reusar os mesmos links permitidos. */
+export async function canalDoProjeto(projectId: string): Promise<{ canal: string | null; permitidos: string[] }> {
   const projeto = await prisma.project.findUnique({
     where: { id: projectId },
     select: { config: true, socialAccounts: { where: { isActive: true }, select: { platform: true, username: true, displayName: true } } },

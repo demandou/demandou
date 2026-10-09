@@ -6,7 +6,8 @@ import { NOME_DA_REDE } from "@/lib/pipeline/redes";
 import { pecaPublicavel } from "@/lib/pipeline/guarda-de-texto";
 import { debitar, saldo, SaldoInsuficiente } from "@/lib/credits";
 import { custoDeRefazerPeca } from "@/lib/credits/estimativa";
-import { decidirCortesia, cortesiasDeHoje, reprovadaPelaRevisora } from "@/lib/credits/cortesia";
+import { decidirCortesia, cortesiasDeHoje, estadoDaPecaParaCortesia } from "@/lib/credits/cortesia";
+import { marcarRefazerGratisUsado } from "@/lib/credits/reprovacao-servidor";
 import { FORMATO_DA_REDE } from "@/lib/pipeline/levar-para-outra-rede";
 import { produzirArtePorRede } from "@/lib/media/arte-por-rede";
 import { generateImage } from "@/lib/media/nano-banana";
@@ -99,21 +100,15 @@ export async function refazerPeca(args: {
   const custo = custoDeRefazerPeca({ mediaType: post.mediaType, laminas });
 
   /**
-   * PEÇA REPROVADA NÃO COBRA PARA SER REFEITA (card 525, 22/09).
+   * O REFAZER É GRÁTIS SÓ COM ERRO VERIFICADO (decisão do Bruno em 08/10).
    *
-   * Reprovação é a plataforma dizendo, com a própria boca, que aquilo não
-   * deveria ter saído assim. Cobrar a correção de um defeito reconhecido é
-   * vender o conserto do próprio erro, e foi o que o Bruno apontou testando
-   * como dono. A política inteira, com o porquê do teto, está em
-   * lib/credits/cortesia.ts.
+   * Até 08/10 a peça reprovada não cobrava para ser refeita (card 525). Agora
+   * a reprovação carrega um motivo, conferido contra as provas automáticas
+   * (lib/credits/reprovacao-pelo-jev.ts); só o erro confirmado (ou decidido
+   * pelo admin) devolve os créditos e dá um refazer sem cobrança. "Não
+   * gostei" cobra. A política inteira está em lib/credits/cortesia.ts.
    */
-  const cortesia = decidirCortesia(
-    {
-      status: post.status,
-      reprovadaPelaRevisora: await reprovadaPelaRevisora({ runId: post.runId, dayOfWeek: post.dayOfWeek }),
-    },
-    await cortesiasDeHoje(post.projectId)
-  );
+  const cortesia = decidirCortesia(estadoDaPecaParaCortesia(post), await cortesiasDeHoje(post.projectId));
 
   const disponivel = await saldo(args.userId);
   // Sem cobrança não se confere saldo: exigir crédito para consertar o nosso
@@ -263,7 +258,8 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
       status: "draft",
       scheduledAt: post.scheduledAt,
       metadata: {
-        ...(aguardandoIdentidade ? marcarEspera(metadata) : metadata),
+        // O refazer grátis da reprovação com erro confirmado vale UMA vez (08/10).
+        ...(cortesia ? await marcarRefazerGratisUsado(post.id, aguardandoIdentidade ? marcarEspera(metadata) : metadata) : aguardandoIdentidade ? marcarEspera(metadata) : metadata),
         refeitoEm: new Date().toISOString(),
         // O erro da tentativa antiga não sobrevive ao texto novo, que é a
         // mesma regra de 21/09: estado que sobrevive ao fato vira mentira.

@@ -1,47 +1,63 @@
 import { prisma } from "@/lib/db/prisma";
+import { lerEstadoDaReprovacao, refazerSemCobrar, type EstadoDaReprovacao } from "@/lib/credits/reprovacao";
 
 /**
- * A POLÍTICA DE CRÉDITO QUANDO A PEÇA SAI ERRADA (card 525, decidida em 22/09).
+ * A POLÍTICA DE CRÉDITO QUANDO A PEÇA SAI ERRADA.
  *
- * A observação do Bruno testando como dono, em 19/09: "se eu fosse um cliente
- * ia estar bem bravo, porque gera muita coisa errada e consome os créditos
- * tudo". Até aqui uma peça entregue ERRADA custava o mesmo que uma certa, e
- * refazê-la custava de novo. O cliente pagava duas vezes pelo nosso defeito.
+ * ## A regra de hoje (decisão do Bruno em 08/10/2026)
  *
- * ## A regra, e por que ela é esta
+ * **Refazer não cobra SÓ quando o erro foi verificado.** A peça reprovada
+ * passa a carregar um motivo (lib/credits/reprovacao.ts), e o motivo é
+ * conferido contra as provas automáticas pelo código e pelo JEV; o que não se
+ * confirma vai ao admin decidir. Quando o erro é confirmado (pelas provas ou
+ * pelo admin), os créditos da peça voltam na hora e UM refazer é grátis. Em
+ * qualquer outro caso o refazer cobra: "não gostei" e "pedi diferente" são
+ * gosto, e gosto é trabalho novo.
  *
- * **Refazer não cobra quando a peça foi REPROVADA.** Reprovação é a
- * plataforma dizendo, com a própria boca, que aquilo não deveria ter saído
- * assim: ou a revisora reprovou, ou o cliente reprovou no calendário. Cobrar
- * a correção de um defeito reconhecido é vender o conserto do próprio erro.
+ * ## Por que mudou (a regra de 22/09, card 525, que valeu até 08/10)
  *
- * **Refazer cobra quando a peça está viva.** "Não gostei desta" é gosto, e
- * gosto é trabalho novo: o texto é reescrito do zero e a arte é gerada de
- * novo, com custo real de fornecedor em dólar. Dar isso de graça sem limite
- * transformaria o botão numa máquina de queimar margem.
+ * Até 08/10 valia: "refazer não cobra quando a peça foi REPROVADA", por quem
+ * fosse (a revisora ou o cliente no calendário), com um teto de três por
+ * projeto por dia. A observação do Bruno de 19/09 ("gera muita coisa errada e
+ * consome os créditos tudo") continua certa, mas a regra antiga tinha um
+ * furo que o teste como cliente mostrou: o botão de reprovar não perguntava
+ * nada, então reprovar por gosto virava refazer de graça, e a cobrança por
+ * geração ficava sem sentido. Pior, a plataforma não aprendia nada: reprovar
+ * sem motivo é um clique mudo.
  *
- * ## Por que existe um teto
+ * O que ficou da regra antiga: o cliente nunca paga duas vezes pelo NOSSO
+ * defeito (erro confirmado devolve e refaz de graça). O que saiu: a reprovação
+ * por si só não vale mais como prova; a prova é a conferência, ou o admin.
  *
- * Sem teto, um defeito sistemático (um prompt ruim, um fornecedor fora do ar)
- * vira prejuízo ilimitado, porque cada tentativa é grátis e o custo do
- * fornecedor não é. O teto é POR PROJETO e POR DIA, e quando ele estoura o
- * refazer volta a cobrar, com a frase dizendo o porquê. Defeito que passa de
- * três peças no mesmo dia não é peça errada, é a esteira quebrada, e esse é
- * um problema para consertar e não para estornar.
+ * ## O teto por dia
  *
- * O número é o único aqui que é opinião, e mora sozinho para ser trocado sem
- * mexer na regra.
+ * Continua, pelo mesmo motivo de sempre: um defeito sistemático (prompt ruim,
+ * fornecedor fora do ar) vira prejuízo ilimitado se cada tentativa é grátis e
+ * o custo do fornecedor não é. Passou de três, o refazer volta a cobrar, com a
+ * frase dizendo o porquê, e o problema é para consertar a esteira. O número
+ * é o único aqui que é opinião, e mora sozinho para ser trocado sem mexer na
+ * regra.
  */
 export const CORTESIAS_POR_DIA = 3;
 
 export type Cortesia = { motivo: string } | null;
 
-/** O que torna uma peça "reprovada" aos olhos desta política. */
+/** O que torna um refazer "de cortesia" aos olhos desta política. */
 export type EstadoDaPeca = {
-  /** `status` do post. "rejected" é o cliente reprovando no calendário. */
+  /** `status` do post. Fica por compatibilidade: desde 08/10 ele sozinho não dá cortesia. */
   status: string;
-  /** A revisora reprovou esta peça nesta campanha. */
-  reprovadaPelaRevisora: boolean;
+  /**
+   * A reprovação com motivo gravada em `post.metadata.reprovacao`. Só ela dá
+   * cortesia, e só com `situacao: "devolvido"` (erro confirmado pelas provas
+   * ou reconhecido pelo admin) e o refazer grátis ainda não usado.
+   */
+  reprovacao?: EstadoDaReprovacao | null;
+  /**
+   * A revisora reprovou esta peça nesta campanha. Desde 08/10 é PROVA para a
+   * conferência da reprovação (lib/credits/reprovacao-pelo-jev.ts), e não
+   * cortesia por si só.
+   */
+  reprovadaPelaRevisora?: boolean;
 };
 
 /**
@@ -53,9 +69,15 @@ export type EstadoDaPeca = {
  */
 export function decidirCortesia(peca: EstadoDaPeca, cortesiasHoje: number): Cortesia {
   if (cortesiasHoje >= CORTESIAS_POR_DIA) return null;
-  if (peca.status === "rejected") return { motivo: "peça reprovada por você" };
-  if (peca.reprovadaPelaRevisora) return { motivo: "peça reprovada na revisão" };
+  if (refazerSemCobrar(peca.reprovacao)) {
+    return { motivo: peca.reprovacao?.decididoPor === "admin" ? "erro reconhecido pelo admin" : "erro confirmado pelas provas" };
+  }
   return null;
+}
+
+/** O estado da peça para a política, a partir do post gravado. */
+export function estadoDaPecaParaCortesia(post: { status: string; metadata: unknown }): EstadoDaPeca {
+  return { status: post.status, reprovacao: lerEstadoDaReprovacao(post.metadata) };
 }
 
 /** Quantas cortesias este projeto já usou no dia corrente. */
@@ -79,7 +101,8 @@ export async function cortesiasDeHoje(projectId: string, agora = new Date()): Pr
  * O parecer dela vive no card da campanha, e o veredito é a palavra REPROVADO
  * no conteúdo. Procura-se pelo par (execução, dia), que é a chave do dia da
  * campanha, porque o parecer é do DIA e não de cada rede: uma reprovação de
- * texto derruba as peças daquele dia juntas.
+ * texto derruba as peças daquele dia juntas. Desde 08/10 entra como prova na
+ * conferência da reprovação, e não como cortesia direta.
  */
 export async function reprovadaPelaRevisora(post: {
   runId: string | null;

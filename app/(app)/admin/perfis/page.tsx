@@ -127,6 +127,7 @@ export default async function PerfisPage({ searchParams }: { searchParams: Promi
             {[
               { href: "/admin", nome: "Painel" },
               { href: "/admin/contas", nome: "Contratos e contas" },
+              { href: "/admin/reprovacoes", nome: "Reprovações e devoluções" },
             ].map((l) => (
               <Link key={l.href} href={l.href} className="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-[var(--realce-2)]" style={{ borderColor: "var(--border)", color: "var(--text-primary)", background: "var(--bg-elevated)" }}>
                 {l.nome}

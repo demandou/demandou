@@ -52,6 +52,8 @@ export const PREFIXOS_DO_SINO = [
   "admin",
   // O ataque ao login (08/10): senhas erradas em série num e-mail, para os admins.
   "bloqueio-login",
+  // A resposta à reprovação com motivo (08/10): em análise, mantido, erro confirmado.
+  "reprovacao",
 ] as const;
 
 /** Os prefixos das chaves que só as telas gravam (faixas, cartões, dicas). */
@@ -103,6 +105,8 @@ export const PREFIXOS_DAS_TELAS = [
   "propostas-roberto",
   "portao",
   "corte-nao-aplicado",
+  // A situação da peça reprovada no card (08/10): em análise, créditos devolvidos, mantido.
+  "reprovacao-peca",
 ] as const;
 
 /**

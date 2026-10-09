@@ -16,7 +16,9 @@ export const executarAcaoDaVera: ExecutorDeAcao = async (acao, pedido) => {
     return regerarArtes({ projectId: pedido.projectId, userId: pedido.userId, postIds: acao.postIds });
   }
 
-  // refazer_peca: reprovar (o que dá a cortesia de quem reprova) e escrever de novo.
+  // refazer_peca: reprovar e escrever de novo. Desde 08/10 o status reprovado
+  // não dá cortesia: só a reprovação com erro verificado (metadata.reprovacao)
+  // refaz sem cobrar; "pedi diferente" pela Vera cobra como peça nova.
   const antes = await prisma.post.findFirst({
     where: { id: acao.postId, projectId: pedido.projectId },
     select: { id: true, content: true, imageUrl: true, status: true },

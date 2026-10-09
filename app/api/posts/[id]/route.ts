@@ -151,6 +151,11 @@ export async function PATCH(
   }
 
   if (body.status !== undefined) {
+    // REPROVAR PEDE MOTIVO (08/10): o caminho é POST /api/posts/[id]/reprovar,
+    // que grava a categoria, confere e decide a devolução. Sem motivo, nada é reprovado.
+    if (body.status === "rejected") {
+      return NextResponse.json({ error: "Reprovar pede o motivo: use a janela de reprovação." }, { status: 400 });
+    }
     if (body.status === "scheduled") {
       const at = (updateData.scheduledAt as Date | undefined) ?? post.scheduledAt;
       if (!at) {

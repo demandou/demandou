@@ -35,6 +35,9 @@ import { JanelaDoTikTok } from "@/components/social/janela-do-tiktok";
 import { FalhaDaPublicacao } from "@/components/posts/falha-da-publicacao";
 import { BotaoDescartar, Descartavel } from "@/components/ui/descartar";
 import { chaveDaDica, chaveDaReconexaoDoPost } from "@/lib/avisos/chaves";
+import { JanelaDeReprovacao, type ResultadoNaTela } from "@/components/posts/janela-de-reprovacao";
+import { EstadoDaReprovacaoNoCard } from "@/components/posts/estado-da-reprovacao";
+import type { EstadoDaReprovacao } from "@/lib/credits/reprovacao";
 
 /** As dicas fixas da aba Posts (07/10): descarte permanente por pessoa. */
 const CHAVE_DA_APROVACAO_OBRIGATORIA = chaveDaDica("posts-aprovacao-obrigatoria");
@@ -60,6 +63,8 @@ interface Post {
   falhaDaPublicacao?: { codigo: CodigoDePublicacao; protocolo: string | null; motivoDaRede: string | null } | null;
   /** A chave do descarte da falha (07/10), montada no servidor. */
   chaveDaFalha?: string | null;
+  /** A reprovação com motivo (08/10): a situação do crédito, para o card. */
+  reprovacao?: EstadoDaReprovacao | null;
 }
 
 interface SocialAccount {
@@ -195,6 +200,8 @@ function Marcador({
 export function PostsPanel({ project, posts: initialPosts, socialAccounts, redesParaReconectar = [] }: PostsPanelProps) {
   const router = useRouter();
   const [posts, setPosts] = useState(initialPosts);
+  /** A peça cuja janela de reprovação está aberta (08/10). */
+  const [reprovando, setReprovando] = useState<Post | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [publishing, setPublishing] = useState<string | null>(null);
   // O post do TikTok esperando as escolhas da pessoa (ver janela-do-tiktok).
@@ -343,22 +350,23 @@ export function PostsPanel({ project, posts: initialPosts, socialAccounts, redes
     }
   }
 
-  async function rejectPost(post: Post) {
-    try {
-      const res = await fetch(`/api/posts/${post.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "rejected" }),
-      });
-      if (!res.ok) throw new Error();
+  /**
+   * REPROVAR PEDE MOTIVO (08/10): o botão abre a janela; a rota de reprovação
+   * grava o motivo, confere e decide o crédito. A situação volta para o card.
+   */
+  function rejectPost(post: Post) {
+    setReprovando(post);
+  }
 
-      setPosts((prev) =>
-        prev.map((p) => (p.id === post.id ? { ...p, status: "rejected" } : p))
-      );
-      toast.success("Post rejeitado e movido para Arquivados");
-    } catch {
-      toast.error("Erro ao rejeitar post");
-    }
+  function concluirReprovacao(resultados: ResultadoNaTela[]) {
+    setReprovando(null);
+    if (!resultados.length) return;
+    setPosts((prev) => prev.map((p) => {
+      const r = resultados.find((x) => x.id === p.id);
+      return r ? { ...p, status: "rejected", reprovacao: r.estado } : p;
+    }));
+    const r = resultados[0];
+    toast.success(`Post reprovado e movido para Arquivados. ${r.frase}`);
   }
 
   // "cancelled" entrou em 14/09, e é o mesmo valor que o Gestor já grava ao
@@ -537,6 +545,12 @@ export function PostsPanel({ project, posts: initialPosts, socialAccounts, redes
 
   return (
     <div className="p-6 lg:p-8 w-full">
+      <JanelaDeReprovacao
+        aberta={Boolean(reprovando)}
+        alvos={reprovando ? [{ id: reprovando.id, platform: reprovando.platform }] : []}
+        onFechar={() => setReprovando(null)}
+        onReprovado={concluirReprovacao}
+      />
       {janelaTikTok && (
         <JanelaDoTikTok
           projectId={project.id}
@@ -1066,6 +1080,10 @@ export function PostsPanel({ project, posts: initialPosts, socialAccounts, redes
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
+                        )}
+
+                        {post.status === "rejected" && post.reprovacao && (
+                          <EstadoDaReprovacaoNoCard postId={post.id} metadata={{ reprovacao: post.reprovacao }} />
                         )}
 
                         {(post.status === "rejected" || post.status === "cancelled") && (

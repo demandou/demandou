@@ -219,6 +219,7 @@ export default async function AdminPage({
               { href: "/admin/contratos", nome: "Contratos" },
               { href: "/admin/contas", nome: "Contratos e contas, caso a caso" },
               { href: "/admin/perfis", nome: "Perfis dos clientes" },
+              { href: "/admin/reprovacoes", nome: "Reprovações e devoluções" },
               { href: "/admin/redes", nome: "Redes dos clientes" },
             ].map((l) => (
               <Link
