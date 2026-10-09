@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { PLANOS_PUBLICOS, planoPublico, type PlanoId } from "@/lib/planos";
 import { limiteDoTeste } from "@/lib/limites-do-plano";
 import { consumoDoMembro, membroAtivo } from "@/lib/equipe/conta";
+import { nomeDaCarteiraDoContrato, planoQueValeNaConta } from "@/lib/equipe/regras";
 import { cicloAtual } from "@/lib/ciclo-de-credito";
 
 /**
@@ -67,6 +68,25 @@ export async function planoDoUsuario(userIdDeQuemVe: string, agora = new Date())
   if (membro) {
     const ciclo = cicloAtual(user.creditsResetAt, agora);
     const { creditos } = await consumoDoMembro(userId, userIdDeQuemVe, ciclo.inicio);
+    // A CONTA LIGADA AO CONTRATO (08/10): o saldo é o do contrato, a faixa diz
+    // de que contrato e de que titular, e quanto ESTA pessoa usou no mês. Não
+    // herda o acesso interno da titular.
+    if (membro.contrato) {
+      const vale = planoQueValeNaConta(user, membro.contrato);
+      const temPlanoDoContrato = Boolean(vale.plan && vale.plan !== "free");
+      return {
+        nome: temPlanoDoContrato ? (planoPublico(vale.plan as PlanoId)?.nome ?? (vale.plan as string)) : "Sem plano",
+        planoId: vale.plan ?? "free",
+        creditos: user.creditsBalance,
+        creditosDeVideo: user.videoCredits,
+        admin: false,
+        emTeste: false,
+        diasDeTesteRestantes: null,
+        acao: null,
+        equipe: { dono: nomeDaCarteiraDoContrato(membro.contrato), tetoCreditos: null, creditosUsados: creditos, contrato: true },
+        alerta: user.creditsBalance <= 0 ? { motivo: "saldo-zerado", marca: await marcaDaUltimaRecarga(userId) } : null,
+      };
+    }
     const temPlano = user.plan && user.plan !== "free";
     return {
       nome: temPlano ? (planoPublico(user.plan as PlanoId)?.nome ?? user.plan) : "Sem plano",

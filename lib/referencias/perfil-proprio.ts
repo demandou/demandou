@@ -667,6 +667,9 @@ export async function rodarEstudoDoPerfil(projectId: string): Promise<RelatorioD
     e.avisos = avisos.slice(0, 6);
     e.terminadoEm = new Date().toISOString();
     await gravarEstado(projectId, e);
+    // O PERFIL PARA O ADMIN (08/10): o "quem é" da análise entra nos textos
+    // que o JEV lê para a categoria do cliente. Nunca derruba o estudo.
+    void import("@/lib/admin/perfis/servidor").then((m) => m.reclassificarSeMudou(projectId)).catch(() => undefined);
     return relatorio;
   } catch (err) {
     console.error(`[perfil-proprio][${projectId}] falhou em ${e.etapa}:`, err);

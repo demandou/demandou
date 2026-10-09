@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { planoPublico, type PlanoId } from "@/lib/planos";
 import { contaEhDaEquipe, emailDoDominioDaEquipe } from "@/lib/admin/tipos-do-uso-de-ia";
 import { contratosDoPainel, type ContratoNaLista } from "@/lib/contratos/painel";
+import { cobrancaConfirmada, liquidoDaCobranca, pagamentoPorForaConfirmado } from "@/lib/admin/regra-da-receita";
 
 /**
  * A RECEITA REAL (05/10/2026, à noite, regra do Bruno).
@@ -196,9 +197,11 @@ export async function lerReceitaReal(desde: Date, ate: Date, agora = new Date())
   const naJanela = (d: Date) => d >= desde && d < ate;
 
   for (const c of cobrancas) {
-    if (!c.paid || c.status !== "succeeded") continue;
+    // A regra pura (lib/admin/regra-da-receita.ts, 08/10): paga, concluída e
+    // com líquido positivo. É a mesma que a análise caso a caso e a prova usam.
+    if (!cobrancaConfirmada(c)) continue;
     const quando = new Date(c.created * 1000);
-    const bruto = (c.amount_captured - c.amount_refunded) / 100;
+    const bruto = liquidoDaCobranca(c);
     const moeda = c.currency.toLowerCase();
     const reais = moeda === "brl" ? bruto : moeda === "usd" ? bruto * DOLAR : bruto;
     if (reais <= 0) continue;
@@ -238,7 +241,7 @@ export async function lerReceitaReal(desde: Date, ate: Date, agora = new Date())
       if (naJanela(p.pagoEm)) fora.push({ motivo: "equipe", quando: p.pagoEm.toISOString(), reais, conta: rotuloDaConta, descricao });
       continue;
     }
-    if (!p.comprovanteUrl) {
+    if (!pagamentoPorForaConfirmado(p)) {
       if (naJanela(p.pagoEm)) fora.push({ motivo: "sem_comprovante", quando: p.pagoEm.toISOString(), reais, conta: rotuloDaConta, descricao });
       continue;
     }

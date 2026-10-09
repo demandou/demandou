@@ -1,7 +1,6 @@
 import { cenarioDaEscolha } from "@/lib/media/cenario-do-video";
 import type { Prisma } from "@prisma/client";
-import { debitoIsento } from "@/lib/credits/isencao";
-import { contaDoPlano } from "@/lib/equipe/conta";
+import { carteiraDeQuemFaz } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
 import { debitar } from "@/lib/credits";
 import { aplicarTermos, comTroca, lerTroca, parseTermos } from "@/lib/media/termos";
@@ -1008,7 +1007,8 @@ export async function montarTela(videoId: string, userId: string): Promise<TelaD
   const familia = familiaDaLinguagem(escolha.estiloId);
   const radar = v.radar as { tema?: string; resumo?: string; teses?: Array<{ minuto: string; frase: string }> } | null;
   // O saldo da CONTA que paga (01/10): a gravação de um membro sai do dono.
-  const dono = await prisma.user.findUnique({ where: { id: await contaDoPlano(v.userId) }, select: { creditsBalance: true, role: true } });
+  // A conta ligada ao contrato (08/10) vê o saldo do contrato e nunca a isenção da titular.
+  const dono = await carteiraDeQuemFaz(v.userId);
   const pago = await prisma.creditTransaction.findFirst({ where: { operation: OPERACAO_DO_ROTEIRO, refId: videoId }, select: { amount: true, note: true } });
   const trechos = (v.clips as TrechoDoRoteiro[] | null) ?? [];
   const aprovado = Boolean(r?.aprovadoEm);
@@ -1048,8 +1048,8 @@ export async function montarTela(videoId: string, userId: string): Promise<TelaD
       completo: creditosDaAprovacao(v.durationSec ?? 0, 0, precoAntigo),
       abertura: creditosDaAbertura(r, precoAntigo),
       novaIdeia: CREDITOS_POR_NOVA_IDEIA,
-      saldo: dono?.creditsBalance ?? null,
-      interno: debitoIsento(dono?.role),
+      saldo: dono.saldo,
+      interno: dono.interno,
     },
     maxCortes: MAX_CORTES_APROVADOS,
     aprovadoEm: r?.aprovadoEm ?? null,

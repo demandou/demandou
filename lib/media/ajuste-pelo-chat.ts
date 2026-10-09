@@ -1,5 +1,4 @@
-import { contaDoPlano } from "@/lib/equipe/conta";
-import { debitoIsento } from "@/lib/credits/isencao";
+import { carteiraDeQuemFaz } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
 import { askClaude } from "@/lib/claude";
 import { debitar, SaldoInsuficiente } from "@/lib/credits";
@@ -669,9 +668,10 @@ async function marcarCardsDoCorte(videoJobId: string, indice: number): Promise<v
 
 async function saldoParaMostrar(userId: string): Promise<string> {
   // O saldo da CONTA que paga (01/10, acesso de equipe).
-  const u = await prisma.user.findUnique({ where: { id: await contaDoPlano(userId) }, select: { creditsBalance: true, role: true } });
-  if (debitoIsento(u?.role)) return "Acesso interno: fica no extrato e não sai do saldo.";
-  return `Seu saldo: ${creditosPorExtenso(u?.creditsBalance ?? 0)}.`;
+  // A conta ligada ao contrato (08/10) vê o saldo do contrato, nunca a isenção da titular.
+  const c = await carteiraDeQuemFaz(userId);
+  if (c.interno) return "Acesso interno: fica no extrato e não sai do saldo.";
+  return `Seu saldo: ${creditosPorExtenso(c.saldo ?? 0)}.`;
 }
 
 export async function cobrar(ctx: Contexto, userId: string, quantidade: number, operation: string, nota: string): Promise<void> {

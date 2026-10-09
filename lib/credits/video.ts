@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { SaldoInsuficiente } from "@/lib/credits";
-import { contaPagante, nomeDoDono } from "@/lib/equipe/conta";
-import { fraseDosCreditosDaEquipe } from "@/lib/equipe/regras";
+import { contaPagante, ehLigadaAoContrato, fraseSemSaldoDaCarteira } from "@/lib/equipe/conta";
 import { debitoIsento } from "@/lib/credits/isencao";
 
 /**
@@ -57,15 +56,16 @@ export async function debitarVideo(args: {
 
   return prisma.$transaction(async (tx) => {
     // Quem paga é a conta (o dono, quando quem pediu é membro). Ver lib/equipe/conta.ts (01/10).
-    const { contaId: userId, autorId } = await contaPagante(args.userId, tx);
+    const { contaId: userId, autorId, membro } = await contaPagante(args.userId, tx);
     // Admin sem débito só com ADMIN_SEM_DEBITO=1 (06/10): o trabalho acontece,
     // o extrato registra a linha de valor zero e o saldo não se move. Mesma
-    // regra da carteira do plano (lib/credits/isencao.ts).
+    // regra da carteira do plano (lib/credits/isencao.ts), inclusive a de
+    // 08/10: a conta ligada ao contrato nunca herda a isenção da titular.
     const dono = await tx.user.findUnique({
       where: { id: userId },
       select: { role: true, videoCredits: true },
     });
-    if (dono && debitoIsento(dono.role)) {
+    if (dono && debitoIsento(dono.role) && !ehLigadaAoContrato(membro)) {
       const t = await tx.creditTransaction.create({
         data: {
           userId,
@@ -93,9 +93,9 @@ export async function debitarVideo(args: {
       const falta = new SaldoInsuficiente(quantidade, disponivel);
       // Membro da equipe (01/10, acabamento): a frase diz a quem pedir, pelo
       // nome, e marca o erro para ninguém emendar um convite de compra.
-      if (autorId) {
-        const nomeDono = (await nomeDoDono(userId, tx)) ?? "quem administra a conta";
-        falta.message = fraseDosCreditosDaEquipe(nomeDono, { necessario: quantidade, disponivel });
+      if (autorId && membro) {
+        const { frase, dono: nomeDono } = await fraseSemSaldoDaCarteira(membro, { necessario: quantidade, disponivel }, tx);
+        falta.message = frase;
         falta.equipe = { dono: nomeDono };
       }
       throw falta;

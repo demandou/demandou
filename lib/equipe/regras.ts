@@ -162,6 +162,99 @@ export function fraseDaAssinaturaPausada(dono: string | null | undefined): strin
   return `A assinatura da equipe de ${nome} está pausada. Fale com ${primeiro} para reativar.`;
 }
 
+/*
+ * A CONTA LIGADA AO CONTRATO (08/10/2026), o contrato guarda-chuva. Pedido do
+ * Bruno: "o contrato do Matheus é guarda-chuva. Ele tem usuários debaixo dele,
+ * mas os créditos vêm todos do mesmo lugar. Os vendedores dele disputam os
+ * créditos e nunca pode exceder a nossa margem. Tem que ficar bem claro que
+ * eles estão consumindo esses créditos."
+ *
+ * A conta própria que o admin liga ao contrato (contas_do_contrato) passa a
+ * ler plano, saldo, carteira de vídeo e cota da conta TITULAR do contrato, como
+ * o membro da equipe lê as do dono (lib/equipe/conta.ts resolve, uma vez, para
+ * todo débito, estorno e conferência). As regras sem banco moram aqui.
+ */
+
+/** Quantos projetos cada pessoa ligada a um contrato pode ter (decisão do Bruno, 08/10). */
+export const PROJETOS_POR_PESSOA_DO_CONTRATO = 1;
+
+/** O contrato de onde a conta ligada tira os créditos. */
+export type CarteiraDoContrato = {
+  /** O nome (ou o e-mail) da titular do contrato. */
+  titular: string;
+  empresa: string | null;
+  numero: number | null;
+};
+
+/** "contrato SEED SOLUCOES FINANCEIRAS (titular Matheus Garbelini)". */
+export function nomeDaCarteiraDoContrato(c: CarteiraDoContrato): string {
+  const empresa = c.empresa?.trim();
+  const contrato = empresa ? `contrato ${empresa}` : c.numero ? `contrato nº ${c.numero}` : "contrato";
+  return `${contrato} (titular ${c.titular.trim() || "do contrato"})`;
+}
+
+/**
+ * Os créditos do contrato não cobrem o trabalho. Sem botão de compra: quem
+ * repõe é a titular. Com o número quando há, como a frase da equipe.
+ * `carteira` é o nome por extenso (nomeDaCarteiraDoContrato), que já diz a
+ * titular: a tela recebe só ele, e as duas pontas dizem a mesma coisa.
+ */
+export function fraseDosCreditosDoContrato(carteira: string, conta?: { necessario: number; disponivel: number }): string {
+  const n = (v: number) => v.toLocaleString("pt-BR");
+  if (conta && conta.disponivel > 0) {
+    return `Os créditos do ${carteira} não cobrem este trabalho: ele custa ${n(conta.necessario)} e o contrato tem ${n(conta.disponivel)}. Peça à titular do contrato para adicionar mais.`;
+  }
+  return `Os créditos do ${carteira} acabaram. Peça à titular do contrato para adicionar mais.`;
+}
+
+/** A frase de sem saldo para quem usa a carteira de outra conta, da equipe ou do contrato. */
+export function fraseSemCreditosDaCarteira(e: { dono: string; contrato?: boolean | null }, conta?: { necessario: number; disponivel: number }): string {
+  return e.contrato ? fraseDosCreditosDoContrato(e.dono, conta) : fraseDosCreditosDaEquipe(e.dono, conta);
+}
+
+/** O rótulo do saldo para quem usa a carteira de outra conta. */
+export function rotuloDosCreditosDaCarteira(e: { dono: string; contrato?: boolean | null }): string {
+  return e.contrato ? `Créditos do ${e.dono}` : `Créditos da equipe, na conta de ${e.dono}`;
+}
+
+/**
+ * A recusa de projeto novo para quem já tem o projeto que o contrato dá.
+ * `carteira` é o nome por extenso (nomeDaCarteiraDoContrato), que já diz a titular.
+ */
+export function fraseDoProjetoDoContrato(carteira: string, usados: number, limite = PROJETOS_POR_PESSOA_DO_CONTRATO): string {
+  return `Pelo ${carteira}, cada pessoa tem ${limite} projeto${limite > 1 ? "s" : ""}, e você já tem ${usados}. Para outro, fale com a titular do contrato.`;
+}
+
+/** A cota de gravações do contrato acabou, para quem está ligado a ele. */
+export function fraseDaCotaDoContrato(args: { carteira: string; usadas: number; limite: number; renovaEm: string | null; diaEMes: (iso: string) => string }): string {
+  const u = Math.min(args.usadas, args.limite);
+  const libera = args.renovaEm ? ` A próxima libera em ${args.diaEMes(args.renovaEm)}.` : "";
+  return `O time do ${args.carteira} já usou ${u} de ${args.limite} ${plural(args.limite, "gravação", "gravações")} deste mês.${libera} Para liberar mais, fale com a titular do contrato.`;
+}
+
+/**
+ * O PLANO E O PAPEL QUE VALEM nos limites (gravações, armazenamento, envio,
+ * teste, referências, vídeos do dia), a partir da conta que paga.
+ *
+ * Sem ligação: o de sempre (o plano e o papel da conta). Com ligação ao
+ * contrato: a pessoa NUNCA herda o acesso interno da titular (titular admin não
+ * vira "sem limite" para o time: é a margem), e o plano é o da titular quando
+ * ela tem um; quando não tem (a titular admin não recebe plano na ativação do
+ * contrato), vale o plano do próprio contrato, com os acessos extras dele.
+ */
+export function planoQueValeNaConta(
+  conta: { plan: string | null | undefined; role: string | null | undefined; acessosExtras?: number | null },
+  ligacao: { plano: string | null; acessosExtras: number } | null | undefined
+): { plan: string | null; admin: boolean; acessosExtras: number } {
+  if (!ligacao) return { plan: conta.plan ?? null, admin: conta.role === "admin", acessosExtras: conta.acessosExtras ?? 0 };
+  const temPlano = Boolean(conta.plan && conta.plan !== "free");
+  return {
+    plan: temPlano ? (conta.plan as string) : (ligacao.plano ?? null),
+    admin: false,
+    acessosExtras: temPlano ? (conta.acessosExtras ?? 0) : Math.max(conta.acessosExtras ?? 0, ligacao.acessosExtras ?? 0),
+  };
+}
+
 export type PapelNaEquipe = "dono" | "membro";
 
 /*
@@ -201,8 +294,23 @@ export type PainelDaEquipe = {
   };
   projetos: { id: string; nome: string }[];
   membros: MembroNoPainel[];
+  /**
+   * As contas próprias que o admin ligou ao contrato desta conta (08/10): usam
+   * o saldo dela, cada uma no próprio projeto. A titular vê o uso de cada uma.
+   */
+  ligadas?: Array<{ id: string; email: string; nome: string | null; consumo: { creditos: number; gravacoes: number } }>;
 };
 
-export type EquipeNaTela = PainelDaEquipe | { papel: "membro"; dono: string; tetoGravacoes: number | null; tetoCreditos: number | null; consumo: { creditos: number; gravacoes: number } };
+export type EquipeNaTela =
+  | PainelDaEquipe
+  | {
+      papel: "membro";
+      dono: string;
+      tetoGravacoes: number | null;
+      tetoCreditos: number | null;
+      consumo: { creditos: number; gravacoes: number };
+      /** Conta ligada ao contrato (08/10): `dono` é o contrato por extenso, com a titular. */
+      contrato?: boolean;
+    };
 
 

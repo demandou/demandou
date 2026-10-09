@@ -83,19 +83,37 @@ function aplicar(l: Linha, data: Linha) {
   }
 }
 
-export function bancoEmMemoria(inicio: { users: Linha[]; membros?: Linha[] }) {
+/**
+ * `ligacoes` (08/10): as contas ligadas a um contrato (contas_do_contrato), com
+ * o contrato principal da titular que a consulta de lib/equipe/conta.ts lê
+ * (`{ userId, titularId, numero?, empresa?, plano?, acessosExtras? }`). Sem a
+ * lista, a tabela "não existe" para o código, como num banco sem a migração.
+ */
+export function bancoEmMemoria(inicio: { users: Linha[]; membros?: Linha[]; ligacoes?: Linha[] }) {
   const user = tabela(inicio.users.map((u) => ({ role: "user", plan: "free", creditsBalance: 0, videoCredits: 0, creditsResetAt: null, name: null, ...u })), "u");
   const creditTransaction = tabela([], "tx");
   const membroDaEquipe = tabela(inicio.membros ?? [], "m");
   const acaoDeAdmin = tabela([], "a");
+  const ligacoes = inicio.ligacoes ?? null;
   let fila: Promise<unknown> = Promise.resolve();
   const db = {
     user,
     creditTransaction,
     membroDaEquipe,
     acaoDeAdmin,
-    // A trava de conselho: aqui não faz nada, porque a fila já serializa.
-    async $queryRaw() {
+    // A trava de conselho não faz nada (a fila já serializa). As duas consultas
+    // da ligação ao contrato (lib/equipe/conta.ts) são respondidas pela lista.
+    async $queryRaw(partes?: TemplateStringsArray, ...valores: unknown[]) {
+      const sql = partes ? partes.join("?") : "";
+      if (sql.includes("to_regclass")) return [{ existe: ligacoes !== null }];
+      if (sql.includes("FROM contas_do_contrato l")) {
+        const userId = valores[0];
+        const l = (ligacoes ?? []).find((x) => x.userId === userId && x.titularId !== userId);
+        if (!l) return [];
+        const t = user.linhas.find((u) => u.id === l.titularId);
+        return [{ titularId: l.titularId, titularNome: t?.name ?? null, titularEmail: t?.email ?? "", numero: l.numero ?? null, empresa: l.empresa ?? null, plano: l.plano ?? null, acessosExtras: l.acessosExtras ?? 0 }];
+      }
+      if (sql.includes('FROM contas_do_contrato WHERE "titularId"')) return (ligacoes ?? []).filter((x) => x.titularId === valores[0]).map((x) => ({ userId: x.userId }));
       return [];
     },
     async $transaction<T>(fn: (tx: unknown) => Promise<T>): Promise<T> {

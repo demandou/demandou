@@ -20,7 +20,17 @@ export type PlanoNaTela = {
    * MEMBRO DA EQUIPE (01/10): o saldo mostrado é o da conta do dono, e a faixa
    * diz de quem é a conta em vez de oferecer upgrade (membro não vê cobrança).
    */
-  equipe?: { dono: string; tetoCreditos: number | null; creditosUsados: number } | null;
+  equipe?: {
+    dono: string;
+    tetoCreditos: number | null;
+    creditosUsados: number;
+    /**
+     * CONTA LIGADA AO CONTRATO (08/10): `dono` é o contrato por extenso, com a
+     * titular ("contrato SEED (titular Matheus)"), e a faixa diz "Créditos do
+     * contrato" e quanto a pessoa usou no mês.
+     */
+    contrato?: boolean;
+  } | null;
   /**
    * O ALERTA DA FAIXA (07/10), montado no servidor: o motivo e a marca da
    * ocorrência, que viram a chave do descarte ("plano-alerta:<motivo>:<marca>").

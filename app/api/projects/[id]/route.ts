@@ -3,7 +3,7 @@ import { normalizarPapeis } from "@/lib/modelos-de-arte/identidade";
 import { MAXIMO_DE_CORES, normalizarPaleta } from "@/lib/marca/cores-da-marca";
 import { auth } from "@/lib/auth/server";
 import type { Prisma } from "@prisma/client";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { revogarGemeo } from "@/lib/media/gemeo-servidor";
 import { esquecerIdentidade } from "@/lib/media/identidade-visual";
@@ -125,6 +125,15 @@ export async function PATCH(
   // A identidade visual fica 10 min em cache: mudou cor, logo, nicho ou
   // manual, a próxima prévia e a próxima arte já saem na marca nova (05/10).
   if (["colorPalette", "logoUrl", "niche", "name", "brandManualUrl", "targetAudience"].some((k) => k in data)) esquecerIdentidade(id);
+  // O PERFIL DO CLIENTE (08/10): mudou o nicho, o público, o nome ou a
+  // descrição, a categoria é refeita pelo JEV depois da resposta (só se os
+  // textos mudaram de verdade; sem JEV, fica pendente para o botão do admin).
+  if (["niche", "targetAudience", "name", "description"].some((k) => k in data)) {
+    after(async () => {
+      const { reclassificarSeMudou } = await import("@/lib/admin/perfis/servidor");
+      await reclassificarSeMudou(id);
+    });
+  }
   // A paleta salva é a fonte única da identidade (06/10): trocou a paleta, os
   // papéis aprovados acompanham, e a aprovação só cai se alguma cor saiu.
   //

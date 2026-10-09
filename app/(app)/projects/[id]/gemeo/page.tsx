@@ -1,9 +1,8 @@
 import { auth } from "@/lib/auth/server";
-import { debitoIsento } from "@/lib/credits/isencao";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { contaDoPlano } from "@/lib/equipe/conta";
+import { carteiraDeQuemFaz } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
 import { cadastroParaTela, videoParaTela } from "@/lib/media/gemeo";
 import { geradorDoCadastro, lerCadastro, listarVideos } from "@/lib/media/gemeo-servidor";
@@ -54,7 +53,8 @@ export default async function GemeoPage({
   ]);
   // Saldo e acesso interno são da CONTA que paga; o nome (que entra na frase
   // da autorização) é o de quem está gravando (01/10, acesso de equipe).
-  const conta = await prisma.user.findUnique({ where: { id: await contaDoPlano(userId) }, select: { creditsBalance: true, role: true } });
+  // A conta ligada ao contrato (08/10) nunca herda a isenção da titular.
+  const conta = await carteiraDeQuemFaz(userId);
   // Membro da equipe (01/10, acabamento): o gêmeo é de quem administra a conta.
   const donoDaEquipe = project.userId === userId ? null : ((await nomeDoDono(project.userId)) ?? "quem administra a conta");
 
@@ -97,13 +97,13 @@ export default async function GemeoPage({
         inicial={{
           cadastro: cadastroParaTela(cadastro),
           videos: videos.map(videoParaTela),
-          saldo: conta?.creditsBalance ?? 0,
-          acessoInterno: debitoIsento(conta?.role),
+          saldo: conta.saldo ?? 0,
+          acessoInterno: conta.interno,
           nome: usuario?.name ?? "",
           projeto: project.name,
           gerador: geradorDoCadastro(cadastro),
           // 05/10: o erro do fornecedor por extenso, só para admin.
-          erroTecnico: conta?.role === "admin" ? cadastro?.avatar?.erroTecnico ?? null : null,
+          erroTecnico: conta.role === "admin" && !conta.ligada ? cadastro?.avatar?.erroTecnico ?? null : null,
           // Membro da equipe (01/10): cadastro e revogação ficam com o dono.
           equipe: donoDaEquipe ? { dono: donoDaEquipe } : null,
         }}

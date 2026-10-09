@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Sparkles, Clock } from "lucide-react";
 import type { PlanoNaTela } from "@/lib/plano-na-tela";
-import { fraseDosCreditosDaEquipe } from "@/lib/equipe/regras";
+import { fraseSemCreditosDaCarteira } from "@/lib/equipe/regras";
 import { BotaoDescartar, useDescartes } from "@/components/ui/descartar";
 import { chaveDoAlertaDoPlano } from "@/lib/avisos/chaves";
 
@@ -81,25 +81,36 @@ export function FaixaDoPlano({ inicial }: { inicial: PlanoNaTela }) {
             </strong>{" "}
             crédito{p.creditos === 1 ? "" : "s"}
             {p.creditosDeVideo > 0 ? ` · ${numero(p.creditosDeVideo)} de vídeo` : ""}
-            {p.equipe ? " da equipe" : ""}
+            {p.equipe ? (p.equipe.contrato ? " do contrato" : " da equipe") : ""}
           </>
         )}
       </span>
 
       {/* MEMBRO DA EQUIPE (01/10): de quem é a conta e, se houver, o teto dele.
           Com o saldo zerado, a frase de quem resolve, pelo nome, no lugar do
-          botão de compra que o dono veria (acabamento de 01/10). */}
+          botão de compra que o dono veria (acabamento de 01/10). A conta
+          ligada ao contrato (08/10) lê o contrato e a titular, e quanto ELA
+          usou no mês. */}
       {p.equipe && emAlerta && p.creditos <= 0 && (
         <span className="ml-auto text-xs font-medium" style={{ color: "var(--marca-laranja-texto)" }} role="status" id="frase-do-alerta-do-plano">
-          {fraseDosCreditosDaEquipe(p.equipe.dono)}
+          {fraseSemCreditosDaCarteira(p.equipe)}
         </span>
       )}
       {p.equipe && !(emAlerta && p.creditos <= 0) && (
         <span className="ml-auto text-xs" style={{ color: "var(--text-muted)" }}>
-          Conta de <strong style={{ color: "var(--text-primary)", fontWeight: 600 }}>{p.equipe.dono}</strong>
-          {p.equipe.tetoCreditos !== null
-            ? ` · você usou ${numero(Math.min(p.equipe.creditosUsados, p.equipe.tetoCreditos))} de ${numero(p.equipe.tetoCreditos)} créditos liberados este mês`
-            : ""}
+          {p.equipe.contrato ? (
+            <>
+              Créditos do <strong style={{ color: "var(--text-primary)", fontWeight: 600 }}>{p.equipe.dono}</strong>
+              {` · você usou ${numero(p.equipe.creditosUsados)} este mês`}
+            </>
+          ) : (
+            <>
+              Conta de <strong style={{ color: "var(--text-primary)", fontWeight: 600 }}>{p.equipe.dono}</strong>
+              {p.equipe.tetoCreditos !== null
+                ? ` · você usou ${numero(Math.min(p.equipe.creditosUsados, p.equipe.tetoCreditos))} de ${numero(p.equipe.tetoCreditos)} créditos liberados este mês`
+                : ""}
+            </>
+          )}
         </span>
       )}
 

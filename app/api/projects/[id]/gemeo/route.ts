@@ -1,9 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { debitoIsento } from "@/lib/credits/isencao";
 import { auth } from "@/lib/auth/server";
-import { contaDoPlano } from "@/lib/equipe/conta";
+import { carteiraDeQuemFaz } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
 import { cutucar } from "@/lib/fila/trabalhos";
 import { cadastroParaTela, videoParaTela } from "@/lib/media/gemeo";
@@ -75,18 +74,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     prisma.user.findUnique({ where: { id: d.userId }, select: { creditsBalance: true, role: true, name: true } }),
   ]);
   // Saldo e acesso interno são da CONTA que paga (01/10, acesso de equipe).
-  const conta = await prisma.user.findUnique({ where: { id: await contaDoPlano(d.userId) }, select: { creditsBalance: true, role: true } });
+  // A conta ligada ao contrato (08/10) nunca herda a isenção da titular.
+  const conta = await carteiraDeQuemFaz(d.userId);
   return NextResponse.json({
     cadastro: cadastroParaTela(cadastro),
     videos: videos.map(videoParaTela),
-    saldo: conta?.creditsBalance ?? 0,
-    acessoInterno: debitoIsento(conta?.role),
+    saldo: conta.saldo ?? 0,
+    acessoInterno: conta.interno,
     nome: usuario?.name ?? "",
     projeto: d.project.name,
     // Quem gera os vídeos deste projeto (03/10): a tela mostra o preço dele.
     gerador: geradorDoCadastro(cadastro),
     // 05/10: o erro do fornecedor por extenso só vai para admin (o cliente lê o motivo amigável).
-    erroTecnico: conta?.role === "admin" ? cadastro?.avatar?.erroTecnico ?? null : null,
+    erroTecnico: conta.role === "admin" && !conta.ligada ? cadastro?.avatar?.erroTecnico ?? null : null,
     // Para a tela esconder o cadastro e a revogação de quem é membro.
     equipe: d.project.userId === d.userId ? null : { dono: (await nomeDoDono(d.project.userId)) ?? "quem administra a conta" },
   });

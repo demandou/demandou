@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@prisma/client";
-import { contaPagante, consumoDoMembro, nomeDoDono } from "@/lib/equipe/conta";
+import { contaPagante, consumoDoMembro, ehLigadaAoContrato, fraseSemSaldoDaCarteira, nomeDoDono } from "@/lib/equipe/conta";
 import { cicloAtual } from "@/lib/ciclo-de-credito";
-import { fraseDoTetoDeCreditos, fraseDosCreditosDaEquipe } from "@/lib/equipe/regras";
+import { fraseDoTetoDeCreditos } from "@/lib/equipe/regras";
 import { debitoIsento } from "@/lib/credits/isencao";
 
 /**
@@ -142,8 +142,12 @@ export async function debitar(args: {
     // verdade continua medido em `ai_usage`. O valor que teria sido cobrado
     // fica na nota. Desligado (o padrão), o admin debita como cliente e, sem
     // saldo, é recusado como cliente. Ver lib/credits/isencao.ts.
+    //
+    // A CONTA LIGADA AO CONTRATO NUNCA HERDA A ISENÇÃO (08/10): se a titular
+    // do contrato for admin, o time dela debita do saldo do contrato do mesmo
+    // jeito. É o teto da margem: o contrato guarda-chuva não vira acesso livre.
     const dono = await tx.user.findUnique({ where: { id: userId }, select: { role: true, creditsBalance: true } });
-    if (dono && debitoIsento(dono.role)) {
+    if (dono && debitoIsento(dono.role) && !ehLigadaAoContrato(membro)) {
       const t = await tx.creditTransaction.create({
         data: {
           userId,
@@ -189,10 +193,11 @@ export async function debitar(args: {
       const disponivel = (await tx.user.findUnique({ where: { id: userId }, select: { creditsBalance: true } }))?.creditsBalance ?? 0;
       const falta = new SaldoInsuficiente(quantidade, disponivel);
       // Membro da equipe não compra crédito (01/10): a frase diz de quem é o
-      // saldo e A QUEM pedir, pelo nome, em vez de mandar comprar.
+      // saldo e A QUEM pedir, pelo nome, em vez de mandar comprar. A conta
+      // ligada ao contrato (08/10) lê o nome do contrato e da titular.
       if (membro) {
-        const dono = (await nomeDoDono(userId, tx)) ?? "quem administra a conta";
-        falta.message = fraseDosCreditosDaEquipe(dono, { necessario: quantidade, disponivel });
+        const { frase, dono } = await fraseSemSaldoDaCarteira(membro, { necessario: quantidade, disponivel }, tx);
+        falta.message = frase;
         falta.equipe = { dono };
       }
       throw falta;

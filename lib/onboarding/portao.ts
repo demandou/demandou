@@ -94,7 +94,10 @@ export async function garantirPrimeiroProjeto(
   // Membro da equipe não cria projeto: usa os que o dono liberou (01/10). A
   // invariante "membro ativo não tem projeto próprio" (lib/equipe/conta.ts)
   // depende de esta porta também ficar fechada.
-  if (await membroAtivo(userId)) return null;
+  // A conta ligada ao contrato (08/10) tem o próprio projeto (um por pessoa):
+  // ela segue o caminho de sempre.
+  const membro = await membroAtivo(userId);
+  if (membro && membro.origem !== "contrato") return null;
   const existente = await prisma.project.findFirst({
     where: { userId },
     orderBy: { createdAt: "asc" },
