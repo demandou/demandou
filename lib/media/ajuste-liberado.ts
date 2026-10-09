@@ -9,7 +9,7 @@ import { abrirPedido, executarPedido, type AcaoDoPedido } from "@/lib/media/pedi
 import { lerPedidoDoCard } from "@/lib/media/pedido-do-card-estado";
 import { marcarEmRevisao } from "@/lib/pipeline/revisao-do-card";
 import { blocoDaMemoriaDoCliente } from "@/lib/cerebro/contexto";
-import { devolverOQueNaoSaiu, type Mensagem, type MotivoAceito } from "@/lib/credits/ajuste-servidor";
+import { anotarCobrancaDoVideo, devolverOQueNaoSaiu, type Mensagem, type MotivoAceito } from "@/lib/credits/ajuste-servidor";
 import { acoesSemCusto, creditosNaoEntregues, type PedidoDeAjuste } from "@/lib/credits/ajuste";
 
 /**
@@ -117,6 +117,12 @@ export async function executarAjusteLiberado(args: {
 
     case "video_ia": {
       const r = await regerarVideoDoDia({ runId: card.runId, dayOfWeek: card.dayOfWeek, userId, cortesia: liberacao.cortesia });
+      // A fila cobra na carteira de vídeo por esta referência: o admin devolve por ela se reconhecer o erro.
+      if (r.ok && !liberacao.cortesia && pedido.postId) {
+        await anotarCobrancaDoVideo({ postId: pedido.postId, pedidoId: pedido.id, referencia: r.referencia, creditos: r.custo }).catch((e) =>
+          console.warn("[ajuste] referência do vídeo não anotada:", e instanceof Error ? e.message : e)
+        );
+      }
       const resposta = r.ok
         ? `Pedi o vídeo de novo para a Diana: ${r.segundos}s na qualidade ${r.qualidade === "cheio" ? "Cheia" : "Rápida"}, ${r.custo > 0 ? `${r.custo} créditos de vídeo` : "sem cobrança"}. ` +
           (r.geracoes > 1 ? `São ${r.geracoes} trechos encadeados, cada um leva de 1 a 5 minutos. ` : "Leva de 1 a 5 minutos. ") +

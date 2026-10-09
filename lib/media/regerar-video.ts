@@ -21,7 +21,7 @@ import { geracoesDoVideo } from "@/lib/credits/video-tabela";
  * diz na hora que o vídeo está sendo gerado.
  */
 export type ResultadoDaRegeracao =
-  | { ok: true; custo: number; segundos: number; geracoes: number; qualidade: string }
+  | { ok: true; custo: number; segundos: number; geracoes: number; qualidade: string; referencia: string }
   | { ok: false; motivo: string };
 
 /** O pedido de vídeo é de refazer? "gere o vídeo de novo", "o vídeo falhou". */
@@ -114,5 +114,6 @@ export async function regerarVideoDoDia(args: {
   });
   await prisma.pipelineRun.update({ where: { id: args.runId }, data: { logs: logs as never } }).catch(() => {});
 
-  return { ok: true, custo: args.cortesia ? 0 : saldo.custo, segundos: original.segundos, geracoes: geracoesDoVideo(original.segundos), qualidade: original.qualidade };
+  // A referência do trabalho novo: é a chave do débito na carteira de vídeo, que o admin devolve se reconhecer o erro (09/10).
+  return { ok: true, custo: args.cortesia ? 0 : saldo.custo, segundos: original.segundos, geracoes: geracoesDoVideo(original.segundos), qualidade: original.qualidade, referencia: refeito.referencia! };
 }

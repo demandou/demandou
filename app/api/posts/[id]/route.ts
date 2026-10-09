@@ -7,37 +7,43 @@ import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { registrarAtoNaPeca } from "@/lib/cerebro/captura";
 import type { AtoDaPeca } from "@/lib/cerebro/tipos";
 import { arteCoerenteComOTexto } from "@/lib/squad/coerencia-da-arte";
-import { abrirPedido, executarPedido } from "@/lib/media/pedido-do-card";
+import { avisarArteDaLegenda } from "@/lib/credits/ajuste-servidor";
 import { frasesDoClienteNaEdicao } from "@/lib/squad/guarda-do-conteudo-proprio";
 
 /**
  * O CLIENTE EDITOU A LEGENDA E A ARTE FICOU DE OUTRO ASSUNTO? (05/10, noite)
- * O JEV confere a frase desenhada na imagem contra o texto novo; se não
- * conversa mais, a arte é refeita pelo mesmo caminho do chat do card (a frase
- * nasce do texto novo), e o cliente vê no card. Nada aqui segura a resposta.
+ * O JEV confere a frase desenhada na imagem contra o texto novo.
+ *
+ * DESDE 09/10 (decisão do Bruno) A ARTE NÃO É MAIS REFEITA DE GRAÇA: a edição
+ * é da pessoa, então refazer é "pedi diferente" e cobra. O pedido fica
+ * guardado no card do dia (o do Paulo, que o quadro abre), e o chat e o sino
+ * dizem o custo e o saldo antes (lib/credits/ajuste-servidor.ts,
+ * `avisarArteDaLegenda`); nada é refeito até a pessoa tocar em Refazer a arte.
+ * Nada aqui segura a resposta.
  */
-async function arteAcompanhaOTexto(post: { id: string; projectId: string; runId: string | null; mediaType: string | null; metadata: unknown }, userId: string, texto: string): Promise<void> {
+async function arteAcompanhaOTexto(post: { id: string; projectId: string; runId: string | null; dayOfWeek: number | null; mediaType: string | null; metadata: unknown; scheduledAt: Date | null }, userId: string, texto: string): Promise<void> {
   try {
-    if (post.mediaType !== "image" || !post.runId) return;
+    if (post.mediaType !== "image" || !post.runId || !post.dayOfWeek) return;
     const frase = (post.metadata as { frase?: unknown } | null)?.frase;
     if (typeof frase !== "string" || !frase.trim() || !texto.trim()) return;
     const c = await arteCoerenteComOTexto({ projectId: post.projectId, texto, arte: { frase }, etapa: "arte-coerencia" });
     if (c.coerente !== false) return;
-    const card = await prisma.campaignCard.findFirst({
-      where: { postId: post.id, runId: post.runId, cardType: { notIn: ["media", "publish", "preview", "research"] }, NOT: { status: "archived" } },
-      select: { id: true, agentName: true, dayOfWeek: true },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!card?.dayOfWeek) return;
-    const mensagem = "A legenda foi editada e a frase da imagem ficou de outro assunto: refaça a arte com uma frase que nasça do texto novo.";
-    const aberto = await abrirPedido({ cardId: card.id, mensagem, agenteNome: card.agentName });
-    if (aberto.jaFazendo) return;
-    await executarPedido({
-      cardId: card.id,
+    // O card do dia (o do Paulo) primeiro: é ele que o quadro abre e que refaz a arte de todas as redes do dia.
+    const incluir = { metadata: true, agentName: true, projectId: true, scheduledDate: true, project: { select: { userId: true } } } as const;
+    const card =
+      (await prisma.campaignCard.findFirst({ where: { runId: post.runId, dayOfWeek: post.dayOfWeek, cardType: "publish", NOT: { status: "archived" } }, select: { id: true, ...incluir }, orderBy: { createdAt: "desc" } })) ??
+      (await prisma.campaignCard.findFirst({ where: { postId: post.id, runId: post.runId, cardType: { notIn: ["media", "publish", "preview", "research"] }, NOT: { status: "archived" } }, select: { id: true, ...incluir }, orderBy: { createdAt: "desc" } }));
+    if (!card) return;
+    const postsDoDia = await prisma.post.findMany({ where: { runId: post.runId, dayOfWeek: post.dayOfWeek, status: { notIn: ["published", "publishing", "cancelled"] } }, select: { platform: true } });
+    const quando = (post.scheduledAt ?? card.scheduledDate)?.toISOString().slice(0, 10);
+    await avisarArteDaLegenda({
+      card: { id: card.id, projectId: card.projectId, projectUserId: card.project.userId, metadata: card.metadata, agentName: card.agentName },
       userId,
-      mensagem,
-      slideIndex: null,
-      acoesProntas: [{ tipo: "arte", instrucao: mensagem, cor: null, lamina: null, marcaToda: false }],
+      postId: post.id,
+      frase,
+      redes: [...new Set(postsDoDia.map((p) => p.platform))],
+      formato: "image",
+      link: `/projects/${post.projectId}/live?card=${card.id}${quando ? `&semana=${quando}` : ""}`,
     });
   } catch (e) {
     console.warn("[posts] arte acompanha o texto:", e instanceof Error ? e.message : e);
@@ -201,7 +207,7 @@ export async function PATCH(
       data: { content: body.content },
     });
     const texto = body.content;
-    after(() => arteAcompanhaOTexto({ id: post.id, projectId: post.projectId, runId: post.runId, mediaType: post.mediaType, metadata: post.metadata }, userId, texto));
+    after(() => arteAcompanhaOTexto({ id: post.id, projectId: post.projectId, runId: post.runId, dayOfWeek: post.dayOfWeek, mediaType: post.mediaType, metadata: post.metadata, scheduledAt: post.scheduledAt }, userId, texto));
   }
 
   const virouArquivado = updated.status === "cancelled" && post.status !== "cancelled";

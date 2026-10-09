@@ -98,6 +98,15 @@ export type PedidoDeAjuste = {
   aParte?: { creditos: number; oQue: string } | null;
   criadoEm: string;
   motivoRegistrado?: MotivoRegistrado | null;
+  /**
+   * O MOTIVO JÁ DECIDIDO (09/10, decisão do Bruno): a arte refeita porque a
+   * pessoa editou a legenda à mão é consequência da edição dela, então é
+   * "pedi diferente" e cobra. A tela mostra só confirmar ou manter, e o
+   * servidor usa este motivo, qualquer que seja a categoria que chegue.
+   */
+  motivoFixo?: CategoriaDeReprovacao | null;
+  /** De onde o pedido nasceu: o chat (padrão) ou a legenda editada à mão. */
+  origem?: "chat" | "legenda" | null;
 };
 
 export const CHAVE_DO_PEDIDO_DE_AJUSTE = "pedidoDeAjuste";
@@ -193,6 +202,40 @@ export function custoDosTextos(textos: number, rotulo?: string): { creditos: num
   return { creditos: soma(partes), partes };
 }
 
+// ── A arte que a legenda editada à mão deixou de outro assunto ────────────
+
+/** A instrução do refazer: a mesma que o caminho antigo mandava, agora cobrada. */
+export const INSTRUCAO_DA_ARTE_PELA_LEGENDA = "A legenda foi editada e a frase da imagem ficou de outro assunto: refaça a arte com uma frase que nasça do texto novo.";
+
+/**
+ * O PEDIDO DA ARTE PELA LEGENDA (decisão do Bruno em 09/10): a pessoa editou a
+ * legenda à mão, o JEV viu que a frase da imagem ficou de outro assunto, e
+ * refazer a arte passa a COBRAR, com o custo e o saldo ditos antes. É "pedi
+ * diferente" (a mudança é dela), então não há motivo a escolher: só refazer
+ * ou manter. A conta é a mesma do pedido do dia: uma geração por proporção.
+ */
+export function planoDaArtePelaLegenda(p: { postId: string; redes: string[]; formato?: string }): Omit<PedidoDeAjuste, "id" | "criadoEm" | "mensagem" | "resumo" | "motivoRegistrado"> {
+  const formato = p.formato === "infographic" ? "infographic" : "image";
+  const custo = custoDoAjusteDoDia({ acoes: [{ tipo: "arte" }], textosDistintos: 0, formato, redes: p.redes, laminasAlvo: [], temArte: true });
+  return {
+    tipo: "dia",
+    slideIndex: null,
+    acoes: [{ tipo: "arte", instrucao: INSTRUCAO_DA_ARTE_PELA_LEGENDA, cor: null, lamina: null, marcaToda: false }],
+    postId: p.postId,
+    carteira: "plano",
+    creditos: custo.creditos,
+    partes: custo.partes,
+    motivoFixo: "pedi_diferente",
+    origem: "legenda",
+  };
+}
+
+/** O aviso no chat do card e no sino, com o custo e o saldo, antes de refazer. Sem travessão. */
+export function avisoDaArtePelaLegenda(p: { frase: string; creditos: number; saldo: number | null; interno?: boolean }): string {
+  const saldo = p.interno ? " (acesso interno: fica no extrato e não sai do saldo)" : p.saldo !== null ? `, e o seu saldo é de ${creditosPorExtenso(p.saldo)}` : "";
+  return `Você editou a legenda, e a frase da imagem ("${p.frase.slice(0, 120)}") ficou de outro assunto. Refazer a arte com uma frase do texto novo custa ${creditosPorExtenso(p.creditos)}${saldo}. Toque em Refazer a arte para seguir, ou mantenha a arte como está; nada é refeito nem cobrado sem o seu toque.`;
+}
+
 /** O pedido gera algo pago? Só então pede motivo e cobra. */
 export function geraAlgoPago(partes: ParteDoAjuste[]): boolean {
   return partes.some((p) => p.creditos > 0);
@@ -246,10 +289,11 @@ const creditosPorExtenso = (x: number, carteira: CarteiraDoAjuste = "plano") => 
  */
 export function perguntaDoMotivo(p: { resumo: string; creditos: number; carteira: CarteiraDoAjuste; saldo: number | null; interno?: boolean; aParte?: { creditos: number; oQue: string } | null; aindaGratis?: boolean }): string {
   const oQue = p.resumo ? `refazer ${p.resumo}` : "fazer esse ajuste";
-  const custo = p.aindaGratis
-    ? `Esta peça ainda tem um refazer grátis por erro confirmado: este ajuste não cobra.`
-    : `Se for gosto ou pedido diferente, ${oQue} custa ${creditosPorExtenso(p.creditos, p.carteira)}${p.interno ? " (acesso interno: fica no extrato e não sai do saldo)" : p.saldo !== null ? `, e o seu saldo é de ${creditosPorExtenso(p.saldo, p.carteira)}` : ""}.`;
-  const erro = "Se for erro da plataforma, eu confiro com as provas automáticas: confirmado, os créditos da peça voltam e o ajuste sai de graça; se não confirmar, cobro agora e um admin olha o caso, devolvendo se reconhecer o erro.";
+  const custo = `Se for gosto ou pedido diferente, ${oQue} custa ${creditosPorExtenso(p.creditos, p.carteira)}${p.interno ? " (acesso interno: fica no extrato e não sai do saldo)" : p.saldo !== null ? `, e o seu saldo é de ${creditosPorExtenso(p.saldo, p.carteira)}` : ""}.`;
+  // O refazer grátis de um erro já confirmado vale só para motivo de erro (09/10).
+  const erro = p.aindaGratis
+    ? "Esta peça tem um refazer grátis por um erro já confirmado: se o motivo for erro da plataforma, este ajuste não cobra."
+    : "Se for erro da plataforma, eu confiro com as provas automáticas: confirmado, os créditos da peça voltam e o ajuste sai de graça; se não confirmar, cobro agora e um admin olha o caso, devolvendo se reconhecer o erro.";
   const aParte = p.aParte ? ` ${p.aParte.oQue.charAt(0).toUpperCase()}${p.aParte.oQue.slice(1)} cobra à parte, ${creditosPorExtenso(p.aParte.creditos)}, quando a peça chegar lá.` : "";
   return `Antes de ${oQue}, me diga o motivo do ajuste nos botões abaixo. ${custo} ${erro}${aParte}`;
 }

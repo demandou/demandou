@@ -133,7 +133,20 @@ export type EstadoDaReprovacao = {
    * admin reconhece o erro depois, o que o ajuste cobrou volta junto, porque
    * erro reconhecido refaz de graça (lib/credits/ajuste.ts).
    */
-  ajuste?: { id: string; cobrado: number; devolvido: number } | null;
+  ajuste?: {
+    id: string;
+    cobrado: number;
+    devolvido: number;
+    /**
+     * De qual carteira o ajuste cobrou (09/10). "video": o vídeo por IA refeito,
+     * cobrado pela fila na carteira de vídeo pela `referencia` do trabalho; o
+     * admin devolve o que a fila cobrou de fato, também na carteira de vídeo.
+     */
+    carteira?: "plano" | "video";
+    referencia?: string | null;
+  } | null;
+  /** Créditos de VÍDEO devolvidos pelo admin (o ajuste do vídeo por IA), à parte dos do plano. */
+  creditosDeVideo?: number;
 };
 
 export function lerEstadoDaReprovacao(metadata: unknown): EstadoDaReprovacao | null {
@@ -150,8 +163,18 @@ export function lerEstadoDaReprovacao(metadata: unknown): EstadoDaReprovacao | n
  * (ajuste grátis não cobrou nada). Nunca negativo.
  */
 export function ajusteADevolver(e: EstadoDaReprovacao | null | undefined): number {
-  if (!e?.ajuste || e.refeitaGratisEm) return 0;
+  if (!e?.ajuste || e.refeitaGratisEm || e.ajuste.carteira === "video") return 0;
   return Math.max(0, Math.floor(e.ajuste.cobrado) - Math.floor(e.ajuste.devolvido ?? 0));
+}
+
+/**
+ * Quanto do ajuste do VÍDEO POR IA volta quando o admin reconhece o erro
+ * (09/10): o que a fila cobrou de fato (débito menos os estornos dela), menos
+ * o que já voltou. Puro: o cobrado de fato vem do extrato. Nunca negativo.
+ */
+export function ajusteDeVideoADevolver(e: EstadoDaReprovacao | null | undefined, cobradoPelaFila: number): number {
+  if (!e?.ajuste || e.refeitaGratisEm || e.ajuste.carteira !== "video" || !e.ajuste.referencia) return 0;
+  return Math.max(0, Math.floor(cobradoPelaFila) - Math.floor(e.ajuste.devolvido ?? 0));
 }
 
 /**

@@ -38,10 +38,12 @@ const {
   lerPedidoDeAjuste,
   refDoAjuste,
   refDaSobraDoAjuste,
+  planoDaArtePelaLegenda,
+  avisoDaArtePelaLegenda,
 } = await import("@/lib/credits/ajuste");
-const { CATEGORIAS_DE_REPROVACAO, lerEstadoDaReprovacao, refazerSemCobrar } = await import("@/lib/credits/reprovacao");
+const { CATEGORIAS_DE_REPROVACAO, ajusteADevolver, ajusteDeVideoADevolver, lerEstadoDaReprovacao, refazerSemCobrar } = await import("@/lib/credits/reprovacao");
 const { reprovarPeca, decidirReprovacaoPeloAdmin } = await import("@/lib/credits/reprovacao-servidor");
-const { guardarPedidoDeAjuste, confirmarMotivoDoAjuste, devolverOQueNaoSaiu, cancelarPedidoDeAjuste } = await import("@/lib/credits/ajuste-servidor");
+const { guardarPedidoDeAjuste, confirmarMotivoDoAjuste, devolverOQueNaoSaiu, cancelarPedidoDeAjuste, avisarArteDaLegenda, anotarCobrancaDoVideo } = await import("@/lib/credits/ajuste-servidor");
 const { SaldoInsuficiente } = await import("@/lib/credits");
 const { CREDIT_COSTS } = await import("@/lib/credits/tabela");
 const { gruposDeFormato } = await import("@/lib/media/formatos-das-redes");
@@ -77,8 +79,9 @@ const jevDeMentira = (noul: number): Perguntador => async (_ctx, perguntas) => {
  * extrato, os motivos gravados e os avisos. Os dois depósitos (o do ajuste e o
  * da reprovação) enxergam a mesma peça e o mesmo extrato, como no banco.
  */
-function mundo(o: { saldo?: number; cobrado?: number; provas?: Provas; status?: string; metadataDaPeca?: Record<string, unknown> } = {}) {
+function mundo(o: { saldo?: number; saldoDeVideo?: number; cobrado?: number; provas?: Provas; status?: string; metadataDaPeca?: Record<string, unknown> } = {}) {
   let saldo = o.saldo ?? 1000;
+  const sino: Array<Parameters<DepAj["notificar"]>[0]> = [];
   const extrato: Array<{ amount: number; refId: string; note: string; operation: string }> = [];
   const motivos = new Map<string, Parameters<DepRep["gravarMotivo"]>[0]>();
   const avisos: Array<Parameters<DepRep["notificar"]>[0]> = [];
@@ -187,8 +190,8 @@ function mundo(o: { saldo?: number; cobrado?: number; provas?: Provas; status?: 
       assert.equal(id, peca.id);
       peca.metadata = { ...peca.metadata, reprovacao: clone(estado) };
     },
-    async carteira() {
-      return { saldo, interno: false };
+    async carteira(_userId, qual) {
+      return { saldo: qual === "video" ? saldoDeVideo : saldo, interno: false };
     },
     async fraseDoMembro() {
       return null;
@@ -214,8 +217,34 @@ function mundo(o: { saldo?: number; cobrado?: number; provas?: Provas; status?: 
       return { duplicado: false, balance: saldo };
     },
     reprovar: (a) => reprovarPeca(a, depRep),
+    async notificar(a) {
+      sino.push(a);
+    },
     agora: () => new Date("2026-10-09T12:00:00-03:00"),
     novoId: () => `aj${++seq}`,
+  };
+  // A CARTEIRA DE VÍDEO e o extrato da fila do vídeo por IA (09/10, ponto 4 do Bruno).
+  let saldoDeVideo = o.saldoDeVideo ?? 0;
+  const extratoDeVideo: Array<{ amount: number; refId: string; operation: string }> = [];
+  depRep.cobradoDoVideo = async (referencia) => {
+    const debito = extratoDeVideo.filter((l) => l.operation === "video_ia" && l.refId === referencia).reduce((s, l) => s - l.amount, 0);
+    const estornos = extratoDeVideo.filter((l) => l.operation === "estorno_video_ia" && (l.refId === referencia || l.refId === `${referencia}:sobra`)).reduce((s, l) => s + l.amount, 0);
+    return Math.max(0, debito - estornos);
+  };
+  depRep.creditarVideo = async (a) => {
+    if (extratoDeVideo.some((l) => l.refId === a.refId && l.amount > 0 && l.operation === "reprovacao_devolucao")) return { duplicado: true };
+    saldoDeVideo += a.quantidade;
+    extratoDeVideo.push({ amount: a.quantidade, refId: a.refId, operation: "reprovacao_devolucao" });
+    return { duplicado: false };
+  };
+  /** A fila cobra (e às vezes estorna parte) como lib/media/video-por-ia.ts faz. */
+  const filaDoVideo = (referencia: string, debito: number, estornoDaSobra = 0) => {
+    saldoDeVideo -= debito;
+    extratoDeVideo.push({ amount: -debito, refId: referencia, operation: "video_ia" });
+    if (estornoDaSobra > 0) {
+      saldoDeVideo += estornoDaSobra;
+      extratoDeVideo.push({ amount: estornoDaSobra, refId: `${referencia}:sobra`, operation: "estorno_video_ia" });
+    }
   };
   return {
     dep,
@@ -227,6 +256,9 @@ function mundo(o: { saldo?: number; cobrado?: number; provas?: Provas; status?: 
     avisos,
     admins,
     debitos,
+    sino,
+    filaDoVideo,
+    saldoDeVideo: () => saldoDeVideo,
     saldo: () => saldo,
     recarregar: (n: number) => {
       saldo += n;
@@ -372,16 +404,97 @@ test("erro confirmado: os créditos da peça voltam, o ajuste sai grátis com li
   assert.match(m.avisos[0]!.texto, /ajuste que você pediu sai sem cobrança/);
 });
 
-test("a peça que já tinha um refazer grátis (erro confirmado antes) usa ele no ajuste, mesmo com motivo gosto", async () => {
+test("o refazer grátis de um erro confirmado vale só para ajuste por erro: por gosto cobra, e o grátis continua guardado", async () => {
   const m = mundo({ saldo: 0 });
   const r0 = await reprovarPeca({ postId: "post1", userId: "dono", categoria: "marca_errada", texto: "", provas: provasLimpas({ identidade: { aprovada: false } }) }, m.depRep);
   assert.ok(r0.ok && r0.estado.situacao === "devolvido");
   m.peca.status = "draft";
+  assert.equal(m.saldo(), 57, "a peça voltou");
+  // 1. Ajuste por gosto: cobra, mesmo com o refazer grátis guardado.
   const { pedido } = await pedir(m);
+  assert.match(m.card.chat.at(-1)!.content, /se o motivo for erro da plataforma, este ajuste não cobra/);
   const r = await confirmarMotivoDoAjuste({ cardId: "card1", userId: "dono", pedidoId: pedido.id, categoria: "gosto" }, m.dep);
   assert.ok(r.ok);
-  assert.ok(r.cortesia);
-  assert.equal(r.cobrado, 0);
+  assert.equal(r.cortesia, null, "gosto não usa o refazer grátis");
+  assert.equal(r.cobrado, 42);
+  assert.equal(m.saldo(), 15);
+  const guardado = lerEstadoDaReprovacao(m.peca.metadata)!;
+  assert.equal(guardado.id, r0.estado.id, "o ajuste por gosto não apaga o estado do erro confirmado");
+  assert.equal(refazerSemCobrar(guardado), true, "o refazer grátis continua valendo");
+  assert.equal(m.motivos.size, 2, "o motivo do gosto fica no registro mesmo assim");
+  // 2. Ajuste por erro: usa o refazer grátis guardado, mesmo sem a conferência confirmar de novo.
+  const { pedido: p2 } = await pedir(m, "a arte ainda está com a cor errada");
+  const r2 = await confirmarMotivoDoAjuste({ cardId: "card1", userId: "dono", pedidoId: p2.id, categoria: "outro", texto: "a arte ainda está com a cor errada" }, m.dep);
+  assert.ok(r2.ok);
+  assert.ok(r2.cortesia, "erro usa o refazer grátis");
+  assert.equal(r2.cobrado, 0);
+  assert.equal(m.saldo(), 15);
+  assert.ok(lerEstadoDaReprovacao(m.peca.metadata)?.refeitaGratisEm, "e ele fica usado");
+});
+
+test("a legenda editada à mão que deixou a arte de outro assunto: aviso com custo e saldo antes, e refazer cobra como pedi diferente", async () => {
+  const m = mundo({ saldo: 100 });
+  const card = { id: "card1", projectId: "proj1", projectUserId: "dono", metadata: {}, agentName: "Paulo Publisher" };
+  const a = await avisarArteDaLegenda({ card, userId: "dono", postId: "post1", frase: "Gestão de tempo", redes: ["instagram"], formato: "image", link: "/projects/proj1/live?card=card1" }, m.dep);
+  assert.ok(a.avisado);
+  const pedido = lerPedidoDeAjuste(m.card.metadata)!;
+  assert.equal(pedido.motivoFixo, "pedi_diferente");
+  assert.equal(pedido.origem, "legenda");
+  assert.equal(pedido.creditos, CREDIT_COSTS.imagem_geracao);
+  assert.equal(m.debitos.length, 0, "nada cobrado antes do toque");
+  assert.equal(m.card.chat.length, 1, "só a fala do agente: a pessoa não escreveu nada");
+  assert.match(m.card.chat[0].content, /42 créditos/);
+  assert.match(m.card.chat[0].content, /saldo é de 100 créditos/);
+  assert.equal(m.sino.length, 1);
+  assert.equal(m.sino[0].link, "/projects/proj1/live?card=card1");
+  assert.match(m.sino[0].chave ?? "", /^reprovacao:post1:legenda:/);
+  for (const t of [m.card.chat[0].content, m.sino[0].titulo, m.sino[0].texto]) assert.ok(!TRAVESSAO.test(t), t);
+  // Com um pedido esperando no card, outro aviso não passa por cima.
+  const deNovo = await avisarArteDaLegenda({ card: { ...card, metadata: m.card.metadata }, userId: "dono", postId: "post1", frase: "x", redes: ["instagram"], link: "/x" }, m.dep);
+  assert.deepEqual(deNovo, { avisado: false, porque: "ja_ha_pedido" });
+  // Refazer: o motivo é o decidido (pedi diferente), mesmo que chegue outro.
+  const r = await confirmarMotivoDoAjuste({ cardId: "card1", userId: "dono", pedidoId: pedido.id, categoria: "marca_errada" }, m.dep);
+  assert.ok(r.ok);
+  assert.equal(r.registrado.categoria, "pedi_diferente");
+  assert.equal(r.cobrado, 42);
+  assert.equal(m.saldo(), 58);
+  assert.equal(m.provasPedidas(), 0, "pedi diferente não roda as provas");
+  // O plano é o pedido do dia: a arte refeita, uma geração por proporção das redes do dia.
+  const plano = planoDaArtePelaLegenda({ postId: "p", redes: ["instagram", "linkedin"] });
+  assert.equal(plano.creditos, CREDIT_COSTS.imagem_geracao * gruposDeFormato(["instagram", "linkedin"], "image").length);
+  assert.deepEqual((plano.acoes as Array<{ tipo: string }>).map((x) => x.tipo), ["arte"]);
+  assert.ok(!TRAVESSAO.test(avisoDaArtePelaLegenda({ frase: "x", creditos: 42, saldo: null, interno: true })));
+});
+
+test("vídeo por IA refeito no ajuste: o admin que reconhece o erro devolve também a carteira de vídeo, o que a fila cobrou de fato, uma vez só", async () => {
+  const m = mundo({ saldo: 100, saldoDeVideo: 1000, cobrado: 500 });
+  const card = { id: "card1", projectId: "proj1", projectUserId: "dono", metadata: {}, agentName: "Paulo Publisher" };
+  const { pedido } = await guardarPedidoDeAjuste(
+    { card, userId: "dono", mensagem: "gere o vídeo de novo", plano: { tipo: "video_ia", slideIndex: null, postId: "post1", carteira: "video", cobradoFora: true, creditos: 390, partes: [{ chave: "video", rotulo: "o vídeo do dia", creditos: 390 }] } },
+    m.dep
+  );
+  const r = await confirmarMotivoDoAjuste({ cardId: "card1", userId: "dono", pedidoId: pedido.id, categoria: "outro", texto: "o vídeo saiu sem nada a ver com o post" }, m.dep);
+  assert.ok(r.ok);
+  assert.equal(r.registrado.situacao, "em_analise");
+  assert.equal(r.cobrado, 0, "a fila cobra, não o pedido");
+  assert.equal(m.debitos.length, 0);
+  // A fila cobra 390 e devolve 130 de uma geração que não saiu.
+  m.filaDoVideo("post1:refeito-1", 390, 130);
+  assert.ok(await anotarCobrancaDoVideo({ postId: "post1", pedidoId: pedido.id, referencia: "post1:refeito-1", creditos: 390 }, m.dep));
+  const estado = lerEstadoDaReprovacao(m.peca.metadata)!;
+  assert.equal(estado.ajuste?.carteira, "video");
+  assert.equal(ajusteADevolver(estado), 0, "o ajuste de vídeo não volta em créditos do plano");
+  assert.equal(ajusteDeVideoADevolver(estado, 260), 260);
+  const d = await decidirReprovacaoPeloAdmin({ admin: { id: "adm", email: "a@b" }, id: r.registrado.reprovacaoId, decisao: "devolver" }, m.depRep);
+  assert.ok(d.ok);
+  assert.equal(d.estado.creditosDeVideo, 260, "o que a fila cobrou menos o que ela mesma devolveu");
+  assert.equal(m.saldoDeVideo(), 1000, "a carteira de vídeo volta inteira");
+  assert.equal(m.saldo(), 100 + 57, "e a peça volta no plano, como em toda reprovação");
+  assert.match(m.avisos.at(-1)!.titulo, /de vídeo/);
+  const deNovo = await decidirReprovacaoPeloAdmin({ admin: { id: "adm", email: "a@b" }, id: r.registrado.reprovacaoId, decisao: "devolver" }, m.depRep);
+  assert.equal(deNovo.ok, false);
+  assert.equal(m.saldoDeVideo(), 1000);
+  assert.equal(ajusteDeVideoADevolver(lerEstadoDaReprovacao(m.peca.metadata), 260), 0, "o refazer grátis ficou usado: nada mais volta");
 });
 
 test("erro não confirmado: cobra agora, vai ao admin, e o admin que reconhece o erro devolve a peça E o ajuste, uma vez só", async () => {

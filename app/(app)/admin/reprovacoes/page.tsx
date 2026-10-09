@@ -95,6 +95,12 @@ export default async function ReprovacoesPage() {
                         </p>
                         <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                           {NOME_DA_CATEGORIA[m.categoria]}
+                          {/* O pedido de ajuste do chat (09/10): já foi refeito e cobrado; devolver inclui o ajuste. */}
+                          {provas?.origem === "ajuste" && (
+                            <span className="ml-2 text-[11px] font-normal" style={{ color: "var(--text-muted)" }}>
+                              pedido de ajuste pelo chat, já refeito e cobrado: devolver inclui o que o ajuste cobrou
+                            </span>
+                          )}
                         </p>
                         <p className="text-sm" style={{ color: "var(--text-primary)" }}>
                           {m.texto ? `"${m.texto}"` : "Sem texto do cliente."}
