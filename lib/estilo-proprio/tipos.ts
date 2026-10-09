@@ -37,11 +37,22 @@ import { DOLAR_POR_IMAGEM, REAIS_POR_CREDITO, REAIS_POR_DOLAR } from "@/lib/cred
 
 /** As quatro prévias de cada rodada, na proporção de cada peça. */
 export const PECAS_DA_PREVIA = [
-  { id: "thumb", rotulo: "Thumb do vídeo", proporcao: "16:9", largura: 1280, altura: 720, comTitulo: true },
-  { id: "post", rotulo: "Post", proporcao: "4:5", largura: 1080, altura: 1350, comTitulo: true },
-  { id: "vertical", rotulo: "Vídeo vertical", proporcao: "9:16", largura: 1080, altura: 1920, comTitulo: false },
-  { id: "carrossel", rotulo: "Capa do carrossel", proporcao: "4:5", largura: 1080, altura: 1350, comTitulo: true },
+  { id: "thumb", rotulo: "Thumb do vídeo", proporcao: "16:9", largura: 1280, altura: 720, comTitulo: true, comPessoa: true },
+  { id: "post", rotulo: "Post", proporcao: "4:5", largura: 1080, altura: 1350, comTitulo: true, comPessoa: false },
+  { id: "vertical", rotulo: "Vídeo vertical", proporcao: "9:16", largura: 1080, altura: 1920, comTitulo: false, comPessoa: true },
+  { id: "carrossel", rotulo: "Capa do carrossel", proporcao: "4:5", largura: 1080, altura: 1350, comTitulo: true, comPessoa: false },
 ] as const;
+
+/**
+ * A GUARDA DAS PEÇAS COM APRESENTADOR (thumb e vídeo vertical), aprendida na
+ * primeira rodada real (08/10, projeto de teste): a guarda do vídeo ("pessoa
+ * só de costas, em silhueta ou longe") derrubou a thumb e fez o vertical só
+ * passar com o rosto desfocado, porque a peça PEDE um apresentador de frente.
+ * Aqui a pessoa é fictícia e genérica, com o rosto natural; o que continua
+ * proibido é a pessoa real ou famosa, o texto e a colagem.
+ */
+export const GUARDA_DA_PREVIA_COM_PESSOA =
+  " One single image of one scene, not a grid, not a split panel, not a collage. No text, no letters, no captions, no logos, no watermark. The presenter is a generic fictional person, not a real contemporary person or public figure, shown naturally and in focus, never blurred, pixelated or censored. Nothing sensual.";
 
 export type PecaDaPrevia = (typeof PECAS_DA_PREVIA)[number]["id"];
 export type FichaDaPeca = (typeof PECAS_DA_PREVIA)[number];

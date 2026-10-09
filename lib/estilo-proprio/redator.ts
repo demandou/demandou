@@ -3,7 +3,12 @@ import { extrairJson } from "@/lib/media/diretor-de-montagem";
 import { FAMILIA, familiaPorPalavras, GUARDA_DA_IMAGEM_ESTILIZADA } from "@/lib/media/editor-por-comando/linguagem";
 import { nomeDaCorPuro } from "@/lib/modelos-de-arte/prompt-do-modelo";
 import { semTravessao } from "@/lib/biblioteca-de-design/tipos";
-import { normalizarEstiloEscrito, PECAS_DA_PREVIA, type EstiloEscrito } from "@/lib/estilo-proprio/tipos";
+import { GUARDA_DA_PREVIA_COM_PESSOA, normalizarEstiloEscrito, PECAS_DA_PREVIA, type EstiloEscrito, type PecaDaPrevia } from "@/lib/estilo-proprio/tipos";
+
+/** A guarda de cada peça: com apresentador (thumb, vertical) o rosto fictício aparece natural; sem ele, a guarda do vídeo. */
+export function guardaDaPeca(peca: PecaDaPrevia): string {
+  return PECAS_DA_PREVIA.find((p) => p.id === peca)?.comPessoa ? GUARDA_DA_PREVIA_COM_PESSOA : GUARDA_DA_IMAGEM_ESTILIZADA;
+}
 
 /**
  * O REDATOR DO MEU ESTILO (08/10/2026): o Claude SÓ ESCREVE. A fala simples
@@ -58,6 +63,7 @@ Regras de cada campo:
   . "post": a arte vertical de um post, a cena do estilo com uma zona quieta embaixo ou em cima para o título em código;
   . "vertical": um quadro do vídeo vertical editado: o apresentador anônimo falando, com UM elemento gráfico do estilo ao lado dele (painel, recorte de papel, objeto, ilustração), como ficaria dentro do vídeo;
   . "carrossel": a capa do carrossel, a cena mais forte do estilo com uma zona quieta grande para o título em código.
+  Na thumb e no vertical o apresentador é uma pessoa fictícia e genérica, de frente, com o rosto natural e em foco (nunca desfocado); o que não pode é pessoa real ou famosa.
 - A cor da marca entra só nos detalhes e acentos (objetos, luz, roupa, um elemento), nunca tingindo a foto inteira. Escreva "brand colors only as small accents" em cada prompt de prévia.
 - Fidelidade: traduza o que o cliente quis, sem trocar por outro estilo. O que ele disse que tem, tem; o que ele disse que não quer, não aparece em lugar nenhum.
 - Sem travessão (o sinal "—") em texto nenhum; use vírgula, dois-pontos ou ponto.`;
@@ -96,7 +102,7 @@ export function estiloDeReserva(pedido: string, c: ContextoDoEstilo): EstiloEscr
   const cores = coresEmTexto(c.paleta);
   const acentos = " Brand colors only as small accents and details, never a flat color wash.";
   const cena = `${familia.semente}. As the client described it (Portuguese): "${fala.slice(0, 280)}".${c.nicho ? ` Field: ${semTravessao(c.nicho).slice(0, 100)}.` : ""}`;
-  const previa = (peca: string) => `${peca} ${cena}${acentos}${GUARDA_DA_IMAGEM_ESTILIZADA}`;
+  const previa = (peca: PecaDaPrevia, texto: string) => `${texto} ${cena}${acentos}${guardaDaPeca(peca)}`;
   return {
     resumo: `Montei uma primeira versão do seu estilo a partir do que você contou: ${fala.slice(0, 220)}${fala.length > 220 ? "..." : ""}. As cores da sua marca entram nos detalhes, nunca tingindo a foto.`,
     pontos: [fala.slice(0, 100), "As cores da marca nos detalhes", "Pessoa de verdade, nunca pessoa famosa", "Título em código, nunca desenhado na imagem"],
@@ -107,10 +113,10 @@ export function estiloDeReserva(pedido: string, c: ContextoDoEstilo): EstiloEscr
     carrossel: `Capa e lâminas do carrossel na mesma linguagem das artes: a capa com a cena mais forte e uma zona quieta grande para o título; as lâminas de dentro mais simples, com espaço para o texto em código.`,
     videoCurto: `Cenas geradas por IA na mesma linguagem: ${fala}. Luz e ambiente coerentes entre as cenas, câmera com movimento leve, nunca a pessoa famosa nem a marca de terceiros.`,
     previas: {
-      thumb: previa("Horizontal 16:9 video thumbnail: an anonymous presenter seen from the chest up on the left third, the environment of this style behind, a calm empty area on the right for a title added later in code."),
-      post: previa("Vertical 4:5 social post image: one clear scene of this style, a quiet area at the bottom for a headline added later in code."),
-      vertical: previa("Vertical 9:16 frame from an edited talking video: an anonymous presenter speaking, with one graphic element of this style beside them (a panel, a paper cut-out, an object or an illustration), as it would appear inside the video."),
-      carrossel: previa("Vertical 4:5 carousel cover: the strongest scene of this style, with a large quiet area for a headline added later in code."),
+      thumb: previa("thumb", "Horizontal 16:9 video thumbnail: a generic fictional presenter seen from the chest up on the left third, the environment of this style behind, a calm empty area on the right for a title added later in code."),
+      post: previa("post", "Vertical 4:5 social post image: one clear scene of this style, a quiet area at the bottom for a headline added later in code."),
+      vertical: previa("vertical", "Vertical 9:16 frame from an edited talking video: a generic fictional presenter speaking, with one graphic element of this style beside them (a panel, a paper cut-out, an object or an illustration), as it would appear inside the video."),
+      carrossel: previa("carrossel", "Vertical 4:5 carousel cover: the strongest scene of this style, with a large quiet area for a headline added later in code."),
     },
   };
 }
@@ -135,7 +141,7 @@ export async function escreverEstilo(pedido: string, c: ContextoDoEstilo, chamar
     // A guarda da imagem em todo prompt de prévia (o modelo de imagem desenha texto e gente famosa quando não se pede o contrário).
     for (const p of PECAS_DA_PREVIA) {
       if (!/accent/i.test(estilo.previas[p.id])) estilo.previas[p.id] = `${estilo.previas[p.id]} Brand colors only as small accents.`;
-      if (!/no text/i.test(estilo.previas[p.id])) estilo.previas[p.id] = `${estilo.previas[p.id]}${GUARDA_DA_IMAGEM_ESTILIZADA}`;
+      if (!/no text/i.test(estilo.previas[p.id])) estilo.previas[p.id] = `${estilo.previas[p.id]}${guardaDaPeca(p.id)}`;
     }
     return { estilo, origem: "redator", comPerfil };
   } catch (e) {

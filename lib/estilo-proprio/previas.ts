@@ -66,12 +66,13 @@ const ESQUEMA = {
           temTexto: { type: "BOOLEAN" },
           textoLido: { type: "STRING" },
           pessoaReconhecivel: { type: "BOOLEAN" },
+          rostoDesfocado: { type: "BOOLEAN" },
           assunto: { type: "STRING" },
           proibidosVistos: { type: "ARRAY", items: { type: "STRING" } },
           defeitos: { type: "STRING" },
           ambiente: { type: "STRING" },
         },
-        required: ["colagem", "paineis", "temTexto", "pessoaReconhecivel", "assunto", "proibidosVistos", "ambiente"],
+        required: ["colagem", "paineis", "temTexto", "pessoaReconhecivel", "rostoDesfocado", "assunto", "proibidosVistos", "ambiente"],
       },
     },
   },
@@ -84,14 +85,15 @@ Para cada imagem, em português, curto:
 - "paineis": quantos quadros distintos há (1 quando é uma cena só);
 - "temTexto": true se há qualquer texto, letra, número, placa, logotipo ou legenda;
 - "textoLido": o texto que dá para ler (vazio se não há);
-- "pessoaReconhecivel": true se há rosto nítido e de frente que identifica alguém, ou figura pública;
+- "pessoaReconhecivel": true SÓ se a pessoa parece alguém real e identificável (figura pública, celebridade, político, artista conhecido). Um apresentador genérico, de frente e com o rosto nítido, NÃO conta: é o que a peça pede;
+- "rostoDesfocado": true se um rosto aparece desfocado, pixelado, tarjado ou apagado;
 - "assunto": o que a imagem mostra, em uma frase concreta;
 - "ambiente": o lugar, a luz e as cores dominantes, em uma frase;
 - "proibidosVistos": os elementos que o ESTILO DO CLIENTE diz evitar e que aparecem (lista vazia se nenhum);
 - "defeitos": deformação, mão quebrada, borda branca, marca d'água (vazio se não há).
 Sem travessão.`;
 
-export type DescricaoDaPrevia = DescricaoDaImagem & { ambiente: string };
+export type DescricaoDaPrevia = DescricaoDaImagem & { ambiente: string; rostoDesfocado: boolean };
 
 /** Lê a resposta do olho para as peças, na ordem. Puro. */
 export function lerDescricoes(cru: unknown, quantas: number): Array<DescricaoDaPrevia | null> {
@@ -99,16 +101,21 @@ export function lerDescricoes(cru: unknown, quantas: number): Array<DescricaoDaP
   return Array.from({ length: quantas }, (_, i) => {
     const x = lista[i];
     if (!x || typeof x !== "object") return null;
-    return { ...lerDescricaoDaImagem(x), ambiente: String((x as Record<string, unknown>).ambiente ?? "").trim().slice(0, 240) };
+    const o = x as Record<string, unknown>;
+    return { ...lerDescricaoDaImagem(x), ambiente: String(o.ambiente ?? "").trim().slice(0, 240), rostoDesfocado: Boolean(o.rostoDesfocado) };
   });
 }
 
 export type DecisaoDaPrevia = "aprovar" | "refazer" | "tirar";
 
-/** Sem o JEV: o padrão seguro pelos fatos descritos. Puro. */
+/**
+ * Sem o JEV: o padrão seguro pelos fatos descritos. "pessoaReconhecivel" aqui
+ * é pessoa real ou famosa (o apresentador fictício de frente é o que a peça
+ * pede); o rosto desfocado é defeito. Puro.
+ */
 export function decisaoDeReserva(d: DescricaoDaPrevia | null, jaRefeita: boolean): DecisaoDaPrevia {
   if (!d) return "aprovar";
-  const ruim = d.paineis > 1 || d.temTexto || d.pessoaReconhecivel || d.proibidosVistos.length > 0;
+  const ruim = d.paineis > 1 || d.temTexto || d.pessoaReconhecivel || d.rostoDesfocado || d.proibidosVistos.length > 0;
   if (!ruim) return "aprovar";
   return jaRefeita ? "tirar" : "refazer";
 }
@@ -118,7 +125,8 @@ export function promptRefeito(prompt: string, d: DescricaoDaPrevia | null, evita
   const ordens: string[] = [];
   if (!d || d.paineis > 1) ordens.push("ONE single scene filling the frame: never a grid, a collage of separate pictures or split panels.");
   if (!d || d.temTexto) ordens.push("Absolutely no text, letters, numbers, signs, logos or captions anywhere.");
-  if (!d || d.pessoaReconhecivel) ordens.push("No recognizable face: the person is anonymous, generic, never a public figure.");
+  if (!d || d.pessoaReconhecivel) ordens.push("The person must be a generic fictional presenter, never a real contemporary person or public figure, with a natural face in focus.");
+  if (d?.rostoDesfocado) ordens.push("The face is shown naturally, sharp and in focus: never blurred, pixelated or censored.");
   if (d?.proibidosVistos.length) ordens.push(`Do not show: ${d.proibidosVistos.join(", ")}.`);
   if (evitar.length) ordens.push(`Never include: ${evitar.join(", ")}.`);
   return `${ordens.join(" ")} ${prompt}`.trim();
@@ -138,7 +146,7 @@ async function decidir(
       {
         projectId: ctx.projectId,
         etapa: "meu-estilo-previa",
-        state: { estiloDoCliente: { resumo: estilo.resumo, pontos: estilo.pontos, evitar: estilo.evitar }, regra: "prévia do estilo: uma cena só, sem texto, sem rosto reconhecível, no ambiente, na luz e nas cores que o estilo descreve, sem o que o estilo evita" },
+        state: { estiloDoCliente: { resumo: estilo.resumo, pontos: estilo.pontos, evitar: estilo.evitar }, regra: "prévia do estilo: uma cena só, sem texto, sem pessoa real ou famosa (o apresentador fictício de frente, com o rosto natural e em foco, é o que a thumb e o vídeo vertical pedem; rosto desfocado é defeito), no ambiente, na luz e nas cores que o estilo descreve, sem o que o estilo evita" },
       },
       Object.fromEntries(
         comDescricao.map((x) => [
@@ -154,10 +162,10 @@ async function decidir(
               descricaoDaImagem: x.descricao,
             },
             criteria: (x.jaRefeita
-              ? { aprovar: "uma cena só, sem texto, sem rosto reconhecível, no ambiente e nas cores do estilo, sem o que ele evita", tirar: "ainda é colagem, tem texto, rosto reconhecível, algo que o estilo evita, ou o ambiente e a luz não têm nada a ver com o estilo" }
+              ? { aprovar: "uma cena só, sem texto, sem pessoa real ou famosa, rosto natural e em foco, no ambiente e nas cores do estilo, sem o que ele evita", tirar: "ainda é colagem, tem texto, pessoa real ou famosa, rosto desfocado, algo que o estilo evita, ou o ambiente e a luz não têm nada a ver com o estilo" }
               : {
-                  aprovar: "uma cena só, sem texto, sem rosto reconhecível, no ambiente e nas cores do estilo, sem o que ele evita",
-                  refazer: "é colagem ou painéis, tem texto, rosto reconhecível, algo que o estilo evita, ou o ambiente e a luz fogem do estilo, mas um prompt corrigido resolveria",
+                  aprovar: "uma cena só, sem texto, sem pessoa real ou famosa, rosto natural e em foco, no ambiente e nas cores do estilo, sem o que ele evita",
+                  refazer: "é colagem ou painéis, tem texto, pessoa real ou famosa, rosto desfocado, algo que o estilo evita, ou o ambiente e a luz fogem do estilo, mas um prompt corrigido resolveria",
                   tirar: "a ideia da peça não serve para mostrar este estilo",
                 }) as Record<string, string>,
           },
