@@ -171,13 +171,35 @@ export function DestinosDoDia({
     }
   }
 
+  /**
+   * A conta que a tela mostra acesa para o post: post sem conta ativa sai pelo
+   * perfil, então é o perfil que ele representa.
+   */
+  function contaDoPost(rede: string) {
+    const daRedeContas = contas.filter((c) => c.platform === rede);
+    return (p: PostDoDestino) =>
+      (daRedeContas.find((c) => c.id === p.socialAccountId) ?? daRedeContas.find((c) => c.accountType === "personal") ?? daRedeContas[0])?.id;
+  }
+
+  /**
+   * Cria o lugar (feed, reel, story) numa conta a partir de um post dela, sem
+   * IA e sem custo, e já o deixa marcado para sair junto com o resto da rede.
+   */
+  async function criarLugarNaConta(base: PostDoDestino, lugar: FormatoDeDestino, contaId: string | undefined, marcar: boolean): Promise<string | null> {
+    const res = await fetch(`/api/posts/${base.id}/formato`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ formato: lugar, ...(contaId ? { accountId: contaId } : {}) }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok && res.status !== 409) throw new Error(data.error ?? "Não consegui marcar o lugar.");
+    const id: string | undefined = data.post?.id ?? data.postId;
+    return marcar && id ? id : null;
+  }
+
   /** Tira uma conta do dia: arquiva os posts dela (reversível), nunca a última. */
   async function tirarConta(rede: string, conta: Conta, daRede: PostDoDestino[]) {
-    // A mesma conta que a tela mostra acesa: post sem conta ativa sai pelo
-    // perfil, então é o perfil que ele representa.
-    const daRedeContas = contas.filter((c) => c.platform === rede);
-    const contaDe = (p: PostDoDestino) =>
-      (daRedeContas.find((c) => c.id === p.socialAccountId) ?? daRedeContas.find((c) => c.accountType === "personal") ?? daRedeContas[0])?.id;
+    const contaDe = contaDoPost(rede);
     const contasDaRede = new Set(daRede.map(contaDe));
     const daConta = daRede.filter((p) => contaDe(p) === conta.id);
     if (!daConta.length) return;
@@ -191,6 +213,22 @@ export function DestinosDoDia({
     }
     setTrabalhando(rede);
     try {
+      // O LUGAR NÃO SAI JUNTO COM A CONTA (09/10). O Bruno marcou story, o
+      // story nasceu só no @prdonaire, e ao trocar para o @demandoupostou ele
+      // foi arquivado com a conta: o feed saiu e o story sumiu sem aviso. O
+      // lugar que só esta conta tinha passa para as contas que ficam.
+      const ficam = daRede.filter((p) => contaDe(p) !== conta.id);
+      const lugaresQueFicam = new Set(ficam.map((p) => formatoDoPost(p.metadata, rede)));
+      const soDestaConta = [...new Set(daConta.map((p) => formatoDoPost(p.metadata, rede)))].filter((l) => !lugaresQueFicam.has(l));
+      const novos: string[] = [];
+      for (const lugar of soDestaConta) {
+        for (const outraConta of new Set(ficam.map(contaDe))) {
+          const base = ficam.find((p) => contaDe(p) === outraConta && p.status !== "published") ?? ficam.find((p) => contaDe(p) === outraConta);
+          if (!base) continue;
+          const id = await criarLugarNaConta(base, lugar, outraConta, true);
+          if (id) novos.push(id);
+        }
+      }
       for (const p of daConta) {
         await fetch(`/api/posts/${p.id}`, {
           method: "PATCH",
@@ -200,9 +238,13 @@ export function DestinosDoDia({
       }
       const prox = new Set(escolhidos);
       for (const p of daConta) prox.delete(p.id);
+      for (const id of novos) prox.add(id);
       aoEscolher(prox);
       await aoMudar();
-      toast.success(`${NOME[rede]}: não sai mais por ${conta.displayName ?? "esta conta"}.`);
+      toast.success(
+        `${NOME[rede]}: não sai mais por ${conta.displayName ?? "esta conta"}.` +
+          (soDestaConta.length ? ` ${soDestaConta.map((l) => rotuloDoFormatoNaRede(rede, l)).join(" e ")} passou para a conta que ficou.` : "")
+      );
     } catch {
       toast.error("Não consegui tirar a conta.");
     } finally {
@@ -280,17 +322,25 @@ export function DestinosDoDia({
     setTrabalhando(rede);
     try {
       if (doLugar.length === 0) {
-        const base = daRede.find((p) => p.status !== "published") ?? daRede[0];
-        const res = await fetch(`/api/posts/${base.id}/formato`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ formato: lugar }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          toast.error(data.error ?? "Não consegui marcar o lugar.");
+        // UM LUGAR EM CADA CONTA DO DIA (09/10): antes ele nascia só na
+        // primeira conta, e a rede com perfil e página publicava o story por
+        // uma só (ou por nenhuma, quando essa conta era tirada depois).
+        const contaDe = contaDoPost(rede);
+        const marcada = daRede.some((p) => escolhidos.has(p.id));
+        const novos: string[] = [];
+        try {
+          for (const contaId of new Set(daRede.map(contaDe))) {
+            const daConta = daRede.filter((p) => contaDe(p) === contaId);
+            const base = daConta.find((p) => p.status !== "published") ?? daConta[0];
+            if (!base) continue;
+            const id = await criarLugarNaConta(base, lugar, contaId, marcada);
+            if (id) novos.push(id);
+          }
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Não consegui marcar o lugar.");
           return;
         }
+        if (novos.length) aoEscolher(new Set([...escolhidos, ...novos]));
         toast.success(`${rotuloDoFormatoNaRede(rede, lugar)} marcado no ${NOME[rede]}, em rascunho.`);
       } else {
         // Desmarcar é arquivar o post daquele lugar, que é reversível pela

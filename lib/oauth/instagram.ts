@@ -220,6 +220,36 @@ async function waitForContainer(
   }
 }
 
+/**
+ * "MEDIA NOT FOUND" LOGO DEPOIS DO FINISHED (09/10). O story da Demandou das
+ * 9h e o do @prdonaire de 07/10 caíram com o código 24, subcódigo 2207006, no
+ * `media_publish` de um container que acabara de responder FINISHED; o story
+ * do @prdonaire de 09/10, igual, saiu. É a Meta ainda propagando o container:
+ * nada foi publicado nessa resposta, então tentar de novo não duplica. Duas
+ * novas tentativas, com espera crescente, e só para esse subcódigo.
+ */
+export function ehMidiaAindaNaoEncontrada(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /media_publish/.test(msg) && /"error_subcode"\s*:\s*2207006/.test(msg);
+}
+
+async function publicarContainer(
+  igUserId: string,
+  accessToken: string,
+  containerId: string,
+  esperas: number[] = [5_000, 12_000]
+): Promise<string> {
+  for (let tentativa = 0; ; tentativa++) {
+    try {
+      return await igPost(`${igUserId}/media_publish`, accessToken, { creation_id: containerId });
+    } catch (e) {
+      if (!ehMidiaAindaNaoEncontrada(e) || tentativa >= esperas.length) throw e;
+      console.warn(`[instagram] container ${containerId} ainda não encontrado no publish; nova tentativa em ${esperas[tentativa] / 1000} s`);
+      await new Promise((r) => setTimeout(r, esperas[tentativa]));
+    }
+  }
+}
+
 async function fetchPermalink(mediaId: string, accessToken: string): Promise<string | null> {
   try {
     const res = await fetch(`${GRAPH_V}/${mediaId}?fields=permalink&access_token=${accessToken}`);
@@ -245,9 +275,7 @@ export async function publishInstagramImage(
     caption: caption.slice(0, INSTAGRAM_MAX_CAPTION),
   });
   await waitForContainer(containerId, accessToken);
-  const mediaId = await igPost(`${igUserId}/media_publish`, accessToken, {
-    creation_id: containerId,
-  });
+  const mediaId = await publicarContainer(igUserId, accessToken, containerId);
   return { mediaId, url: await fetchPermalink(mediaId, accessToken) };
 }
 
@@ -279,9 +307,7 @@ export async function publishInstagramReels(
     share_to_feed: "true",
   });
   await waitForContainer(containerId, accessToken, 5 * 60_000);
-  const mediaId = await igPost(`${igUserId}/media_publish`, accessToken, {
-    creation_id: containerId,
-  });
+  const mediaId = await publicarContainer(igUserId, accessToken, containerId);
   return { mediaId, url: await fetchPermalink(mediaId, accessToken) };
 }
 
@@ -315,9 +341,7 @@ export async function publishInstagramStory(
     ...(ehVideo ? { video_url: mediaUrl } : { image_url: mediaUrl }),
   });
   await waitForContainer(containerId, accessToken, ehVideo ? 5 * 60_000 : 90_000);
-  const mediaId = await igPost(`${igUserId}/media_publish`, accessToken, {
-    creation_id: containerId,
-  });
+  const mediaId = await publicarContainer(igUserId, accessToken, containerId);
   // Story publicado devolve permalink em parte das contas e null em outras; o
   // null aqui não é falha, e a tela já trata post sem endereço.
   return { mediaId, url: await fetchPermalink(mediaId, accessToken) };
@@ -349,9 +373,7 @@ export async function publishInstagramCarousel(
     caption: caption.slice(0, INSTAGRAM_MAX_CAPTION),
   });
   await waitForContainer(containerId, accessToken);
-  const mediaId = await igPost(`${igUserId}/media_publish`, accessToken, {
-    creation_id: containerId,
-  });
+  const mediaId = await publicarContainer(igUserId, accessToken, containerId);
   return { mediaId, url: await fetchPermalink(mediaId, accessToken) };
 }
 
