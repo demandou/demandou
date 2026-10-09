@@ -89,6 +89,12 @@ export interface PedidoDeVideoDaFila {
    * original já tem débito, estorno e checkpoint gravados. Ver regerar-video.ts.
    */
   referencia?: string;
+  /**
+   * O VÍDEO REFEITO POR ERRO CONFIRMADO (09/10, pedido de ajuste com motivo):
+   * sai sem cobrança. Sem débito, nenhum estorno roda (estorno sem débito é
+   * dinheiro saindo pela porta).
+   */
+  cortesia?: { motivo: string } | null;
   prompt: string;
   narracao?: string;
   /** A voz escolhida na janela da campanha. A mesma em todas as gerações. */
@@ -180,8 +186,8 @@ export async function rodarVideoDaIa(pedido: PedidoDeVideoDaFila, opcoes: Opcoes
   const estourou = await tetoDoPlanoEstourado(pedido.userId, total);
   if (estourou) throw new Error(estourou);
 
-  // 1. Debita, uma vez só, da carteira de VÍDEO, a cadeia inteira.
-  if (!(await jaCobrado("video_ia", referencia))) {
+  // 1. Debita, uma vez só, da carteira de VÍDEO, a cadeia inteira (a cortesia não debita).
+  if (!pedido.cortesia && !(await jaCobrado("video_ia", referencia))) {
     await debitarVideo({
       userId: pedido.userId,
       quantidade: custo,
@@ -259,7 +265,7 @@ export async function rodarVideoDaIa(pedido: PedidoDeVideoDaFila, opcoes: Opcoes
      * (ou pausar esperando o Google), o crédito fica reservado no trabalho.
      */
     const ultimaTentativa = (opcoes.tentativa ?? MAX_TENTATIVAS) >= MAX_TENTATIVAS;
-    if (ultimaTentativa && !(await jaEstornado("estorno_video_ia", referencia))) {
+    if (!pedido.cortesia && ultimaTentativa && !(await jaEstornado("estorno_video_ia", referencia))) {
       await creditarVideo({
         userId: pedido.userId,
         quantidade: custo,
@@ -351,9 +357,10 @@ export async function rodarExtensaoDoVideo(pedido: PedidoDeExtensaoDaFila, opcoe
      * uma vez só, pela referência do passo.
      */
     const faltaram = totalDeGeracoes - (numero - 1);
-    const estorno = faltaram * creditosPorGeracao(original.qualidade);
+    // A cortesia (09/10) não debitou nada: não há o que devolver.
+    const estorno = original.cortesia ? 0 : faltaram * creditosPorGeracao(original.qualidade);
     const refDoEstorno = `${referencia}:sobra`;
-    if (!(await jaEstornado("estorno_video_ia", refDoEstorno))) {
+    if (estorno > 0 && !(await jaEstornado("estorno_video_ia", refDoEstorno))) {
       await creditarVideo({
         userId: original.userId,
         quantidade: estorno,
@@ -365,7 +372,7 @@ export async function rodarExtensaoDoVideo(pedido: PedidoDeExtensaoDaFila, opcoe
     await entregarVideo(original, pedido.blobUrl).catch(() => {});
     await registrarNoLog(
       original,
-      `O vídeo saiu com ${pedido.segundosAteAqui}s em vez de ${original.segundos}s: a geração ${numero} falhou nas ${MAX_TENTATIVAS} tentativas. ${estorno} créditos de vídeo devolvidos.`,
+      `O vídeo saiu com ${pedido.segundosAteAqui}s em vez de ${original.segundos}s: a geração ${numero} falhou nas ${MAX_TENTATIVAS} tentativas.${estorno > 0 ? ` ${estorno} créditos de vídeo devolvidos.` : ""}`,
       "warning"
     );
     throw erro;

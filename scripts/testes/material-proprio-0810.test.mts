@@ -401,7 +401,9 @@ test("a arte da peça começa pela foto escolhida, e sem foto para a peça nenhu
   const executar = fonte("lib/pipeline/executar.ts");
   assert.match(executar, /fotosDoPost: escolhaDaArte\.fotos/);
   assert.match(executar, /metadataDasFotosEscolhidas\(e\.fotos\)/, "as fotos ficam no post para o refazer partir delas");
-  for (const refazer of ["lib/pipeline/refazer-peca.ts", "lib/media/pedido-do-card.ts", "lib/vera/regerar-arte.ts", "app/api/campaign-cards/[id]/chat/route.ts", "lib/media/artes-aguardando-identidade.ts"]) {
+  // A rota do chat saiu da lista em 09/10: ela não desenha mais arte (o refazer
+  // pelo chat é o pedido do dia, em lib/media/pedido-do-card.ts, depois do motivo).
+  for (const refazer of ["lib/pipeline/refazer-peca.ts", "lib/media/pedido-do-card.ts", "lib/vera/regerar-arte.ts", "lib/media/artes-aguardando-identidade.ts"]) {
     assert.match(fonte(refazer), /fotosGravadasNosPosts\(/, `${refazer}: o refazer não troca a foto escolhida`);
   }
 });

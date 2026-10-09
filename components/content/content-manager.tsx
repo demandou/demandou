@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   ChevronLeft, ChevronRight, CalendarDays, Sparkles, Loader2, CheckCircle2, PencilLine, ArrowRight,
-  X, Clock, MessageCircle, Send, ThumbsDown, Image as ImageIcon,
+  X, Clock, MessageCircle, Send, Image as ImageIcon,
   Video, LayoutGrid, AlarmClock, Zap, Ban, RotateCcw, Download, AlertCircle,
   FileText, Search, Pencil, Globe, Bot,
   BarChart2, List, BookOpen, Archive, PieChart, Eye, MoreVertical, RefreshCw,
@@ -60,6 +60,11 @@ import { AvisoDaMontagem, type FalhaDaMontagem } from "@/components/video/aviso-
 import { alcanceDaReprovacao, rotuloDaReprovacao, avisoDaReprovacao, ESTADOS_MORTOS } from "@/lib/content/reprovacao";
 import { JanelaDeReprovacao, type ResultadoNaTela } from "@/components/posts/janela-de-reprovacao";
 import { EstadoDaReprovacaoNoCard } from "@/components/posts/estado-da-reprovacao";
+import { AcoesDoCard } from "@/components/posts/acoes-do-card";
+import { MotivoDoAjuste } from "@/components/posts/motivo-do-ajuste";
+import { BotaoDeFala } from "@/components/posts/botao-de-fala";
+import { EVENTO_DO_SALDO, lerPedidoDeAjuste } from "@/lib/credits/ajuste";
+import type { CategoriaDeReprovacao } from "@/lib/credits/reprovacao";
 import { etiquetaDaPeca } from "@/lib/posts/etiqueta-da-peca";
 import { cardsDaPeca, chaveDaPeca, familiaDaChave } from "@/lib/posts/cards-da-peca";
 import { chaveDaPecaDoVideo, pecaDoPost, postsDaMesmaPeca } from "@/lib/posts/peca-do-video";
@@ -1269,6 +1274,17 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
   const [chatMsg, setChatMsg] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   /**
+   * O PEDIR AJUSTE (09/10): o pedido que espera o motivo vive no card
+   * (metadata.pedidoDeAjuste); o saldo da carteira dele, a categoria sendo
+   * enviada e a frase de saldo insuficiente ficam aqui. O campo é a porta do
+   * botão "Pedir ajuste" do pé do card.
+   */
+  const pedidoDeAjuste = lerPedidoDeAjuste(localCard.metadata);
+  const [saldoDoAjuste, setSaldoDoAjuste] = useState<{ saldo: number; interno: boolean } | null>(null);
+  const [escolhendoMotivo, setEscolhendoMotivo] = useState<CategoriaDeReprovacao | null>(null);
+  const [semSaldoDoAjuste, setSemSaldoDoAjuste] = useState<string | null>(null);
+  const campoDoAjuste = useRef<HTMLTextAreaElement | null>(null);
+  /**
    * A REVISÃO QUE ACABOU DE SER PEDIDA, antes de o servidor responder.
    *
    * O servidor grava a marca no card (lib/pipeline/revisao-do-card.ts), mas
@@ -1492,6 +1508,8 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
    */
   const [pedido, setPedido] = useState<PedidoDoCard | null>(null);
   const [vigiarPedido, setVigiarPedido] = useState(0);
+  /** Sobe a cada resposta do chat aplicada na tela: a leitura mais velha que ela não sobrescreve. */
+  const versaoDoChat = useRef(0);
   useEffect(() => {
     if (card.cardType === "preview") return;
     let vivo = true;
@@ -1500,6 +1518,9 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
     let etapasProntas = -1;
     const olhar = async () => {
       try {
+        // A leitura que saiu ANTES de uma resposta do chat não pode apagá-la
+        // (09/10): o pedido de ajuste que chegou depois ficaria sem os botões.
+        const versao = versaoDoChat.current;
         const r = await fetch(`/api/campaign-cards/${card.id}/chat`);
         if (!r.ok || !vivo) return;
         const d = (await r.json()) as { chatHistory?: ChatMessage[]; pedido?: PedidoDoCard | null; metadata?: CampaignCard["metadata"]; content?: string | null; mediaUrl?: string | null } | null;
@@ -1507,10 +1528,11 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
         const p = d.pedido ?? null;
         const emCurso = pedidoEmCurso(p ? { pedidoDoChat: p } : null);
         setPedido(p);
+        const velha = versao !== versaoDoChat.current;
         setLocalCard((c) => ({
           ...c,
-          chatHistory: Array.isArray(d.chatHistory) ? d.chatHistory : c.chatHistory,
-          ...(d.metadata !== undefined ? { metadata: d.metadata } : {}),
+          ...(velha ? {} : { chatHistory: Array.isArray(d.chatHistory) ? d.chatHistory : c.chatHistory }),
+          ...(d.metadata !== undefined && !velha ? { metadata: d.metadata } : {}),
           ...(estavaFazendo && !emCurso ? { content: d.content ?? c.content, mediaUrl: d.mediaUrl ?? c.mediaUrl } : {}),
         }));
         // Cada etapa que acaba já aparece no card (o texto novo sai antes das
@@ -1527,6 +1549,8 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
           estavaFazendo = false;
           refreshDayPosts().catch(() => {});
           onWeekRefresh?.();
+          // O que não saiu do ajuste volta ao saldo no fim do pedido (09/10): a faixa relê.
+          window.dispatchEvent(new Event(EVENTO_DO_SALDO));
           if (p?.estado === "falhou") toast.error("O pedido não terminou. A resposta está no chat.");
           else toast.success("Pronto. O resultado já está neste card.");
         }
@@ -1572,6 +1596,21 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
+      // O PEDIDO DE AJUSTE (09/10): nada foi gerado; o agente perguntou o motivo
+      // no chat, com o custo, e os botões aparecem embaixo da pergunta.
+      versaoDoChat.current++;
+      if (data.pedidoDeAjuste) {
+        setLocalCard((c) => ({
+          ...c,
+          chatHistory: Array.isArray(data.chatHistory) ? data.chatHistory : c.chatHistory,
+          metadata: { ...(data.updatedMetadata ?? ((c.metadata as Record<string, unknown> | null) ?? {})), pedidoDeAjuste: data.pedidoDeAjuste },
+        }));
+        if (typeof data.saldo === "number") setSaldoDoAjuste({ saldo: data.saldo, interno: false });
+        setSemSaldoDoAjuste(null);
+        setChatMsg("");
+        return;
+      }
+
       // Pedido de um dia da campanha: virou tarefa no servidor (05/10).
       if (data.emAndamento || data.jaFazendo) {
         if (data.pedido) setPedido(data.pedido);
@@ -1602,15 +1641,13 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
         // A resposta do Vitor pode ser uma pergunta ou um pedido de "sim":
         // "Ajuste aplicado!" ali seria mentira.
         toast.success(data.aviso);
-      } else if (data.updatedMediaUrl) {
-        toast.success("Imagem regenerada com sucesso!");
-      } else if (data.mediaError) {
-        toast.error(`Prompt atualizado, mas imagem falhou: ${data.mediaError.slice(0, 80)}`);
-      } else {
-        toast.success("Ajuste aplicado!");
+      } else if (data.regraSalva) {
+        toast.success("Regra salva.");
       }
+      // Sem "Ajuste aplicado!" genérico (09/10): a resposta está no chat, e
+      // o que é pago só sai depois do motivo.
     } catch {
-      toast.error("Erro ao ajustar.");
+      toast.error("Não consegui mandar o pedido. Tente de novo.");
     } finally {
       setChatLoading(false);
       setRevisaoLocal(null);
@@ -1619,6 +1656,114 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
       onWeekRefresh?.();
     }
   }
+
+  /**
+   * O MOTIVO ESCOLHIDO NOS BOTÕES DO CHAT (09/10). O servidor aplica a regra da
+   * reprovação com motivo, cobra (ou dá a cortesia do erro confirmado) ANTES
+   * de gerar, e só então refaz. Sem saldo, nada é refeito e o pedido fica.
+   */
+  async function escolherMotivo(categoria: CategoriaDeReprovacao) {
+    const p = lerPedidoDeAjuste(localCard.metadata);
+    if (!p) return;
+    setEscolhendoMotivo(categoria);
+    setSemSaldoDoAjuste(null);
+    try {
+      const res = await fetch(`/api/campaign-cards/${localCard.id}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo: { pedidoId: p.id, categoria } }),
+      });
+      const data = await res.json().catch(() => ({}));
+      versaoDoChat.current++;
+      if (Array.isArray(data.chatHistory)) setLocalCard((c) => ({ ...c, chatHistory: data.chatHistory }));
+      if (!res.ok) {
+        if (res.status === 402) {
+          setSemSaldoDoAjuste(data.error ?? "O seu saldo não cobre este ajuste.");
+          if (typeof data.disponivel === "number") setSaldoDoAjuste((s) => ({ saldo: data.disponivel, interno: s?.interno ?? false }));
+          return;
+        }
+        toast.error(data.error ?? "Não consegui seguir com o ajuste.");
+        // O pedido não está mais aberto (já recebido, velho ou a peça saiu): some da tela.
+        if (res.status === 409 || res.status === 404) {
+          setLocalCard((c) => {
+            const { pedidoDeAjuste: _fora, ...resto } = ((c.metadata as Record<string, unknown> | null) ?? {});
+            void _fora;
+            return { ...c, metadata: resto };
+          });
+        }
+        return;
+      }
+      // Aceito: o pedido saiu do card, o saldo caiu (ou não, na cortesia) e o ajuste começou.
+      setLocalCard((c) => {
+        const { pedidoDeAjuste: _fora, ...resto } = ((data.updatedMetadata ?? c.metadata) as Record<string, unknown> | null) ?? {};
+        void _fora;
+        return { ...c, metadata: resto, content: data.updatedContent ?? c.content };
+      });
+      window.dispatchEvent(new Event(EVENTO_DO_SALDO));
+      const m = data.motivoAceito as { cobrado?: number; cortesia?: string | null; saldoDepois?: number | null } | undefined;
+      if (typeof m?.saldoDepois === "number") setSaldoDoAjuste((s) => ({ saldo: m.saldoDepois as number, interno: s?.interno ?? false }));
+      toast.success(m?.cortesia ? "Motivo recebido: o ajuste sai sem cobrança." : m?.cobrado ? `Motivo recebido: ${m.cobrado} créditos cobrados. Refazendo agora.` : "Motivo recebido. Refazendo agora.");
+      if (data.emAndamento) {
+        if (data.pedido) setPedido(data.pedido);
+        setVigiarPedido((v) => v + 1);
+        return;
+      }
+      if (data.refazendoCorte) vigiarRecorte();
+      await refreshDayPosts().catch(() => {});
+      onWeekRefresh?.();
+    } catch {
+      toast.error("Não consegui mandar o motivo. Tente de novo.");
+    } finally {
+      setEscolhendoMotivo(null);
+    }
+  }
+
+  /** Cancela o pedido que esperava o motivo: nada é refeito nem cobrado. */
+  async function cancelarAjuste() {
+    try {
+      const res = await fetch(`/api/campaign-cards/${localCard.id}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cancelarAjuste: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      versaoDoChat.current++;
+      setLocalCard((c) => {
+        const { pedidoDeAjuste: _p, ajustePendente: _v, ...resto } = ((c.metadata as Record<string, unknown> | null) ?? {});
+        void _p;
+        void _v;
+        return { ...c, metadata: resto, chatHistory: Array.isArray(data.chatHistory) ? data.chatHistory : c.chatHistory };
+      });
+      setSemSaldoDoAjuste(null);
+    } catch {
+      toast.error("Não consegui cancelar. Tente de novo.");
+    }
+  }
+
+  /** O botão "Pedir ajuste" do pé do card leva ao campo do chat. */
+  function irParaOAjuste() {
+    const campo = campoDoAjuste.current;
+    if (!campo) return;
+    campo.scrollIntoView({ behavior: "smooth", block: "center" });
+    campo.focus();
+  }
+
+  // O saldo para o pedido reaberto (o modal fechado e aberto de novo): lido uma vez.
+  useEffect(() => {
+    if (!pedidoDeAjuste || saldoDoAjuste) return;
+    let vivo = true;
+    fetch("/api/plano-na-tela", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { creditos?: number; creditosDeVideo?: number; admin?: boolean } | null) => {
+        if (!vivo || !d) return;
+        const saldo = pedidoDeAjuste.carteira === "video" ? d.creditosDeVideo : d.creditos;
+        if (typeof saldo === "number") setSaldoDoAjuste({ saldo, interno: Boolean(d.admin) });
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [pedidoDeAjuste, saldoDoAjuste]);
 
   /**
    * LEVA UM POST QUE JÁ SAIU PARA OUTRA REDE.
@@ -1908,12 +2053,22 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
   }
 
   async function deixarAgendadoMarcados() {
-    if (marcados.length === 0) return;
-    if (!(await garantirEscolhasDoTikTok(marcados, "agendar"))) return;
+    return agendarPosts(marcados);
+  }
+
+  /**
+   * AGENDA (APROVA) UMA LISTA DE POSTS: no horário planejado, ou no próximo
+   * livre quando ele passou, ou num horário escolhido (`quandoIso`, o botão
+   * Agendar do pé do card, 09/10). O "Deixar agendado" da lista e o "Aprovar"
+   * do pé passam pelo mesmo caminho.
+   */
+  async function agendarPosts(lista: typeof marcados, quandoIso?: string) {
+    if (lista.length === 0) return;
+    if (!(await garantirEscolhasDoTikTok(lista, "agendar"))) return;
     setApproving(true);
     let agendados = 0;
     try {
-      for (const p of marcados) {
+      for (const p of lista) {
         const acc = accountFor(p.platform, p.socialAccountId);
         if (!acc) { toast.error(`${nomeDaRede(p.platform)}: conecte a rede para agendar.`); continue; }
         const fila = horarioParaFila(p.scheduledAt ?? postScheduledAt, ocupados);
@@ -1923,7 +2078,7 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
           body: JSON.stringify({
             status: "scheduled",
             socialAccountId: acc.id,
-            ...(fila && (fila.andou || !p.scheduledAt) ? { scheduledAt: fila.iso } : {}),
+            ...(quandoIso ? { scheduledAt: quandoIso } : fila && (fila.andou || !p.scheduledAt) ? { scheduledAt: fila.iso } : {}),
           }),
         });
         const data = await res.json();
@@ -2274,7 +2429,9 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
    * cai quando não sobra post vivo, e o aviso do alcance.
    */
   function handleRejectFlow() {
-    if (!localCard.postId) return;
+    // Sem a trava do post ligado (09/10): o card do Paulo do dia de vídeo não
+    // tem post ligado, e o Rejeitar do pé do card ficava mudo. Os alvos vêm da
+    // lista do dia.
     if (alcanceReprovacao.alvos.length === 0) {
       toast.error("Nada para reprovar: os posts deste dia já foram publicados ou arquivados.");
       return;
@@ -4211,32 +4368,10 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                       </div>
                     </div>
 
-                    {/* ── Rejeitar ── */}
-                    {localCard.status === "pending" && (
-                      <div className="space-y-2">
-                        {/* A JANELA DO MOTIVO (08/10): categoria, texto e microfone.
-                            Cada peça vai pela rota de reprovação com o motivo; o
-                            servidor confere e decide o crédito. */}
-                        <JanelaDeReprovacao
-                          aberta={showRejectForm}
-                          alvos={alcanceReprovacao.alvos.map((p) => ({ id: p.id, platform: p.platform }))}
-                          onFechar={() => setShowRejectForm(false)}
-                          onReprovado={concluirReprovacao}
-                        />
-                        <button
-                          type="button"
-                          disabled={approving}
-                          onClick={() => handleRejectFlow()}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-medium transition-all hover:border-red-500/40 hover:bg-red-500/5 disabled:opacity-50"
-                          style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-                        >
-                          <ThumbsDown className="w-3.5 h-3.5 text-red-400" />
-                          {/* O rótulo diz o alcance: marcou uma peça, reprova uma
-                              peça; não marcou nada, reprova o dia e avisa. */}
-                          {rotuloDaReprovacao(alcanceReprovacao, nomeDaRede)}
-                        </button>
-                      </div>
-                    )}
+                    {/* ── Rejeitar ──
+                        Mudou para o pé do card (09/10), ao lado de Aprovar,
+                        Agendar e Pedir ajuste. A janela do motivo (08/10) fica
+                        na raiz do modal, aberta pelo pé. */}
                   </div>
                 )}
               </div>
@@ -4263,7 +4398,8 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                     ))}
                   </span>
                 )}
-                                {isMedia ? "Regenerar mídia via IA" : "Ajustar via IA"}
+                Pedir ajuste
+                <span className="font-normal">: escreva ou fale o que quer mudar. Antes de refazer, eu pergunto o motivo e digo o custo.</span>
               </p>
               {/* "Voltar à edição" (30/09): o vídeo inteiro (cortes e completo)
                   reaberto na tela de roteiro, para quem prefere ver tudo de uma
@@ -4281,7 +4417,7 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                 <div className="text-xs rounded-xl px-3 py-2 flex items-start gap-2 border border-blue-500/20 bg-blue-500/5">
                   <ImageIcon className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
                   <span style={{ color: "var(--text-muted)" }}>
-                    Digite abaixo como quer a imagem (estilo, cores, composição) e pressione Enter: a Diana vai gerar a imagem agora.
+                    Escreva abaixo como quer a imagem (estilo, cores, composição) e clique em Pedir ajuste: a Diana diz o custo, pergunta o motivo e então gera.
                   </span>
                 </div>
               )}
@@ -4353,6 +4489,21 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                 </Descartavel>
               )}
 
+              {/* OS BOTÕES DO MOTIVO (09/10): o agente perguntou no chat; nada
+                  é refeito antes de um deles. Cancelar tira o pedido. */}
+              {pedidoDeAjuste && !chatLoading && (
+                <MotivoDoAjuste
+                  cardId={localCard.id}
+                  pedido={pedidoDeAjuste}
+                  saldo={saldoDoAjuste?.saldo ?? null}
+                  interno={saldoDoAjuste?.interno}
+                  escolhendo={escolhendoMotivo}
+                  semSaldo={semSaldoDoAjuste}
+                  aoEscolher={(c) => void escolherMotivo(c)}
+                  aoCancelar={() => void cancelarAjuste()}
+                />
+              )}
+
               {/* Carousel slide context indicator */}
               {isMedia && localCard.mediaUrl?.includes("|") && (
                 <div className="flex items-center gap-1.5 text-xs px-1" style={{ color: "var(--text-muted)" }}>
@@ -4361,31 +4512,87 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <input
-                  // `min-w-0`: o campo tem largura mínima própria (uns 20 caracteres) e,
-                  // sem isto, empurra o botão de enviar para fora numa tela estreita.
-                  className="flex-1 min-w-0 text-sm px-4 py-2.5 rounded-xl border outline-none"
+              {/* O CAMPO DO AJUSTE (09/10): escrito ou falado, e o botão diz o
+                  que acontece. Enter também pede; Shift+Enter quebra a linha. */}
+              <div className="flex gap-2 items-end" data-campo-do-ajuste>
+                <textarea
+                  ref={campoDoAjuste}
+                  rows={2}
+                  // `min-w-0`: o campo tem largura mínima própria e, sem isto,
+                  // empurra os botões para fora numa tela estreita.
+                  className="flex-1 min-w-0 text-sm px-4 py-2.5 rounded-xl border outline-none resize-none"
                   style={{ background: "var(--bg-input)", borderColor: "var(--border)", color: "var(--text-primary)" }}
                   placeholder={
                     isMedia && localCard.mediaUrl?.includes("|")
-                      ? `Ajustar slide ${currentSlide + 1}: mude a composição, cor, estilo...`
+                      ? `Ajustar a lâmina ${currentSlide + 1}: mude a composição, a cor, o estilo...`
                       : isMedia
-                      ? "Mude as cores, estilo, composição... (vai regerar a imagem)"
+                      ? "Mude as cores, o estilo, a composição da imagem..."
                       : localCard.cardType === "video_clip" && (localCard.metadata as { videoJobId?: string } | null)?.videoJobId
                       ? "Ex.: termine depois de “ferramentas”, tire a parte em que eu repito, tire a imagem da cena de 0:12"
-                      : "Melhore o tom, ajuste o CTA, torne mais provocativo..."
+                      : "Ex.: refaça a arte com fundo azul; deixe o texto mais curto; mude para sexta às 10h"
                   }
                   value={chatMsg}
                   onChange={(e) => setChatMsg(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendChat()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void sendChat();
+                    }
+                  }}
                 />
-                <Button onClick={sendChat} loading={chatLoading} disabled={!chatMsg.trim()}>
+                <BotaoDeFala
+                  url={`/api/campaign-cards/${localCard.id}/chat/voz`}
+                  desabilitado={chatLoading}
+                  onTexto={(t) => setChatMsg((m) => (m.trim() ? `${m.trim()} ${t}` : t))}
+                />
+                <Button onClick={() => void sendChat()} loading={chatLoading} disabled={!chatMsg.trim()} data-botao-pedir-ajuste>
                   <Send className="w-4 h-4" />
+                  Pedir ajuste
                 </Button>
               </div>
             </div>
           </div>
+
+          {/* ── AS QUATRO AÇÕES DO CARD (09/10) ──
+              Aprovar, Agendar, Pedir ajuste e Rejeitar, sempre à vista no pé. */}
+          {postsDoDia.length > 0 && !cardEmProducao(localCard) && !isPreview && (
+            <div className="shrink-0 border-t px-5 py-3" style={{ borderColor: "var(--border)", background: "var(--bg-card)" }}>
+              {(() => {
+                const paraAprovar = postsDoDia.filter((p) => publicavel(p) && p.status !== "scheduled" && p.status !== "publishing" && Boolean(accountFor(p.platform, p.socialAccountId)));
+                const paraAgendar = postsDoDia.filter((p) => publicavel(p) && p.status !== "publishing" && Boolean(accountFor(p.platform, p.socialAccountId)));
+                const atual = postsDoDia.find((p) => p.scheduledAt)?.scheduledAt ?? postScheduledAt;
+                const base = new Date(horarioParaFila(atual, ocupados)?.iso ?? Date.now() + 60 * 60 * 1000);
+                const campos = paraCampos(base);
+                const detalhe = paraAprovar.length
+                  ? saidaSeAprovar
+                    ? `${saidaSeAprovar.andou ? "sugerido" : "sai"} ${diaEHora(new Date(saidaSeAprovar.iso))}`
+                    : `${paraAprovar.length} ${paraAprovar.length === 1 ? "post" : "posts"}`
+                  : naFilaDoDia.length
+                    ? "já está na fila"
+                    : null;
+                return (
+                  <AcoesDoCard
+                    ocupado={approving || refazendo !== null}
+                    aprovar={{ pode: paraAprovar.length > 0, detalhe, aoClicar: () => void agendarPosts(paraAprovar) }}
+                    agendar={{ pode: paraAgendar.length > 0, data: campos.data, hora: campos.hora, aoAgendar: (d, h) => void agendarPosts(paraAgendar, deCampos(d, h).toISOString()) }}
+                    aoPedirAjuste={irParaOAjuste}
+                    rejeitar={{ pode: alcanceReprovacao.alvos.length > 0, titulo: rotuloDaReprovacao(alcanceReprovacao, nomeDaRede), aoClicar: () => handleRejectFlow() }}
+                  />
+                );
+              })()}
+            </div>
+          )}
+
+          {/* A JANELA DO MOTIVO (08/10), aberta pelo Rejeitar do pé: categoria,
+              texto e microfone. Cada peça vai pela rota de reprovação com o
+              motivo; o servidor confere e decide o crédito. O post morre. */}
+          <JanelaDeReprovacao
+            aberta={showRejectForm}
+            alvos={alcanceReprovacao.alvos.map((p) => ({ id: p.id, platform: p.platform }))}
+            onFechar={() => setShowRejectForm(false)}
+            onReprovado={concluirReprovacao}
+            verbo="Rejeitar"
+          />
 
           {/* ── Publish Success Overlay ── */}
           <AnimatePresence>

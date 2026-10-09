@@ -31,12 +31,15 @@ export function JanelaDeReprovacao({
   alvos,
   onFechar,
   onReprovado,
+  verbo = "Reprovar",
 }: {
   aberta: boolean;
   alvos: AlvoDaReprovacao[];
   onFechar: () => void;
   /** Chamado com o que deu certo (pode ser parcial); a janela já mostrou o erro do resto. */
   onReprovado: (resultados: ResultadoNaTela[]) => void | Promise<void>;
+  /** "Rejeitar" no card (09/10): o post morre. A regra e a rota são as mesmas da reprovação. */
+  verbo?: "Reprovar" | "Rejeitar";
 }) {
   const [categoria, setCategoria] = useState<CategoriaDeReprovacao | null>(null);
   const [texto, setTexto] = useState("");
@@ -178,10 +181,11 @@ export function JanelaDeReprovacao({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 id="titulo-da-reprovacao" className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {alvos.length === 1 ? `Reprovar a peça de ${redes[0]}` : `Reprovar ${alvos.length} peças (${redes.join(", ")})`}
+                  {alvos.length === 1 ? `${verbo} a peça de ${redes[0]}` : `${verbo} ${alvos.length} peças (${redes.join(", ")})`}
                 </h2>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                  Toda peça gerada é cobrada. Diga o motivo: erro da plataforma é conferido e, confirmado, devolve os créditos. Gosto mantém o crédito.
+                  {verbo === "Rejeitar" ? "A peça rejeitada não sai mais. " : ""}Toda peça gerada é cobrada. Diga o motivo: erro da plataforma é conferido e, confirmado, devolve os créditos. Gosto mantém o crédito.
+                  {verbo === "Rejeitar" ? " Para mudar a peça em vez de matar, use Pedir ajuste." : ""}
                 </p>
               </div>
               <button type="button" onClick={onFechar} disabled={ocupado} aria-label="Fechar" className="h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-[var(--realce-2)]" style={{ color: "var(--text-muted)" }}>
@@ -252,7 +256,7 @@ export function JanelaDeReprovacao({
             <div className="flex gap-2">
               <Button variant="destructive" className="flex-1" onClick={() => void reprovar()} loading={ocupado} disabled={!categoria || gravando || transcrevendo}>
                 <ThumbsDown className="w-3.5 h-3.5 mr-1" />
-                {alvos.length === 1 ? "Reprovar" : `Reprovar ${alvos.length} peças`}
+                {alvos.length === 1 ? verbo : `${verbo} ${alvos.length} peças`}
               </Button>
               <Button variant="outline" onClick={onFechar} disabled={ocupado}>
                 Cancelar

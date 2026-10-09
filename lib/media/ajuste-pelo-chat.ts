@@ -1,7 +1,8 @@
 import { carteiraDeQuemFaz } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
 import { askClaude } from "@/lib/claude";
-import { debitar, SaldoInsuficiente } from "@/lib/credits";
+import { creditar, debitar, SaldoInsuficiente } from "@/lib/credits";
+import { CREDIT_COSTS } from "@/lib/credits/tabela";
 import { aplicarTermos, parseTermos } from "@/lib/media/termos";
 import { bordasDoCorte } from "@/lib/media/bordas-do-corte";
 import { emendarNoSilencio, intervalosDoTrecho, type Remocao } from "@/lib/media/edicao";
@@ -82,9 +83,11 @@ import { projetoVisivel } from "@/lib/equipe/conta";
  *
  * ## Custo
  *
- * O que gera imagem ou cena nova mostra o custo em créditos e espera um "sim"
- * (o pedido fica em `metadata.ajustePendente` do card). O que não gera nada é
- * feito na hora. "Outra ideia" cobra os créditos do botão da tela de roteiro
+ * O que gera imagem, cena ou capa nova mostra o custo em créditos e espera o
+ * MOTIVO do ajuste (09/10, os botões do chat: lib/credits/ajuste-servidor.ts
+ * decide se cobra ou se é cortesia por erro confirmado); o pedido fica em
+ * `metadata.ajustePendente` do card, e um "sim" sozinho não gera nada pago.
+ * O que não gera nada (o corte, tirar um efeito) é feito na hora. "Outra ideia" cobra os créditos do botão da tela de roteiro
  * (`CREDITOS_POR_NOVA_IDEIA`, 10 desde 01/10),
  * e a ideia nova é mostrada antes de gerar as imagens dela.
  */
@@ -179,28 +182,51 @@ export type OpDeCena =
   | { acao: "editar"; cena: number; texto: string }
   | { acao: "sem-efeito"; de: number; ate: number };
 
-/** O que espera o "sim" do cliente, guardado no card. Só operações, nunca o plano inteiro (o do completo tem centenas de cenas e o card vai inteiro para a tela). */
+/**
+ * O MOTIVO DO AJUSTE (09/10): o que gera imagem, cena ou capa nova só sai
+ * depois do motivo escolhido nos botões do chat (lib/credits/ajuste-servidor.ts),
+ * e a cortesia (erro confirmado) chega aqui para os débitos saírem com valor zero.
+ */
+export type MotivoDoAjusteDoVideo = { categoria: string; cortesia: { motivo: string } | null };
+
+/** O que espera o motivo do cliente, guardado no card. Só operações, nunca o plano inteiro (o do completo tem centenas de cenas e o card vai inteiro para a tela). */
 export type AjustePendente = {
   alvo: "corte" | "completo";
   videoJobId: string;
   trecho: number | null;
   /** O `desde` da montagem quando o custo foi calculado: se mudou, a conta é outra. */
   baseDesde: string | null;
-  fase: "ideia" | "gerar";
+  /** "capa" (09/10): a capa do corte refeita também espera o motivo e cobra uma arte. */
+  fase: "ideia" | "gerar" | "capa";
   ops: OpDeCena[];
   novaIdeia?: { cena: number; texto?: string | null; plano?: PlanoDeMontagem | null; prefixo?: string } | null;
+  /** O ajuste pedido para a capa (fase "capa"). */
+  capa?: string | null;
   creditos: number;
   resumo: string;
   criadoEm: string;
+  /** O motivo já dado (a segunda fase da "outra ideia" não pergunta de novo). */
+  motivo?: MotivoDoAjusteDoVideo | null;
 };
 
 export type ResultadoDoAjuste =
   | { tratado: false }
-  | { tratado: true; resposta: string; aviso: string; refazendoCorte?: boolean };
+  | { tratado: true; resposta: string; aviso: string; refazendoCorte?: boolean; precisaDeMotivo?: boolean };
+
+/** A frase do fim de toda pergunta de custo do Vitor: o motivo nos botões, e o que cada um faz. */
+export const PECA_O_MOTIVO =
+  "Escolha o motivo do ajuste nos botões abaixo: gosto ou pedido diferente cobra; erro da plataforma eu confiro e, confirmado, sai de graça.";
+
+/** O "sim" sozinho não gera nada pago: o motivo precisa ter sido dado (agora ou na fase anterior). Puro, para a prova. */
+export function motivoDoSim(pendente: Pick<AjustePendente, "motivo"> | null, opcoes: { motivo?: MotivoDoAjusteDoVideo | null }): MotivoDoAjusteDoVideo | null {
+  return opcoes.motivo ?? pendente?.motivo ?? null;
+}
 
 export type OpcoesDoAjuste = {
   /** Troca o envio ao worker (prova sem worker de verdade). */
   enviarRecorte?: typeof enviarRecorteDoTrecho;
+  /** O motivo escolhido nos botões do chat, já decidido pela regra (09/10). Sem ele, o que é pago não sai. */
+  motivo?: MotivoDoAjusteDoVideo | null;
 };
 
 const agora = () => new Date().toISOString();
@@ -674,16 +700,20 @@ async function saldoParaMostrar(userId: string): Promise<string> {
   return `Seu saldo: ${creditosPorExtenso(c.saldo ?? 0)}.`;
 }
 
-export async function cobrar(ctx: Contexto, userId: string, quantidade: number, operation: string, nota: string): Promise<void> {
-  if (quantidade <= 0) return;
+/** Debita o que o ajuste gera; com a cortesia do motivo (erro confirmado, 09/10), a linha fica com valor zero. Devolve o refId (null quando nada foi lançado). */
+export async function cobrar(ctx: Contexto, userId: string, quantidade: number, operation: string, nota: string, cortesia?: { motivo: string } | null): Promise<string | null> {
+  if (quantidade <= 0) return null;
+  const refId = `${ctx.video.id}:${ctx.alvo}:${ctx.alvo === "corte" ? ctx.indice : "c"}:${Date.now()}`;
   await debitar({
     userId,
     quantidade,
     operation,
     projectId: ctx.video.projectId,
-    refId: `${ctx.video.id}:${ctx.alvo}:${ctx.alvo === "corte" ? ctx.indice : "c"}:${Date.now()}`,
+    refId,
     note: nota.slice(0, 180),
+    cortesia: cortesia ?? undefined,
   });
+  return refId;
 }
 
 // ─────────────────────────────── tempo que leva ───────────────────────────────
@@ -752,16 +782,23 @@ export async function ajustarVideoPeloChat(
       };
     }
     if (pendente && curta && ehSim(args.mensagem)) {
+      // O "SIM" SOZINHO NÃO GERA NADA PAGO (09/10): o motivo vem dos botões do
+      // chat, decidido pela regra da reprovação com motivo. Sem ele, o pedido
+      // fica guardado e a resposta pede o motivo.
+      const motivo = motivoDoSim(pendente, opcoes);
+      if (!motivo) {
+        return { tratado: true, resposta: `Antes de eu gerar, falta o motivo. ${PECA_O_MOTIVO}`, aviso: "Escolha o motivo", precisaDeMotivo: true };
+      }
       await guardarPendente(args.card.id, null);
       const velho = Date.now() - new Date(pendente.criadoEm).getTime() > PENDENTE_VALE_MS;
       if (velho || pendente.baseDesde !== ctx.montagemDesde) {
         return {
           tratado: true,
-          resposta: "O vídeo mudou desde que eu calculei o custo (ou já passou muito tempo), então não gerei nada. Me peça o ajuste de novo que eu refaço a conta.",
+          resposta: "O vídeo mudou desde que eu calculei o custo (ou já passou muito tempo), então não gerei nada e nada foi cobrado. Me peça o ajuste de novo que eu refaço a conta.",
           aviso: "Peça de novo",
         };
       }
-      return await executarPendente(ctx, pendente, args.userId, args.card.id);
+      return await executarPendente(ctx, { ...pendente, motivo }, args.userId, args.card.id);
     }
     // Qualquer outra mensagem troca de assunto: o pedido anterior não vale mais.
     if (pendente) await guardarPendente(args.card.id, null);
@@ -782,8 +819,27 @@ export async function ajustarVideoPeloChat(
     const temCena = (e.cenas?.length ?? 0) > 0 || Boolean(e.semEfeito);
     if (!temCorte && !temCena) {
       if (e.capa && ctx.alvo === "corte") {
-        await refazerCapa(video.id, args.userId, ctx.indice, e.capa);
-        return { tratado: true, resposta: "Capa refeita com o seu ajuste. Recarregue o card para ver como ficou.", aviso: "Capa refeita" };
+        // A CAPA REFEITA É UMA ARTE GERADA (09/10): saía de graça por aqui. Agora
+        // espera o motivo e cobra uma geração, como a arte do post.
+        const p: AjustePendente = {
+          alvo: ctx.alvo,
+          videoJobId: video.id,
+          trecho: ctx.indice,
+          baseDesde: ctx.montagemDesde,
+          fase: "capa",
+          ops: [],
+          capa: e.capa,
+          creditos: CREDIT_COSTS.imagem_geracao,
+          resumo: "a capa do corte",
+          criadoEm: agora(),
+        };
+        await guardarPendente(args.card.id, p);
+        return {
+          tratado: true,
+          resposta: `Refazer a capa com esse ajuste é uma arte nova: ${creditosPorExtenso(p.creditos)}. ${await saldoParaMostrar(args.userId)} ${PECA_O_MOTIVO}`,
+          aviso: "Escolha o motivo",
+          precisaDeMotivo: true,
+        };
       }
       if (e.capa) {
         return { tratado: true, resposta: "A capa do vídeo completo ainda não muda pelo chat. Pelo chat do completo eu mudo as cenas e os efeitos.", aviso: "Ainda não dá" };
@@ -859,9 +915,10 @@ export async function ajustarVideoPeloChat(
         resposta:
           `Posso pedir ao diretor outra ideia para a cena de ${tempo(inicio)} a ${tempo(fim)} (${aspas(falaDaCena)}). ` +
           `Custa ${creditosPorExtenso(CREDITOS_POR_NOVA_IDEIA)}, o mesmo do botão da tela de roteiro. ` +
-          `Se a ideia nova precisar de imagem ou cena gerada, eu mostro antes quanto custa e peço outro sim. ${await saldoParaMostrar(args.userId)} ` +
-          "Responda sim para eu pedir.",
-        aviso: "Esperando o seu sim",
+          `Se a ideia nova precisar de imagem ou cena gerada, eu mostro antes quanto custa e peço o seu sim. ${await saldoParaMostrar(args.userId)} ` +
+          PECA_O_MOTIVO,
+        aviso: "Escolha o motivo",
+        precisaDeMotivo: true,
       };
     }
     return await mudarCenas(ctx, ops, null, args.userId, args.card.id);
@@ -975,7 +1032,9 @@ async function mudarCenas(
   novaIdeia: { cena: number; plano: PlanoDeMontagem; prefixo: string } | null,
   userId: string,
   cardId: string,
-  jaConfirmado = false
+  jaConfirmado = false,
+  /** O motivo já dado (09/10): a pendência nova da "outra ideia" leva junto, e o débito sai com a cortesia dele. */
+  motivo: MotivoDoAjusteDoVideo | null = null
 ): Promise<ResultadoDoAjuste> {
   const plano = ctx.plano!;
   const fala = ctx.fala!;
@@ -999,19 +1058,22 @@ async function mudarCenas(
       creditos,
       resumo: relato,
       criadoEm: agora(),
+      motivo,
     };
     await guardarPendente(cardId, p);
     const ideia = novaIdeia ? descreverIdeiaNova(ctx, novo, novaIdeia) : relato ? `Entendi: ${relato.charAt(0).toLowerCase()}${relato.slice(1)}. ` : "";
     return {
       tratado: true,
       resposta:
-        `${ideia}Para isso eu preciso gerar ${oQueGera(gera)}: ${creditosPorExtenso(creditos)}. ${await saldoParaMostrar(userId)} ` +
-        `O resto reaproveita as imagens e cenas que já existem. Responda sim para eu gerar e refazer a edição, ou me diga outra coisa.`,
-      aviso: "Esperando o seu sim",
+        `${ideia}Para isso eu preciso gerar ${oQueGera(gera)}: ${creditosPorExtenso(creditos)}${motivo?.cortesia ? ", sem cobrança pelo erro confirmado" : ""}. ${await saldoParaMostrar(userId)} ` +
+        // Com o motivo já dado na fase da ideia, basta o sim; sem ele, os botões do motivo.
+        (motivo ? `O resto reaproveita as imagens e cenas que já existem. Responda sim para eu gerar e refazer a edição, ou me diga outra coisa.` : `O resto reaproveita as imagens e cenas que já existem. ${PECA_O_MOTIVO}`),
+      aviso: motivo ? "Esperando o seu sim" : "Escolha o motivo",
+      precisaDeMotivo: !motivo,
     };
   }
 
-  if (creditos > 0) await cobrar(ctx, userId, creditos, "video_ajuste_chat", `Ajuste pelo chat: ${oQueGera(gera)}`);
+  if (creditos > 0) await cobrar(ctx, userId, creditos, "video_ajuste_chat", `Ajuste pelo chat: ${oQueGera(gera)}`, motivo?.cortesia);
   if (ctx.alvo === "corte") await refazerMontagemDoCorte(ctx, novo);
   else await refazerMontagemDoCompleto(ctx, novo);
   const prazo = prazoDaMontagem(ctx, gera.cenas + gera.cenarios > 0);
@@ -1019,7 +1081,11 @@ async function mudarCenas(
     tratado: true,
     resposta:
       `Feito: ${relato.charAt(0).toLowerCase()}${relato.slice(1)}. ` +
-      (creditos > 0 ? `Cobrei ${creditosPorExtenso(creditos)} pelo que foi gerado de novo; o resto reaproveita o que já existia. ` : "Sem custo novo: reaproveito as imagens e cenas que já existem. ") +
+      (creditos > 0 && motivo?.cortesia
+        ? `Gerei de novo sem cobrança (${motivo.cortesia.motivo}); o resto reaproveita o que já existia. `
+        : creditos > 0
+          ? `Cobrei ${creditosPorExtenso(creditos)} pelo que foi gerado de novo; o resto reaproveita o que já existia. `
+          : "Sem custo novo: reaproveito as imagens e cenas que já existem. ") +
       `Estou refazendo só a edição ${ctx.alvo === "corte" ? "deste corte" : "do vídeo completo"}; fica pronta em ${prazo}. Enquanto isso o card mostra que o squad está fazendo.`,
     aviso: "O squad está fazendo",
   };
@@ -1115,16 +1181,36 @@ async function executarPendente(ctx: Contexto, p: AjustePendente, userId: string
   if (ctx.montagemTrabalhando) {
     return { tratado: true, resposta: "O squad está montando este vídeo agora. Quando terminar, me peça o ajuste de novo.", aviso: "O squad está fazendo" };
   }
+  const cortesia = p.motivo?.cortesia ?? null;
+  // A CAPA (09/10): cobra a arte antes de gerar; se não sair, o que foi cobrado volta.
+  if (p.fase === "capa" && p.capa) {
+    if (ctx.alvo !== "corte") throw new Recusa("A capa do vídeo completo ainda não muda pelo chat.");
+    const refId = await cobrar(ctx, userId, p.creditos, "video_capa", `Capa do corte refeita pelo chat: "${p.capa.slice(0, 80)}"`, cortesia);
+    try {
+      await refazerCapa(ctx.video.id, userId, ctx.indice, p.capa);
+    } catch (e) {
+      if (refId && !cortesia) {
+        await creditar({ userId, quantidade: p.creditos, operation: "ajuste_devolucao", refId: `${refId}:sobra`, note: "devolução: a capa refeita não saiu", unico: true, projectId: ctx.video.projectId }).catch(() => undefined);
+      }
+      throw new Recusa(`A capa nova não saiu desta vez${refId && !cortesia ? ", e o que foi cobrado voltou para o seu saldo" : ""}. ${e instanceof Error ? e.message : ""}`.trim());
+    }
+    return {
+      tratado: true,
+      resposta: `Capa refeita com o seu ajuste${cortesia ? ", sem cobrança pelo erro confirmado" : `; cobrei ${creditosPorExtenso(p.creditos)}`}. Recarregue o card para ver como ficou.`,
+      aviso: "Capa refeita",
+    };
+  }
   if (!ctx.plano || !ctx.fala) throw new Recusa("Este vídeo não tem mais a edição em que eu calculei o ajuste. Me peça de novo.");
   if (p.fase === "ideia" && p.novaIdeia) {
     // Os créditos do diretor (10 desde 01/10), cobrados antes da chamada (mesma regra da tela de roteiro).
-    await cobrar(ctx, userId, CREDITOS_POR_NOVA_IDEIA, "roteiro_nova_ideia", `Outra ideia para uma cena, pelo chat${p.novaIdeia.texto ? `: "${p.novaIdeia.texto.slice(0, 80)}"` : ""}`);
+    await cobrar(ctx, userId, CREDITOS_POR_NOVA_IDEIA, "roteiro_nova_ideia", `Outra ideia para uma cena, pelo chat${p.novaIdeia.texto ? `: "${p.novaIdeia.texto.slice(0, 80)}"` : ""}`, cortesia);
     const mini = await pedirOutraIdeia(ctx, p.novaIdeia.cena, p.novaIdeia.texto ?? null);
     const prefixo = `n${Date.now() % 1_000_000}`;
-    return mudarCenas(ctx, p.ops, { cena: p.novaIdeia.cena, plano: mini, prefixo }, userId, cardId);
+    // A segunda fase (gerar as imagens da ideia) leva o mesmo motivo: o sim basta.
+    return mudarCenas(ctx, p.ops, { cena: p.novaIdeia.cena, plano: mini, prefixo }, userId, cardId, false, p.motivo ?? null);
   }
   const ideia = p.novaIdeia?.plano ? { cena: p.novaIdeia.cena, plano: p.novaIdeia.plano, prefixo: p.novaIdeia.prefixo ?? `n${Date.now() % 1_000_000}` } : null;
-  return mudarCenas(ctx, p.ops, ideia, userId, cardId, true);
+  return mudarCenas(ctx, p.ops, ideia, userId, cardId, true, p.motivo ?? null);
 }
 
 /** O diretor só para uma cena (a mesma chamada do botão "Outra ideia" da tela de roteiro). */
