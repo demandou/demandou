@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { conferirEnvio } from "@/lib/anti-robo/porta";
+import { consumir } from "@/lib/seguranca/limite";
+import { extrairIp, hashIp } from "@/lib/demo/rate-limit";
 
 /**
  * ESTE E-MAIL JÁ TEM CONTA?
@@ -44,6 +46,10 @@ export async function POST(req: NextRequest) {
     // Silêncio é a resposta certa aqui: quem varre não ganha sinal nenhum.
     return NextResponse.json({ existe: false }, { status: 200 });
   }
+  // O teto do DIA por IP (08/10): 10 por minuto deixava varrer 14 mil
+  // endereços num dia devagar. Uma pessoa pergunta por um ou dois e-mails.
+  const dia = await consumir(`ip:email_existe:dia:${hashIp(extrairIp(req.headers))}`, { janelaMs: 24 * 60 * 60 * 1000, max: 30 });
+  if (!dia.ok) return NextResponse.json({ existe: false }, { status: 200 });
 
   let email = "";
   try {

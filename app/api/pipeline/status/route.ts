@@ -21,10 +21,18 @@ export async function GET(req: NextRequest) {
         cards: {
           orderBy: [{ dayOfWeek: "asc" }, { createdAt: "asc" }],
         },
+        project: { select: { userId: true } },
       },
     });
-    if (!run) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ ...run, logs: Array.isArray(run.logs) ? run.logs : [] });
+    // A campanha é de quem pode usar o projeto dela (08/10). Até aqui bastava
+    // estar logado: qualquer conta lia a campanha inteira de outro cliente
+    // pelo id, com pesquisa, textos e cards. Mesma regra do pipeline/runs/[id].
+    if (!run || !(await podeUsarProjeto(userId, { id: run.projectId, userId: run.project.userId }))) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const { project: _dono, ...resto } = run;
+    void _dono;
+    return NextResponse.json({ ...resto, logs: Array.isArray(run.logs) ? run.logs : [] });
   }
 
   if (!projectId) return NextResponse.json({ error: "runId or projectId required" }, { status: 400 });

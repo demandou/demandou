@@ -29,8 +29,11 @@ import { concederCiclo } from "@/lib/credits/ciclo";
 const TRINTA_DIAS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
+  // Sem CRON_SECRET no ambiente a rota fica FECHADA (08/10): antes,
+  // "Bearer undefined" passava quando a variável faltava.
+  const segredoDoCron = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!segredoDoCron || authHeader !== `Bearer ${segredoDoCron}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

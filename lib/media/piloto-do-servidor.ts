@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { segredoDeAssinatura } from "@/lib/seguranca/segredo";
 import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { projetoVisivel } from "@/lib/equipe/conta";
@@ -57,8 +58,7 @@ export type PassoDoPiloto =
  * que ninguem precise ler o que protege o login de todo mundo.
  */
 export function assinarPiloto(videoId: string): string {
-  const segredo = process.env.PILOTO_SECRET ?? process.env.BETTER_AUTH_SECRET ?? "demandou";
-  return createHmac("sha256", segredo).update(`piloto:${videoId}`).digest("hex");
+  return createHmac("sha256", segredoDeAssinatura()).update(`piloto:${videoId}`).digest("hex");
 }
 
 export function assinaturaDoPilotoValida(videoId: string, assinatura: string | null): boolean {

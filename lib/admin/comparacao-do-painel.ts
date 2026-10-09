@@ -31,7 +31,9 @@ import type { ComparacaoDoPainel, Periodo, SerieComparada } from "@/lib/admin/ti
 
 const DOLAR = Number(process.env.DOLAR_PARA_REAL ?? "") || 5.4;
 const FUSO = "America/Sao_Paulo";
-const DIA_SQL = (coluna: string) => `to_char(((${coluna} AT TIME ZONE 'UTC') AT TIME ZONE '${FUSO}')::date, 'YYYY-MM-DD')`;
+// Coluna de uma lista FECHADA (08/10): a expressão vai colada na SQL.
+type ColunaDeData = '"createdAt"';
+const DIA_SQL = (coluna: ColunaDeData) => `to_char(((${coluna} AT TIME ZONE 'UTC') AT TIME ZONE '${FUSO}')::date, 'YYYY-MM-DD')`;
 
 export function janelaAnterior(dias: Periodo, agora = new Date()) {
   const atual = eixoDoTempo(dias, agora);

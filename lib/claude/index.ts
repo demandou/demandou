@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { recordUsage, type UsageContext } from "@/lib/claude/usage";
 import { AVISO_NEUTRO_AO_CLIENTE } from "@/lib/fornecedores/saldo";
+import { conferirCustoDaSessao } from "@/lib/seguranca/custo-da-sessao";
 
 let _client: Anthropic | null = null;
 
@@ -183,6 +184,9 @@ export async function askClaude(
   const timeoutMs =
     options?.timeoutMs ?? Math.min(300_000, Math.max(90_000, (maxTokens / 1000) * 25_000));
 
+  // O teto por conta (08/10): conta logada em laço não gasta a chave da casa.
+  await conferirCustoDaSessao("askClaude");
+
   // STREAMING, sempre. Não é para mostrar texto aparecendo: é porque resposta
   // longa sem streaming vive presa a heurísticas de timeout de requisição
   // HTTP, e foi assim que a seleção quebrou em produção. Com streaming os
@@ -318,6 +322,8 @@ export async function streamClaude(
   let fullText = "";
   const model = options?.model ?? DEFAULT_MODEL;
 
+  await conferirCustoDaSessao("streamClaude");
+
   const stream = getClient().messages.stream({
     model,
     max_tokens: options?.maxTokens ?? 2048,
@@ -372,6 +378,8 @@ export async function askClaudeComPdf(
   const model = options?.model ?? DEFAULT_MODEL;
   const maxTokens = options?.maxTokens ?? 8192;
   const timeoutMs = options?.timeoutMs ?? 300_000;
+
+  await conferirCustoDaSessao("askClaudeComPdf");
 
   const stream = getClient().messages.stream(
     {

@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { segredoDeAssinatura } from "@/lib/seguranca/segredo";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { Caixa, redesLigadas } from "@/lib/referencias/config";
@@ -62,8 +63,7 @@ export const PEDIDOS: Record<"criacao" | "cliente" | "analisar" | "tendencias", 
 
 /** A assinatura do POST interno "continuar" (finalidade própria, como a do piloto). */
 export function assinarContinuacao(projectId: string): string {
-  const segredo = process.env.PILOTO_SECRET ?? process.env.BETTER_AUTH_SECRET ?? "demandou";
-  return createHmac("sha256", segredo).update(`analise-ref:${projectId}`).digest("hex");
+  return createHmac("sha256", segredoDeAssinatura()).update(`analise-ref:${projectId}`).digest("hex");
 }
 
 export function continuacaoValida(projectId: string, assinatura: string | null): boolean {

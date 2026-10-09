@@ -18,7 +18,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  */
 
 export function assinarVideo(videoId: string): string {
-  const segredo = process.env.BETTER_AUTH_SECRET ?? "demandou";
+  // Sem segredo não há assinatura (08/10). O padrão "demandou" que vivia aqui
+  // era um segredo público: quem lesse o código assinava qualquer callback.
+  const segredo = process.env.BETTER_AUTH_SECRET;
+  if (!segredo) throw new Error("[callback-token] BETTER_AUTH_SECRET ausente: não dá para assinar o callback");
   return createHmac("sha256", segredo).update(`transcribe:${videoId}`).digest("hex");
 }
 

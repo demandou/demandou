@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { segredoDeAssinatura } from "@/lib/seguranca/segredo";
 
 /**
  * A FILA DE TRABALHOS: o que demora sai do ciclo da requisição.
@@ -353,9 +354,7 @@ export async function estadoDoGrupo(grupo: string): Promise<{
  * login de todo mundo.
  */
 export function assinarFila(): string {
-  const segredo =
-    process.env.PILOTO_SECRET ?? process.env.BETTER_AUTH_SECRET ?? "demandou";
-  return createHmac("sha256", segredo).update("fila").digest("hex");
+  return createHmac("sha256", segredoDeAssinatura()).update("fila").digest("hex");
 }
 
 export function assinaturaDaFilaValida(assinatura: string | null): boolean {

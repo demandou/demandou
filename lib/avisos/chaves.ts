@@ -50,6 +50,8 @@ export const PREFIXOS_DO_SINO = [
   "saldo",
   "saldo-voltou",
   "admin",
+  // O ataque ao login (08/10): senhas erradas em série num e-mail, para os admins.
+  "bloqueio-login",
 ] as const;
 
 /** Os prefixos das chaves que só as telas gravam (faixas, cartões, dicas). */

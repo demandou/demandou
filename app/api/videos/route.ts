@@ -50,6 +50,17 @@ export async function GET(req: NextRequest) {
  * que produzia registro duplicado até 22/08: as duas escritas são concorrentes.
  * A garantia de "um arquivo, um registro" está na restrição única do banco.
  */
+/** https e host do Vercel Blob; o resto é recusado antes de virar registro. */
+function urlDoNossoStorage(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname.endsWith(".blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -99,6 +110,13 @@ export async function POST(req: NextRequest) {
       );
     }
     return NextResponse.json({ video: registroDasPartesFeito.video, partes: itens.length });
+  }
+
+  // Só o nosso storage (08/10): a URL vai para o worker baixar, e uma URL
+  // livre era pedir ao worker que buscasse qualquer endereço (inclusive o
+  // arquivo privado de outro cliente, para quem soubesse a URL dele).
+  if (!urlDoNossoStorage(blobUrl)) {
+    return NextResponse.json({ error: "blobUrl precisa apontar para o storage da Demandou" }, { status: 400 });
   }
 
   const registro = await registrarGravacao({ userId, projectId, blobUrl, originalName, sizeBytes });
