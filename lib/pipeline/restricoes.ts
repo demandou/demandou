@@ -135,8 +135,39 @@ ${texto}`;
 }
 
 /**
+ * QUANTOS TEXTOS A REGRA REESCREVERIA (09/10), sem reescrever nada: a mesma
+ * conta de `aplicarNaoCitarNaExecucao` (o mesmo texto na mesma rede conta uma
+ * vez), feita só com a busca das menções. É o que o pedido de ajuste cobra
+ * antes de mandar reescrever. Devolve também uma peça de referência.
+ */
+export async function contarNaoCitarNaExecucao(runId: string, nomes: string[]): Promise<{ textos: number; postId: string | null }> {
+  if (nomes.length === 0) return { textos: 0, postId: null };
+  const posts = await prisma.post.findMany({
+    where: { runId, status: { notIn: ["published", "publishing"] } },
+    select: { id: true, platform: true, content: true },
+  });
+  const cards = await prisma.campaignCard.findMany({
+    where: { runId, cardType: { in: ["post_linkedin", "post_twitter"] }, NOT: { status: "archived" } },
+    select: { cardType: true, content: true },
+  });
+  const chaves = new Set<string>();
+  let postId: string | null = null;
+  for (const p of posts) {
+    if (mencoesProibidas(p.content, nomes).length === 0) continue;
+    chaves.add(`${p.platform}\n${p.content}`);
+    postId = postId ?? p.id;
+  }
+  for (const c of cards) {
+    if (!c.content || mencoesProibidas(c.content, nomes).length === 0) continue;
+    chaves.add(`${c.cardType === "post_twitter" ? "twitter" : "linkedin"}\n${c.content}`);
+  }
+  return { textos: chaves.size, postId };
+}
+
+/**
  * Aplica a regra em TODOS os rascunhos de uma execução (posts e cards dos
  * redatores). Só mexe em post não publicado. Devolve quantos mudaram.
+ * Desde 09/10 só roda depois do pedido de ajuste com motivo (é reescrita paga).
  */
 export async function aplicarNaoCitarNaExecucao(runId: string, nomes: string[]): Promise<{ posts: number; cards: number }> {
   if (nomes.length === 0) return { posts: 0, cards: 0 };

@@ -107,6 +107,8 @@ export const PREFIXOS_DAS_TELAS = [
   "corte-nao-aplicado",
   // A situação da peça reprovada no card (08/10): em análise, créditos devolvidos, mantido.
   "reprovacao-peca",
+  // O pedido de ajuste do chat do card que parou no saldo (09/10).
+  "ajuste-sem-saldo",
 ] as const;
 
 /**
@@ -362,6 +364,11 @@ export function chaveDoDiaReprovado(cardId: string, postIds: readonly string[]):
 
 export function chaveDoPedidoQueParou(cardId: string, pedidoId: string | null | undefined): string | null {
   return montar("pedido-parou", cardId, pedidoId);
+}
+
+/** O aviso de saldo do pedido de ajuste (09/10): um por pedido; o pedido novo avisa de novo. */
+export function chaveDoAjusteSemSaldo(cardId: string, pedidoId: string | null | undefined): string | null {
+  return montar("ajuste-sem-saldo", cardId, pedidoId);
 }
 
 export function chaveDaJornadaDoProjetoVazio(projectId: string): string | null {

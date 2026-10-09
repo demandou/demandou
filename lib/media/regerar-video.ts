@@ -31,11 +31,15 @@ export function ehPedidoDeRefazerVideo(mensagem: string): boolean {
   return /(ger|refa|refaz|fa[cç]a|cri|tent|de novo|novamente|outra vez|falh|n[aã]o (veio|saiu|gerou)|cad[eê]|sem o v[ií]deo)/.test(m);
 }
 
-export async function regerarVideoDoDia(args: {
+/**
+ * O PEDIDO ORIGINAL DO DIA E O CUSTO DE REFAZÊ-LO, sem enfileirar nada (09/10):
+ * é a cotação do pedido de ajuste, que pergunta o motivo antes de gerar.
+ */
+export async function cotarRegeracaoDoDia(args: {
   runId: string;
   dayOfWeek: number;
   userId: string;
-}): Promise<ResultadoDaRegeracao> {
+}): Promise<{ ok: true; original: PedidoDeVideoDaFila; custo: number; disponivel: number; cabe: boolean } | { ok: false; motivo: string }> {
   // O pedido original do dia: o trabalho de vídeo que a campanha enfileirou.
   const trabalhos = await prisma.trabalho.findMany({
     where: { grupo: args.runId, tipo: "video-ia" },
@@ -49,13 +53,28 @@ export async function regerarVideoDoDia(args: {
   if (doDia.some((t) => t.status === "pendente" || t.status === "rodando" || t.status === "pausado")) {
     return { ok: false, motivo: "O vídeo deste dia já está sendo gerado. Assim que ficar pronto, ele aparece no card sozinho." };
   }
-
   const original = doDia[0].payload as unknown as PedidoDeVideoDaFila;
   // Quem pediu, ou quem usa o mesmo projeto pela equipe (01/10).
   if (original.userId !== args.userId && !(await podeUsarProjetoPorId(args.userId, original.projectId))) return { ok: false, motivo: "Este vídeo não é da sua conta." };
-
   const saldo = await cabeNoSaldoDeVideo(args.userId, original.segundos, original.qualidade);
-  if (!saldo.cabe) {
+  return { ok: true, original, custo: saldo.custo, disponivel: saldo.disponivel, cabe: saldo.cabe };
+}
+
+export async function regerarVideoDoDia(args: {
+  runId: string;
+  dayOfWeek: number;
+  userId: string;
+  /**
+   * O ERRO CONFIRMADO DO PEDIDO DE AJUSTE (09/10): o vídeo sai sem cobrança.
+   * A fila não debita a carteira de vídeo e, sem débito, não estorna nada.
+   */
+  cortesia?: { motivo: string } | null;
+}): Promise<ResultadoDaRegeracao> {
+  const cotacao = await cotarRegeracaoDoDia(args);
+  if (!cotacao.ok) return cotacao;
+  const original = cotacao.original;
+  const saldo = { cabe: cotacao.cabe, custo: cotacao.custo, disponivel: cotacao.disponivel };
+  if (!saldo.cabe && !args.cortesia) {
     // Membro da equipe (01/10) não compra pacote: a frase diz a quem pedir.
     const doMembro = await fraseDeSaldoDoMembro(args.userId, { necessario: saldo.custo, disponivel: saldo.disponivel });
     if (doMembro) return { ok: false, motivo: doMembro };
@@ -68,6 +87,7 @@ export async function regerarVideoDoDia(args: {
   const refeito: PedidoDeVideoDaFila = {
     ...original,
     referencia: `${original.postId ?? original.cardId ?? args.runId}:refeito-${Date.now()}`,
+    ...(args.cortesia ? { cortesia: args.cortesia } : {}),
   };
   await enfileirar([
     {
@@ -89,10 +109,10 @@ export async function regerarVideoDoDia(args: {
   logs.push({
     agent: "Diana Design",
     status: "running",
-    message: `Refazendo o vídeo a seu pedido: ${original.segundos}s no Veo 3.1 ${original.qualidade}, ${saldo.custo} créditos de vídeo.`,
+    message: `Refazendo o vídeo a seu pedido: ${original.segundos}s no Veo 3.1 ${original.qualidade}, ${args.cortesia ? `sem cobrança (${args.cortesia.motivo})` : `${saldo.custo} créditos de vídeo`}.`,
     timestamp: new Date().toISOString(),
   });
   await prisma.pipelineRun.update({ where: { id: args.runId }, data: { logs: logs as never } }).catch(() => {});
 
-  return { ok: true, custo: saldo.custo, segundos: original.segundos, geracoes: geracoesDoVideo(original.segundos), qualidade: original.qualidade };
+  return { ok: true, custo: args.cortesia ? 0 : saldo.custo, segundos: original.segundos, geracoes: geracoesDoVideo(original.segundos), qualidade: original.qualidade };
 }

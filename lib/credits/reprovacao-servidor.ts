@@ -8,9 +8,11 @@ import { notificar, type Aviso } from "@/lib/notificacoes";
 import { avisarAdmins, type AvisoAosAdmins } from "@/lib/notificacoes/aviso-aos-admins";
 import { provasDaPeca } from "@/lib/credits/provas-da-peca";
 import { conferirReprovacaoPeloJev, type ConferenciaDaReprovacao, type Perguntador, type ProvasDaPeca } from "@/lib/credits/reprovacao-pelo-jev";
+import { OPERACAO_DA_SOBRA_DO_AJUSTE, refDoAjustePeloAdmin } from "@/lib/credits/ajuste";
 import {
   NOME_DA_CATEGORIA,
   agregarMotivos,
+  ajusteADevolver,
   chaveDoSinoDaReprovacao,
   classeDaCategoria,
   creditosADevolver,
@@ -128,11 +130,13 @@ function depositoPadrao(): DepositoDaReprovacao {
       await prisma.post.update({ where: { id: postId }, data: { ...(dados.status ? { status: dados.status } : {}), metadata: dados.metadata as Prisma.InputJsonValue } });
     },
     async cobradoDaPeca({ runId, postId }) {
-      const [campanha, refazeres] = await Promise.all([
+      const [campanha, refazeres, sobras] = await Promise.all([
         runId ? prisma.creditTransaction.aggregate({ where: { operation: "campanha", refId: runId, amount: { lt: 0 } }, _sum: { amount: true } }) : null,
         prisma.creditTransaction.aggregate({ where: { operation: "refazer_peca", refId: { startsWith: `${postId}:` }, amount: { lt: 0 } }, _sum: { amount: true } }),
+        // A parte do ajuste que não saiu já voltou (09/10): não conta como cobrada.
+        prisma.creditTransaction.aggregate({ where: { operation: OPERACAO_DA_SOBRA_DO_AJUSTE, refId: { startsWith: `${postId}:` }, amount: { gt: 0 } }, _sum: { amount: true } }),
       ]);
-      return -((campanha?._sum.amount ?? 0) + (refazeres._sum.amount ?? 0));
+      return Math.max(0, -((campanha?._sum.amount ?? 0) + (refazeres._sum.amount ?? 0)) - (sobras._sum.amount ?? 0));
     },
     async jaDevolvidoDaCampanha({ runId, postId }) {
       if (!(await tabelaDosMotivosExiste())) {
@@ -198,7 +202,9 @@ export type ResultadoDaReprovacao = { ok: true; estado: EstadoDaReprovacao; fras
 const laminasDe = (imageUrl: string | null) => (imageUrl ?? "").split("|").filter((u) => u.trim().length > 10).length;
 
 function valorDaMemoria(m: MotivoDeReprovacao, peca: Pick<PecaParaReprovar, "platform" | "content">): Record<string, unknown> {
+  const origem = (m.provas as { origem?: unknown } | null)?.origem === "ajuste" ? "ajuste" : "reprovacao";
   return {
+    origem,
     categoria: m.categoria,
     categoriaNome: NOME_DA_CATEGORIA[m.categoria],
     classe: classeDaCategoria(m.categoria),
@@ -218,13 +224,15 @@ function valorDaMemoria(m: MotivoDeReprovacao, peca: Pick<PecaParaReprovar, "pla
 function avisoAoCliente(peca: PecaParaReprovar, estado: EstadoDaReprovacao, userId: string): Aviso | null {
   const link = `/projects/${peca.projectId}/content`;
   const chave = chaveDoSinoDaReprovacao(estado, peca.id);
+  // O motivo de um PEDIDO DE AJUSTE (09/10): a peça segue viva e é refeita agora.
+  const doAjuste = estado.origem === "ajuste";
   if (estado.situacao === "devolvido") {
     return {
       userId,
       projectId: peca.projectId,
       tipo: estado.creditos > 0 ? "estorno" : "reprovacao",
-      titulo: estado.creditos > 0 ? `Devolvemos ${estado.creditos.toLocaleString("pt-BR")} créditos` : "Erro confirmado: refazer é grátis",
-      texto: `O erro que você apontou (${NOME_DA_CATEGORIA[estado.categoria].toLowerCase()}) foi confirmado pelas provas automáticas. ${estado.creditos > 0 ? "Os créditos da peça voltaram ao seu saldo e já estão no extrato. " : ""}Refazer esta peça não cobra.`,
+      titulo: estado.creditos > 0 ? `Devolvemos ${estado.creditos.toLocaleString("pt-BR")} créditos` : doAjuste ? "Erro confirmado: o ajuste é grátis" : "Erro confirmado: refazer é grátis",
+      texto: `O erro que você apontou (${NOME_DA_CATEGORIA[estado.categoria].toLowerCase()}) foi confirmado pelas provas automáticas. ${estado.creditos > 0 ? "Os créditos da peça voltaram ao seu saldo e já estão no extrato. " : ""}${doAjuste ? "O ajuste que você pediu sai sem cobrança." : "Refazer esta peça não cobra."}`,
       link,
       chave,
     };
@@ -234,8 +242,10 @@ function avisoAoCliente(peca: PecaParaReprovar, estado: EstadoDaReprovacao, user
       userId,
       projectId: peca.projectId,
       tipo: "reprovacao",
-      titulo: "Recebemos o motivo da reprovação",
-      texto: `As provas automáticas não confirmaram sozinhas o erro apontado (${NOME_DA_CATEGORIA[estado.categoria].toLowerCase()}). Um admin vai olhar a peça, o motivo e as provas, e você recebe a resposta aqui.`,
+      titulo: doAjuste ? "Recebemos o motivo do ajuste" : "Recebemos o motivo da reprovação",
+      texto: doAjuste
+        ? `As provas automáticas não confirmaram sozinhas o erro apontado (${NOME_DA_CATEGORIA[estado.categoria].toLowerCase()}). O ajuste foi feito e cobrado; um admin vai olhar a peça, o motivo e as provas, e se reconhecer o erro os créditos voltam. Você recebe a resposta aqui.`
+        : `As provas automáticas não confirmaram sozinhas o erro apontado (${NOME_DA_CATEGORIA[estado.categoria].toLowerCase()}). Um admin vai olhar a peça, o motivo e as provas, e você recebe a resposta aqui.`,
       link,
       chave,
     };
@@ -258,6 +268,12 @@ export async function reprovarPeca(
     provas?: ProvasDaPeca;
     perguntar?: Perguntador;
     usarJev?: boolean;
+    /**
+     * O MOTIVO DE UM PEDIDO DE AJUSTE (09/10, lib/credits/ajuste-servidor.ts):
+     * a mesma regra, conferência e devolução, mas a peça NÃO morre (o status
+     * fica) e é refeita em seguida. O registro e a memória dizem "ajuste".
+     */
+    comoAjuste?: { pedidoId: string; pedido: string };
   },
   dep: DepositoDaReprovacao = depositoPadrao()
 ): Promise<ResultadoDaReprovacao> {
@@ -266,6 +282,7 @@ export async function reprovarPeca(
   if (peca.status === "published" || peca.status === "publishing") return { ok: false, erro: "ja_publicado" };
   const motivo = validarMotivo({ categoria: args.categoria, texto: args.texto });
   if (!motivo.ok) return { ok: false, erro: "motivo_invalido", mensagem: motivo.erro };
+  const doAjuste = Boolean(args.comoAjuste);
 
   const agora = dep.agora();
   const id = dep.novoId();
@@ -305,9 +322,11 @@ export async function reprovarPeca(
     reprovadaEm: agora.toISOString(),
     decididaEm: decisao.situacao === "em_analise" ? null : agora.toISOString(),
     refeitaGratisEm: null,
+    ...(args.comoAjuste ? { origem: "ajuste" as const, ajuste: { id: args.comoAjuste.pedidoId, cobrado: 0, devolvido: 0 } } : {}),
   };
   const metadata = { ...((peca.metadata as Record<string, unknown> | null) ?? {}), reprovacao: estado };
-  await dep.gravarPeca(peca.id, { status: "rejected", metadata });
+  // O ajuste não mata a peça: ela é refeita e volta a rascunho pelo caminho do refazer.
+  await dep.gravarPeca(peca.id, { status: doAjuste ? null : "rejected", metadata });
 
   const registro: MotivoDeReprovacao = {
     id,
@@ -319,7 +338,11 @@ export async function reprovarPeca(
     texto: motivo.texto,
     vereditoDoJev: conferencia?.veredito ?? null,
     decididoPor: conferencia?.por ?? "codigo",
-    provas: provas ? { ...provas, conferencia: conferencia?.detalhe ?? null, texto: undefined } : null,
+    provas: provas
+      ? { ...provas, conferencia: conferencia?.detalhe ?? null, texto: undefined, ...(args.comoAjuste ? { origem: "ajuste", pedido: args.comoAjuste.pedido.slice(0, 500) } : {}) }
+      : args.comoAjuste
+        ? { origem: "ajuste", pedido: args.comoAjuste.pedido.slice(0, 500) }
+        : null,
     decisaoDoAdmin: null,
     adminId: null,
     motivoDoAdmin: null,
@@ -338,11 +361,11 @@ export async function reprovarPeca(
     await dep
       .avisarAdmins({
         chave: `reprovacao:${id}`,
-        titulo: "Reprovação para decidir",
-        texto: `${NOME_DA_CATEGORIA[motivo.categoria]}: ${motivo.texto.slice(0, 140) || "sem texto"}. As provas não confirmaram; decida devolver ou manter.`,
+        titulo: doAjuste ? "Ajuste para decidir" : "Reprovação para decidir",
+        texto: `${NOME_DA_CATEGORIA[motivo.categoria]}: ${motivo.texto.slice(0, 140) || "sem texto"}. As provas não confirmaram; decida devolver ou manter.${doAjuste ? " O ajuste já foi refeito e cobrado; devolver inclui o que ele cobrou." : ""}`,
         link: "/admin/reprovacoes",
-        assunto: "Reprovação de peça para decidir",
-        corpo: `Peça ${peca.id} do projeto ${peca.projectId}, rede ${peca.platform}.\nMotivo: ${NOME_DA_CATEGORIA[motivo.categoria]}.\nTexto do cliente: ${motivo.texto || "(sem texto)"}.\nConferência: ${conferencia?.detalhe ?? "sem provas"}.\nCusto da peça: ${custoDaPeca} créditos.\n\n/admin/reprovacoes`,
+        assunto: doAjuste ? "Pedido de ajuste para decidir" : "Reprovação de peça para decidir",
+        corpo: `Peça ${peca.id} do projeto ${peca.projectId}, rede ${peca.platform}.\n${doAjuste ? `Pedido de ajuste pelo chat do card: ${args.comoAjuste!.pedido.slice(0, 300)}\n` : ""}Motivo: ${NOME_DA_CATEGORIA[motivo.categoria]}.\nTexto do cliente: ${motivo.texto || "(sem texto)"}.\nConferência: ${conferencia?.detalhe ?? "sem provas"}.\nCusto da peça: ${custoDaPeca} créditos.\n\n/admin/reprovacoes`,
       })
       .catch(() => undefined);
   }
@@ -368,7 +391,12 @@ export async function decidirReprovacaoPeloAdmin(
   const agora = dep.agora();
   const motivoDoAdmin = (args.motivo ?? "").replace(/\s+/g, " ").trim().slice(0, 500) || null;
 
+  // O estado gravado na peça só vale se é DESTA reprovação (a peça pode ter outra, mais nova).
+  const gravado = lerEstadoDaReprovacao(peca.metadata);
+  const anterior = gravado?.id === m.id ? gravado : null;
   let creditos = 0;
+  /** O que o ajuste cobrou e volta junto (09/10): erro reconhecido refaz de graça, e o refazer já foi feito e pago. */
+  let doAjuste = 0;
   if (args.decisao === "devolver") {
     const [cobrado, jaDevolvido] = await Promise.all([dep.cobradoDaPeca({ runId: m.runId, postId: m.postId }), dep.jaDevolvidoDaCampanha({ runId: m.runId, postId: m.postId })]);
     creditos = creditosADevolver({ custoDaPeca: m.custoDaPeca, cobradoNaCampanha: cobrado, jaDevolvidoNaCampanha: jaDevolvido });
@@ -376,23 +404,30 @@ export async function decidirReprovacaoPeloAdmin(
       const r = await dep.creditar({ userId: m.userId, quantidade: creditos, refId: refDaDevolucao(m.postId, m.id), note: `devolução decidida pelo admin: peça reprovada por ${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}` });
       if (r.duplicado) creditos = 0;
     }
+    const doPedido = ajusteADevolver(anterior);
+    if (doPedido > 0) {
+      const r = await dep.creditar({ userId: m.userId, quantidade: doPedido, refId: refDoAjustePeloAdmin(m.postId, m.id), note: `devolução decidida pelo admin: o ajuste pedido pelo chat (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) foi erro da plataforma` });
+      if (!r.duplicado) doAjuste = doPedido;
+    }
   }
   const situacao = args.decisao === "devolver" ? "devolvido" : "mantido";
   const frase =
     args.decisao === "devolver"
-      ? `erro reconhecido pelo admin${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}: os créditos da peça voltaram e refazer é grátis`
+      ? `erro reconhecido pelo admin${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}: ${doAjuste > 0 ? "os créditos da peça e do ajuste voltaram" : "os créditos da peça voltaram e refazer é grátis"}`
       : `o admin olhou a peça e as provas e não viu erro da plataforma${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}`;
 
-  const anterior = lerEstadoDaReprovacao(peca.metadata);
   const estado: EstadoDaReprovacao = {
     ...(anterior ?? { id: m.id, categoria: m.categoria, texto: m.texto, veredito: m.vereditoDoJev, reprovadaEm: m.reprovadaEm, refeitaGratisEm: null }),
     id: m.id,
     situacao,
-    creditos,
+    creditos: creditos + doAjuste,
     decididoPor: "admin",
     motivo: frase,
     decididaEm: agora.toISOString(),
+    // O ajuste devolvido É o refazer grátis desta reprovação: não sobra outro.
+    ...(doAjuste > 0 && anterior?.ajuste ? { refeitaGratisEm: agora.toISOString(), ajuste: { ...anterior.ajuste, devolvido: (anterior.ajuste.devolvido ?? 0) + doAjuste } } : {}),
   };
+  creditos += doAjuste;
   await dep.gravarPeca(peca.id, { status: null, metadata: { ...((peca.metadata as Record<string, unknown> | null) ?? {}), reprovacao: estado } });
   const campos: Partial<MotivoDeReprovacao> = { decisaoDoAdmin: args.decisao, adminId: args.admin.id, motivoDoAdmin, situacao, creditosDevolvidos: creditos, decididaEm: estado.decididaEm, decididoPor: "admin" };
   await dep.atualizarMotivo(m.id, campos).catch((e) => console.warn("[reprovacao] decisão não gravada na tabela:", e instanceof Error ? e.message : e));
@@ -407,7 +442,9 @@ export async function decidirReprovacaoPeloAdmin(
       titulo: situacao === "devolvido" ? (creditos > 0 ? `Devolvemos ${creditos.toLocaleString("pt-BR")} créditos` : "Erro reconhecido: refazer é grátis") : "Reprovação analisada: os créditos ficam",
       texto:
         situacao === "devolvido"
-          ? `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. ${creditos > 0 ? "Os créditos da peça voltaram ao seu saldo. " : ""}Refazer esta peça não cobra.`
+          ? doAjuste > 0
+            ? `Um admin olhou o ajuste que você pediu (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. Os créditos da peça e o que o ajuste cobrou voltaram ao seu saldo.`
+            : `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. ${creditos > 0 ? "Os créditos da peça voltaram ao seu saldo. " : ""}Refazer esta peça não cobra.`
           : `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}), o motivo e as provas, e não viu erro da plataforma${motivoDoAdmin ? `: ${motivoDoAdmin}` : ""}. O crédito fica e refazer cobra como uma peça nova.`,
       link: `/projects/${m.projectId}/content`,
       chave: chaveDoSinoDaReprovacao(estado, m.postId),

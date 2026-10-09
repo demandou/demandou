@@ -7,6 +7,7 @@ import type { PlanoNaTela } from "@/lib/plano-na-tela";
 import { fraseSemCreditosDaCarteira } from "@/lib/equipe/regras";
 import { BotaoDescartar, useDescartes } from "@/components/ui/descartar";
 import { chaveDoAlertaDoPlano } from "@/lib/avisos/chaves";
+import { EVENTO_DO_SALDO } from "@/lib/credits/ajuste";
 
 /**
  * A faixa do plano, no navegador. Nasce com o retrato que o servidor mandou
@@ -28,7 +29,9 @@ export function FaixaDoPlano({ inicial }: { inicial: PlanoNaTela }) {
     const t = setInterval(ler, 60_000);
     window.addEventListener("focus", ler);
     document.addEventListener("visibilitychange", ler);
-    return () => { vivo = false; clearInterval(t); window.removeEventListener("focus", ler); document.removeEventListener("visibilitychange", ler); };
+    // O ajuste pedido no card cobra na hora (09/10): o saldo cai aqui sem esperar o minuto.
+    window.addEventListener(EVENTO_DO_SALDO, ler);
+    return () => { vivo = false; clearInterval(t); window.removeEventListener("focus", ler); document.removeEventListener("visibilitychange", ler); window.removeEventListener(EVENTO_DO_SALDO, ler); };
   }, []);
   const numero = (n: number) => n.toLocaleString("pt-BR");
 

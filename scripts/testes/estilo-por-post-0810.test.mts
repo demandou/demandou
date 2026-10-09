@@ -492,8 +492,12 @@ test("revisão: todo refazer da arte parte do modelo do post, inclusive o infogr
   assert.equal(modeloGravadoNosPosts([{ metadata: { modeloDoPost: { nada: 1 } } }]), null);
   assert.ok(/marcaDaArte\(post\.projectId, \{ modeloDoPost: modeloGravadoNosPosts\(\[post\]\)[,}]/.test(fonte("lib/pipeline/refazer-peca.ts")), "o refazer da peça parte do modelo gravado");
   assert.ok(fonte("lib/vera/regerar-arte.ts").includes("modeloDoPost: modeloGravadoNosPosts([base])"));
-  const chat = fonte("app/api/campaign-cards/[id]/chat/route.ts");
-  assert.equal((chat.match(/marcaDaArte\(card\.projectId, \{ modeloDoPost[ ,}]/g) ?? []).length, 2, "o infográfico e a arte refeitos pelo chat");
+  // Desde 09/10 (pedir ajuste com motivo) a rota do chat não desenha arte: o
+  // refazer pedido no chat é o pedido do dia (lib/media/pedido-do-card.ts),
+  // depois do motivo, e as duas artes dele (carrossel e arte única) partem do modelo do post.
+  const pedidoDoCard = fonte("lib/media/pedido-do-card.ts");
+  assert.equal((pedidoDoCard.match(/marcaDaArte\(daDiana\.projectId, \{ runId(: daDiana\.runId)?, modeloDoPost: modeloDosPosts\(o\.posts\)/g) ?? []).length, 2, "o carrossel e a arte refeitos pelo chat");
+  assert.ok(!/marcaDaArte\(/.test(fonte("app/api/campaign-cards/[id]/chat/route.ts")), "a rota do chat não desenha arte sem o motivo");
   // A esteira grava a escolha no post, também a da marca (o refazer do infográfico não volta a esperar).
   // 08/10 (material próprio): o post grava o modelo que desenhou a arte (o da foto, quando ela tem estilo próprio).
   const gravaOModelo = /(\w+)\.modeloDoPost \? \{ modeloDoPost: \1\.modeloDoPost \} : \{\}/;

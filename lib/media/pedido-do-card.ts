@@ -42,6 +42,7 @@ import { capturarFeedbackDoChatDoCard } from "@/lib/feedback/captura";
 import { fotosDasLaminasRefeitas, metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { modeloGravadoNosPosts } from "@/lib/estilo-dos-posts/tipos";
 import { fotosGravadasNosPosts } from "@/lib/materiais/material-da-campanha";
+import { custoDoAjusteDoDia } from "@/lib/credits/ajuste";
 
 /**
  * O PEDIDO COMPOSTO DO CHAT DO CARD, feito como tarefa no servidor (05/10).
@@ -151,6 +152,8 @@ export async function abrirPedido(args: {
   cardId: string;
   mensagem: string;
   agenteNome: string;
+  /** A mensagem já está no chat (o pedido de ajuste a escreveu ao perguntar o motivo, 09/10). */
+  semMensagemNoChat?: boolean;
 }): Promise<{ jaFazendo: true; pedido: PedidoDoCard } | { jaFazendo: false; pedido: PedidoDoCard; chatHistory: Mensagem[] }> {
   const card = await prisma.campaignCard.findUnique({ where: { id: args.cardId }, select: { metadata: true } });
   const emCurso = pedidoEmCurso(card?.metadata);
@@ -165,7 +168,7 @@ export async function abrirPedido(args: {
     agenteNome: args.agenteNome,
   };
   await gravarPedido(args.cardId, pedido);
-  const chatHistory = await acrescentarNoChat(args.cardId, [{ role: "user", content: args.mensagem, timestamp: agora() }]);
+  const chatHistory = await acrescentarNoChat(args.cardId, args.semMensagemNoChat ? [] : [{ role: "user", content: args.mensagem, timestamp: agora() }]);
   return { jaFazendo: false, pedido, chatHistory };
 }
 
@@ -486,19 +489,8 @@ export async function executarPedido(ctx: Contexto): Promise<void> {
   try {
     const runId = card.runId;
     const dia = card.dayOfWeek;
-    const posts = await prisma.post.findMany({
-      where: card.postId && card.cardType !== "publish" && card.cardType !== "media"
-        ? { id: card.postId }
-        : { runId, dayOfWeek: dia, status: { notIn: ["published", "publishing", "cancelled"] } },
-      select: { id: true, platform: true, content: true, imageUrl: true, mediaType: true, metadata: true, scheduledAt: true, status: true, runId: true, dayOfWeek: true, socialAccountId: true },
-    });
-    let daDiana: CardComProjeto | null = card.cardType === "media"
-      ? card
-      : await prisma.campaignCard.findFirst({
-          where: { runId, dayOfWeek: dia, cardType: "media", NOT: { status: "archived" } },
-          include: DADOS,
-          orderBy: { createdAt: "desc" },
-        });
+    const posts = await postsDoPedido(card);
+    let daDiana: CardComProjeto | null = await cardDaDianaDoPedido(card);
     if (daDiana) revisao.add(daDiana.id);
     // A ARTE DO DIA VEM DO POST (05/10): o card da Diana só complementa. O
     // post único de X nunca passou pela Diana, e a arte dele estava no post.
@@ -692,13 +684,89 @@ export async function executarPedido(ctx: Contexto): Promise<void> {
   }
 }
 
-function alvoDasLaminas(a: Extract<AcaoDoPedido, { tipo: "arte" }>, ctx: Contexto, cardType: string, total: number): number[] {
+/** As lâminas que o pedido de arte refaz. Exportada (09/10): a cotação do ajuste conta as mesmas. */
+export function alvoDasLaminas(a: Extract<AcaoDoPedido, { tipo: "arte" }>, ctx: Pick<Contexto, "slideIndex">, cardType: string, total: number): number[] {
   if (a.lamina && a.lamina >= 1 && a.lamina <= total) return [a.lamina - 1];
   // A lâmina selecionada na tela só vale no card da Diana, onde o seletor existe.
   if (cardType === "media" && ctx.slideIndex !== null && ctx.slideIndex >= 0 && ctx.slideIndex < total && !/\b(todas|tudo|carrossel|arte)\b/i.test(a.instrucao)) {
     return [ctx.slideIndex];
   }
   return Array.from({ length: total }, (_, i) => i);
+}
+
+type CardDoPedido = { id: string; postId: string | null; cardType: string; runId: string; dayOfWeek: number };
+
+/** Os posts que o pedido do card alcança: o do redator, ou os do dia que ainda não saíram. */
+async function postsDoPedido(card: CardDoPedido) {
+  return prisma.post.findMany({
+    where: card.postId && card.cardType !== "publish" && card.cardType !== "media"
+      ? { id: card.postId }
+      : { runId: card.runId, dayOfWeek: card.dayOfWeek, status: { notIn: ["published", "publishing", "cancelled"] } },
+    select: { id: true, platform: true, content: true, imageUrl: true, mediaType: true, metadata: true, scheduledAt: true, status: true, runId: true, dayOfWeek: true, socialAccountId: true },
+  });
+}
+
+/** O card da Diana do dia (ou o próprio card, quando é ele). */
+async function cardDaDianaDoPedido(card: CardDoPedido & { project: unknown }): Promise<CardComProjeto | null> {
+  if (card.cardType === "media") return card as CardComProjeto;
+  return prisma.campaignCard.findFirst({
+    where: { runId: card.runId, dayOfWeek: card.dayOfWeek, cardType: "media", NOT: { status: "archived" } },
+    include: DADOS,
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+/**
+ * A COTAÇÃO DO PEDIDO DE AJUSTE DO DIA (09/10), antes de qualquer geração. O
+ * pedido é entendido AGORA (as mesmas ações que `executarPedido` vai fazer,
+ * passadas a ele como `acoesProntas` depois do motivo), e a conta sai de
+ * `custoDoAjusteDoDia`, com os mesmos posts, o mesmo formato e as mesmas
+ * lâminas. Nada é gerado aqui: só a leitura do pedido.
+ */
+export async function planejarPedidoDoDia(args: {
+  cardId: string;
+  mensagem: string;
+  slideIndex: number | null;
+  /** O entendedor (a prova passa um de mentira). */
+  entender?: typeof entenderPedido;
+}): Promise<{ acoes: AcaoDoPedido[]; custo: ReturnType<typeof custoDoAjusteDoDia>; postId: string | null } | null> {
+  const card = await prisma.campaignCard.findUnique({ where: { id: args.cardId }, include: DADOS });
+  if (!card) return null;
+  const posts = await postsDoPedido(card);
+  const daDiana = await cardDaDianaDoPedido(card);
+  const arte = arteDoDiaPelosPosts(posts, daDiana);
+  const ehCarrossel = arte.formato === "carousel" || arte.laminas.length > 1;
+  const quando = posts.find((p) => p.scheduledAt)?.scheduledAt ?? null;
+  const acoes = await (args.entender ?? entenderPedido)({
+    mensagem: args.mensagem,
+    formato: ehCarrossel ? "carrossel" : arte.formato === "infographic" ? "infográfico" : arte.formato === "image" ? "imagem" : "post de texto",
+    laminas: arte.laminas.length,
+    redes: [...new Set(posts.map((p) => p.platform))],
+    quando: quando ? quando.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : null,
+    usage: { projectId: card.projectId, runId: card.runId },
+  });
+  const acaoDeArte = acoes.find((a): a is Extract<AcaoDoPedido, { tipo: "arte" }> => a.tipo === "arte");
+  const redesDoDia = new Set(posts.map((p) => p.platform));
+  const redesNovas = acoes
+    .filter((a): a is Extract<AcaoDoPedido, { tipo: "rede" }> => a.tipo === "rede")
+    .flatMap((a) => a.incluir ?? [])
+    .filter((r, i, todas) => !redesDoDia.has(r) && todas.indexOf(r) === i).length;
+  const custo = custoDoAjusteDoDia({
+    acoes,
+    textosDistintos: new Set(posts.filter((p) => p.content?.trim()).map((p) => `${p.platform}\n${p.content}`)).size,
+    formato: ehCarrossel ? "carousel" : arte.formato,
+    redes: [...redesDoDia],
+    laminasAlvo: acaoDeArte && ehCarrossel ? alvoDasLaminas(acaoDeArte, { slideIndex: args.slideIndex }, card.cardType, arte.laminas.length) : [],
+    // Com o card da Diana no dia, o pedido de arte GERA mesmo sem arte guardada
+    // (`executarPedido` desenha no card dela): então cobra.
+    temArte: arte.temArte || Boolean(daDiana),
+    redesNovas,
+  });
+  // A peça de referência do motivo: a que tem a arte quando o pedido é de arte; senão a do card, ou a primeira do dia.
+  const comArte = acaoDeArte ? posts.find((p) => p === arte.postComArte) : null;
+  const doCard = card.postId ? posts.find((p) => p.id === card.postId) : null;
+  const postId = (comArte ?? doCard ?? posts[0])?.id ?? null;
+  return { acoes, custo, postId };
 }
 
 function redesPorExtenso(redes: string[]): string {

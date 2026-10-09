@@ -123,6 +123,17 @@ export type EstadoDaReprovacao = {
   decididaEm: string | null;
   /** O refazer grátis já foi usado (erro confirmado só paga um refazer). */
   refeitaGratisEm?: string | null;
+  /**
+   * O MOTIVO VEIO DE UM PEDIDO DE AJUSTE no chat do card (09/10), e não de uma
+   * reprovação: a peça continua viva e é refeita. Sem isto, é reprovação.
+   */
+  origem?: "ajuste";
+  /**
+   * O que o ajuste cobrou e o que já voltou (a parte que não saiu). Quando o
+   * admin reconhece o erro depois, o que o ajuste cobrou volta junto, porque
+   * erro reconhecido refaz de graça (lib/credits/ajuste.ts).
+   */
+  ajuste?: { id: string; cobrado: number; devolvido: number } | null;
 };
 
 export function lerEstadoDaReprovacao(metadata: unknown): EstadoDaReprovacao | null {
@@ -131,6 +142,16 @@ export function lerEstadoDaReprovacao(metadata: unknown): EstadoDaReprovacao | n
   const e = r as Partial<EstadoDaReprovacao>;
   if (typeof e.id !== "string" || !categoriaValida(e.categoria) || !e.situacao) return null;
   return e as EstadoDaReprovacao;
+}
+
+/**
+ * Quanto do ajuste ainda pode voltar quando o admin reconhece o erro: o que ele
+ * cobrou menos o que já voltou, e só quando o refazer grátis não foi usado
+ * (ajuste grátis não cobrou nada). Nunca negativo.
+ */
+export function ajusteADevolver(e: EstadoDaReprovacao | null | undefined): number {
+  if (!e?.ajuste || e.refeitaGratisEm) return 0;
+  return Math.max(0, Math.floor(e.ajuste.cobrado) - Math.floor(e.ajuste.devolvido ?? 0));
 }
 
 /**
