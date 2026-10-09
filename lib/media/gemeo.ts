@@ -388,14 +388,33 @@ export type ChecagemDaFoto = {
   texto: string;
 };
 
+/**
+ * 09/10: o piso que ainda passa, com aviso. Foto em pé que passou pelo
+ * WhatsApp chega com 900 x 1600 (o WhatsApp reduz o lado maior para 1600), e
+ * um cliente ficou travado no cadastro com todas as fotos que tinha. O gêmeo
+ * sai em 1080 de largura: 900 é perto disso, então passa com o aviso de que a
+ * original fica mais nítida. Abaixo de 720 continua recusada.
+ */
+export const LADO_ACEITAVEL_DA_FOTO = 720;
+
+const DICA_DO_WHATSAPP =
+  "Foto que passou pelo WhatsApp chega reduzida: mande como documento, ou abra a Demandou no celular e envie direto da galeria.";
+
 /** A resolução da foto serve? Mesma régua no navegador (antes de enviar) e no servidor. */
 export function resolucaoDaFoto(largura: number, altura: number): ChecagemDaFoto {
   const menor = Math.min(largura, altura);
-  if (menor < LADO_MINIMO_DA_FOTO) {
+  if (menor < LADO_ACEITAVEL_DA_FOTO) {
     return {
       id: "resolucao",
       resultado: "erro",
-      texto: `A foto tem ${largura} x ${altura} px. Precisamos de pelo menos ${LADO_MINIMO_DA_FOTO} px no lado menor: envie a foto original, sem reduzir, ou tire outra com a câmera principal.`,
+      texto: `A foto tem ${largura} x ${altura} px, pequena demais para o gêmeo sair nítido. Precisamos de pelo menos ${LADO_MINIMO_DA_FOTO} px no lado menor. ${DICA_DO_WHATSAPP}`,
+    };
+  }
+  if (menor < LADO_MINIMO_DA_FOTO) {
+    return {
+      id: "resolucao",
+      resultado: "aviso",
+      texto: `A foto tem ${largura} x ${altura} px. Serve, mas a original (${LADO_MINIMO_DA_FOTO} px ou mais no lado menor) deixa o gêmeo mais nítido. ${DICA_DO_WHATSAPP}`,
     };
   }
   return { id: "resolucao", resultado: "ok", texto: `Resolução: ${largura} x ${altura} px.` };

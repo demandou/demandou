@@ -254,7 +254,8 @@ export function GemeoDoProjeto({ projectId, inicial, roteiroInicial }: { project
       const m = await medirImagem(f);
       if (m) {
         const r = resolucaoDaFoto(m.largura, m.altura);
-        if (r.resultado === "erro") return toast.error(r.texto, { duration: 8000 });
+        if (r.resultado === "erro") return toast.error(r.texto, { duration: 10_000 });
+        if (r.resultado === "aviso") toast(r.texto, { icon: "⚠️", duration: 10_000 });
       }
       await enviar("foto", f, { nome: f.name.slice(0, 120), unica: true });
       toast.success("Foto recebida. Conferindo rosto e enquadramento.");
