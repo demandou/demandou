@@ -15,6 +15,7 @@ import {
 } from "@/lib/media/editor-por-comando/comando";
 import { comandoDoEstilo, miniaturasDosEstilos } from "@/lib/media/editor-por-comando/comando-dos-estilos";
 import { estiloDoCatalogo } from "@/lib/media/catalogo-de-estilos";
+import { EVENTO_DO_ESTILO_CONFIRMADO, type DetalheDoEstiloConfirmado } from "@/lib/estilo-proprio/tipos";
 import { PreviaDoEstiloDeVideo, temPreviaDeVideo } from "@/components/video/previa-do-estilo-de-video";
 
 /**
@@ -77,26 +78,35 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
 
   useEffect(() => {
     let vivo = true;
-    fetch(`/api/projects/${projectId}/comando-do-video`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { ligado?: boolean; comando?: ComandoDoVideo | null; marca?: Marca; paleta?: string[]; nicho?: string | null; publico?: string | null; nome?: string | null } | null) => {
-        if (!vivo) return;
-        setLigado(Boolean(d?.ligado));
-        if (d?.marca) setMarca(d.marca);
-        setProjeto({ paleta: Array.isArray(d?.paleta) && d.paleta.length ? d.paleta : d?.marca ? [d.marca.acento, d.marca.escuro, d.marca.claro] : [], nicho: d?.nicho ?? null, publico: d?.publico ?? null, nome: d?.nome ?? null });
-        if (d?.comando) {
-          setTexto(d.comando.texto);
-          setFonte(d.comando.fonte);
-          setCores(d.comando.cores);
-          setOrigem(d.comando.origem ?? "escrito");
-          setReferencia(d.comando.referencia ?? null);
-          setSalvo(JSON.stringify([d.comando.texto, d.comando.fonte, d.comando.cores]));
-        }
-      })
-      .catch(() => setLigado(false))
-      .finally(() => vivo && setCarregando(false));
+    const ler = () =>
+      fetch(`/api/projects/${projectId}/comando-do-video`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { ligado?: boolean; comando?: ComandoDoVideo | null; marca?: Marca; paleta?: string[]; nicho?: string | null; publico?: string | null; nome?: string | null } | null) => {
+          if (!vivo) return;
+          setLigado(Boolean(d?.ligado));
+          if (d?.marca) setMarca(d.marca);
+          setProjeto({ paleta: Array.isArray(d?.paleta) && d.paleta.length ? d.paleta : d?.marca ? [d.marca.acento, d.marca.escuro, d.marca.claro] : [], nicho: d?.nicho ?? null, publico: d?.publico ?? null, nome: d?.nome ?? null });
+          if (d?.comando) {
+            setTexto(d.comando.texto);
+            setFonte(d.comando.fonte);
+            setCores(d.comando.cores);
+            setOrigem(d.comando.origem ?? "escrito");
+            setReferencia(d.comando.referencia ?? null);
+            setSalvo(JSON.stringify([d.comando.texto, d.comando.fonte, d.comando.cores]));
+          }
+        })
+        .catch(() => setLigado(false))
+        .finally(() => vivo && setCarregando(false));
+    void ler();
+    // O MEU ESTILO CONFIRMADO (08/10): a caixa "crie o seu estilo" gravou o comando; esta tela relê, em vez de
+    // mostrar o texto antigo (e de gravá-lo por cima ao desmontar).
+    const aoConfirmar = (e: Event) => {
+      if ((e as CustomEvent<DetalheDoEstiloConfirmado>).detail?.projectId === projectId) void ler();
+    };
+    window.addEventListener(EVENTO_DO_ESTILO_CONFIRMADO, aoConfirmar);
     return () => {
       vivo = false;
+      window.removeEventListener(EVENTO_DO_ESTILO_CONFIRMADO, aoConfirmar);
     };
   }, [projectId]);
 

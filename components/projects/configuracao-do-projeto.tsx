@@ -15,6 +15,7 @@ import { GaleriaDeModelos } from "@/components/modelos-de-arte/galeria-de-modelo
 import { GaleriaDaBiblioteca } from "@/components/biblioteca-de-design/galeria-da-biblioteca";
 import { SeletorDeCores } from "@/components/marca/seletor-de-cores";
 import { EstiloDosPosts } from "@/components/estilo-dos-posts/estilo-dos-posts";
+import { CaixaDoMeuEstilo } from "@/components/estilo-proprio/caixa-do-meu-estilo";
 import { MODELOS_DE_ARTE } from "@/lib/modelos-de-arte/catalogo";
 
 /** Os ids do book: a biblioteca na mesma aba não repete esses modelos (06/10). */
@@ -327,6 +328,8 @@ export function ConfiguracaoDoProjeto({
       {/* O BOOK DE MODELOS (03/10): mudar de modelo depois mora aqui. */}
       {aba === "modelos" && (
         <>
+          {/* A CAIXA "CRIE O SEU ESTILO" (08/10, teste do Bruno): a primeira coisa da aba, igual à da jornada. */}
+          <CaixaDoMeuEstilo projectId={projeto.id} />
           {/* O ESTILO DOS POSTS (08/10): escrever no chat ou escolher da biblioteca, e já fica aprovado. */}
           <EstiloDosPosts projectId={projeto.id} sempreAberto />
           {/* O BOOK primeiro (06/10): a marca no início e cada modelo uma vez, nas cores da marca. */}
