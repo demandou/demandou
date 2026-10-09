@@ -165,21 +165,24 @@ export function coresDoInfografico(marca?: MarcaDaArte): { fundo: string; texto:
   };
 }
 
-function layoutDaProporcao(proporcao: ProporcaoPedida, modulos: number): string {
+// A FAIXA DE NÚMEROS SÓ EXISTE COM NÚMERO REAL (08/10, prova paga): o layout pedia "key numbers in a
+// bottom strip" mesmo sem número nenhum, e o modelo preencheu a faixa inventando "67%", "82%" e "3x".
+function layoutDaProporcao(proporcao: ProporcaoPedida, modulos: number, comNumeros: boolean): string {
   const n = Math.max(modulos, 1);
+  const faixa = (t: string) => (comNumeros ? t : "NO number strip at the bottom: end with the last module, then empty space.");
   if (proporcao === "16:9") {
     return [
-      `LAYOUT (horizontal landscape 16:9): title and subtitle on top; main number with its chart on the left; the ${n} modules on the right as a left to right flow joined by arrows (2x2 grid when there are 4); key numbers in a slim bottom strip.`,
+      `LAYOUT (horizontal landscape 16:9): title and subtitle on top; main number with its chart on the left; the ${n} modules on the right as a left to right flow joined by arrows (2x2 grid when there are 4); ${faixa("key numbers in a slim bottom strip.")}`,
       `Shown small in the feed: keep every text LARGE, title at least 7% of the image height, module text at least 3.5%. Fewer decorations, more room for words.`,
     ].join("\n");
   }
   if (proporcao === "9:16") {
-    return `LAYOUT (tall vertical 9:16): title and subtitle in the upper third; a big hero data visual for the main number below it; the ${n} modules stacked top to bottom along a vertical flow line with arrows, each with its own icon on the left and its text on the right; key numbers at the bottom, above the safe margin.`;
+    return `LAYOUT (tall vertical 9:16): title and subtitle in the upper third; a big hero data visual for the main number below it; the ${n} modules stacked top to bottom along a vertical flow line with arrows, each with its own icon on the left and its text on the right; ${faixa("key numbers at the bottom, above the safe margin.")}`;
   }
   if (proporcao === "1:1") {
-    return `LAYOUT (square 1:1): title and subtitle at the top; a hero data visual for the main number in the center; the ${n} modules around it as a compact grid with arrows, each with its own icon; key numbers in a bottom strip.`;
+    return `LAYOUT (square 1:1): title and subtitle at the top; a hero data visual for the main number in the center; the ${n} modules around it as a compact grid with arrows, each with its own icon; ${faixa("key numbers in a bottom strip.")}`;
   }
-  return `LAYOUT (vertical portrait 4:5, Instagram feed): title and subtitle at the top; a hero data visual for the main number right below; then the ${n} modules in a vertical flow (a 2x2 grid when there are 4) connected by arrows, each with its own icon next to its heading; key numbers in a bottom strip.`;
+  return `LAYOUT (vertical portrait 4:5, Instagram feed): title and subtitle at the top; a hero data visual for the main number right below; then the ${n} modules in a vertical flow (a 2x2 grid when there are 4) connected by arrows, each with its own icon next to its heading; ${faixa("key numbers in a bottom strip.")}`;
 }
 
 export type EntradaDoPrompt = {
@@ -209,13 +212,13 @@ export function promptDoInfografico(e: EntradaDoPrompt): string {
   const publico = e.marca?.identidade?.publico;
 
   const linhas: string[] = [
-    `Create a finished, publication ready INFOGRAPHIC for a social media feed, in Brazilian Portuguese. Visual storytelling, NOT a slide of text: each module has its own icon or small illustration, at least one simple chart drawn from the real numbers, and arrows connecting the ideas.`,
+    `Create a finished, publication ready INFOGRAPHIC for a social media feed, in Brazilian Portuguese. Visual storytelling, NOT a slide of text: each module has its own icon or small illustration, at least one simple chart drawn ONLY from the numbers listed below (never invent a number, percentage, multiplier or statistic), and arrows connecting the ideas.`,
     "",
     `SUBJECT: ${curto(e.nicho, 90) || "business"}${setor ? `; sector ${setor}` : ""}${publico ? `; audience ${curto(publico, 110)}` : ""}. Icons and illustrations come from the subject of the text below and from this world.`,
     "",
     `HIERARCHY: 1) TITLE, the largest text, at the top; 2) MAIN NUMBER, very big, in the accent color, with its label; 3) SUBTITLE; 4) MODULES (heading, icon, number if any, short text); 5) KEY NUMBERS, small, at the bottom. Generous whitespace, aligned grid, nothing overlapping.`,
     "",
-    layoutDaProporcao(e.proporcao, secoes.length),
+    layoutDaProporcao(e.proporcao, secoes.length, numeros.length > 0),
     "",
     `BRAND IDENTITY (approved by the client, use exactly):`,
     `- background ${cores.fundo}, flat or with a very subtle texture in the same color;`,

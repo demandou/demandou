@@ -35,6 +35,23 @@ import {
  * redatores da semana, as adaptações e a publicação leem destas funções, e a
  * prova roda em memória (scripts/tmp/prova-elo-da-campanha-0510.mts).
  *
+ * 08/10, A CHAMADA SÓ ENTRA QUANDO A PEÇA CITADA ESTÁ NO AR (regra do Bruno,
+ * depois do "vídeo que não existe": posts disseram "Gravei um vídeo
+ * completo... 'Seu gêmeo IA trabalha 24 horas sem férias', lá no canal" com o
+ * completo ainda em rascunho, e "o carrossel que postei ontem" sem garantia
+ * de nada). As regras 2 e 3 acima mudaram assim:
+ *   - o redator NÃO escreve mais a chamada dentro do texto; ele recebe só o
+ *     inventário do que está no ar (lib/analytics/tipos-do-inventario.ts);
+ *   - QUEM chamar continua regra de código, e fica guardado no post
+ *     (`metadata.elo`, ver `eloDaPeca`);
+ *   - a FRASE da chamada é montada em código (`fraseDoElo`), com o título real
+ *     e o link onde a rede aceita, e só entra no texto quando a peça citada
+ *     está publicada com endereço (`textoComElo`). Antes disso, nada de "no
+ *     meu canal do YouTube": a frase não entra;
+ *   - quem põe a frase é a publicação (lib/media/elo-na-publicacao.ts): na
+ *     hora de publicar a peça, e nos rascunhos da semana assim que a peça
+ *     citada vai ao ar, para o quadro mostrar o texto como vai sair.
+ *
  * Nenhum texto gerado aqui leva travessão.
  */
 
@@ -181,31 +198,34 @@ export type ConviteArgs = {
 };
 
 /**
- * O CONVITE AO COMPLETO que fecha a descrição de todo corte. Uma frase fixa,
- * montada em código de propósito: é ela que a publicação do completo acha e
- * troca pela versão com link (`legendaComLinkDoCompleto`).
+ * O CONVITE AO COMPLETO que fecha a descrição de um corte, SÓ com o completo
+ * no ar (`url` do post publicado). Uma frase fixa, montada em código de
+ * propósito: é ela que a publicação acha e põe ou tira (`textoComElo`).
+ *
+ * Sem `url`, nulo (08/10): antes de o completo ir ao ar não existe "no meu
+ * canal do YouTube". Com o completo publicado, a frase cita o título real e
+ * leva o link onde a rede aceita; no Instagram e no TikTok chama pelo canal.
  */
-export function conviteAoCompleto(args: ConviteArgs): string {
+export function conviteAoCompleto(args: ConviteArgs): string | null {
   const { rede, url } = args;
+  if (!url) return null;
   const titulo = args.titulo?.trim().replace(/\s+/g, " ") || null;
   const canal = args.canal?.trim() || null;
-  if (rede === "twitter") {
-    // O X tem 280 caracteres para o texto do corte e o convite juntos.
-    return url ? `Completo no YouTube: ${url}` : "Completo no meu canal do YouTube.";
-  }
+  // O X tem 280 caracteres para o texto do corte e o convite juntos.
+  if (rede === "twitter") return `Completo no YouTube: ${url}`;
   const abertura = titulo ? `Esse trecho é do vídeo completo "${titulo}".` : "Esse trecho é de um vídeo completo.";
-  if (url && redeAceitaUrl(rede)) return `${abertura} Assista inteiro no YouTube: ${url}`;
-  if (url && rede === "linkedin") return `${abertura} O link do vídeo completo está no primeiro comentário.`;
-  if (rede === "youtube") return `${abertura} Assista inteiro aqui no canal.`;
+  if (redeAceitaUrl(rede)) return `${abertura} Assista inteiro no YouTube: ${url}`;
   return canal ? `${abertura} Assista inteiro no YouTube, no canal ${canal}.` : `${abertura} Assista inteiro no meu canal do YouTube.`;
 }
 
-/** A linha do convite, em qualquer das formas acima, para achar e trocar. */
-const LINHA_DO_CONVITE = /^(?:Esse trecho é d[eo] (?:um )?vídeo completo.*|Completo no (?:YouTube: \S+|meu canal do YouTube\.))$/m;
-
-export function temConvite(texto: string): boolean {
-  return LINHA_DO_CONVITE.test(texto);
-}
+/**
+ * AS LINHAS DE CHAMADA QUE O CÓDIGO MONTA (o convite ao completo e a chamada
+ * à peça anterior), em qualquer das formas, inclusive as de antes de 08/10.
+ * São as únicas que a publicação tira e põe; a guarda do conteúdo próprio
+ * (lib/squad/guarda-do-conteudo-proprio.ts) não olha para elas.
+ */
+export const LINHA_DO_ELO =
+  /^(?:Esse trecho é d[eo] (?:um )?vídeo completo.*|Completo no (?:YouTube: \S+|meu canal do YouTube\.)|Vídeo completo no YouTube.*|O vídeo completo (?:".+" )?está no (?:YouTube|meu canal do YouTube).*|Se perdeu (?:o|a) .+ anterior desta série.*)$/;
 
 const TETO_DO_X = 280;
 /** O X conta qualquer URL como 23 caracteres. */
@@ -214,13 +234,15 @@ function tamanhoNoX(texto: string): number {
 }
 
 /**
- * A DESCRIÇÃO DE UM CORTE: a legenda do redator, o convite ao completo e o
- * bloco de links da rede. No X, o convite só entra se couber nos 280.
+ * A DESCRIÇÃO DE UM CORTE: a legenda do redator, o convite ao completo (só
+ * com o completo no ar) e o bloco de links da rede. No X, o convite só entra
+ * se couber nos 280.
  */
 export function descricaoDoCorte(args: ConviteArgs & { legenda: string; links: LinkDoCliente[]; contas: ContaDoCliente[]; config?: unknown }): string {
   const legenda = args.legenda.trim();
   const convite = conviteAoCompleto(args);
   if (args.rede === "twitter") {
+    if (!convite) return legenda;
     const junto = `${legenda}\n\n${convite}`;
     return tamanhoNoX(junto) <= TETO_DO_X ? junto : legenda;
   }
@@ -228,45 +250,13 @@ export function descricaoDoCorte(args: ConviteArgs & { legenda: string; links: L
   return [legenda, convite, bloco].filter(Boolean).join("\n\n");
 }
 
-/**
- * A LEGENDA DE UM CORTE DEPOIS QUE O COMPLETO PUBLICOU: a linha do convite
- * sem link vira a linha com link; corte que nasceu sem convite (campanha de
- * antes desta regra) ganha o convite no fim. Devolve nulo quando não há o que
- * mudar (já tem o link, ou a rede não aceita URL e o texto já chama pelo
- * nome, ou não cabe nos 280 do X).
- */
-export function legendaComLinkDoCompleto(texto: string, args: ConviteArgs & { url: string }): string | null {
-  if (texto.includes(args.url)) return null;
-  const novo = conviteAoCompleto(args);
-  const atual = texto.match(LINHA_DO_CONVITE)?.[0];
-  if (atual === novo) return null;
-  const trocado = atual ? texto.replace(atual, novo) : `${texto.trim()}\n\n${novo}`;
-  if (args.rede === "twitter" && tamanhoNoX(trocado) > TETO_DO_X) return null;
-  return trocado;
-}
-
-/**
- * A regra de link da rede, dita ao redator (e a quem adapta). Entra no
- * pedido para a chamada sair certa na primeira escrita.
- */
-export function regraDeLinkDaRede(rede: string, url: string | null): string {
-  const nome = NOME_DA_REDE[rede] ?? rede;
-  if (redeAceitaUrl(rede)) {
-    if (!url) return `No ${nome} a URL poderia ir no texto, mas o vídeo completo ainda não tem link publicado: chame pelo nome do canal, sem URL.`;
-    return rede === "twitter"
-      ? `No X a URL vai só no último tweet, exatamente assim: ${url}`
-      : `No ${nome} a URL pode ir no texto, exatamente assim: ${url}`;
-  }
-  if (rede === "linkedin") return "No LinkedIn nenhuma URL no texto (derruba o alcance): chame o vídeo completo pelo nome do canal do YouTube.";
-  return `No ${nome} nenhuma URL na legenda e nada de "link na bio": chame o vídeo completo pelo nome do canal do YouTube.`;
-}
-
 /** A regra de link quando um texto é ADAPTADO para outra rede. */
 export function regraDeLinkNaAdaptacao(rede: string): string {
   const nome = NOME_DA_REDE[rede] ?? rede;
-  const base = "Se o post original chama para o vídeo completo ou para outra peça da campanha, mantenha a chamada.";
-  if (redeAceitaUrl(rede)) return `${base} Uma URL do original pode ficar, exatamente como está${rede === "twitter" ? ", e só no último tweet" : ""}.`;
-  return `${base} Mas no ${nome} nenhuma URL vai no texto: troque qualquer URL do original pelo nome do canal ou da rede (nada de "link na bio").`;
+  const base =
+    "Não acrescente chamada para o vídeo completo, para outra peça da campanha nem para canal, live ou post do cliente: essa chamada entra sozinha na publicação, e só quando a peça citada estiver no ar. Se o original tiver uma, tire.";
+  if (redeAceitaUrl(rede)) return `${base} Uma URL de fonte do original pode ficar, exatamente como está${rede === "twitter" ? ", e só no último tweet" : ""}.`;
+  return `${base} No ${nome} nenhuma URL vai no texto (nada de "link na bio").`;
 }
 
 export type PecaDoPlano = {
@@ -328,32 +318,162 @@ export function pecaAnterior(pecas: PecaDoPlano[], dia: number): PecaDoPlano | n
 }
 
 /**
- * O ELO que entra no pedido do redator do dia. A escolha de quem chamar já
- * está feita (o completo sempre; a peça anterior quando existe); o redator só
- * escreve a chamada, no fecho, na voz de quem fala.
+ * O QUE O REDATOR DO DIA RECEBE SOBRE O ELO (08/10). Ele não escreve mais a
+ * chamada: só fica sabendo que ela entra sozinha, e recebe o inventário do
+ * que está no ar como a ÚNICA lista de conteúdo próprio que pode citar
+ * (`listaDoInventarioParaRedator`, em lib/analytics/tipos-do-inventario.ts).
  */
-export function eloDaCampanha(args: {
-  dia: number;
-  rede: string;
-  pecas: PecaDoPlano[];
-  completo: { titulo: string | null; url: string | null; canal: string | null };
-  angulos?: Array<{ dia: number; texto: string }>;
-}): string {
-  const { dia, rede, pecas, completo } = args;
-  const anterior = pecaAnterior(pecas, dia);
-  const anguloDe = (d: number) => args.angulos?.find((a) => a.dia === d)?.texto ?? null;
-  const titulo = completo.titulo?.trim() ? `"${completo.titulo.trim()}"` : "da semana";
-  const ondeEstaOCompleto = completo.url
-    ? `já publicado no YouTube: ${completo.url}`
-    : `no canal ${completo.canal ? `${completo.canal} ` : ""}do YouTube, ainda sem link publicado`;
-  const linhaAnterior = anterior
-    ? `- Peça anterior desta campanha: ${descreverPeca(anterior, anguloDe(anterior.dia))}.`
-    : "- Esta é a primeira peça da semana: chame só o vídeo completo.";
+export function eloDaCampanha(args: { inventario: string }): string {
   return `
 
-ELO DA CAMPANHA (as peças desta semana se chamam umas às outras; quem chamar já está decidido aqui, você só escreve a chamada):
-- Vídeo completo ${titulo}, ${ondeEstaOCompleto}.
-${linhaAnterior}
-- No fecho, em uma ou duas frases na voz de quem fala, convide quem lê para o vídeo completo${anterior ? " e para a peça anterior" : ""}. ${regraDeLinkDaRede(rede, completo.url)}
-- Não invente link, título, rede ou peça que não esteja listado aqui.`;
+CONTEÚDO PRÓPRIO E CHAMADAS (regra: só se cita o que está no ar; se não sabe, não fala):
+- NÃO escreva convite para o vídeo completo nem chamada para outra peça desta semana: nada de "no meu canal", "gravei um vídeo", "lá no YouTube", "o carrossel de ontem", "a peça de sexta", "o post anterior", "link na bio". Essa chamada entra sozinha na hora de publicar, com o título real e o link, e só se a peça citada já estiver publicada.
+- ${args.inventario}
+- Não invente título, link, rede, canal, live, artigo ou peça do cliente.`;
+}
+
+// ── O elo resolvido na publicação (08/10) ───────────────────────────────────
+
+/** Quem uma peça chama. Decidido em código quando a peça nasce; guardado em `metadata.elo`. */
+export type ChamadaDoElo =
+  | { tipo: "completo"; videoJobId: string }
+  | { tipo: "anterior"; runId: string; dia: number; formato: string };
+
+export type EloDoPost = {
+  chamadas: ChamadaDoElo[];
+  /** Corte do vídeo: o convite ao completo tem a forma de corte ("Esse trecho é do vídeo completo"). */
+  corte?: boolean;
+};
+
+/** O elo de uma peça da semana (o completo sempre; a peça anterior quando há) ou de um corte (só o completo). */
+export function eloDaPeca(args: { videoJobId: string; runId: string; dia: number; pecas: PecaDoPlano[]; corte?: boolean }): EloDoPost {
+  const chamadas: ChamadaDoElo[] = [{ tipo: "completo", videoJobId: args.videoJobId }];
+  if (args.corte) return { chamadas, corte: true };
+  const anterior = pecaAnterior(args.pecas, args.dia);
+  if (anterior) chamadas.push({ tipo: "anterior", runId: args.runId, dia: anterior.dia, formato: anterior.formato });
+  return { chamadas };
+}
+
+/**
+ * O elo guardado no post. Corte de antes de 08/10 (sem `elo` gravado) chama o
+ * completo, como sempre chamou; peça escrita de antes não ganha chamada nova
+ * (a dela estava no texto, e a guarda cuida do que não for verdade).
+ */
+export function lerEloDoPost(metadata: unknown): EloDoPost | null {
+  const m = (metadata ?? {}) as { elo?: unknown; videoJobId?: unknown; trechoIndice?: unknown; gravacaoCompleta?: unknown };
+  const bruto = m.elo as { chamadas?: unknown; corte?: unknown } | undefined;
+  if (bruto && Array.isArray(bruto.chamadas)) {
+    const chamadas = bruto.chamadas.filter((c): c is ChamadaDoElo => {
+      const x = c as Record<string, unknown> | null;
+      if (!x) return false;
+      if (x.tipo === "completo") return typeof x.videoJobId === "string" && Boolean(x.videoJobId);
+      if (x.tipo === "anterior") return typeof x.runId === "string" && typeof x.dia === "number";
+      return false;
+    });
+    return chamadas.length ? { chamadas, ...(bruto.corte === true ? { corte: true } : {}) } : null;
+  }
+  if (typeof m.videoJobId === "string" && typeof m.trechoIndice === "number" && m.gravacaoCompleta !== true) {
+    return { chamadas: [{ tipo: "completo", videoJobId: m.videoJobId }], corte: true };
+  }
+  return null;
+}
+
+/** Uma peça citada, já CONFERIDA no ar: status publicado e endereço externo. */
+export type PecaPublicada = {
+  postId: string;
+  rede: string;
+  url: string;
+  /** O título real: no YouTube, a primeira linha que virou título; nulo nas outras redes. */
+  titulo: string | null;
+  /** O formato da peça (image, carousel, short...), para dizer "o carrossel", "a imagem". */
+  formato: string | null;
+};
+
+export type CitacaoDoElo = { chamada: ChamadaDoElo; peca: PecaPublicada };
+
+/**
+ * A FRASE DA CHAMADA, montada em código a partir da peça publicada. Nunca
+ * chamada para peça que não está no ar: quem chama esta função já conferiu.
+ */
+export function fraseDoElo(c: CitacaoDoElo, rede: string, opcoes: { corte?: boolean; canal?: string | null } = {}): string | null {
+  const { peca } = c;
+  const titulo = peca.titulo?.trim().replace(/\s+/g, " ") || null;
+  if (c.chamada.tipo === "completo") {
+    if (opcoes.corte) return conviteAoCompleto({ rede, titulo, url: peca.url, canal: opcoes.canal });
+    if (rede === "twitter") return `Vídeo completo no YouTube: ${peca.url}`;
+    if (redeAceitaUrl(rede)) return titulo ? `O vídeo completo "${titulo}" está no YouTube: ${peca.url}` : `Vídeo completo no YouTube: ${peca.url}`;
+    const onde = opcoes.canal?.trim() ? `YouTube, no canal ${opcoes.canal.trim()}` : "meu canal do YouTube";
+    return titulo ? `O vídeo completo "${titulo}" está no ${onde}.` : `Vídeo completo no ${onde}.`;
+  }
+  const nome = nomeDaPeca((peca.formato ?? c.chamada.formato) as FormatoDoDia);
+  if (redeAceitaUrl(rede)) return `Se perdeu ${nome} anterior desta série: ${peca.url}`;
+  const ondeEsta = peca.rede === rede ? "no meu perfil" : `no meu ${NOME_DA_REDE[peca.rede] ?? peca.rede}`;
+  return `Se perdeu ${nome} anterior desta série, está ${ondeEsta}.`;
+}
+
+/** Tira do texto as linhas de chamada que o código montou (qualquer forma, inclusive as antigas). */
+export function removerFrasesDoElo(texto: string): string {
+  return texto
+    .split("\n")
+    .filter((l) => !LINHA_DO_ELO.test(l.trim()))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+const BLOCO_DO_FIM = /^(?:Links:|Minhas redes:)/;
+const SO_HASHTAGS = /^(?:#[\p{L}\p{N}_]+[\s,]*)+$/u;
+
+/**
+ * Põe as frases de chamada no texto: antes do bloco de links e das hashtags
+ * do fim, num parágrafo só. No X, só o que couber nos 280 do último tweet;
+ * o que não cabe fica de fora (melhor sem chamada do que tweet recusado).
+ */
+export function inserirFrasesDoElo(texto: string, frases: string[], rede: string): string {
+  const limpas = frases.map((f) => f.trim()).filter(Boolean);
+  if (!limpas.length) return texto;
+  if (rede === "twitter") {
+    let saida = texto.trim();
+    for (const f of limpas) {
+      const tentativa = `${saida}\n\n${f}`;
+      const tweets = tentativa.split(/\n(?=\d+[/)]\s)/);
+      const ultimo = tweets[tweets.length - 1] ?? tentativa;
+      if (tamanhoNoX(ultimo) <= TETO_DO_X) saida = tentativa;
+    }
+    return saida;
+  }
+  const paragrafos = texto.trim().split(/\n{2,}/);
+  let i = paragrafos.length;
+  while (i > 0 && (BLOCO_DO_FIM.test(paragrafos[i - 1].trim()) || SO_HASHTAGS.test(paragrafos[i - 1].trim()))) i--;
+  paragrafos.splice(i, 0, limpas.join("\n"));
+  return paragrafos.join("\n\n");
+}
+
+/**
+ * O TEXTO COM O ELO DE AGORA: as chamadas antigas saem e entram só as das
+ * peças publicadas. Sem citação, o texto fica sem chamada nenhuma.
+ */
+export function textoComElo(texto: string, frases: string[], rede: string): string {
+  const base = removerFrasesDoElo(texto);
+  return frases.length ? inserirFrasesDoElo(base, frases, rede) : base;
+}
+
+/**
+ * O AVISO DO QUADRO (08/10): o que o cliente lê embaixo da prévia, antes de
+ * publicar. A chamada não está no texto enquanto a peça citada não vai ao ar,
+ * e o aviso diz isso; com a peça no ar, diz que a chamada já está no texto.
+ */
+export function avisoDoEloNoQuadro(metadata: unknown, texto: string): string | null {
+  const elo = lerEloDoPost(metadata);
+  if (!elo) return null;
+  const linhas = texto.split("\n").map((l) => l.trim()).filter((l) => LINHA_DO_ELO.test(l));
+  const noTexto = (c: ChamadaDoElo) => linhas.some((l) => (c.tipo === "anterior" ? l.startsWith("Se perdeu") : !l.startsWith("Se perdeu")));
+  const nome = (c: ChamadaDoElo) => (c.tipo === "completo" ? "o vídeo completo" : `${nomeDaPeca(c.formato as FormatoDoDia)} anterior (${nomeDoDia(c.dia)})`);
+  const ja = elo.chamadas.filter(noTexto).map(nome);
+  const falta = elo.chamadas.filter((c) => !noTexto(c)).map(nome);
+  const partes: string[] = [];
+  if (ja.length) partes.push(`a chamada para ${ja.join(" e ")} já está no texto, porque está no ar`);
+  if (falta.length) partes.push(`a chamada para ${falta.join(" e ")} entra sozinha na publicação, com o título e o link, se já estiver no ar; se não estiver, o post sai sem ela`);
+  const frase = partes.join("; ");
+  return frase.charAt(0).toUpperCase() + frase.slice(1) + ".";
 }

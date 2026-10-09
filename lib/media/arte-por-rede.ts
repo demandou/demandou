@@ -163,7 +163,7 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
       /** A reprovação foi de ESCRITA? Então o modelo é parte do problema. */
       const erroDeEscrita =
         tentativa > 1 &&
-        /escrit|ortogr|letra|palavra|texto ileg|embolad|soletr|grafia|duplicad|repeti/i.test(veredito?.motivo ?? "");
+        /escrit|ortogr|letra|palavra|texto ileg|embolad|soletr|grafia|duplicad|repeti|al[eé]m do permitido|inventad/i.test(veredito?.motivo ?? "");
       const desenhista =
         erroDeEscrita && pedido.desenharAlternativo ? pedido.desenharAlternativo : pedido.desenhar;
       if (erroDeEscrita && pedido.desenharAlternativo) {
@@ -201,6 +201,13 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
       if (tentativa < TENTATIVAS) {
         avisos.push(`Refazendo a arte ${grupo.proporcao} (${nomes}), tentativa ${tentativa + 1}: ${veredito.motivo}`);
       } else {
+        // NÚMERO INVENTADO NUNCA SAI (08/10, prova paga do infográfico): o modelo
+        // desenhou "67%", "82%" e "3x" que o post não tem, a conferência pegou nas
+        // três tentativas e a arte ia ao ar "com aviso". Texto desenhado pelo
+        // modelo com número a mais vira falha visível (o card oferece refazer).
+        if (textoDoModelo && /al[eé]m do permitido/i.test(veredito.motivo ?? "") && /\d/.test(veredito.motivo ?? "")) {
+          throw new Error(`A arte ${grupo.proporcao} saiu com número que o post não tem, nas ${TENTATIVAS} tentativas; não foi entregue.`);
+        }
         algumaReprovada = true;
         avisos.push(`A arte ${grupo.proporcao} (${nomes}) continua com problema depois de ${TENTATIVAS} tentativas: ${veredito.motivo}`);
       }

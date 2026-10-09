@@ -65,6 +65,9 @@ import { janelaDaCampanha, substituiRascunhos } from "@/lib/pipeline/sobreposica
 import { avisarFalhaDaCampanha } from "@/lib/notificacoes/avisos";
 import { cardParaReaproveitar, diaJaEntregue } from "@/lib/pipeline/card-do-dia";
 import { AVISO_DE_NAO_REVISADO, FECHO_SEM_REVISAO, PARECER_SEM_REVISAO } from "@/lib/squad/sem-revisao";
+import { guardarConteudoProprio } from "@/lib/squad/guarda-do-conteudo-proprio";
+import { lerInventario } from "@/lib/analytics/inventario-das-redes";
+import type { ItemDoInventario } from "@/lib/analytics/tipos-do-inventario";
 
 // O teto de tempo vive nas ROTAS (`/api/cron/fila`), e nao mais aqui: desde
 // 10/09 o motor gera UM dia por chamada, e cada dia tem os seus 800 s. Antes,
@@ -4384,6 +4387,9 @@ ${d.content}
        */
       const arteDaRede = (platform: string) =>
         dayMedia?.imagemPorRede?.[platform] ?? dayMedia?.imageUrl ?? dayMedia?.videoUrl ?? undefined;
+      // O que está no ar do cliente (08/10): lido uma vez por dia, só se alguma peça precisar.
+      let inventarioLido: ItemDoInventario[] | null = null;
+      const inventarioDaCampanha = async () => (inventarioLido ??= await lerInventario(project.id).catch(() => []));
 
       for (const dp of postsForDay) {
         /**
@@ -4434,6 +4440,27 @@ ${d.content}
             message: `${dp.platform}: ${promessasFinais.length} frase(s) que prometiam mídia inexistente removida(s) antes de gravar: ${promessasFinais.map((f) => f.slice(0, 90)).join(" | ")}`,
             status: "warning",
           });
+        }
+        // A GUARDA DO CONTEÚDO PRÓPRIO (08/10, o "vídeo que não existe"): o
+        // texto não cita vídeo, post, canal, live ou peça do cliente que não
+        // está comprovado no ar (lib/squad/guarda-do-conteudo-proprio.ts).
+        // Código acha, JEV decide; na dúvida, a frase sai.
+        {
+          const guardado = await guardarConteudoProprio({
+            projectId: project.id,
+            texto: dp.content,
+            rede: dp.platform,
+            pecaEhVideo: dp.mediaType === "video",
+            inventario: await inventarioDaCampanha(),
+          });
+          if (guardado.cortadas.length && guardado.texto.trim()) {
+            dp.content = guardado.texto;
+            await appendLog(runId, {
+              agent: "Vera Veredito",
+              message: `${dp.platform}: ${guardado.cortadas.length} frase(s) que citavam conteúdo do cliente que não está no ar removida(s) antes de gravar: ${guardado.cortadas.map((c) => c.frase.slice(0, 90)).join(" | ")}`,
+              status: "warning",
+            });
+          }
         }
         const semLastroFinal = afirmacoesSemLastro(dp.content, lastroFinal);
         if (semLastroFinal.length) {

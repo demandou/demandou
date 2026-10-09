@@ -53,16 +53,32 @@ export function Equipe({ inicial }: { inicial: EquipeNaTela }) {
     const m = inicial;
     return (
       <section className="rounded-xl border p-6 space-y-3" style={cartao}>
-        <p className="rotulo">Sua equipe</p>
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-          Você faz parte da equipe de <span className="destaque">{m.dono}</span>
-        </h2>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          O que você gera sai da cota da conta da equipe. Plano, cobrança e convites ficam com quem administra a conta.
-        </p>
+        <p className="rotulo">{m.contrato ? "Seu contrato" : "Sua equipe"}</p>
+        {m.contrato ? (
+          <>
+            {/* A conta ligada ao contrato (08/10): deixar claro de onde saem os créditos. */}
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+              Você usa os créditos do <span className="destaque">{m.dono}</span>
+            </h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              Tudo o que você gera sai do saldo do contrato, que o time inteiro divide. Quando ele acaba, ninguém do time gera até a titular repor. Plano e cobrança ficam com a titular.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
+              Você faz parte da equipe de <span className="destaque">{m.dono}</span>
+            </h2>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              O que você gera sai da cota da conta da equipe. Plano, cobrança e convites ficam com quem administra a conta.
+            </p>
+          </>
+        )}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Uso rotulo="Créditos que você usou neste mês" usado={m.consumo.creditos} teto={m.tetoCreditos} ajuda={ajudaDoTetoDeCreditos()} />
           <Uso rotulo="Vídeos gravados que você enviou neste mês" usado={m.consumo.gravacoes} teto={m.tetoGravacoes} ajuda={TETO_DE_GRAVACOES.ajuda} />
+          {/* Os minutos de vídeo que a pessoa enviou (08/10): a unidade que o plano promete. */}
+          <Uso rotulo="Minutos de vídeo que você enviou neste mês" usado={m.consumo.minutos} teto={null} ajuda="A duração medida das gravações que você enviou neste mês, somada. Os minutos saem do saldo da conta." />
         </div>
       </section>
     );
@@ -267,6 +283,8 @@ function PainelDoDono({ inicial }: { inicial: PainelDaEquipe }) {
                 <th className="pb-2 pr-3 font-medium">Pessoa</th>
                 <th className="pb-2 pr-3 font-medium">{TETO_DE_CREDITOS.curto}</th>
                 <th className="pb-2 pr-3 font-medium" title={TETO_DE_GRAVACOES.ajuda}>{TETO_DE_GRAVACOES.curto}</th>
+                {/* Os minutos de vídeo por pessoa (08/10, Bruno: "o titular vê quem está gastando mais"). */}
+                <th className="pb-2 pr-3 font-medium" title="A duração medida das gravações que a pessoa enviou neste mês, somada.">Minutos de vídeo</th>
                 <th className="pb-2 font-medium">Projetos</th>
               </tr>
             </thead>
@@ -275,16 +293,33 @@ function PainelDoDono({ inicial }: { inicial: PainelDaEquipe }) {
                 <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{c.nome} <span className="text-xs" style={{ color: "var(--text-muted)" }}>(você)</span></td>
                 <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDoDono.creditos)}</td>
                 <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDoDono.gravacoes)}</td>
+                <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDoDono.minutos)} min</td>
                 <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>Todos</td>
               </tr>
               {eq.membros.map((m) => (
                 <LinhaDoMembro key={m.id} m={m} projetos={eq.projetos} aoMudar={setEq} />
               ))}
-              {(c.consumoDeQuemSaiu.creditos > 0 || c.consumoDeQuemSaiu.gravacoes > 0) && (
+              {/* As contas ligadas ao contrato pelo admin (08/10): usam este saldo, cada uma no próprio projeto. */}
+              {(eq.ligadas ?? []).map((l) => (
+                <tr key={l.id} className="border-t" style={{ borderColor: "var(--border)" }}>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>
+                    {l.nome ?? l.email}{" "}
+                    <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                      (ligada ao contrato)
+                    </span>
+                  </td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.creditos)}</td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.gravacoes)}</td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(l.consumo.minutos)} min</td>
+                  <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>O próprio</td>
+                </tr>
+              ))}
+              {(c.consumoDeQuemSaiu.creditos > 0 || c.consumoDeQuemSaiu.gravacoes > 0 || c.consumoDeQuemSaiu.minutos > 0) && (
                 <tr className="border-t" style={{ borderColor: "var(--border)" }}>
                   <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--text-muted)" }}>Quem saiu da equipe neste mês</td>
                   <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDeQuemSaiu.creditos)}</td>
                   <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDeQuemSaiu.gravacoes)}</td>
+                  <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(c.consumoDeQuemSaiu.minutos)} min</td>
                   <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>Acesso removido</td>
                 </tr>
               )}
@@ -377,11 +412,12 @@ function LinhaDoMembro({ m, projetos, aoMudar }: { m: MembroNoPainel; projetos: 
           {n(m.consumo.gravacoes)}
           {m.tetoGravacoes !== null && <span className="text-xs" style={{ color: "var(--text-muted)" }}> de {n(m.tetoGravacoes)}</span>}
         </td>
+        <td className="py-2.5 pr-3" style={{ color: "var(--text-primary)" }}>{n(m.consumo.minutos)} min</td>
         <td className="py-2.5 text-xs" style={{ color: "var(--text-muted)" }}>{nomesDosProjetos}</td>
       </tr>
       {editando && (
         <tr>
-          <td colSpan={4} className="pb-4">
+          <td colSpan={5} className="pb-4">
             <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: "var(--border)", background: "var(--bg-primary)" }}>
               <CamposDoMembro f={f} setF={setF} projetos={projetos} />
               <Button size="sm" loading={ocupado} onClick={() => void agir("PATCH", corpoDoForm(f), "Acesso atualizado.")}>

@@ -188,7 +188,7 @@ export default function TermsPage() {
                   {[
                     "O contrato tem duração de 12 (doze) meses, contados da confirmação do pagamento.",
                     "O valor dos 12 meses é pago à vista, de uma só vez, no ato da contratação, por cartão de crédito processado pelo Stripe, ou por outro meio indicado na proposta comercial. Se o Usuário parcelar a compra com o emissor do cartão, esse parcelamento é entre ele e o banco; para a demandou, o pagamento é à vista.",
-                    "Os créditos, as gravações e as cotas de vídeo do plano são repostos a cada ciclo mensal ao longo dos 12 meses, e não acumulam de um mês para o outro.",
+                    "Os minutos de vídeo editado, os créditos e as cotas de vídeo por inteligência artificial do plano são repostos a cada ciclo mensal ao longo dos 12 meses, e não acumulam de um mês para o outro.",
                   ].map((item) => (
                     <li key={item} className="flex gap-2">
                       <span className="mt-1 text-orange-500 shrink-0">•</span>
@@ -282,7 +282,7 @@ export default function TermsPage() {
               <div>
                 <h3 className="mb-2 font-medium text-[var(--text-primary)]">5.9 Acessos extras</h3>
                 <p>
-                  Além dos acessos incluídos no plano, o Usuário pode contratar acessos extras. Como o plano, o acesso extra é anual: custa R$ 2.364 por ano (o equivalente a R$ 197 por mês) e soma, a cada ciclo mensal, {ACESSO_EXTRA.creditosPorMes.toLocaleString("pt-BR")} créditos, 1 gravação e 1 marca ao saldo da conta. Contratado no meio do contrato, é cobrado à vista, proporcionalmente ao período que falta até o fim dos 12 meses em curso, e depois renova junto com o plano.
+                  Além dos acessos incluídos no plano, o Usuário pode contratar acessos extras. Como o plano, o acesso extra é anual: custa R$ 2.364 por ano (o equivalente a R$ 197 por mês) e soma, a cada ciclo mensal, {ACESSO_EXTRA.creditosPorMes.toLocaleString("pt-BR")} créditos e 1 marca ao saldo da conta. Contratado no meio do contrato, é cobrado à vista, proporcionalmente ao período que falta até o fim dos 12 meses em curso, e depois renova junto com o plano.
                 </p>
               </div>
               <div>
@@ -325,7 +325,7 @@ export default function TermsPage() {
                   "Quando uma operação é cobrada e não é entregue por falha técnica da plataforma ou de um fornecedor, os créditos da parte não entregue voltam ao saldo. A plataforma devolve automaticamente nos casos que identifica; nos demais, o Usuário pode pedir em até 30 dias, pelo e-mail de contato. A nova tentativa de uma operação que falhou por culpa da demandou não é cobrada.",
                   "Não há devolução quando a operação foi entregue e o Usuário apenas preferiu outro resultado, quando ele mesmo cancelou a operação depois de iniciada, ou quando a geração violou estes Termos (item 7.3).",
                   "Créditos não têm valor em dinheiro e não são reembolsáveis em espécie, salvo nos casos expressos nestes Termos, e não podem ser vendidos nem transferidos para outra conta.",
-                  "A demandou pode ajustar quantos créditos cada operação consome, com aviso de 30 dias, sem impedir o Usuário de fazer, em cada ciclo, o número de gravações do seu plano.",
+                  "A demandou pode ajustar quantos créditos cada operação consome, com aviso de 30 dias, sem impedir o Usuário de editar, em cada ciclo, os minutos de vídeo do seu plano.",
                 ].map((item) => (
                   <li key={item} className="flex gap-2">
                     <span className="mt-1 text-orange-500 shrink-0">•</span>

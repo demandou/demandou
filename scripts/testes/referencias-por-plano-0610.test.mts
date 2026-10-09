@@ -60,8 +60,11 @@ test("admin mostra o do Enterprise e não tem teto na conta", () => {
 test("membro da equipe usa o plano do dono: o servidor resolve a conta antes", () => {
   const fonte = readFileSync("lib/limites-do-plano.ts", "utf8");
   const corpo = fonte.slice(fonte.indexOf("export async function limiteDeReferencias"));
-  assert.match(corpo, /const userId = await contaDoPlano\(userIdDeQuemPede\)/);
+  // Desde 08/10 a conta é resolvida por regraDaConta (equipe e conta ligada ao
+  // contrato), e o plano que vale sai de planoQueValeNaConta.
+  assert.match(corpo, /const \{ contaId: userId, membro \} = await regraDaConta\(userIdDeQuemPede\)/);
   assert.match(corpo, /where: \{ id: userId \}/);
+  assert.match(corpo, /planoQueValeNaConta\(user, membro\?\.contrato\)/);
 });
 
 test("projeto acima do limite: remover, trocar e esvaziar passam; aumentar acima do teto não", () => {

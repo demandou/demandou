@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { abrirChamado } from "@/lib/suporte/abrir-chamado";
 import { cn } from "@/lib/utils";
-import { fraseDosCreditosDaEquipe } from "@/lib/equipe/regras";
+import { fraseSemCreditosDaCarteira, rotuloDosCreditosDaCarteira } from "@/lib/equipe/regras";
 import { BrandMarkThemed } from "@/components/brand-mark-client";
 import { useTheme } from "./theme-provider";
 import { AvatarDoUsuario } from "@/components/ui/avatar-do-usuario";
@@ -428,7 +428,18 @@ export function Sidebar({
  * roda, e a pessoa fica com o menu aberto o tempo inteiro.
  */
 function SaldoNoMenu({ collapsed }: { collapsed: boolean }) {
-  const [saldos, setSaldos] = useState<{ plano: number; video: number; admin: boolean; brl30d: number; brlCampanha: number; dono: string | null; simulado: number | null } | null>(null);
+  const [saldos, setSaldos] = useState<{
+    plano: number;
+    video: number;
+    admin: boolean;
+    brl30d: number;
+    brlCampanha: number;
+    dono: string | null;
+    simulado: number | null;
+    /** Conta ligada ao contrato (08/10): o saldo é do contrato, e a linha diz quanto ela usou no mês. */
+    contrato: boolean;
+    usadoNoMes: number | null;
+  } | null>(null);
   useEffect(() => {
     let vivo = true;
     const ler = () =>
@@ -444,6 +455,8 @@ function SaldoNoMenu({ collapsed }: { collapsed: boolean }) {
               brlCampanha: Number(d.consumo?.ultimaCampanha?.brl ?? 0),
               dono: typeof d.equipe?.dono === "string" ? d.equipe.dono : null,
               simulado: typeof d.consumoSimulado?.total === "number" ? d.consumoSimulado.total : null,
+              contrato: d.equipe?.contrato === true,
+              usadoNoMes: typeof d.equipe?.usadoNoMes === "number" ? d.equipe.usadoNoMes : null,
             });
         })
         .catch(() => {});
@@ -472,8 +485,8 @@ function SaldoNoMenu({ collapsed }: { collapsed: boolean }) {
       title={
         saldos.dono
           ? saldos.plano <= 0
-            ? fraseDosCreditosDaEquipe(saldos.dono)
-            : `Créditos da equipe, na conta de ${saldos.dono}`
+            ? fraseSemCreditosDaCarteira({ dono: saldos.dono, contrato: saldos.contrato })
+            : rotuloDosCreditosDaCarteira({ dono: saldos.dono, contrato: saldos.contrato })
           : "Ver e comprar créditos"
       }
       className={cn(
@@ -484,12 +497,24 @@ function SaldoNoMenu({ collapsed }: { collapsed: boolean }) {
     >
       <div className={cn("flex items-center justify-between gap-2", collapsed ? "lg:flex-col lg:gap-0.5" : "")}>
         <span className={cn("font-mono text-[10px] uppercase tracking-[0.14em]", collapsed ? "lg:hidden" : "")} style={{ color: "var(--text-muted)" }}>
-          Créditos
+          {saldos.contrato ? "Créditos do contrato" : "Créditos"}
         </span>
         <span className="text-xs font-bold tabular-nums" style={{ color: baixo ? "#f87171" : "var(--text-primary)" }}>
           {saldos.plano}
         </span>
       </div>
+      {/* A CONTA LIGADA AO CONTRATO (08/10): de que contrato é o saldo, e
+          quanto ESTA pessoa usou no mês. O time divide o mesmo saldo. */}
+      {saldos.contrato && saldos.dono && (
+        <p className={cn("mt-0.5 text-[10.5px] leading-snug", collapsed ? "lg:hidden" : "")} style={{ color: "var(--text-muted)" }}>
+          <span className="block truncate">{saldos.dono}</span>
+          {saldos.usadoNoMes !== null && (
+            <span className="tabular-nums">
+              você usou <b style={{ color: "var(--text-primary)" }}>{saldos.usadoNoMes.toLocaleString("pt-BR")}</b> este mês
+            </span>
+          )}
+        </p>
+      )}
       <div className={cn("flex items-center justify-between gap-2 mt-0.5", collapsed ? "lg:flex-col lg:gap-0.5" : "")}>
         <span className={cn("font-mono text-[10px] uppercase tracking-[0.14em]", collapsed ? "lg:hidden" : "")} style={{ color: "var(--text-muted)" }}>
           Vídeo

@@ -59,6 +59,8 @@ const ASSUNTO: Record<string, RegExp> = {
   "1.1(r)": /Biblioteca de Design\*\*/,
   "3": /^OBJETO/,
   "3.6": /melhorar, alterar ou substituir funcionalidades/,
+  "4.2": /repostos a cada Ciclo/,
+  "4.4": /limita[cç][aã]o t[eé]cnica dos Fornecedores de v[ií]deo/,
   "4.8": /ajustar quantos Cr[eé]ditos/,
   "4.9": /Acessos extras/,
   "5.3": /desist[eê]ncia da renova[cç][aã]o/,
@@ -171,7 +173,7 @@ test("anotações: as da 1.3 e da 1.4 continuam, a da 1.5 entrou, e nenhuma vai 
   const da13 = readFileSync("lib/contratos/modelos/historico/condicoes-gerais-1.3.md", "utf8").match(/\[REVISAR COM ADVOGADO[^\]]*\]/g) ?? [];
   assert.equal(notas.length, da13.length + 3 + 1, "esperava as notas da 1.3, mais 3 da 1.4 (topo, 7.3 e Anexo III), mais 1 da 1.5 (topo)");
   assert.ok(notas.some((n) => /vers[aã]o 1\.4 retira a garantia de 30 dias/.test(n)));
-  assert.ok(notas.some((n) => /vers[aã]o 1\.5 muda s[oó] o Anexo I e a cl[aá]usula 4\.9/.test(n)));
+  assert.ok(notas.some((n) => /vers[aã]o 1\.5 muda o Anexo I e as cl[aá]usulas 4\.2, 4\.4, 4\.8 e 4\.9/.test(n)));
   assert.ok(notas.some((n) => /vers[aã]o 1\.3 acrescenta/.test(n)));
   const limpo = lerModelo();
   assert.doesNotMatch(limpo, /\[(REVISAR|CONFIRMAR)/);

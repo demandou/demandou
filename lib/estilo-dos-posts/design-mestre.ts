@@ -132,6 +132,22 @@ export async function garantirDesignMestre(projectId: string, o: { userId?: stri
   return feito;
 }
 
+/**
+ * O DESIGN MESTRE FIXADO PELO MEU ESTILO (08/10, a caixa "crie o seu
+ * estilo", lib/estilo-proprio/servidor.ts): o cliente confirmou o estilo, o
+ * comando do vídeo já foi gravado e o design das artes já entrou na
+ * biblioteca ligado como "mestre". Aqui ele vira o design mestre gravado, com
+ * a assinatura do estilo do vídeo de AGORA: `garantirDesignMestre` o enxerga
+ * em dia e nunca o refaz por conta própria (nem a esteira, nem a arte).
+ */
+export async function fixarDesignMestre(projectId: string, design: Pick<DesignDaGaleria, "id" | "nome" | "descricao">, deposito: DepositoDoMestre = depositoNoBanco): Promise<EstiloMestre | null> {
+  const fonte = await deposito.fonte(projectId);
+  if (!fonte) return null;
+  const mestre = estiloMestreDe(fonte);
+  await deposito.gravar(projectId, { designId: design.id, nome: design.nome, descricao: design.descricao, assinatura: mestre.assinatura, estiloId: mestre.estiloId, feitoEm: new Date().toISOString() });
+  return mestre;
+}
+
 /** O estado do mestre para a tela, SEM derivar nada (nenhuma IA numa leitura). */
 export async function estadoDoMestre(projectId: string, deposito: DepositoDoMestre = depositoNoBanco): Promise<EstadoDoMestre | null> {
   const fonte = await deposito.fonte(projectId).catch(() => null);

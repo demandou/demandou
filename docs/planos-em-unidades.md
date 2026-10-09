@@ -19,7 +19,8 @@ deles. Nenhum preço ou plano no Stripe foi tocado.
 | Saldo mensal | 20.000 / 32.000 / 48.000 créditos (08/10; eram 20.000 / 40.000 / 60.000) | `lib/planos.ts` (era `PLANS.credits`) |
 | Carteira do vídeo por IA | 4.160 nos três (08/10; eram 4.160 / 8.320 / 20.800) | `lib/planos.ts` (era `PLANS.videoCredits`) |
 | Gravações por mês (teto aplicado) | 4 / 8 / 16 | `lib/planos.ts`, aplicado em `lib/limites-do-plano.ts` |
-| Minutos de vídeo editado por mês (teto aplicado desde 08/10) | 60 / 88 / 96, derivados do saldo | `minutosPorMesDoPlano` em `lib/entregas-do-plano.ts`, aplicado em `lib/limites-do-plano.ts` (token do envio, registro e aprovação) |
+| Minutos de vídeo editado por mês (o número do cartão e o teto aplicado desde 08/10) | 80 / 132 / 202: (saldo menos a parte fixa de 1.450) / 230, o que o saldo paga numa gravação só; acesso extra e pacote comprado somam minutos na mesma régua | `minutosPorMesDoPlano` e `minutosDaConta` em `lib/entregas-do-plano.ts`, aplicados em `lib/limites-do-plano.ts` (token do envio, registro e aprovação) |
+| Duração de cada gravação por papel (08/10) | titular: a do plano (60 / 120 / 180); membro da equipe e conta ligada ao contrato: 5 min | `duracaoMaximaDaGravacaoMin` em `lib/media/limits.ts`, aplicado em `conferirDuracaoDaGravacao` |
 | Duração máxima técnica do arquivo | 60 / 120 / 300 min, limitada pelos minutos que sobram no mês | `lib/planos.ts`, `duracaoMaximaDoEnvioSeg` em `lib/media/limits.ts` |
 | Uma gravação de M minutos | 1.450 + 230 x M créditos (08/10; era 2.320 + 61 x M) | `creditosEmDuasPartes` em `lib/media/limits.ts`: roteiro 590 + 25/min (inclui a semana escrita), completo 60 + 205/min, 3 cortes sugeridos x 260, abertura 20 |
 | O minuto de vídeo na régua | US$ 1 de teto na edição + US$ 0,15 fora dela = US$ 1,15 = 228,3 créditos a R$ 0,027 / R$ 5,36; cobra-se 230 | `lib/media/teto-da-edicao.ts` |
@@ -40,11 +41,11 @@ caberem no saldo, limitada pela duração máxima do plano.
 
 | Plano | Saldo | Gravações x duração | Créditos por gravação | Sobra | Minutos de vídeo | Vídeos (completos + cortes) | Peças de feed | Peças no total | Vídeo por IA de 30 s (cheia / rápida) | Armazenamento | Marcas | Acessos |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Starter | 20.000 | 4 x 15 min | 4.900 | 400 | 60 | 16 (4 + 12) | 12 | 28 | 2 / 5 | 48 GB | 2 | 2 |
-| Pro | 32.000 | 8 x 11 min | 3.980 | 160 | 88 | 32 (8 + 24) | 24 | 56 | 2 / 5 | 96 GB | 5 | 5 |
-| Enterprise | 48.000 | 16 x 6 min | 2.830 | 2.720 | 96 | 64 (16 + 48) | 48 | 112 | 2 / 5 | 192 GB | 10 | 10 |
+| Starter | 20.000 | 4 x 15 min (premissa interna) | 4.900 | 400 | 80 | 16 (4 + 12) | 12 | 28 | 2 / 5 | 48 GB | 2 | 2 |
+| Pro | 32.000 | 8 x 11 min (premissa interna) | 3.980 | 160 | 132 | 32 (8 + 24) | 24 | 56 | 2 / 5 | 96 GB | 5 | 5 |
+| Enterprise | 48.000 | 16 x 6 min (premissa interna) | 2.830 | 2.720 | 202 | 64 (16 + 48) | 48 | 112 | 2 / 5 | 192 GB | 10 | 10 |
 
-(Tabela de 08/10. Até então: Starter 4 x 43 = 172 min, Pro 8 x 43 = 344, Enterprise 16 x 23 = 368, com 61 créditos por minuto, que furavam a régua.)
+(Tabela de 08/10. "Minutos de vídeo" é o que o saldo paga numa gravação só, o número do cartão; a coluna "gravações x duração" é só a premissa interna dos vídeos e peças, e desde 08/10 não aparece em texto nenhum para o cliente, por decisão do Bruno: só minutos. Até então: Starter 4 x 43 = 172 min, Pro 8 x 43 = 344, Enterprise 16 x 23 = 368, com 61 créditos por minuto, que furavam a régua.)
 
 Peças de feed por gravação: 1 imagem, 1 texto, 1 carrossel (4 textos e 8 artes
 por mês no Starter, para a calculadora).

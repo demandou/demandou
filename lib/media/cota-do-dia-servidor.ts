@@ -7,7 +7,8 @@ import {
   type CotaDoCliente,
 } from "@/lib/media/cota-do-dia";
 import { planoPublico, type PlanoId } from "@/lib/planos";
-import { contaDoPlano } from "@/lib/equipe/conta";
+import { contasLigadasA, regraDaConta } from "@/lib/equipe/conta";
+import { planoQueValeNaConta } from "@/lib/equipe/regras";
 
 /**
  * A LEITURA DA COTA, que toca o banco e por isso mora longe da tela.
@@ -42,16 +43,22 @@ export async function cotaDeVideoDoDia(agora = new Date()): Promise<CotaDeVideo>
 export async function cotaDeVideoDoCliente(userIdDeQuemPede: string, agora = new Date()): Promise<CotaDoCliente> {
   // A cota do dia é da CONTA (01/10): membro da equipe usa a do plano do dono,
   // contada pelos projetos do dono.
-  const userId = await contaDoPlano(userIdDeQuemPede);
+  const { contaId: userId, membro } = await regraDaConta(userIdDeQuemPede);
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { plan: true, role: true, projects: { select: { id: true } } },
+    select: { plan: true, role: true, acessosExtras: true, projects: { select: { id: true } } },
   });
   if (!user) return { teto: 0, usadas: 0, restam: 0, plano: null, semTeto: false };
-  if (user.role === "admin") return { teto: 0, usadas: 0, restam: 0, plano: null, semTeto: true };
+  // O CONTRATO GUARDA-CHUVA (08/10): a conta ligada não herda o acesso interno
+  // da titular, o plano é o do contrato, e o dia conta os projetos de todo o
+  // time (a titular e as contas ligadas a ela).
+  const vale = planoQueValeNaConta(user, membro?.contrato);
+  if (vale.admin) return { teto: 0, usadas: 0, restam: 0, plano: null, semTeto: true };
 
-  const teto = videosPorDiaDoPlano(user.plan);
-  const projectIds = user.projects.map((p) => p.id);
+  const teto = videosPorDiaDoPlano(vale.plan);
+  const ligadas = await contasLigadasA(userId);
+  const projetosDasLigadas = ligadas.length ? await prisma.project.findMany({ where: { userId: { in: ligadas } }, select: { id: true } }) : [];
+  const projectIds = [...user.projects, ...projetosDasLigadas].map((p) => p.id);
   const usadas = projectIds.length
     ? (
         await prisma.aiUsage.findMany({
@@ -70,7 +77,7 @@ export async function cotaDeVideoDoCliente(userIdDeQuemPede: string, agora = new
     teto,
     usadas,
     restam: Math.max(0, teto - usadas),
-    plano: planoPublico(user.plan as PlanoId).nome,
+    plano: planoPublico(vale.plan as PlanoId).nome,
     semTeto: false,
   };
 }

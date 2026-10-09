@@ -119,6 +119,13 @@ export type PlanoPublico = {
    * longo, que passam disso. 1 h, 2 h e 5 h separam os planos pelo tipo de
    * conteúdo, e não só pelo volume: quem grava aula de 40 minutos cabe no
    * Starter, quem grava podcast de três horas precisa do Enterprise.
+   *
+   * 08/10 (Bruno): é o teto do TITULAR; membro da equipe e conta ligada ao
+   * contrato enviam até 5 minutos por gravação (lib/media/limits.ts). O
+   * Enterprise caiu de 5 h para 3 h ("podcast de até 3 horas"), e o envio
+   * ainda é limitado pelos minutos que sobram no mês (lib/limites-do-plano.ts).
+   * O cliente não lê este número como promessa: o cartão mostra só os minutos
+   * do mês.
    */
   duracaoMaximaMin: number;
   /**
@@ -379,7 +386,9 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
     marcas: 5,
     videosPorDia: 9,
     armazenamentoGb: 192,
-    duracaoMaximaMin: 300,
+    // 300 até 08/10. O podcast de até 3 horas é o do Enterprise, e só o titular
+    // o envia (lib/media/limits.ts, duracaoMaximaDaGravacaoMin).
+    duracaoMaximaMin: 180,
     arquivoMaximoGb: 20,
     // Até 08/10: 60.000 e 20.800. Ver a nota "O SALDO DE 08/10" acima.
     creditosPorMes: 48000,

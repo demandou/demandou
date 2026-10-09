@@ -14,6 +14,18 @@ import { AGENTES, AGENTE_DEV, type Cena, type EstadoDoAgente, type SituacaoDoSqu
 import { MenuDoAgente, type Turno } from "@/components/escritorio/menu-do-agente";
 import { BotaoDescartar } from "@/components/ui/descartar";
 import { arteDoAgente } from "@/lib/squad/estado-do-squad";
+import type { CardNaCabeca } from "@/lib/pipeline/pecas-pedidas";
+import { RedeIcone } from "@/components/social/rede-icone";
+
+/**
+ * AS FALAS MAIS APAGADAS (08/10, pedido do Bruno: "as falas dos agentes poluem
+ * muito a tela, não dá para ver o que está em cima da cabeça"). O balão sai
+ * translúcido, menor e mais curto; o CARD da peça fica opaco e por cima. Em
+ * horário de trabalho só fala quem está com um card (e quem anda); o resto
+ * trabalha calado.
+ */
+const OPACIDADE_DA_FALA = 0.62;
+const TAMANHO_DA_FALA = 90;
 
 /**
  * O escritório do squad, em 3D.
@@ -146,7 +158,7 @@ const INDICE_DO_DEV = AGENTES.length;
 const MESA_DO_DEV = { x: 2.3, z: 3.55 };
 MESAS[INDICE_DO_DEV] = MESA_DO_DEV;
 LADO[INDICE_DO_DEV] = "fundo";
-const FALA_DO_DEV = "Lendo o que os clientes pediram esta semana.";
+// A fala fixa do dev saiu em 08/10 (poluía a cena); a frase mora na ficha dele.
 const ehDaMesaComprida = (i: number) => i < AGENTES.length && AGENTES[i]?.id !== "vera-veredito";
 /** 1 para quem olha para a câmera (fundo), −1 para quem fica de costas (frente). */
 const sentidoDe = (i: number) => (LADO[i] === "frente" ? -1 : 1);
@@ -434,6 +446,10 @@ function Robo({
   yawFixo,
   escala = ESCALA_DO_ROBO,
   aparencia,
+  card,
+  maisCards = 0,
+  documento = false,
+  aoEntregar,
 }: {
   indice: number;
   cor: string;
@@ -448,6 +464,17 @@ function Robo({
   fala?: string | null;
   tema: Tema;
   aoClicar?: () => void;
+  /**
+   * O CARD NA CABEÇA (08/10): a peça pedida que ele está fazendo, a mesma do
+   * calendário. Anda junto com ele quando ele a leva para o próximo.
+   */
+  card?: CardNaCabeca | null;
+  /** Quantas outras peças ele segura além desta (o Roberto na pesquisa). */
+  maisCards?: number;
+  /** Trabalha junto numa peça de outro: leva um documentinho, não o card. */
+  documento?: boolean;
+  /** Chegou ao destino da missão: a entrega aconteceu na cena. */
+  aoEntregar?: (n: number) => void;
   /** Acabou de tomar cafe: anda 1,6x. Ver TURBO_DO_CAFE. */
   turbo?: boolean;
   /** Lugar próprio, para quem não senta numa das sete mesas (você). */
@@ -554,6 +581,8 @@ function Robo({
             // A bronca demora mais que a entrega: ela é uma conversa. E o café
             // demora mais que as duas, porque café é para demorar.
             f.ate = st.clock.elapsedTime + (missao.demora ?? (f.bronca ? 3.4 : 1.8));
+            // O card muda de mão aqui, e não quando o dado chegou (08/10).
+            aoEntregar?.(f.n);
             // Vira para o colega (ou para nós).
             yaw.current = Math.atan2(-dir.x, -dir.z);
             // Quem entrega acena; quem cobra balança a cabeça dizendo não;
@@ -600,6 +629,23 @@ function Robo({
           O grupo interno desfaz a escala do robô, senão o balão sairia com
           19% do tamanho; a altura 6,6 é medida no modelo, que tem uns 6 de
           altura, e cai logo acima da cabeça em qualquer pose. */}
+      {/* O CARD DA PEÇA, acima da cabeça e por cima de tudo (08/10): é o
+          mesmo cartão do calendário, e é o que diz "esse cara está fazendo o
+          post de segunda". O documentinho é de quem trabalha junto. */}
+      {(card || documento) && (
+        <group position={[0, 1.42, 0]} scale={1 / escala}>
+          <Html center distanceFactor={7} zIndexRange={[26, 0]} style={{ pointerEvents: "auto" }}>
+            <button
+              type="button"
+              onClick={aoClicar}
+              title={card ? `${card.formato} de ${card.dia}${card.hora ? ` às ${card.hora}` : ""}: ver a ficha` : "Trabalhando junto nesta peça"}
+              style={{ transform: "translate(0, -130%)", border: "none", background: "none", padding: 0, cursor: aoClicar ? "pointer" : "default", font: "inherit" }}
+            >
+              {card ? <CartaoNaCabeca card={card} mais={maisCards} tema={tema} /> : <Documentinho tema={tema} />}
+            </button>
+          </Html>
+        </group>
+      )}
       {fala && (
         <group position={[0, 1.42, 0]} scale={1 / escala}>
           <Html center distanceFactor={7} zIndexRange={[22, 0]} style={{ pointerEvents: "auto" }}>
@@ -608,7 +654,9 @@ function Robo({
               onClick={aoClicar}
               title="Ver a ficha e o trabalho de agora"
               style={{
-                transform: "translate(0, -60%)",
+                // Com card na cabeça, o balão fica ao lado e abaixo dele: o
+                // card é o destaque, a fala é o rodapé (08/10).
+                transform: card || documento ? "translate(55%, -10%)" : "translate(0, -60%)",
                 border: "none",
                 background: "none",
                 padding: 0,
@@ -622,6 +670,68 @@ function Robo({
         </group>
       )}
     </group>
+  );
+}
+
+/** O cartão da peça na cabeça: dia, hora, formato e redes, igual ao do quadro. */
+function CartaoNaCabeca({ card, mais, tema }: { card: CardNaCabeca; mais: number; tema: Tema }) {
+  const falhando = card.etapa === "tentando";
+  return (
+    <span
+      data-card-na-cabeca={card.pecaId}
+      style={{
+        display: "inline-flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 2,
+        padding: "4px 7px",
+        borderRadius: 7,
+        border: `1.5px solid ${falhando ? "#f59e0b" : tema.laranja}`,
+        background: tema.fundo,
+        color: tema.texto,
+        fontFamily: "inherit",
+        fontSize: 10.5,
+        lineHeight: 1.2,
+        whiteSpace: "nowrap",
+        width: "max-content",
+        boxShadow: `0 6px 16px rgba(0,0,0,.4), 0 0 0 3px color-mix(in srgb, ${tema.laranja} 22%, transparent)`,
+      }}
+    >
+      <b style={{ fontWeight: 700 }}>
+        {card.dia}
+        {card.hora ? <span style={{ fontWeight: 500, color: tema.apagado }}> · {card.hora}</span> : null}
+        {mais > 0 ? <span style={{ fontWeight: 600, color: tema.laranja }}> +{mais}</span> : null}
+      </b>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: tema.apagado }}>
+        {card.formato}
+        {card.redes.map((r) => (
+          <RedeIcone key={r} plataforma={r} className="h-3 w-3" />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/** O documentinho de quem trabalha junto, sem o card. */
+function Documentinho({ tema }: { tema: Tema }) {
+  return (
+    <span
+      data-documento-na-cabeca
+      aria-label="Trabalhando junto nesta peça"
+      style={{
+        display: "inline-block",
+        width: 14,
+        height: 18,
+        borderRadius: 2,
+        border: `1.5px solid ${tema.apagado}`,
+        background: tema.fundo,
+        boxShadow: "0 4px 12px rgba(0,0,0,.35)",
+        backgroundImage: `repeating-linear-gradient(${tema.apagado} 0 1px, transparent 1px 4px)`,
+        backgroundSize: "8px 12px",
+        backgroundPosition: "3px 4px",
+        backgroundRepeat: "no-repeat",
+      }}
+    />
   );
 }
 
@@ -969,24 +1079,25 @@ function Plaqueta({
  * inteiro está na ficha, a um clique daqui.
  */
 function Balao({ texto, tema }: { texto: string; tema: Tema }) {
-  const curto = texto.length > 120 ? `${texto.slice(0, 120).trimEnd()}…` : texto;
+  const curto = texto.length > TAMANHO_DA_FALA ? `${texto.slice(0, TAMANHO_DA_FALA).trimEnd()}…` : texto;
   return (
     <div
       style={{
         position: "relative",
-        maxWidth: 210,
-        padding: "7px 10px",
-        borderRadius: 12,
+        maxWidth: 170,
+        padding: "5px 8px",
+        borderRadius: 10,
         borderBottomLeftRadius: 3,
         background: tema.texto,
         color: tema.fundo,
         fontFamily: "inherit",
-        fontSize: 11.5,
-        lineHeight: 1.35,
-        boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        fontSize: 10.5,
+        lineHeight: 1.3,
+        boxShadow: "0 4px 12px rgba(0,0,0,.25)",
         whiteSpace: "normal",
         width: "max-content",
         textAlign: "left",
+        opacity: OPACIDADE_DA_FALA,
       }}
     >
       {curto}
@@ -1233,6 +1344,7 @@ function Mesa({
   tema,
   foto,
   aoClicar,
+  semAnel = false,
 }: {
   indice: number;
   cor: string;
@@ -1243,6 +1355,8 @@ function Mesa({
   tema: Tema;
   foto?: string;
   aoClicar: () => void;
+  /** Sem o anel de "processando" (08/10): o dev trabalha sempre, e o anel fixo dele poluía. */
+  semAnel?: boolean;
 }) {
   const m = MESAS[indice];
   // Na mesa comprida o tampo é um só (MesaComprida); aqui fica só o posto.
@@ -1359,9 +1473,7 @@ function Mesa({
       )}
 
       {/* o anel de "processando", só de quem está com o bastão */}
-
-      {/* o anel de "processando", só de quem está com o bastão */}
-      {trabalhando && (
+      {trabalhando && !semAnel && (
         <mesh ref={anel} position={[0.15, 1.62, 0.05]}>
           <torusGeometry args={[0.16, 0.025, 10, 40]} />
           <meshStandardMaterial color={cor} emissive={cor} emissiveIntensity={1.6} />
@@ -1828,6 +1940,9 @@ function Cena({
   onPerguntar,
   onComentarSobre,
   minhaAparencia,
+  cabecas = {},
+  ajudando = {},
+  emHorarioDeTrabalho = false,
 }: {
   situacao: SituacaoDoSquad;
   cena: CenaAtiva | null;
@@ -1846,7 +1961,26 @@ function Cena({
   pensando: string | null;
   onPerguntar: (agentId: string, pergunta: string) => void;
   onComentarSobre: (agentId: string, outroId: string) => void;
+  /** Os cards na cabeça de cada agente (08/10), por agentId. */
+  cabecas?: Record<string, CardNaCabeca[]>;
+  /** Quem trabalha junto numa peça de outro, por agentId. */
+  ajudando?: Record<string, string>;
+  /** Projeto acontecendo: todo mundo na mesa, sem café (08/10). */
+  emHorarioDeTrabalho?: boolean;
 }) {
+  /**
+   * O CARD EM TRÂNSITO (08/10): enquanto quem entrega anda, o card vai com
+   * ele e ainda não aparece na cabeça de quem recebe. A troca acontece quando
+   * o boneco CHEGA (`aoEntregar`), e não quando o dado chegou.
+   */
+  const [entregue, setEntregue] = useState<number>(-1);
+  const emTransito = cena?.card && cena.n !== entregue ? cena : null;
+  const cardsDe = (id: string): CardNaCabeca[] => {
+    const meus = cabecas[id] ?? [];
+    if (!emTransito?.card) return meus;
+    if (emTransito.de === id) return [emTransito.card, ...meus.filter((c) => c.pecaId !== emTransito.card!.pecaId)];
+    return meus.filter((c) => c.pecaId !== emTransito.card!.pecaId);
+  };
   /**
    * O CAFÉ, que é o que faz a sala parecer habitada.
    *
@@ -1867,6 +2001,12 @@ function Cena({
 
   useEffect(() => {
     if (reduzido) return;
+    // Em horário de trabalho ninguém vai ao café (08/10): com projeto pedido,
+    // todo mundo na sua mesa. Quem estava lá volta na hora.
+    if (emHorarioDeTrabalho) {
+      setNoCafe([]);
+      return;
+    }
     const t = setInterval(() => {
       setNoCafe((antes) => {
         const disponiveis = livres.split(",").filter(Boolean);
@@ -1885,7 +2025,7 @@ function Cena({
       });
     }, 8000);
     return () => clearInterval(t);
-  }, [livres, reduzido]);
+  }, [livres, reduzido, emHorarioDeTrabalho]);
 
   // Quem está no café volta para a mesa depois de um tempo, e o lugar abre.
   useEffect(() => {
@@ -2268,14 +2408,20 @@ function Cena({
         // O BALÃO DE TODOS, e não só de quem está com o bastão: o Bruno pediu
         // em 18/09 que "todos os agentes devem ter um chat". A ordem é: o que
         // ele está dizendo na cena, senão o último log dele, senão nada.
+        // MENOS FREQUENTE desde 08/10: em horário de trabalho só fala quem
+        // anda com um card, quem está com um card na cabeça e quem tem aviso;
+        // os outros trabalham calados, e o card é o que se lê de longe.
         const comCafe = (cafeinados[s.agente.id] ?? 0) > Date.now();
-        const fala =
-          (cena && cena.de === s.agente.id ? cena.fala : null) ??
-          noCafe.find((c) => c.id === s.agente.id)?.fala ??
-          situacao.falas[s.agente.id] ??
-          (s.estado === "trabalhando" || s.estado === "aviso" ? s.detalhe : null) ??
-          // Quem acabou de tomar cafe e nao tem nada para dizer diz isso.
-          (comCafe ? "☕ mais rápido por um tempo" : null);
+        const meusCards = cardsDe(s.agente.id);
+        const podeFalar = !emHorarioDeTrabalho || (cena && cena.de === s.agente.id) || meusCards.length > 0 || s.estado === "aviso";
+        const fala = !podeFalar
+          ? null
+          : (cena && cena.de === s.agente.id ? cena.fala : null) ??
+            noCafe.find((c) => c.id === s.agente.id)?.fala ??
+            situacao.falas[s.agente.id] ??
+            (s.estado === "trabalhando" || s.estado === "aviso" ? s.detalhe : null) ??
+            // Quem acabou de tomar cafe e nao tem nada para dizer diz isso.
+            (comCafe ? "☕ mais rápido por um tempo" : null);
         return (
           <group key={s.agente.id}>
             <Mesa
@@ -2303,6 +2449,10 @@ function Cena({
               fala={fala}
               tema={tema}
               aoClicar={() => onAbrirAgente(s.agente.id)}
+              card={meusCards[0] ?? null}
+              maisCards={Math.max(0, meusCards.length - 1)}
+              documento={!meusCards.length && Boolean(ajudando[s.agente.id])}
+              aoEntregar={(n) => setEntregue(n)}
             />
           </group>
         );
@@ -2326,6 +2476,9 @@ function Cena({
           // Sem arte de massinha gerada ainda (06/10): a placa sai sem foto em vez de imagem quebrada.
           foto={undefined}
           aoClicar={() => onAbrirAgente(AGENTE_DEV.id)}
+          // Sem o anel fixo (08/10, pedido do Bruno: "fica um bastão o tempo
+          // todo em cima da cabeça do dev: tira o do dev").
+          semAnel
         />
         <Robo
           indice={INDICE_DO_DEV}
@@ -2336,7 +2489,9 @@ function Cena({
           gesto={null}
           aparencia={APARENCIA_DOS_AGENTES[AGENTE_DEV.id] ?? APARENCIA_PADRAO_DO_USUARIO}
           reduzido={reduzido}
-          fala={FALA_DO_DEV}
+          // O balão permanente do dev saiu junto com o anel (08/10): a fala
+          // dele continua na ficha, a um clique.
+          fala={null}
           tema={tema}
           aoClicar={() => onAbrirAgente(AGENTE_DEV.id)}
         />
@@ -2454,6 +2609,9 @@ export function EscritorioDoSquad(props: {
   onPerguntar: (agentId: string, pergunta: string) => void;
   onComentarSobre: (agentId: string, outroId: string) => void;
   minhaAparencia?: Aparencia | null;
+  cabecas?: Record<string, CardNaCabeca[]>;
+  ajudando?: Record<string, string>;
+  emHorarioDeTrabalho?: boolean;
 }) {
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const pausado = useEscritorioEmPausa(canvas);

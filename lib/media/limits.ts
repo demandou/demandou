@@ -47,8 +47,28 @@ export const MAX_DURACAO_SEGUNDOS = 300 * 60;
  * Mora aqui, e não em `lib/limites-do-plano.ts`, porque o navegador precisa
  * dele para recusar ANTES de subir um byte, e aquele módulo importa o banco.
  */
+/**
+ * A DURAÇÃO DE CADA GRAVAÇÃO POR PAPEL (08/10, decisão do Bruno): "vendedor
+ * ligado ao contrato não sobe vídeo acima de 5 minutos; vídeo longo só o
+ * titular; podcast de 3 horas só o titular do Enterprise". Quem envia pela
+ * equipe ou pelo contrato é "membro"; quem paga é "titular". A duração do
+ * plano (1 h, 2 h, 3 h) só vale para o titular.
+ */
+export type PapelDoEnvio = "titular" | "membro";
+export const MINUTOS_POR_GRAVACAO_DO_MEMBRO = 5;
+
+export function duracaoMaximaDaGravacaoMin(papel: PapelDoEnvio, duracaoMaximaDoPlanoMin: number): number {
+  return papel === "membro" ? Math.min(MINUTOS_POR_GRAVACAO_DO_MEMBRO, duracaoMaximaDoPlanoMin) : duracaoMaximaDoPlanoMin;
+}
+
+/** "Vídeos acima de 5 minutos só a titular do contrato envia." A mesma frase na tela de envio e na recusa do servidor. */
+export function fraseDoVideoLongoDoMembro(limiteMin: number, contrato: boolean, dono: string | null | undefined): string {
+  const quem = contrato ? "a titular do contrato" : dono?.trim() ? `${dono.trim()}, que administra a conta,` : "quem administra a conta";
+  return `Vídeos acima de ${limiteMin} minutos só ${quem} envia.`;
+}
+
 export type LimitesDoEnvio = {
-  /** O que ESTE envio pode ter: o menor entre a duração máxima do arquivo e os minutos que sobram no mês. */
+  /** O que ESTE envio pode ter: o menor entre a duração que o papel permite e os minutos que sobram no mês. */
   duracaoMaximaSeg: number;
   bytesMaximo: number;
   /** O nome que o cliente vê. Null para acesso interno ou sem plano. */
@@ -61,6 +81,8 @@ export type LimitesDoEnvio = {
    * (lib/entregas-do-plano.ts, `minutosPorMesDoPlano`).
    */
   minutos?: { porMes: number; usados: number; restantes: number } | null;
+  /** O PAPEL de quem envia (08/10) e a duração que ele permite por gravação; `dono` é quem envia o vídeo longo. */
+  papel?: { tipo: PapelDoEnvio; duracaoMaximaMin: number; dono: string | null; contrato: boolean } | null;
 };
 
 /** Sem plano conhecido, vale o maior teto: quem barra de verdade é o servidor. */
@@ -70,6 +92,7 @@ export const LIMITES_SEM_PLANO: LimitesDoEnvio = {
   plano: null,
   proximo: null,
   minutos: null,
+  papel: null,
 };
 
 /**
@@ -492,11 +515,20 @@ export function validarVideo(
   if (duracaoSegundos > limites.duracaoMaximaSeg) {
     const min = Math.round(duracaoSegundos / 60);
     const doPlano = limites.plano ? ` no ${limites.plano}` : "";
+    // O PAPEL (08/10): membro e conta ligada ao contrato só enviam até 5 minutos; a frase diz quem envia o longo.
+    const papel = limites.papel;
+    if (papel?.tipo === "membro" && duracaoSegundos > papel.duracaoMaximaMin * 60) {
+      return {
+        ok: false,
+        motivo: `Esse vídeo tem ${min} minutos. ${fraseDoVideoLongoDoMembro(papel.duracaoMaximaMin, papel.contrato, papel.dono)}`,
+        dica: `Corte no trecho mais forte e envie de novo, ou peça a ${papel.contrato ? "titular do contrato" : papel.dono?.trim() || "quem administra a conta"} para enviar o vídeo inteiro.`,
+      };
+    }
     // OS MINUTOS DO MÊS (08/10): quando o que barra é o total de minutos do
     // ciclo, e não o tamanho do arquivo, a frase diz isso, com o número do
     // cartão, e aponta o plano de cima pelos minutos dele.
     const m = limites.minutos;
-    if (m && limites.duracaoMaximaSeg < Math.min(MAX_DURACAO_SEGUNDOS, limites.proximo ? Infinity : MAX_DURACAO_SEGUNDOS) && duracaoSegundos > m.restantes * 60 - 1e-9) {
+    if (m && duracaoSegundos > m.restantes * 60 - 1e-9) {
       const sobe = limites.proximo?.minutosPorMes && duracaoSegundos <= (limites.proximo.minutosPorMes - m.usados) * 60 ? ` O ${limites.proximo.nome} tem ${limites.proximo.minutosPorMes} minutos por mês.` : "";
       const restam = m.restantes > 0 ? `ainda cabem ${duracaoPorExtenso(Math.floor(m.restantes) * 60)} este mês` : "os minutos deste mês já foram usados";
       return {

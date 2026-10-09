@@ -67,12 +67,14 @@ import { DestinosDoDia } from "@/components/posts/destinos-do-dia";
 import { EditorDeTextos } from "@/components/content/editor-de-textos";
 import { FalhaDaPublicacao, LinhaDaPublicacaoRecolhida, chaveDoPostQueFalhou } from "@/components/posts/falha-da-publicacao";
 import { TRADUCAO_DOS_CODIGOS, chamadoDaFalha, codigoDaFalha, motivoDaRedeNaFrase } from "@/lib/publish/codigos";
+import { avisoDoEloNoQuadro } from "@/lib/media/elo-da-campanha";
 import { abrirChamado as abrirJanelaDeChamado } from "@/lib/suporte/abrir-chamado";
 import { SemanaDoQuadro, proximaPeca, type DiaDaSemana, type PecaDoDia, type EstadoDaPeca, type PortaDoDia } from "@/components/content/semana-do-quadro";
 import { JanelaDoConteudoPronto } from "@/components/posts/janela-do-conteudo-pronto";
 import { fraseDaRecorrencia, type Recorrencia } from "@/lib/posts/conteudo-pronto";
 import { andamentoDosDias } from "@/lib/pipeline/andamento-dos-dias";
 import { esperasDoCorteNoDia, type PlanoDoVideo } from "@/lib/media/espera-do-corte";
+import { haProjetoAcontecendo, pecasEmProducaoNoDia, pecasPedidas, type EntregaDaProgramacao, type PecaPedida, type RunDaProgramacao } from "@/lib/pipeline/pecas-pedidas";
 import { FichaDoAgente, type TrabalhoDoAgente } from "@/components/escritorio/ficha-do-agente";
 import { LinhaDoTempoDoParecer } from "@/components/escritorio/linha-do-tempo-do-parecer";
 import type { EtapaDoParecer } from "@/lib/squad/parecer-da-peca";
@@ -83,6 +85,9 @@ import { AbrirControleDoCorte } from "@/components/video/controle-do-corte";
 import { JanelaDoTikTok, type PostParaTikTok } from "@/components/social/janela-do-tiktok";
 import { AvatarDoAgente } from "@/components/escritorio/avatar-do-agente";
 import { useUmaAUma } from "@/components/escritorio/pecas-uma-a-uma";
+
+/** O nome da rede no aviso da chamada do elo (08/10). */
+const NOME_DA_REDE_NO_AVISO: Record<string, string> = { youtube: "YouTube", instagram: "Instagram", facebook: "Facebook", linkedin: "LinkedIn", twitter: "X", tiktok: "TikTok" };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -3363,6 +3368,27 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
                       );
                     })}
 
+                    {/* A CHAMADA DO ELO (08/10): o que entra na publicação, e
+                        só se a peça citada estiver no ar. O cliente lê aqui,
+                        antes de publicar, por que o texto não tem a chamada
+                        ainda (lib/media/elo-da-campanha.ts). */}
+                    {(() => {
+                      const avisos = dayPosts
+                        .filter((p) => !["published", "publishing", "cancelled"].includes(p.status ?? ""))
+                        .map((p) => ({ id: p.id, rede: p.platform, aviso: avisoDoEloNoQuadro(p.metadata, p.content ?? "") }))
+                        .filter((x): x is { id: string; rede: string; aviso: string } => Boolean(x.aviso));
+                      if (!avisos.length) return null;
+                      return (
+                        <div className="rounded-xl border px-4 py-3 space-y-1.5" style={{ borderColor: "var(--border)", background: "var(--bg-primary)" }}>
+                          {avisos.map((a) => (
+                            <p key={a.id} className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{NOME_DA_REDE_NO_AVISO[a.rede] ?? a.rede}:</span> {a.aviso}
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
                     {/* First comment preview (LinkedIn sources) */}
                     {(() => {
                       const liPost = dayPosts.find((p) => p.platform === "linkedin");
@@ -4470,6 +4496,12 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
   // Os planos de vídeo que tocam a semana aberta (05/10): é deles que sai o
   // lugar guardado do corte nos dias de vídeo curto (lib/media/espera-do-corte.ts).
   const [planosDoVideo, setPlanosDoVideo] = useState<PlanoDoVideo[]>([]);
+  /**
+   * AS CAMPANHAS QUE TOCAM A SEMANA e as entregas delas (08/10): é daqui que
+   * saem as PEÇAS PEDIDAS, o cartão no dia certo desde o minuto do pedido, e o
+   * card na cabeça de cada agente no escritório (lib/pipeline/pecas-pedidas.ts).
+   */
+  const [programacao, setProgramacao] = useState<{ runs: RunDaProgramacao[]; entregas: EntregaDaProgramacao[]; fuso: string | null }>({ runs: [], entregas: [], fuso: null });
   const [loadingCards, setLoadingCards] = useState(false);
   const [runningPipelineId, setRunningPipelineId] = useState<string | null>(activeRun?.status === "running" ? activeRun.id : null);
   const [generating, setGenerating] = useState(activeRun?.status === "running");
@@ -4666,6 +4698,11 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
       setPostsSemana(data.posts ?? []);
       setRunDaSemana(data.run ? { id: data.run.id, status: data.run.status, logs: data.run.logs } : null);
       setPlanosDoVideo(Array.isArray(data.planosDoVideo) ? data.planosDoVideo : []);
+      setProgramacao({
+        runs: Array.isArray(data.runsDaSemana) ? data.runsDaSemana : [],
+        entregas: Array.isArray(data.entregasDaSemana) ? data.entregasDaSemana : [],
+        fuso: typeof data.fuso === "string" ? data.fuso : null,
+      });
     } catch {
       // silent
     } finally {
@@ -4702,7 +4739,19 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
     () => (runDaSemana ? andamentoDosDias(runDaSemana.logs, runDaSemana.status) : {}),
     [runDaSemana]
   );
-  const algoAndando = Object.values(andamento).some((a) => a.fase === "video");
+  /**
+   * AS PEÇAS PEDIDAS da semana (08/10): uma por dia de cada campanha que toca
+   * a semana, com a etapa e quem está com o card. O quadro desenha as que
+   * ainda não viraram card; o escritório põe o mesmo cartão na cabeça de quem
+   * está com ele. Uma lista, duas telas, a mesma história.
+   */
+  const pecasPedidasDaSemana: PecaPedida[] = useMemo(
+    () => pecasPedidas({ runs: programacao.runs, entregas: programacao.entregas, fuso: programacao.fuso }),
+    [programacao]
+  );
+  // Algo andando: um vídeo refeito, ou uma peça pedida em produção (a campanha
+  // que outra aba pediu, ou a que continua depois de recarregar a página).
+  const algoAndando = Object.values(andamento).some((a) => a.fase === "video") || haProjetoAcontecendo(pecasPedidasDaSemana);
 
   // Real-time polling while pipeline is running
   useEffect(() => {
@@ -5047,6 +5096,18 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
       setPendingConfig(null);
       // A semana vai nascer de tema: o painel de gravacao sai da frente.
       setEnviarAberto(false);
+      /**
+       * O QUADRO VAI PARA A SEMANA DA CAMPANHA, NA HORA (08/10). O Bruno pediu
+       * um post para segunda 12 numa quinta 08 e o quadro, na semana de 05/10,
+       * ficou vazio: a peça estava na semana seguinte. O servidor já devolveu
+       * o `weekStart` acertado (o post único vira a segunda da data dele); a
+       * tela abre essa semana e recarrega, e o cartão da peça pedida aparece
+       * no dia certo antes de qualquer card nascer.
+       */
+      const inicio = (data.run?.config as { weekStart?: string } | null)?.weekStart;
+      const semanaDaCampanha = /^\d{4}-\d{2}-\d{2}/.test(inicio ?? "") ? getMonday(new Date(`${inicio!.slice(0, 10)}T12:00:00.000Z`)) : null;
+      if (semanaDaCampanha && toIsoDate(semanaDaCampanha) !== weekStartIso) setSelectedMonday(semanaDaCampanha);
+      else void loadCardsForWeek(weekStartIso);
       toast.success("Campanha iniciada!");
     } catch (e) {
       toast.error(`Erro: ${e instanceof Error ? e.message : "tente novamente"}`);
@@ -5662,12 +5723,22 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
       });
     }
 
+    /**
+     * AS PEÇAS PEDIDAS DESTE DIA (08/10): o cartão em produção desde o minuto
+     * do pedido. Fica de fora a campanha que JÁ tem peça neste dia (pronta ou
+     * em espera, acima): um cartão por peça, sem duplicar nem piscar quando a
+     * peça real entra no lugar.
+     */
+    const runsComPeca = new Set<string>([...esperaPorRun.keys(), ...postsDoDia.map((p) => p.runId).filter((r): r is string => Boolean(r))]);
+    const pedidas = pecasEmProducaoNoDia(pecasPedidasDaSemana, iso).filter((p) => !runsComPeca.has(p.runId));
+
     return {
       dayOfWeek: day.dayOfWeek,
       curto: day.short,
       // `dayDate` e meia-noite UTC: o `getDate()` local, em Sao Paulo, cai no
       // dia ANTERIOR (21h). Em 18/09 a segunda 14 apareceu como 13.
       numero: String(dayDate.getUTCDate()).padStart(2, "0"),
+      pedidas,
       // "Hoje" e o dia em que a pessoa esta, e ela esta em Sao Paulo. O UTC
       // vira o dia as 21h daqui, e as 22h de quinta a tela destacava a sexta.
       hoje: iso === hojeEmSaoPaulo,
@@ -6157,6 +6228,7 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
           antiga (`pipeline-live.tsx`). */}
       <Escritorio
         pecas={pecasDoSquad}
+        pecasPedidas={pecasPedidasDaSemana}
         runId={generating && runningPipelineId ? runningPipelineId : null}
         titulo={tituloDoEscritorio}
         projectId={projectId}
@@ -6236,6 +6308,13 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
         // O corte já pronto abre direto, na semana dele (05/10): sem subir
         // até a faixa e voltar.
         onAbrirCorte={abrirPecaDoVideo}
+        // O cartão da peça pedida (08/10): a ficha de quem está com ela, e o
+        // "Refazer" da que não saiu abre a campanha com o tema dela.
+        onVerAgente={(id) => abrirAgente(id)}
+        onRefazerPedida={(p) => {
+          setTopic(p.tema ?? "");
+          openNewCampaign();
+        }}
         // A peça que falhou se arquiva no próprio cartão (01/10): só os posts
         // dela que falharam; o que já saiu ou está na fila fica.
         onArquivarPeca={(id) => void arquivarPostsComFalha((postsDaPeca.get(id) ?? []).filter((p) => p.status === "failed").map((p) => p.id))}

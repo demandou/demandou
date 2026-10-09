@@ -109,7 +109,37 @@ export async function GET(req: NextRequest) {
       return [{ runId: r.id, videoJobId, weekStart: r.weekStart?.toISOString() ?? null, config: r.config }];
     });
 
-    return NextResponse.json({ cards, run: weekRun, posts, planosDoVideo });
+    /**
+     * AS CAMPANHAS QUE TOCAM ESTA SEMANA, para o quadro mostrar a PEÇA PEDIDA
+     * desde o minuto do pedido (08/10, lib/pipeline/pecas-pedidas.ts). O
+     * `weekRun` acima só acha a campanha cujo início cai na segunda; a que
+     * começa na quinta, a quinzenal da semana passada e o dia empurrado para
+     * a semana seguinte ficavam invisíveis até o card do redator nascer. Vão
+     * com o config, o log e as ENTREGAS (os posts de cada run, de qualquer
+     * status), que é o que diz se a peça já virou card de verdade.
+     */
+    const runsDaSemana = await prisma.pipelineRun.findMany({
+      where: {
+        projectId,
+        archived: false,
+        status: { not: "cancelled" },
+        weekStart: {
+          gte: new Date(weekStartDate.getTime() - 21 * 24 * 60 * 60 * 1000),
+          lte: weekEndDate,
+        },
+      },
+      orderBy: { startedAt: "desc" },
+      take: 12,
+      select: { id: true, status: true, topic: true, config: true, logs: true },
+    });
+    const entregasDaSemana = runsDaSemana.length
+      ? await prisma.post.findMany({
+          where: { runId: { in: runsDaSemana.map((r) => r.id) } },
+          select: { runId: true, dayOfWeek: true, scheduledAt: true },
+        })
+      : [];
+
+    return NextResponse.json({ cards, run: weekRun, posts, planosDoVideo, runsDaSemana, entregasDaSemana, fuso: project.timezone ?? null });
   }
 
   const latestRun = await prisma.pipelineRun.findFirst({

@@ -248,15 +248,17 @@ function notasDasMemorias(projectId: string, memorias: MemoriaDaFonte[], feedbac
       const instrucao = str(v.instruction);
       // O mesmo pedido já chegou pelo feedback do chat (que tem a resposta e a classe): não repete.
       if (!instrucao || textosDeFeedback.has(normal(instrucao))) continue;
+      // O MEU ESTILO (08/10): a confirmação da caixa "crie o seu estilo" também mora em "preference" (cardType "estilo"), e é decisão de tom e marca, não pedido de chat.
+      const doEstilo = str(v.cardType) === "estilo";
       saida.push({
         id: `preferencia:${m.key}`,
         fonte: "preferencia",
-        esfera: "pedidos",
+        esfera: doEstilo ? "decisoes" : "pedidos",
         titulo: cortar(instrucao, 90),
-        texto: `Pediu no chat da peça: ${cortar(instrucao, 600)}`,
+        texto: doEstilo ? cortar(instrucao, 600) : `Pediu no chat da peça: ${cortar(instrucao, 600)}`,
         quando: str(meta.learnedAt) ?? iso(m.createdAt),
-        tags: [str(v.cardType) ?? "chat"].filter(Boolean) as string[],
-        link: `/projects/${projectId}/live`,
+        tags: doEstilo ? ["estilo", "marca"] : ([str(v.cardType) ?? "chat"].filter(Boolean) as string[]),
+        link: doEstilo ? `/projects/${projectId}/settings?aba=modelos` : `/projects/${projectId}/live`,
         pecas: [],
         editavel: instrucao,
       });

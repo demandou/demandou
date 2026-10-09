@@ -14,6 +14,7 @@
  */
 
 import { ID_ANTIGO } from "@/lib/squad/definicoes-dos-agentes";
+import type { CardNaCabeca } from "@/lib/pipeline/pecas-pedidas";
 
 export type EstadoDoAgente = "trabalhando" | "pronto" | "esperando" | "aviso" | "ocioso";
 
@@ -179,6 +180,12 @@ export type Cena = {
    * ler e responder; a entrega de bastão é rápida.
    */
   demora?: number;
+  /**
+   * O CARD QUE VAI JUNTO (08/10): a peça pedida que quem anda leva para o
+   * próximo, a mesma do calendário (lib/pipeline/pecas-pedidas.ts). Com ele,
+   * o card sai da cabeça de quem recebe até a entrega acontecer na cena.
+   */
+  card?: CardNaCabeca;
 };
 
 export type SituacaoDoAgente = {

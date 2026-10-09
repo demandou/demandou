@@ -9,13 +9,24 @@ import {
   SEM_TESTE,
   type LimiteDoTeste,
 } from "@/lib/teste-gratis";
-import { LIMITES_SEM_PLANO, duracaoMaximaDoEnvioSeg, duracaoPorExtenso, type LimitesDoEnvio } from "@/lib/media/limits";
-import { minutosPorMesDoPlano } from "@/lib/entregas-do-plano";
+import { LIMITES_SEM_PLANO, duracaoMaximaDaGravacaoMin, duracaoMaximaDoEnvioSeg, duracaoPorExtenso, fraseDoVideoLongoDoMembro, type LimitesDoEnvio, type PapelDoEnvio } from "@/lib/media/limits";
+import { minutosDaConta, minutosPorMesDoPlano } from "@/lib/entregas-do-plano";
+import { OPERACAO_DA_COMPRA as OPERACAO_DA_COMPRA_DE_CREDITOS } from "@/lib/credits/pacotes-de-credito-servidor";
 import { fraseDaCotaDeGravacoes } from "@/lib/frase-da-cota";
 import { apagarMidias } from "@/lib/media/faxina";
 import { cicloAtual } from "@/lib/ciclo-de-credito";
-import { contaDoPlano, contaPagante, consumoDoMembro, membroAtivo, type MembroDaConta } from "@/lib/equipe/conta";
-import { fraseDaCotaDaEquipe, fraseDoTetoDeGravacoes, gravacoesDoCiclo as gravacoesComExtras, marcasDaConta } from "@/lib/equipe/regras";
+import { contaPagante, consumoDoMembro, contasLigadasA, membroAtivo, nomeDoDono, regraDaConta, type MembroDaConta } from "@/lib/equipe/conta";
+import {
+  PROJETOS_POR_PESSOA_DO_CONTRATO,
+  fraseDaCotaDaEquipe,
+  fraseDaCotaDoContrato,
+  fraseDoProjetoDoContrato,
+  fraseDoTetoDeGravacoes,
+  gravacoesDoCiclo as gravacoesComExtras,
+  marcasDaConta,
+  nomeDaCarteiraDoContrato,
+  planoQueValeNaConta,
+} from "@/lib/equipe/regras";
 import { diaEMes } from "@/lib/frase-da-cota";
 import type { PartesDaGravacao } from "@/lib/media/partes-da-gravacao";
 
@@ -59,14 +70,19 @@ import type { PartesDaGravacao } from "@/lib/media/partes-da-gravacao";
 export type Cota = { marcas: number; gravacoesPorMes: number; armazenamentoGb: number };
 
 export type Estouro = {
-  /** "minutos" (08/10): os minutos de vídeo editado do mês, o mesmo número do cartão do plano. */
-  recurso: "marcas" | "gravacoes" | "armazenamento" | "minutos";
+  /**
+   * "minutos" (08/10): os minutos de vídeo editado do mês, o mesmo número do
+   * cartão do plano. "duracao" (08/10): a duração de UMA gravação passou do
+   * que o papel permite (5 min para membro e conta ligada ao contrato; a do
+   * plano para o titular).
+   */
+  recurso: "marcas" | "gravacoes" | "armazenamento" | "minutos" | "duracao";
   usado: number;
   limite: number;
   /** O nome que o cliente ve do plano ATUAL. Null quando nao ha plano. */
   plano: string | null;
   /** Para onde subir, e o que muda. Null quando ja esta no maior plano. */
-  sugestao: { planoId: PlanoId; nome: string; marcas: number; gravacoesPorMes: number; armazenamentoGb: number; minutosPorMes: number } | null;
+  sugestao: { planoId: PlanoId; nome: string; marcas: number; gravacoesPorMes: number; armazenamentoGb: number; minutosPorMes: number; duracaoMaximaMin: number } | null;
   /**
    * ISO da proxima reposicao, so para gravacoes.
    *
@@ -86,8 +102,12 @@ export type Estouro = {
    * tela não oferece upgrade (membro não vê cobrança) e manda falar com quem
    * administra a conta; `sugestao` vem null.
    */
-  equipe?: "teto" | "cota";
-  /** O nome de quem administra a conta, quando `equipe` vem (01/10, acabamento). */
+  equipe?: "teto" | "cota" | "contrato";
+  /**
+   * O nome de quem administra a conta, quando `equipe` vem (01/10, acabamento).
+   * Em "contrato" (08/10, conta ligada ao contrato): o contrato por extenso,
+   * com a titular ("contrato SEED (titular Matheus)").
+   */
   dono?: string;
 };
 
@@ -199,7 +219,9 @@ function proximoQueResolve(
         ? p.gravacoesPorMes >= precisa
         : recurso === "minutos"
           ? minutosPorMesDoPlano(p.id) >= precisa
-          : p.armazenamentoGb >= precisa
+          : recurso === "duracao"
+            ? p.duracaoMaximaMin >= precisa
+            : p.armazenamentoGb >= precisa
   );
   if (!achado) return null;
   return {
@@ -209,6 +231,7 @@ function proximoQueResolve(
     gravacoesPorMes: achado.gravacoesPorMes,
     armazenamentoGb: achado.armazenamentoGb,
     minutosPorMes: minutosPorMesDoPlano(achado.id),
+    duracaoMaximaMin: achado.duracaoMaximaMin,
   };
 }
 
@@ -226,7 +249,23 @@ function proximoQueResolve(
 export async function conferirMarca(userIdDeQuemPede: string): Promise<Estouro | null> {
   // A marca é da CONTA (01/10): para membro da equipe vale a do dono. Quem cria
   // projeto é o dono; a rota recusa o membro antes, isto é só a mesma régua.
-  const userId = await contaDoPlano(userIdDeQuemPede);
+  const { contaId: userId, membro } = await regraDaConta(userIdDeQuemPede);
+  // A CONTA LIGADA AO CONTRATO (08/10): um projeto por pessoa do time, contado
+  // nos projetos dela (o que ela cria é dela; o contrato paga o uso).
+  if (membro?.origem === "contrato" && membro.contrato) {
+    const meus = await prisma.project.count({ where: { userId: userIdDeQuemPede } });
+    if (meus < PROJETOS_POR_PESSOA_DO_CONTRATO) return null;
+    return {
+      recurso: "marcas",
+      usado: meus,
+      limite: PROJETOS_POR_PESSOA_DO_CONTRATO,
+      plano: null,
+      sugestao: null,
+      renovaEm: null,
+      equipe: "contrato",
+      dono: nomeDaCarteiraDoContrato(membro.contrato),
+    };
+  }
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { plan: true, role: true, acessosExtras: true },
@@ -276,9 +315,11 @@ export async function usoDeGravacoes(userIdDeQuemPede: string): Promise<UsoDeGra
   });
   const vazio = { usadas: 0, limite: 0, restantes: 0, renovaEm: null, semPlano: true, admin: false };
   if (!user) return vazio;
-  if (user.role === "admin") return { ...vazio, semPlano: false, admin: true };
+  // A conta ligada ao contrato nunca herda o acesso interno da titular (08/10).
+  const vale = planoQueValeNaConta(user, membro?.contrato);
+  if (vale.admin) return { ...vazio, semPlano: false, admin: true };
 
-  const cota = cotaDoPlano(user.plan, user.acessosExtras);
+  const cota = cotaDoPlano(vale.plan, vale.acessosExtras);
   const ciclo = cicloAtual(user.creditsResetAt);
   const usadas = await gravacoesDoCiclo(userId, ciclo.inicio);
   if (!cota) return { ...vazio, usadas };
@@ -321,16 +362,21 @@ async function avaliarGravacao(
   });
   if (!user) return null;
   // O nome do dono vai no estouro de quem é membro (01/10, acabamento): a tela
-  // diz com QUEM falar, em vez de "quem administra a conta".
-  const dono = user.name?.trim() || user.email;
+  // diz com QUEM falar, em vez de "quem administra a conta". Para a conta
+  // ligada ao contrato (08/10), o contrato por extenso, com a titular.
+  const contrato = membro?.dados.contrato ?? null;
+  const dono = contrato ? nomeDaCarteiraDoContrato(contrato) : user.name?.trim() || user.email;
+  // A conta ligada nunca herda o acesso interno da titular, e sem plano na
+  // titular vale o plano do contrato (planoQueValeNaConta, 08/10).
+  const vale = planoQueValeNaConta(user, contrato);
 
-  const cota = cotaDoPlano(user.plan, user.acessosExtras);
+  const cota = cotaDoPlano(vale.plan, vale.acessosExtras);
   const ciclo = cicloAtual(user.creditsResetAt);
   const gravacoes = await gravacoesDoCiclo(userId, ciclo.inicio, db);
 
   // Acesso interno nao tem cota (30/09, regra do Bruno: "admin nao tem
   // limite"). Conta mesmo assim, para a marca do extrato dizer quantas foram.
-  if (user.role === "admin") return { estouro: null, usadas: gravacoes, limite: null, admin: true };
+  if (vale.admin) return { estouro: null, usadas: gravacoes, limite: null, admin: true };
 
   if (!cota) {
     return {
@@ -339,8 +385,10 @@ async function avaliarGravacao(
         usado: gravacoes,
         limite: 0,
         plano: null,
-        sugestao: proximoQueResolve(null, "gravacoes", gravacoes + 1),
+        // A conta ligada ao contrato não compra plano: a saída é a titular.
+        sugestao: contrato ? null : proximoQueResolve(null, "gravacoes", gravacoes + 1),
         renovaEm: null,
+        ...(contrato ? { equipe: "contrato" as const, dono } : {}),
       },
       usadas: gravacoes,
       limite: 0,
@@ -358,7 +406,7 @@ async function avaliarGravacao(
             recurso: "gravacoes",
             usado: dele,
             limite: teto,
-            plano: planoPublico(user.plan as PlanoId).nome,
+            plano: planoPublico(vale.plan as PlanoId).nome,
             sugestao: null,
             renovaEm: ciclo.renovaEm,
             equipe: "teto",
@@ -378,11 +426,11 @@ async function avaliarGravacao(
       recurso: "gravacoes",
       usado: gravacoes,
       limite: cota.gravacoesPorMes,
-      plano: planoPublico(user.plan as PlanoId).nome,
+      plano: planoPublico(vale.plan as PlanoId).nome,
       // Membro não compra nem troca de plano: a saída dele é o dono.
-      sugestao: membro ? null : proximoQueResolve(user.plan, "gravacoes", gravacoes + 1),
+      sugestao: membro ? null : proximoQueResolve(vale.plan, "gravacoes", gravacoes + 1),
       renovaEm: ciclo.renovaEm,
-      ...(membro ? { equipe: "cota" as const, dono } : {}),
+      ...(membro ? { equipe: contrato ? ("contrato" as const) : ("cota" as const), dono } : {}),
     },
     usadas: gravacoes,
     limite: cota.gravacoesPorMes,
@@ -469,9 +517,13 @@ export async function registrarGravacao(args: {
       const avaliacao = await avaliarGravacao(contaId, tx, membroQueEnvia);
       if (!avaliacao) throw new Error("Usuário não encontrado");
       if (avaliacao.estouro) return { ok: false as const, estouro: avaliacao.estouro };
-      // OS MINUTOS DO MÊS (08/10): com a duração que o navegador leu, a gravação só entra se couber.
+      // OS MINUTOS DO MÊS e a DURAÇÃO POR PAPEL (08/10): com a duração que o navegador leu, a gravação só
+      // entra se couber no mês e se quem envia puder enviar um vídeo desse tamanho (5 min para membro e conta
+      // ligada ao contrato). A aprovação do roteiro confere de novo com a duração medida pelo worker.
       if (args.duracaoSeg && args.duracaoSeg > 0) {
-        const estouroDeMinutos = await conferirMinutos(contaId, { duracaoSegNova: args.duracaoSeg }, tx);
+        const estouroDeDuracao = await conferirDuracaoDaGravacao(userId, args.duracaoSeg, tx);
+        if (estouroDeDuracao) return { ok: false as const, estouro: estouroDeDuracao };
+        const estouroDeMinutos = await conferirMinutos(userId, { duracaoSegNova: args.duracaoSeg }, tx);
         if (estouroDeMinutos) return { ok: false as const, estouro: estouroDeMinutos };
       }
 
@@ -550,9 +602,30 @@ export async function descartarGravacaoRecusada(blobUrl: string, projectId: stri
  * arquivo so: quando cada tela escrevia a sua copia, as copias divergiram.
  */
 export function fraseDoEstouro(e: Estouro): string {
+  // A DURAÇÃO POR PAPEL (08/10): o membro e a conta ligada leem quem pode enviar o vídeo longo.
+  if (e.recurso === "duracao") {
+    if (e.equipe) return `Esse vídeo tem ${e.usado} minutos. ${fraseDoVideoLongoDoMembro(e.limite, e.equipe === "contrato", e.dono ?? null)}`;
+    const sobe = e.sugestao ? ` O ${e.sugestao.nome} aceita até ${duracaoPorExtenso(e.sugestao.duracaoMaximaMin * 60)}.` : "";
+    return `Esse vídeo tem ${e.usado} minutos, e o ${e.plano ?? "plano"} aceita gravações de até ${duracaoPorExtenso(e.limite * 60)}.${sobe}`;
+  }
+  // OS MINUTOS DO MÊS de quem é membro ou conta ligada (08/10): sem upgrade, a saída é quem paga.
+  if (e.recurso === "minutos" && e.equipe) {
+    const libera = e.renovaEm ? ` A próxima reposição é em ${diaEMes(e.renovaEm)}.` : "";
+    const quem = e.equipe === "contrato" ? "a titular do contrato" : e.dono?.trim() || "quem administra a conta";
+    const de = e.equipe === "contrato" ? `O time do ${e.dono ?? "contrato"}` : "A sua equipe";
+    return `${de} já usou os ${duracaoPorExtenso(e.limite * 60)} de vídeo editado deste mês, e com esta gravação passaria de ${Math.round(e.usado)} minutos.${libera} Para liberar mais, fale com ${quem}.`;
+  }
   // Membro da equipe (01/10): a frase aprovada do teto, ou a da cota da conta.
   if (e.equipe === "teto") return fraseDoTetoDeGravacoes(e.usado, e.limite);
   if (e.equipe === "cota") return fraseDaCotaDaEquipe({ usadas: e.usado, limite: e.limite, renovaEm: e.renovaEm, diaEMes, dono: e.dono });
+  // A conta ligada ao contrato (08/10): o projeto por pessoa e a cota do contrato.
+  if (e.equipe === "contrato") {
+    const carteira = e.dono ?? "contrato";
+    if (e.recurso === "marcas") return fraseDoProjetoDoContrato(carteira, e.usado, e.limite);
+    if (e.recurso === "gravacoes" && e.limite > 0) return fraseDaCotaDoContrato({ carteira, usadas: e.usado, limite: e.limite, renovaEm: e.renovaEm, diaEMes });
+    if (e.recurso === "gravacoes") return `O ${carteira} ainda não tem plano com gravações. Fale com a titular do contrato.`;
+    return `O ${carteira} guarda até ${e.limite} GB de gravações, e o time já usa ${e.usado} GB. Fale com a titular do contrato.`;
+  }
   if (!e.plano) {
     return e.recurso === "marcas"
       ? "Escolha um plano para criar a sua marca."
@@ -608,26 +681,34 @@ const BYTES_POR_GB = 1024 * 1024 * 1024;
 export async function usoDeArmazenamento(userIdDeQuemPede: string): Promise<UsoDeArmazenamento> {
   // O armazenamento é da CONTA (01/10): soma as gravações de todos os
   // projetos do dono, inclusive as que os membros da equipe enviaram.
-  const userId = await contaDoPlano(userIdDeQuemPede);
+  const { contaId: userId, membro } = await regraDaConta(userIdDeQuemPede);
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { plan: true, role: true },
+    select: { plan: true, role: true, acessosExtras: true },
   });
   const vazio = { bytes: 0, limiteGb: 0, usadoGb: 0, restanteGb: 0, percentual: 0, semPlano: true, admin: false };
   if (!user) return vazio;
 
-  const soma = await prisma.videoJob.aggregate({ where: { OR: [{ userId }, { project: { userId } }] }, _sum: { sizeBytes: true } });
+  // O CONTRATO GUARDA-CHUVA (08/10): as contas ligadas à titular somam no
+  // armazenamento do contrato, como as gravações dos membros somam no do dono.
+  // Conta sem ligação: a lista é só ela, e a soma é a de sempre.
+  const grupo = [userId, ...(await contasLigadasA(userId))];
+  const soma = await prisma.videoJob.aggregate({
+    where: grupo.length > 1 ? { OR: [{ userId: { in: grupo } }, { project: { userId: { in: grupo } } }] } : { OR: [{ userId }, { project: { userId } }] },
+    _sum: { sizeBytes: true },
+  });
   // A biblioteca de materiais (03/10) entra na mesma conta: vídeo de celular
   // pesa como gravação, e foto soma pouco.
   const materiais = await prisma.materialDoCliente
-    .aggregate({ where: { project: { userId } }, _sum: { sizeBytes: true } })
+    .aggregate({ where: grupo.length > 1 ? { project: { userId: { in: grupo } } } : { project: { userId } }, _sum: { sizeBytes: true } })
     .catch(() => ({ _sum: { sizeBytes: null } }));
   const bytes = Number(soma._sum.sizeBytes ?? 0) + Number(materiais._sum.sizeBytes ?? 0);
   const usadoGb = bytes / BYTES_POR_GB;
 
-  if (user.role === "admin") return { ...vazio, bytes, usadoGb, semPlano: false, admin: true };
+  const vale = planoQueValeNaConta(user, membro?.contrato);
+  if (vale.admin) return { ...vazio, bytes, usadoGb, semPlano: false, admin: true };
 
-  const cota = cotaDoPlano(user.plan);
+  const cota = cotaDoPlano(vale.plan);
   if (!cota) return { ...vazio, bytes, usadoGb };
 
   return {
@@ -657,7 +738,10 @@ export async function conferirArmazenamento(
   const uso = await usoDeArmazenamento(userId);
   if (uso.admin) return null;
 
-  const user = await prisma.user.findUnique({ where: { id: await contaDoPlano(userId) }, select: { plan: true } });
+  const { contaId, membro } = await regraDaConta(userId);
+  const conta = await prisma.user.findUnique({ where: { id: contaId }, select: { plan: true, role: true, acessosExtras: true } });
+  const plano = conta ? planoQueValeNaConta(conta, membro?.contrato).plan : null;
+  const contrato = membro?.contrato ?? null;
   const precisaGb = Math.ceil(uso.usadoGb + bytesNovos / BYTES_POR_GB);
 
   if (uso.semPlano) {
@@ -666,8 +750,9 @@ export async function conferirArmazenamento(
       usado: Math.round(uso.usadoGb),
       limite: 0,
       plano: null,
-      sugestao: proximoQueResolve(null, "armazenamento", precisaGb),
+      sugestao: contrato ? null : proximoQueResolve(null, "armazenamento", precisaGb),
       renovaEm: null,
+      ...(contrato ? { equipe: "contrato" as const, dono: nomeDaCarteiraDoContrato(contrato) } : {}),
     };
   }
   if (uso.usadoGb + bytesNovos / BYTES_POR_GB <= uso.limiteGb) return null;
@@ -676,8 +761,9 @@ export async function conferirArmazenamento(
     recurso: "armazenamento",
     usado: Math.round(uso.usadoGb),
     limite: uso.limiteGb,
-    plano: planoPublico(user?.plan as PlanoId).nome,
-    sugestao: proximoQueResolve(user?.plan, "armazenamento", precisaGb),
+    plano: planoPublico(plano as PlanoId).nome,
+    ...(contrato ? { equipe: "contrato" as const, dono: nomeDaCarteiraDoContrato(contrato) } : {}),
+    sugestao: contrato ? null : proximoQueResolve(plano, "armazenamento", precisaGb),
     // Armazenamento nao "renova" sozinho: ele so desce se alguem apagar. Dizer
     // uma data aqui seria prometer uma espera que nunca termina.
     renovaEm: null,
@@ -686,18 +772,24 @@ export async function conferirArmazenamento(
 
 /**
  * OS MINUTOS DE VÍDEO DO CICLO (08/10, decisão do Bruno: "limitar os minutos
- * dos planos"). O teto por plano é o MESMO número do cartão
- * (lib/entregas-do-plano.ts, `minutosPorMesDoPlano`): os minutos que o saldo
- * paga, derivados de 230 créditos por minuto. Aqui ele vira trava de
- * segurança: na emissão do token, no registro da gravação (com a duração que
- * o navegador leu) e na aprovação do roteiro (com a duração medida).
+ * dos planos" e "o usuário administra os minutos"). O teto por plano é o
+ * MESMO número do cartão (lib/entregas-do-plano.ts, `minutosPorMesDoPlano`):
+ * os minutos que o saldo paga, a 230 créditos por minuto. Aqui ele vira trava
+ * de segurança: na emissão do token, no registro da gravação (com a duração
+ * que o navegador leu) e na aprovação do roteiro (com a duração medida).
  *
  * O que conta: a duração medida de cada gravação da conta no ciclo
- * (`VideoJob.durationSec`, inclusive as dos membros) mais, para as gravações
- * de projeto apagado, os minutos da linha `video_roteiro` do extrato ("N min:
- * transcrição..."), que sobrevive à faxina do projeto como a marca da cota.
- * Gravação ainda sem medida (subindo, transcrevendo) conta zero aqui; a
- * aprovação dela confere de novo com a medida.
+ * (`VideoJob.durationSec`, inclusive as dos membros e das contas ligadas ao
+ * contrato) mais, para as gravações de projeto apagado, os minutos da linha
+ * `video_roteiro` do extrato ("N min: transcrição..."), que sobrevive à
+ * faxina do projeto como a marca da cota. Gravação ainda sem medida (subindo,
+ * transcrevendo) conta zero aqui; a aprovação dela confere de novo com a
+ * medida.
+ *
+ * O teto da conta cresce com o que foi pago a mais: cada acesso extra e cada
+ * pacote de créditos comprado no ciclo somam minutos (230 créditos por
+ * minuto, `minutosDaConta`). A cota por quantidade de gravações continua
+ * como trava interna; o cliente só vê minutos.
  */
 export type UsoDeMinutos = {
   porMes: number;
@@ -729,19 +821,38 @@ async function minutosDoCiclo(userId: string, desde: Date, db: Leitor = prisma):
   return segundos / 60;
 }
 
+/** Os créditos comprados à parte neste ciclo (pacotes): viram minutos a mais na conta. */
+async function creditosCompradosNoCiclo(userId: string, desde: Date, db: Leitor = prisma): Promise<number> {
+  const soma = await db.creditTransaction.aggregate({
+    where: { userId, operation: OPERACAO_DA_COMPRA_DE_CREDITOS, createdAt: { gte: desde }, amount: { gt: 0 } },
+    _sum: { amount: true },
+  });
+  return soma._sum.amount ?? 0;
+}
+
 /** Quantos minutos de vídeo a conta já usou neste ciclo, e quantos faltam. */
 export async function usoDeMinutos(userIdDeQuemPede: string, db: Leitor = prisma): Promise<UsoDeMinutos> {
-  const userId = await contaDoPlano(userIdDeQuemPede, db);
-  const user = await db.user.findUnique({ where: { id: userId }, select: { plan: true, role: true, creditsResetAt: true } });
+  // A conta que paga (o dono da equipe ou a titular do contrato), sem herdar o acesso interno (08/10).
+  const { contaId: userId, membro } = await regraDaConta(userIdDeQuemPede, db);
+  const user = await db.user.findUnique({ where: { id: userId }, select: { plan: true, role: true, creditsResetAt: true, acessosExtras: true } });
   const vazio: UsoDeMinutos = { porMes: 0, usados: 0, restantes: 0, renovaEm: null, semPlano: true, admin: false };
   if (!user) return vazio;
-  if (user.role === "admin") return { ...vazio, semPlano: false, admin: true };
+  const vale = planoQueValeNaConta(user, membro?.contrato);
+  if (vale.admin) return { ...vazio, semPlano: false, admin: true };
   const ciclo = cicloAtual(user.creditsResetAt);
-  const usados = await minutosDoCiclo(userId, ciclo.inicio, db);
-  const publico = PLANOS_PUBLICOS.find((p) => p.id === user.plan);
+  const [usados, comprados] = await Promise.all([minutosDoCiclo(userId, ciclo.inicio, db), creditosCompradosNoCiclo(userId, ciclo.inicio, db)]);
+  const publico = PLANOS_PUBLICOS.find((p) => p.id === vale.plan);
   if (!publico) return { ...vazio, usados };
-  const porMes = minutosPorMesDoPlano(publico.id);
+  const porMes = minutosDaConta(publico.id, vale.acessosExtras, comprados);
   return { porMes, usados, restantes: Math.max(0, porMes - usados), renovaEm: ciclo.renovaEm, semPlano: false, admin: false };
+}
+
+/** Quem paga e como a frase chama essa pessoa (o dono da equipe ou o contrato com a titular). */
+async function quemPagaParaAFrase(userIdDeQuemPede: string, db: Leitor = prisma): Promise<{ contaId: string; membro: MembroDaConta | null; dono: string | null; contrato: boolean }> {
+  const { contaId, membro } = await regraDaConta(userIdDeQuemPede, db);
+  if (!membro) return { contaId, membro: null, dono: null, contrato: false };
+  if (membro.contrato) return { contaId, membro, dono: nomeDaCarteiraDoContrato(membro.contrato), contrato: true };
+  return { contaId, membro, dono: await nomeDoDono(contaId, db), contrato: false };
 }
 
 /**
@@ -755,15 +866,51 @@ export async function conferirMinutos(userIdDeQuemPede: string, o: { duracaoSegN
   if (uso.admin || uso.semPlano) return null;
   const nova = Math.max(0, o.duracaoSegNova ?? 0) / 60;
   if (uso.usados + nova <= uso.porMes + 1e-9) return null;
-  const userId = await contaDoPlano(userIdDeQuemPede, db);
-  const user = await db.user.findUnique({ where: { id: userId }, select: { plan: true } });
+  const quem = await quemPagaParaAFrase(userIdDeQuemPede, db);
+  const user = await db.user.findUnique({ where: { id: quem.contaId }, select: { plan: true, role: true, acessosExtras: true } });
+  const vale = user ? planoQueValeNaConta(user, quem.membro?.contrato) : null;
+  const publico = PLANOS_PUBLICOS.find((p) => p.id === vale?.plan);
   return {
     recurso: "minutos",
     usado: Math.round((uso.usados + nova) * 10) / 10,
     limite: uso.porMes,
-    plano: planoPublico(user?.plan as PlanoId).nome,
-    sugestao: proximoQueResolve(user?.plan, "minutos", Math.ceil(uso.usados + nova)),
+    plano: publico?.nome ?? null,
+    // Membro e conta ligada não compram plano: a saída é quem paga.
+    sugestao: quem.membro ? null : proximoQueResolve(vale?.plan, "minutos", Math.ceil(uso.usados + nova)),
     renovaEm: uso.renovaEm,
+    ...(quem.membro ? { equipe: quem.contrato ? ("contrato" as const) : ("cota" as const), dono: quem.dono ?? undefined } : {}),
+  };
+}
+
+/**
+ * A DURAÇÃO DE CADA GRAVAÇÃO POR PAPEL (08/10, decisão do Bruno): quem envia
+ * pela equipe ou pelo contrato (vendedor, consultor) só sobe vídeo de até 5
+ * minutos; o vídeo longo é do titular da conta, até a duração máxima do
+ * plano dela (1 h, 2 h, e o podcast de 3 h só no Enterprise). A regra sem
+ * banco mora em lib/media/limits.ts (`duracaoMaximaDaGravacaoMin`); aqui se
+ * resolve quem é quem. `null` quando cabe; acesso interno não tem teto.
+ */
+export async function conferirDuracaoDaGravacao(userIdDeQuemEnvia: string, duracaoSeg: number, db: Leitor = prisma): Promise<Estouro | null> {
+  if (!(duracaoSeg > 0)) return null;
+  const quem = await quemPagaParaAFrase(userIdDeQuemEnvia, db);
+  const user = await db.user.findUnique({ where: { id: quem.contaId }, select: { plan: true, role: true, acessosExtras: true } });
+  if (!user) return null;
+  const vale = planoQueValeNaConta(user, quem.membro?.contrato);
+  if (vale.admin) return null;
+  const publico = PLANOS_PUBLICOS.find((p) => p.id === vale.plan) ?? PLANOS_PUBLICOS[0];
+  const papel: PapelDoEnvio = quem.membro ? "membro" : "titular";
+  const teto = duracaoMaximaDaGravacaoMin(papel, publico.duracaoMaximaMin);
+  // Um segundo de folga: a medida do worker e a do navegador diferem por arredondamento.
+  if (duracaoSeg <= teto * 60 + 1) return null;
+  const precisa = Math.ceil(duracaoSeg / 60);
+  return {
+    recurso: "duracao",
+    usado: Math.round(duracaoSeg / 60),
+    limite: teto,
+    plano: PLANOS_PUBLICOS.some((p) => p.id === vale.plan) ? publico.nome : null,
+    sugestao: papel === "titular" ? proximoQueResolve(vale.plan, "duracao", precisa) : null,
+    renovaEm: null,
+    ...(quem.membro ? { equipe: quem.contrato ? ("contrato" as const) : ("cota" as const), dono: quem.dono ?? undefined } : {}),
   };
 }
 
@@ -776,29 +923,38 @@ export async function conferirMinutos(userIdDeQuemPede: string, o: { duracaoSegN
  * o menor teto é o lado seguro de errar numa rota que emite token de upload.
  * Acesso interno recebe o maior teto e nenhuma oferta.
  *
- * Desde 08/10 a duração máxima do envio é o menor entre o teto técnico do
- * arquivo e os MINUTOS QUE SOBRAM NO MÊS (`usoDeMinutos`): o navegador recusa
- * antes de subir um byte, com a frase dos minutos do cartão.
+ * Desde 08/10 a duração máxima do envio é o menor entre a duração que o PAPEL
+ * permite (5 minutos para membro e conta ligada ao contrato; a do plano para
+ * o titular) e os MINUTOS QUE SOBRAM NO MÊS (`usoDeMinutos`): o navegador
+ * recusa antes de subir um byte, com a frase certa para cada caso.
  */
 export async function limitesDoEnvio(userIdDeQuemPede: string): Promise<LimitesDoEnvio> {
-  // O teto do envio é o do plano da CONTA (01/10, acesso de equipe).
-  const userId = await contaDoPlano(userIdDeQuemPede);
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true, role: true } });
-  if (user?.role === "admin") return LIMITES_SEM_PLANO;
+  // O teto do envio é o do plano da CONTA (01/10, acesso de equipe); para a
+  // conta ligada ao contrato, o do contrato, sem o acesso interno (08/10).
+  const quem = await quemPagaParaAFrase(userIdDeQuemPede);
+  const { contaId: userId, membro } = quem;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true, role: true, acessosExtras: true } });
+  const vale = user ? planoQueValeNaConta(user, membro?.contrato) : null;
+  if (vale?.admin) return LIMITES_SEM_PLANO;
 
-  const indice = PLANOS_PUBLICOS.findIndex((p) => p.id === user?.plan);
+  const indice = PLANOS_PUBLICOS.findIndex((p) => p.id === vale?.plan);
   const plano = PLANOS_PUBLICOS[indice] ?? PLANOS_PUBLICOS[0];
   const proximo = indice >= 0 ? PLANOS_PUBLICOS[indice + 1] : PLANOS_PUBLICOS[1];
-  const uso = indice >= 0 ? await usoDeMinutos(userId) : null;
+  const uso = indice >= 0 ? await usoDeMinutos(userIdDeQuemPede) : null;
   const minutos = uso && !uso.semPlano ? { porMes: uso.porMes, usados: Math.round(uso.usados * 10) / 10, restantes: Math.round(uso.restantes * 10) / 10 } : null;
+  const papel: PapelDoEnvio = membro ? "membro" : "titular";
+  const tetoDoPapelMin = duracaoMaximaDaGravacaoMin(papel, plano.duracaoMaximaMin);
   return {
-    duracaoMaximaSeg: duracaoMaximaDoEnvioSeg(plano.duracaoMaximaMin, minutos?.restantes ?? null),
+    duracaoMaximaSeg: duracaoMaximaDoEnvioSeg(tetoDoPapelMin, minutos?.restantes ?? null),
     bytesMaximo: plano.arquivoMaximoGb * BYTES_POR_GB,
     plano: indice >= 0 ? plano.nome : null,
-    proximo: proximo
-      ? { nome: proximo.nome, duracaoMaximaMin: proximo.duracaoMaximaMin, arquivoMaximoGb: proximo.arquivoMaximoGb, minutosPorMes: minutosPorMesDoPlano(proximo.id) }
-      : null,
+    // Membro e conta ligada não trocam de plano: a tela não oferece o de cima.
+    proximo:
+      proximo && !membro
+        ? { nome: proximo.nome, duracaoMaximaMin: proximo.duracaoMaximaMin, arquivoMaximoGb: proximo.arquivoMaximoGb, minutosPorMes: minutosPorMesDoPlano(proximo.id) }
+        : null,
     minutos,
+    papel: { tipo: papel, duracaoMaximaMin: tetoDoPapelMin, dono: quem.dono, contrato: quem.contrato },
   };
 }
 
@@ -817,14 +973,16 @@ export async function limitesDoEnvio(userIdDeQuemPede: string): Promise<LimitesD
  */
 export async function limiteDoTeste(userIdDeQuemPede: string, agora = new Date()): Promise<LimiteDoTeste> {
   // O teste é da CONTA (01/10, acesso de equipe).
-  const userId = await contaDoPlano(userIdDeQuemPede);
+  const { contaId: userId, membro } = await regraDaConta(userIdDeQuemPede);
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { trialEndsAt: true, role: true },
+    select: { trialEndsAt: true, role: true, plan: true },
   });
   if (!user) return SEM_TESTE;
-  // Acesso interno nao tem teste nem teto: e a casa usando a propria casa.
-  if (user.role === "admin") return SEM_TESTE;
+  // Acesso interno nao tem teste nem teto: e a casa usando a propria casa. A
+  // conta ligada ao contrato não herda o acesso interno da titular (08/10),
+  // mas a titular admin também não tem teste: o resultado é o mesmo.
+  if (planoQueValeNaConta(user, membro?.contrato).admin) return SEM_TESTE;
   if (!user.trialEndsAt || user.trialEndsAt <= agora) return SEM_TESTE;
 
   // Campanha conta por EXECUCAO, e nao por post: e a unidade que o cliente
@@ -854,17 +1012,19 @@ export async function limiteDoTeste(userIdDeQuemPede: string, agora = new Date()
  * em qualquer caminho.
  */
 export async function limiteDeReferencias(userIdDeQuemPede: string, agora = new Date()): Promise<LimiteDeReferencias> {
-  const userId = await contaDoPlano(userIdDeQuemPede);
+  const { contaId: userId, membro } = await regraDaConta(userIdDeQuemPede);
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { plan: true, role: true, trialEndsAt: true, acessosExtras: true },
   });
   if (!user) return referenciasDoPlano({ plan: null });
+  // Conta ligada ao contrato: o plano do contrato, sem o acesso interno (08/10).
+  const vale = planoQueValeNaConta(user, membro?.contrato);
   return referenciasDoPlano({
-    plan: user.plan,
-    admin: user.role === "admin",
+    plan: vale.plan,
+    admin: vale.admin,
     // A mesma régua de limiteDoTeste: data vencida vale como fora do teste.
     emTeste: Boolean(user.trialEndsAt && user.trialEndsAt > agora),
-    acessosExtras: user.acessosExtras,
+    acessosExtras: vale.acessosExtras,
   });
 }

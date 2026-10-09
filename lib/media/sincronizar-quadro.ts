@@ -5,9 +5,12 @@ import { lerDecisaoDosCortes } from "@/lib/media/decisao-dos-cortes-banco";
 import { destinoPorId } from "@/lib/media/destinos";
 import { diaDoTrecho, diaDoTrechoNoPlano } from "@/lib/media/quadro-do-video";
 import { dataDoDia, DESTINO_DE_CORTE_DA_REDE, diaDoCorte, diasDeVideoCurto, planoDoRun } from "@/lib/media/semana-do-video";
-import { textoDoCompleto } from "@/lib/media/completo-no-quadro";
-import { descricaoDoCorte, nomeDoCanal } from "@/lib/media/elo-da-campanha";
+import { descricaoDoCorte, eloDaPeca, nomeDoCanal, perfisDoCliente } from "@/lib/media/elo-da-campanha";
 import { lerLinks } from "@/lib/projeto/links-do-cliente";
+import { tituloNoYoutube } from "@/lib/analytics/tipos-do-inventario";
+import { lerInventario } from "@/lib/analytics/inventario-das-redes";
+import { limparTextoGerado } from "@/lib/media/elo-na-publicacao";
+import { lastroDoVideo } from "@/lib/media/lastro-do-video";
 
 /**
  * Faz o Gestor de Conteúdo ESPELHAR a seleção da aba Vídeo.
@@ -70,6 +73,8 @@ export async function sincronizarQuadroDoVideo(videoJobId: string): Promise<void
       durationSec: true,
       originalName: true,
       radar: true,
+      // A fala: a legenda do corte só leva número que está nela (08/10).
+      transcript: true,
       // O título do completo, os links e as redes do cliente: a descrição de
       // cada corte convida para o completo e fecha com o bloco de links (05/10).
       project: {
@@ -111,21 +116,23 @@ export async function sincronizarQuadroDoVideo(videoJobId: string): Promise<void
     select: { id: true, status: true, postId: true, dayOfWeek: true, metadata: true },
   });
 
-  // O vídeo completo que os cortes chamam (05/10): o título é a primeira linha
-  // do post dele (ou o mesmo texto que o post vai ter, quando ele ainda não
-  // está no quadro) e o link só existe depois de publicado. Antes disso o
-  // convite chama pelo nome do canal, e a publicação do completo troca pelo
-  // link (lib/media/cortes-com-link-do-completo.ts).
+  // O vídeo completo que os cortes chamam (05/10). DESDE 08/10 o convite só
+  // entra com o completo NO AR (status publicado e link): título real e link.
+  // Antes disso o corte nasce sem convite, com `metadata.elo`, e a publicação
+  // põe a chamada quando o completo estiver publicado
+  // (lib/media/elo-na-publicacao.ts). Nada de "no meu canal" antes da hora.
   const postDoCompleto = await prisma.post.findFirst({
     where: {
       projectId: video.projectId,
       platform: "youtube",
+      status: "published",
+      externalUrl: { not: null },
       AND: [{ metadata: { path: ["videoJobId"], equals: video.id } }, { metadata: { path: ["gravacaoCompleta"], equals: true } }],
     },
     select: { content: true, externalUrl: true },
   });
   const completo = {
-    titulo: postDoCompleto?.content.split("\n")[0]?.trim() || textoDoCompleto(trechos, video).split("\n")[0]?.trim() || null,
+    titulo: tituloNoYoutube(postDoCompleto?.content),
     url: postDoCompleto?.externalUrl ?? null,
     canal: nomeDoCanal(video.project?.socialAccounts ?? [], video.project?.config),
     links: lerLinks(video.project?.config),
@@ -176,6 +183,21 @@ export async function sincronizarQuadroDoVideo(videoJobId: string): Promise<void
     }
   }
 
+  // A GUARDA DAS LEGENDAS (08/10), lida só quando há corte novo para criar:
+  // o inventário do que está no ar, os links do próprio cliente e a fala.
+  let guarda: { inventario: Awaited<ReturnType<typeof lerInventario>>; permitidos: string[]; lastro: string } | null = null;
+  const guardaDasLegendas = async () => {
+    guarda ??= {
+      inventario: await lerInventario(video.projectId).catch(() => []),
+      permitidos: [
+        ...completo.links.map((l) => l.url),
+        ...perfisDoCliente(completo.contas, completo.config).map((p) => p.url).filter((u): u is string => Boolean(u)),
+      ],
+      lastro: lastroDoVideo({ transcricao: (video.transcript as { text?: string } | null)?.text ?? "", material: [video.project?.name] }),
+    };
+    return guarda;
+  };
+
   // Cria o que o cliente marcou depois do agendamento.
   for (const [chave, pedido] of esperados) {
     if (existentes.has(chave)) continue;
@@ -195,8 +217,22 @@ export async function sincronizarQuadroDoVideo(videoJobId: string): Promise<void
       diaDoPlano(pedido.indice)?.dia ??
       (plano.inicio ? diaDoTrechoNoPlano(trechos, pedido.indice, plano.inicio) : diaDoTrecho(trechos, pedido.indice));
     const data = dataDoDia(alvo, dayOfWeek);
-    // A legenda do redator, o convite ao completo e o bloco de links da rede.
-    const legenda = descricaoDoCorte({ ...completo, rede: destino.plataforma, legenda: legendaDoDestino(pedido.t, destino.plataforma) });
+    // A legenda do redator (passada pela guarda do conteúdo próprio e pelo
+    // lastro, 08/10), o convite ao completo (só com ele no ar) e o bloco de
+    // links da rede.
+    const g = await guardaDasLegendas();
+    const legendaConferida = await limparTextoGerado({
+      texto: legendaDoDestino(pedido.t, destino.plataforma),
+      rede: destino.plataforma,
+      dia: dayOfWeek,
+      projectId: video.projectId,
+      runId: run.id,
+      inventario: g.inventario,
+      permitidos: g.permitidos,
+      lastro: g.lastro,
+      pecaEhVideo: true,
+    });
+    const legenda = descricaoDoCorte({ ...completo, rede: destino.plataforma, legenda: legendaConferida });
     const post = await prisma.post.create({
       data: {
         projectId: video.projectId,
@@ -213,6 +249,8 @@ export async function sincronizarQuadroDoVideo(videoJobId: string): Promise<void
           videoJobId: video.id,
           trechoIndice: pedido.indice,
           destino: destino.id,
+          // Quem o corte chama: o completo, só quando ele estiver no ar (08/10).
+          elo: eloDaPeca({ videoJobId: video.id, runId: run.id, dia: dayOfWeek, pecas: [], corte: true }),
         },
       },
       select: { id: true },

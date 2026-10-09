@@ -66,9 +66,9 @@ export function Hero() {
               <span className="destaque-prata">Sem férias.</span>
             </h1>
 
-            {/* A frase das 3 horas mora no selo, acima do título (02/10, noite);
-                a linha que ficava aqui saiu para não repetir. A conta: 4
-                gravações de até 30 minutos no Starter mais a aprovação. */}
+            {/* A frase das horas mora no selo, acima do título (02/10, noite);
+                a linha que ficava aqui saiu para não repetir. A conta (08/10):
+                os minutos de vídeo do Starter mais a hora de aprovação. */}
             <div className="lp-sobe space-y-1.5 mb-6 max-w-lg" style={{ animationDelay: "0.32s" }}>
               <p className="text-xl font-semibold text-[var(--text-primary)]">O mais visto sempre vence o melhor.</p>
               <p className="text-xl text-[var(--text-muted)]">Quantas vezes o seu cliente te viu nos últimos 7 dias?</p>

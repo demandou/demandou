@@ -129,7 +129,7 @@ test("webhook: o pacote pago entra no saldo pela lib/credits, com extrato", asyn
   assert.equal(linha.operation, OPERACAO_DA_COMPRA);
   assert.equal(linha.amount, 4700);
   assert.equal(linha.refId, "cs_test_pacote_1");
-  assert.match(String(linha.note), /Pacote de R\$ 597: 5\.200 créditos, pagos R\$\s?597,00 no Stripe/);
+  assert.match(String(linha.note), /Pacote de R\$ 597: 4\.700 créditos, pagos R\$\s?597,00 no Stripe/);
 });
 
 test("webhook: o Stripe reenvia o mesmo evento (até ao mesmo tempo) e o crédito entra uma vez", async () => {
