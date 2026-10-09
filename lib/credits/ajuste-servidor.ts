@@ -4,10 +4,14 @@ import { saldoDeVideo } from "@/lib/credits/video";
 import { carteiraDeQuemFaz, fraseDeSaldoDoMembro, podeUsarProjeto } from "@/lib/equipe/conta";
 import { cortesiasDeHoje, decidirCortesia, estadoDaPecaParaCortesia } from "@/lib/credits/cortesia";
 import { reprovarPeca, type ResultadoDaReprovacao } from "@/lib/credits/reprovacao-servidor";
+import { notificar, type Aviso } from "@/lib/notificacoes";
 import { NOME_DA_CATEGORIA, classeDaCategoria, lerEstadoDaReprovacao, refazerSemCobrar, validarMotivo, type EstadoDaReprovacao } from "@/lib/credits/reprovacao";
 import {
   CHAVE_DO_PEDIDO_DE_AJUSTE,
+  INSTRUCAO_DA_ARTE_PELA_LEGENDA,
   OPERACAO_DA_SOBRA_DO_AJUSTE,
+  avisoDaArtePelaLegenda,
+  planoDaArtePelaLegenda,
   OPERACAO_DO_AJUSTE,
   fraseDaDevolucao,
   fraseDoMotivoRecebido,
@@ -66,6 +70,8 @@ export type DepositoDoAjuste = {
   debitar(a: { userId: string; quantidade: number; projectId: string; refId: string; note: string; cortesia?: { motivo: string } }): Promise<{ balance: number }>;
   creditar(a: { userId: string; quantidade: number; projectId: string; refId: string; note: string }): Promise<{ duplicado: boolean; balance: number }>;
   reprovar(a: Parameters<typeof reprovarPeca>[0]): Promise<ResultadoDaReprovacao>;
+  /** O sino (a arte que a legenda editada deixou de outro assunto, 09/10). */
+  notificar(aviso: Aviso): Promise<void>;
   agora(): Date;
   novoId(): string;
 };
@@ -117,6 +123,9 @@ function depositoPadrao(): DepositoDoAjuste {
       return { duplicado: r.duplicado, balance: r.balance };
     },
     reprovar: (a) => reprovarPeca(a),
+    async notificar(aviso) {
+      await notificar(aviso);
+    },
     agora: () => new Date(),
     novoId: () => `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
   };
@@ -143,6 +152,10 @@ export async function guardarPedidoDeAjuste(
     prefixo?: string;
     /** O chat já foi escrito por quem chamou (o Vitor pergunta com as palavras dele). */
     semChat?: boolean;
+    /** A pergunta pronta (a arte pela legenda diz o porquê), no lugar da pergunta do motivo. */
+    pergunta?: string;
+    /** O pedido não veio de uma mensagem da pessoa (a legenda editada): só a fala do agente entra no chat. */
+    semMensagemDoCliente?: boolean;
   },
   dep: DepositoDoAjuste = depositoPadrao()
 ): Promise<{ pedido: PedidoDeAjuste; chatHistory: Mensagem[]; saldo: number; interno: boolean; pergunta: string; aindaGratis: boolean }> {
@@ -157,14 +170,16 @@ export async function guardarPedidoDeAjuste(
   const [carteira, peca] = await Promise.all([dep.carteira(args.userId, pedido.carteira), pedido.postId ? dep.peca(pedido.postId) : Promise.resolve(null)]);
   // A peça com erro confirmado e refazer grátis ainda não usado: o ajuste não cobra, e a pergunta já diz.
   const aindaGratis = Boolean(peca && refazerSemCobrar(lerEstadoDaReprovacao(peca.metadata)));
-  const pergunta = `${args.prefixo ? `${args.prefixo} ` : ""}${perguntaDoMotivo({ resumo: pedido.resumo, creditos: pedido.creditos, carteira: pedido.carteira, saldo: carteira.saldo, interno: carteira.interno, aParte: pedido.aParte ?? null, aindaGratis })}`;
+  const pergunta =
+    args.pergunta ??
+    `${args.prefixo ? `${args.prefixo} ` : ""}${perguntaDoMotivo({ resumo: pedido.resumo, creditos: pedido.creditos, carteira: pedido.carteira, saldo: carteira.saldo, interno: carteira.interno, aParte: pedido.aParte ?? null, aindaGratis })}`;
   await dep.guardarPedido(args.card.id, pedido);
   const chatHistory = await dep.acrescentarNoChat(
     args.card.id,
     args.semChat
       ? []
       : [
-          { role: "user", content: args.mensagem, timestamp: quando(dep) },
+          ...(args.semMensagemDoCliente ? [] : [{ role: "user" as const, content: args.mensagem, timestamp: quando(dep) }]),
           { role: "assistant", content: pergunta, timestamp: quando(dep) },
         ]
   );
@@ -230,7 +245,8 @@ export async function confirmarMotivoDoAjuste(
   }
   // O texto do motivo é o que a pessoa disse; sem texto, o próprio pedido de ajuste.
   const textoDoMotivo = typeof args.texto === "string" && args.texto.trim() ? args.texto : pedido.mensagem;
-  const motivo = validarMotivo({ categoria: args.categoria, texto: textoDoMotivo });
+  // O motivo já decidido (a arte refeita pela legenda editada à mão) vale sobre o que chegar.
+  const motivo = validarMotivo({ categoria: pedido.motivoFixo ?? args.categoria, texto: textoDoMotivo });
   if (!motivo.ok) return { ok: false, erro: "motivo_invalido", mensagem: motivo.erro.replace("da reprovação", "do ajuste") };
   if (!pedido.postId) return { ok: false, erro: "nao_encontrado", mensagem: "Este card não tem peça ligada, então não há o que ajustar por aqui." };
 
@@ -251,9 +267,11 @@ export async function confirmarMotivoDoAjuste(
   }
 
   const [carteira, cortesiasHoje] = await Promise.all([dep.carteira(args.userId, pedido.carteira), dep.cortesiasHoje(card.projectId)]);
-  // O refazer grátis que a peça JÁ tinha (erro confirmado antes, ainda não usado).
-  const cortesiaAntes = decidirCortesia(estadoDaPecaParaCortesia(pecaAntes), cortesiasHoje);
   const classe = classeDaCategoria(motivo.categoria);
+  // O refazer grátis que a peça JÁ tinha (erro confirmado antes, ainda não
+  // usado) vale SÓ quando o motivo deste ajuste também é erro (decisão do
+  // Bruno em 09/10): ajuste por gosto cobra, mesmo com o refazer grátis guardado.
+  const cortesiaAntes = classe === "erro" ? decidirCortesia(estadoDaPecaParaCortesia(pecaAntes), cortesiasHoje) : null;
 
   const semSaldo = async (registrado: MotivoRegistrado | null, mensagemDoDebito?: string | null): Promise<ResultadoDoMotivo> => {
     await devolverAoCard(registrado);
@@ -289,7 +307,7 @@ export async function confirmarMotivoDoAjuste(
       return { ok: false, erro: "nao_encontrado", mensagem: "Peça não encontrada." };
     }
     const pecaDepois = (await dep.peca(pedido.postId)) ?? pecaAntes;
-    const cortesiaDepois = decidirCortesia(estadoDaPecaParaCortesia(pecaDepois), cortesiasHoje);
+    const cortesiaDepois = classe === "erro" ? decidirCortesia(estadoDaPecaParaCortesia(pecaDepois), cortesiasHoje) : null;
     cortesia = cortesiaDepois ?? cortesiaAntes;
     registrado = { reprovacaoId: r.estado.id, categoria: motivo.categoria, situacao: r.estado.situacao, cortesia: cortesia?.motivo ?? null, creditosDevolvidos: r.estado.creditos };
   }
@@ -400,6 +418,65 @@ export async function cancelarPedidoDeAjuste(
     ? await dep.acrescentarNoChat(card.id, [{ role: "assistant", content: "Tudo bem, não refiz nada e nada foi cobrado. A peça continua como está.", timestamp: quando(dep) }])
     : undefined;
   return { ok: true, chatHistory };
+}
+
+// ── 5. A arte que a legenda editada deixou de outro assunto ───────────────────
+
+/**
+ * A LEGENDA EDITADA À MÃO DEIXOU A ARTE DE OUTRO ASSUNTO (decisão do Bruno em
+ * 09/10): o JEV viu (app/api/posts/[id]/route.ts), e a arte NÃO é mais
+ * refeita de graça. O pedido fica guardado no card com o custo e o motivo já
+ * decidido ("pedi diferente", a mudança é da pessoa); o chat e o sino dizem o
+ * custo e o saldo; nada é refeito nem cobrado até ela tocar em Refazer a arte.
+ * Com outro pedido de ajuste esperando no card, este não passa por cima.
+ */
+export async function avisarArteDaLegenda(
+  args: { card: CardDoAjuste; userId: string; postId: string; frase: string; redes: string[]; formato?: string; link: string },
+  dep: DepositoDoAjuste = depositoPadrao()
+): Promise<{ avisado: false; porque: "ja_ha_pedido" } | { avisado: true; pedido: PedidoDeAjuste }> {
+  if (lerPedidoDeAjuste(args.card.metadata)) return { avisado: false, porque: "ja_ha_pedido" };
+  const plano = planoDaArtePelaLegenda({ postId: args.postId, redes: args.redes, formato: args.formato });
+  const carteira = await dep.carteira(args.userId, "plano");
+  const aviso = avisoDaArtePelaLegenda({ frase: args.frase, creditos: plano.creditos, saldo: carteira.saldo, interno: carteira.interno });
+  const g = await guardarPedidoDeAjuste(
+    { card: args.card, userId: args.userId, mensagem: INSTRUCAO_DA_ARTE_PELA_LEGENDA, plano, pergunta: aviso, semMensagemDoCliente: true },
+    dep
+  );
+  // O sino: a pessoa editou e saiu do card; o aviso a leva de volta. A chave é desta ocorrência.
+  await dep
+    .notificar({
+      userId: args.userId,
+      projectId: args.card.projectId,
+      tipo: "reprovacao",
+      titulo: "A arte ficou de outro assunto",
+      texto: aviso,
+      link: args.link,
+      chave: `reprovacao:${args.postId}:legenda:${g.pedido.id}`,
+    })
+    .catch(() => undefined);
+  return { avisado: true, pedido: g.pedido };
+}
+
+// ── 6. O vídeo por IA refeito: a cobrança da fila fica anotada ────────────────
+
+/**
+ * O VÍDEO POR IA REFEITO NO AJUSTE (09/10): a fila cobra na carteira de vídeo
+ * pela referência do trabalho novo. A referência fica anotada no estado da
+ * peça, e o admin que reconhecer o erro devolve o que a fila cobrou de fato,
+ * também na carteira de vídeo (lib/credits/reprovacao-servidor.ts).
+ */
+export async function anotarCobrancaDoVideo(
+  args: { postId: string; pedidoId: string; referencia: string; creditos: number },
+  dep: DepositoDoAjuste = depositoPadrao()
+): Promise<boolean> {
+  const peca = await dep.peca(args.postId);
+  const estado = peca ? lerEstadoDaReprovacao(peca.metadata) : null;
+  if (!estado?.ajuste || estado.ajuste.id !== args.pedidoId) return false;
+  await dep.gravarReprovacaoDaPeca(args.postId, {
+    ...estado,
+    ajuste: { ...estado.ajuste, carteira: "video", referencia: args.referencia, cobrado: Math.max(0, Math.floor(args.creditos)) },
+  });
+  return true;
 }
 
 export { CHAVE_DO_PEDIDO_DE_AJUSTE };

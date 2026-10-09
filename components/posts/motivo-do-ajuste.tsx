@@ -28,7 +28,7 @@ export function MotivoDoAjuste({
   aoCancelar,
 }: {
   cardId: string;
-  pedido: Pick<PedidoDeAjuste, "id" | "creditos" | "carteira" | "resumo" | "aParte">;
+  pedido: Pick<PedidoDeAjuste, "id" | "creditos" | "carteira" | "resumo" | "aParte" | "motivoFixo" | "origem">;
   /** O saldo da carteira do pedido, quando a tela sabe. */
   saldo: number | null;
   interno?: boolean;
@@ -63,6 +63,68 @@ export function MotivoDoAjuste({
       {b.rotulo}
     </button>
   );
+
+  const avisoSemSaldo = (semSaldo || !cobre) && (
+    <Descartavel chave={chaveDoAjusteSemSaldo(cardId, pedido.id)}>
+      <div className="flex items-start gap-2 rounded-lg border px-2.5 py-2" style={{ borderColor: "rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.05)" }} data-ajuste-sem-saldo>
+        <p className="flex-1 text-[11px]" style={{ color: "var(--text-primary)" }}>
+          {semSaldo ?? (pedido.motivoFixo ? "O seu saldo não cobre este ajuste. Compre mais créditos para refazer." : "O seu saldo não cobre este ajuste se for gosto. Compre mais créditos, ou escolha erro da plataforma se o erro foi nosso.")}{" "}
+          <Link href="/billing?comprar=1" className="font-semibold text-orange-400 hover:underline">
+            Comprar créditos
+          </Link>
+        </p>
+        <BotaoDescartar compacto />
+      </div>
+    </Descartavel>
+  );
+
+  /**
+   * O MOTIVO JÁ DECIDIDO (09/10): a arte refeita porque a legenda foi editada à
+   * mão é "pedi diferente" e cobra. Não há motivo a escolher: refazer, com o
+   * custo no botão, ou manter como está.
+   */
+  if (pedido.motivoFixo) {
+    return (
+      <div className="mr-6 rounded-xl border px-3 py-2.5 space-y-2" style={{ borderColor: "rgba(249,115,22,0.35)", background: "var(--bg-elevated)" }} data-motivo-do-ajuste data-motivo-fixo>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+            {pedido.origem === "legenda" ? "A arte ficou de outro assunto" : "Confirmar o ajuste"}
+          </p>
+          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }} data-custo-do-ajuste>
+            {pedido.resumo ? `Refazer ${pedido.resumo}: ` : ""}
+            <b style={{ color: "var(--text-primary)" }}>
+              {n(pedido.creditos)} {pedido.creditos === 1 ? "crédito" : "créditos"}
+              {unidade}
+            </b>
+            .{interno ? " Acesso interno: fica no extrato e não sai do saldo." : saldo !== null ? ` Seu saldo: ${n(saldo)}${unidade}.` : ""}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            data-confirmar-ajuste
+            disabled={ocupado}
+            onClick={() => aoEscolher(pedido.motivoFixo!)}
+            className="text-xs font-semibold px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 disabled:opacity-50"
+            style={{ background: "var(--marca-laranja-botao, #c2410c)", color: "#fff" }}
+          >
+            {ocupado && <Loader2 className="w-3 h-3 animate-spin" />}
+            {pedido.origem === "legenda" ? "Refazer a arte" : "Refazer"} · {n(pedido.creditos)} créditos{unidade}
+          </button>
+          <button
+            type="button"
+            onClick={aoCancelar}
+            disabled={ocupado}
+            className="text-xs px-3 py-1.5 rounded-full border disabled:opacity-50"
+            style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+          >
+            Manter como está
+          </button>
+        </div>
+        {avisoSemSaldo}
+      </div>
+    );
+  }
 
   return (
     <div className="mr-6 rounded-xl border px-3 py-2.5 space-y-2" style={{ borderColor: "rgba(249,115,22,0.35)", background: "var(--bg-elevated)" }} data-motivo-do-ajuste>
@@ -109,19 +171,7 @@ export function MotivoDoAjuste({
         <div className="flex flex-wrap gap-1.5">{erro.map(botao)}</div>
       </div>
 
-      {(semSaldo || !cobre) && (
-        <Descartavel chave={chaveDoAjusteSemSaldo(cardId, pedido.id)}>
-          <div className="flex items-start gap-2 rounded-lg border px-2.5 py-2" style={{ borderColor: "rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.05)" }} data-ajuste-sem-saldo>
-            <p className="flex-1 text-[11px]" style={{ color: "var(--text-primary)" }}>
-              {semSaldo ?? `O seu saldo não cobre este ajuste se for gosto. Compre mais créditos, ou escolha erro da plataforma se o erro foi nosso.`}{" "}
-              <Link href="/billing?comprar=1" className="font-semibold text-orange-400 hover:underline">
-                Comprar créditos
-              </Link>
-            </p>
-            <BotaoDescartar compacto />
-          </div>
-        </Descartavel>
-      )}
+      {avisoSemSaldo}
     </div>
   );
 }

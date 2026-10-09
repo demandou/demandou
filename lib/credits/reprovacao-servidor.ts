@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@prisma/client";
 import { creditar } from "@/lib/credits";
+import { creditarVideo, jaCreditado } from "@/lib/credits/video";
 import { custoDeRefazerPeca } from "@/lib/credits/estimativa";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { notificar, type Aviso } from "@/lib/notificacoes";
@@ -13,12 +14,14 @@ import {
   NOME_DA_CATEGORIA,
   agregarMotivos,
   ajusteADevolver,
+  ajusteDeVideoADevolver,
   chaveDoSinoDaReprovacao,
   classeDaCategoria,
   creditosADevolver,
   decidirReprovacao,
   fraseDaSituacao,
   lerEstadoDaReprovacao,
+  refazerSemCobrar,
   validarMotivo,
   type DecisaoDoAdmin,
   type EstadoDaReprovacao,
@@ -75,6 +78,10 @@ export type DepositoDaReprovacao = {
   /** Quanto já voltou por reprovação nas peças desta campanha. */
   jaDevolvidoDaCampanha(p: { runId: string | null; postId: string }): Promise<number>;
   creditar(a: { userId: string; quantidade: number; refId: string; note: string }): Promise<{ duplicado: boolean }>;
+  /** O que a fila do vídeo por IA cobrou de fato por esta referência (débito menos estornos), em créditos de vídeo (09/10). */
+  cobradoDoVideo?(referencia: string): Promise<number>;
+  /** Credita a carteira de VÍDEO, uma vez só por refId (09/10). */
+  creditarVideo?(a: { userId: string; quantidade: number; refId: string; note: string }): Promise<{ duplicado: boolean }>;
   provas(peca: PecaParaReprovar): Promise<ProvasDaPeca>;
   gravarMotivo(m: MotivoDeReprovacao): Promise<void>;
   atualizarMotivo(id: string, campos: Partial<MotivoDeReprovacao>): Promise<void>;
@@ -152,6 +159,19 @@ function depositoPadrao(): DepositoDaReprovacao {
       const r = await creditar({ userId: a.userId, quantidade: a.quantidade, operation: OPERACAO_DA_DEVOLUCAO, refId: a.refId, note: a.note, unico: true });
       return { duplicado: r.duplicado };
     },
+    async cobradoDoVideo(referencia) {
+      const [debito, estornos] = await Promise.all([
+        prisma.creditTransaction.aggregate({ where: { operation: "video_ia", refId: referencia, amount: { lt: 0 } }, _sum: { amount: true } }),
+        prisma.creditTransaction.aggregate({ where: { operation: "estorno_video_ia", refId: { in: [referencia, `${referencia}:sobra`] }, amount: { gt: 0 } }, _sum: { amount: true } }),
+      ]);
+      return Math.max(0, -(debito._sum.amount ?? 0) - (estornos._sum.amount ?? 0));
+    },
+    async creditarVideo(a) {
+      // Uma vez só: a decisão do admin já é única por reprovação, e o refId fecha a corrida.
+      if (await jaCreditado(OPERACAO_DA_DEVOLUCAO, a.refId)) return { duplicado: true };
+      await creditarVideo({ userId: a.userId, quantidade: a.quantidade, operation: OPERACAO_DA_DEVOLUCAO, refId: a.refId, note: a.note });
+      return { duplicado: false };
+    },
     provas: (peca) => provasDaPeca(peca),
     async gravarMotivo(m) {
       if (!(await tabelaDosMotivosExiste())) return;
@@ -222,7 +242,8 @@ function valorDaMemoria(m: MotivoDeReprovacao, peca: Pick<PecaParaReprovar, "pla
 }
 
 function avisoAoCliente(peca: PecaParaReprovar, estado: EstadoDaReprovacao, userId: string): Aviso | null {
-  const link = `/projects/${peca.projectId}/content`;
+  // A página do quadro é /live (a /content dava 404 desde 08/10).
+  const link = `/projects/${peca.projectId}/live`;
   const chave = chaveDoSinoDaReprovacao(estado, peca.id);
   // O motivo de um PEDIDO DE AJUSTE (09/10): a peça segue viva e é refeita agora.
   const doAjuste = estado.origem === "ajuste";
@@ -324,9 +345,15 @@ export async function reprovarPeca(
     refeitaGratisEm: null,
     ...(args.comoAjuste ? { origem: "ajuste" as const, ajuste: { id: args.comoAjuste.pedidoId, cobrado: 0, devolvido: 0 } } : {}),
   };
-  const metadata = { ...((peca.metadata as Record<string, unknown> | null) ?? {}), reprovacao: estado };
-  // O ajuste não mata a peça: ela é refeita e volta a rascunho pelo caminho do refazer.
-  await dep.gravarPeca(peca.id, { status: doAjuste ? null : "rejected", metadata });
+  // O ajuste por GOSTO não apaga o refazer grátis que a peça ainda guarda de um
+  // erro confirmado antes (09/10): ele continua valendo para um ajuste por erro.
+  // O motivo do gosto fica no registro e na memória; o estado da peça, como estava.
+  const guardaOGratis = doAjuste && classeDaCategoria(motivo.categoria) === "gosto" && refazerSemCobrar(lerEstadoDaReprovacao(peca.metadata));
+  if (!guardaOGratis) {
+    const metadata = { ...((peca.metadata as Record<string, unknown> | null) ?? {}), reprovacao: estado };
+    // O ajuste não mata a peça: ela é refeita e volta a rascunho pelo caminho do refazer.
+    await dep.gravarPeca(peca.id, { status: doAjuste ? null : "rejected", metadata });
+  }
 
   const registro: MotivoDeReprovacao = {
     id,
@@ -397,6 +424,8 @@ export async function decidirReprovacaoPeloAdmin(
   let creditos = 0;
   /** O que o ajuste cobrou e volta junto (09/10): erro reconhecido refaz de graça, e o refazer já foi feito e pago. */
   let doAjuste = 0;
+  /** Os créditos de VÍDEO do ajuste do vídeo por IA que voltam (09/10). */
+  let deVideo = 0;
   if (args.decisao === "devolver") {
     const [cobrado, jaDevolvido] = await Promise.all([dep.cobradoDaPeca({ runId: m.runId, postId: m.postId }), dep.jaDevolvidoDaCampanha({ runId: m.runId, postId: m.postId })]);
     creditos = creditosADevolver({ custoDaPeca: m.custoDaPeca, cobradoNaCampanha: cobrado, jaDevolvidoNaCampanha: jaDevolvido });
@@ -409,11 +438,21 @@ export async function decidirReprovacaoPeloAdmin(
       const r = await dep.creditar({ userId: m.userId, quantidade: doPedido, refId: refDoAjustePeloAdmin(m.postId, m.id), note: `devolução decidida pelo admin: o ajuste pedido pelo chat (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) foi erro da plataforma` });
       if (!r.duplicado) doAjuste = doPedido;
     }
+    // O VÍDEO POR IA REFEITO NO AJUSTE (09/10, decisão do Bruno): o que a fila
+    // cobrou na carteira de VÍDEO volta para ela, além dos créditos do plano.
+    const referencia = anterior?.ajuste?.carteira === "video" ? anterior.ajuste.referencia : null;
+    if (referencia && dep.cobradoDoVideo && dep.creditarVideo) {
+      const doVideo = ajusteDeVideoADevolver(anterior, await dep.cobradoDoVideo(referencia));
+      if (doVideo > 0) {
+        const r = await dep.creditarVideo({ userId: m.userId, quantidade: doVideo, refId: refDoAjustePeloAdmin(m.postId, m.id), note: `devolução decidida pelo admin: o vídeo refeito no ajuste (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) foi erro da plataforma` });
+        if (!r.duplicado) deVideo = doVideo;
+      }
+    }
   }
   const situacao = args.decisao === "devolver" ? "devolvido" : "mantido";
   const frase =
     args.decisao === "devolver"
-      ? `erro reconhecido pelo admin${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}: ${doAjuste > 0 ? "os créditos da peça e do ajuste voltaram" : "os créditos da peça voltaram e refazer é grátis"}`
+      ? `erro reconhecido pelo admin${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}: ${doAjuste > 0 || deVideo > 0 ? "os créditos da peça e do ajuste voltaram" : "os créditos da peça voltaram e refazer é grátis"}`
       : `o admin olhou a peça e as provas e não viu erro da plataforma${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}`;
 
   const estado: EstadoDaReprovacao = {
@@ -425,7 +464,8 @@ export async function decidirReprovacaoPeloAdmin(
     motivo: frase,
     decididaEm: agora.toISOString(),
     // O ajuste devolvido É o refazer grátis desta reprovação: não sobra outro.
-    ...(doAjuste > 0 && anterior?.ajuste ? { refeitaGratisEm: agora.toISOString(), ajuste: { ...anterior.ajuste, devolvido: (anterior.ajuste.devolvido ?? 0) + doAjuste } } : {}),
+    ...((doAjuste > 0 || deVideo > 0) && anterior?.ajuste ? { refeitaGratisEm: agora.toISOString(), ajuste: { ...anterior.ajuste, devolvido: (anterior.ajuste.devolvido ?? 0) + doAjuste + deVideo } } : {}),
+    ...(deVideo > 0 ? { creditosDeVideo: deVideo } : {}),
   };
   creditos += doAjuste;
   await dep.gravarPeca(peca.id, { status: null, metadata: { ...((peca.metadata as Record<string, unknown> | null) ?? {}), reprovacao: estado } });
@@ -438,15 +478,23 @@ export async function decidirReprovacaoPeloAdmin(
     .notificar({
       userId: m.userId,
       projectId: m.projectId,
-      tipo: situacao === "devolvido" && creditos > 0 ? "estorno" : "reprovacao",
-      titulo: situacao === "devolvido" ? (creditos > 0 ? `Devolvemos ${creditos.toLocaleString("pt-BR")} créditos` : "Erro reconhecido: refazer é grátis") : "Reprovação analisada: os créditos ficam",
+      tipo: situacao === "devolvido" && creditos + deVideo > 0 ? "estorno" : "reprovacao",
+      titulo:
+        situacao === "devolvido"
+          ? creditos > 0
+            ? `Devolvemos ${creditos.toLocaleString("pt-BR")} créditos${deVideo > 0 ? ` e ${deVideo.toLocaleString("pt-BR")} de vídeo` : ""}`
+            : deVideo > 0
+              ? `Devolvemos ${deVideo.toLocaleString("pt-BR")} créditos de vídeo`
+              : "Erro reconhecido: refazer é grátis"
+          : "Reprovação analisada: os créditos ficam",
       texto:
         situacao === "devolvido"
-          ? doAjuste > 0
-            ? `Um admin olhou o ajuste que você pediu (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. Os créditos da peça e o que o ajuste cobrou voltaram ao seu saldo.`
+          ? doAjuste > 0 || deVideo > 0
+            ? `Um admin olhou o ajuste que você pediu (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. Os créditos da peça e o que o ajuste cobrou${deVideo > 0 ? ", inclusive os créditos de vídeo," : ""} voltaram ao seu saldo.`
             : `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. ${creditos > 0 ? "Os créditos da peça voltaram ao seu saldo. " : ""}Refazer esta peça não cobra.`
           : `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}), o motivo e as provas, e não viu erro da plataforma${motivoDoAdmin ? `: ${motivoDoAdmin}` : ""}. O crédito fica e refazer cobra como uma peça nova.`,
-      link: `/projects/${m.projectId}/content`,
+      // A página do quadro é /live (a /content dava 404 desde 08/10).
+      link: `/projects/${m.projectId}/live`,
       chave: chaveDoSinoDaReprovacao(estado, m.postId),
     })
     .catch(() => undefined);
