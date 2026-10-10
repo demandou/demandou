@@ -356,6 +356,26 @@ export async function decidirRetomadas(
  */
 const AMBIGUAS = new Set(["e", "entao", "ai", "assim", "bom", "cara", "olha", "enfim", "sabe", "beleza", "ah", "eh", "o", "tipo"]);
 
+const LIMIAR_DA_MULETA = 0.75;
+const LIMIAR_ISOLADA = 0.5;
+
+/**
+ * A palavra está SOZINHA entre pausas de pontuação: abre a frase (ou vem
+ * depois de vírgula) e fecha com vírgula. ". É, porém,", "Então, é, o
+ * essencial", "tá? Ah, o que".
+ *
+ * Prova do Viral (09/10): o JEV deu 0,66 para "É, porém" e 0,72 para "Então,
+ * é," saírem, abaixo dos 0,75, e o Bruno ouviu os dois. O "é" verbo quase
+ * nunca fica sozinho entre vírgulas; os verbos que a régua de 0,75 protege
+ * vêm colados no sujeito ("O ponto é, não é a mudança", "[É] preciso
+ * imaginar"), e nenhum deles passa por aqui. Nessas, o JEV pendendo para
+ * "sai" (0,5) basta; o JEV continua decidindo.
+ */
+export function isoladaPelaPontuacao(palavras: Word[], i: number): boolean {
+  if (!/[,;:]["'”’)\]]?\s*$/.test(palavras[i].word)) return false;
+  return i === 0 || /[,;:.!?…]["'”’)\]]?\s*$/.test(palavras[i - 1].word);
+}
+
 /**
  * A limpeza de muleta com o JEV decidindo palavra por palavra. Devolve os
  * cortes no formato de `detectarHesitacao` (índices de palavra), ou `null`
@@ -418,7 +438,10 @@ export async function muletasPeloJev(
         for (const t of lote) {
           const s = probabilidadeDeSim(r[`m${t.de}`]);
           // Na dúvida, fica: muleta que ficou é detalhe, frase quebrada é defeito.
-          if (s !== null && s >= 0.75) decididos.push({ de: t.de, ate: t.ate, motivo: t.gaguejo ? "gagueira" : "muleta" });
+          // Menos quando a pontuação já isolou a palavra (ver `isoladaPelaPontuacao`):
+          // aí basta o JEV pender para "sai".
+          const limiar = !t.gaguejo && t.de === t.ate && isoladaPelaPontuacao(palavras, t.de) ? LIMIAR_ISOLADA : LIMIAR_DA_MULETA;
+          if (s !== null && s >= limiar) decididos.push({ de: t.de, ate: t.ate, motivo: t.gaguejo ? "gagueira" : "muleta" });
         }
       })
     );

@@ -434,9 +434,12 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   // PASSO 8: olhar os quadros de cada momento (texto inteiro, número batendo
   // com a fala, rosto livre, janela com a cabeça, a tela mudando) e corrigir
   // SÓ o momento com defeito (skill bônus de revisão: por intervalo, sem
-  // refazer tudo). Uma rodada; conserto que não passa na conferência volta ao
-  // plano aprovado. Falha da revisão não segura o vídeo.
-  const revisao = { rodadas: 0, problemas: [], aplicada: false };
+  // refazer tudo). Uma rodada de olhar e até duas de consertar: o conserto
+  // reprovado volta ao Claude com a saída do conferir.mjs, como o curso manda
+  // ("até APROVADO"). Na prova do Viral (09/10) uma tentativa só reprovou e os
+  // nove defeitos vistos ficaram no vídeo. Se as duas reprovarem, vale o plano
+  // aprovado. Falha da revisão não segura o vídeo.
+  const revisao = { rodadas: 0, problemas: [], aplicada: false, tentativas: 0 };
   if (pedido.revisar !== false && gasto < teto) {
     try {
       const quadros = await stills(projeto);
@@ -447,20 +450,26 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
         revisao.problemas = rev.problemas ?? [];
         if (revisao.problemas.length && gasto < teto) {
           const texto = revisao.problemas.map((p, i) => `${i + 1}. ${p.em != null ? `em ${Number(p.em).toFixed(1)} s` : ""} (${p.momento ?? "?"}): ${p.problema}${p.mudanca ? `. Mudança: ${p.mudanca}` : ""}`).join("\n");
-          const escrito = await escrever({
-            plano: planoAprovado,
-            saidas: [`REVISÃO DOS QUADROS (passo 8 do SKILL.md, olhando cada momento renderizado). Conserte SÓ estes momentos e mantenha todo o resto exatamente como está:\n${texto}`],
-            numerosSemLastro: [],
-          });
-          gravarPlano(projeto, escrito.plano);
-          const c = await conferirTudo(escrito);
-          historico.push({ volta: "revisao", ...c.registro });
-          if (c.aprovado) {
-            revisao.aplicada = true;
-            mapa = escrito.mapa || mapa;
-          } else {
-            gravarPlano(projeto, planoAprovado);
+          const pedidoDaRevisao = `REVISÃO DOS QUADROS (passo 8 do SKILL.md, olhando cada momento renderizado). Conserte SÓ estes momentos e mantenha todo o resto exatamente como está:\n${texto}`;
+          let paraConsertar = { plano: planoAprovado, saidas: [pedidoDaRevisao], numerosSemLastro: [] };
+          for (let tentativa = 1; tentativa <= 2 && !revisao.aplicada && gasto < teto; tentativa++) {
+            revisao.tentativas = tentativa;
+            const escrito = await escrever(paraConsertar);
+            gravarPlano(projeto, escrito.plano);
+            const c = await conferirTudo(escrito);
+            historico.push({ volta: `revisao-${tentativa}`, ...c.registro, saida: c.aprovado ? undefined : c.anterior.saidas.join("\n").slice(-1500) });
+            if (c.aprovado) {
+              revisao.aplicada = true;
+              mapa = escrito.mapa || mapa;
+            } else {
+              paraConsertar = {
+                plano: escrito.plano,
+                saidas: [pedidoDaRevisao, "O CONSERTO ACIMA FOI CONFERIDO E REPROVOU. Mantenha os consertos da revisão e corrija só o que a conferência apontou:", ...c.anterior.saidas],
+                numerosSemLastro: c.anterior.numerosSemLastro,
+              };
+            }
           }
+          if (!revisao.aplicada) gravarPlano(projeto, planoAprovado);
         }
       }
     } catch (e) {

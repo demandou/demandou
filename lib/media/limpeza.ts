@@ -215,6 +215,22 @@ export function detectarRepeticoes(palavras: Word[]): Remocao[] {
     if (fim > i) {
       const ultima = palavras[fim];
       const normal = tipica(chaveDaPalavra(ultima.word));
+      // CÓPIAS SOBREPOSTAS no tempo (prova do Viral, 09/10): "Porque" de
+      // 107,30 a 107,85 e "porque" de 107,31 a 107,47. A transcrição pôs as
+      // duas no mesmo lugar, a remoção ia até o `start` da última e tirava
+      // 10 ms, e o Bruno ouviu "Porque porque". O som das cópias está no vão
+      // inteiro: fica só a duração típica no fim dele, como no rabo gaguejado
+      // (e com o mesmo nome no motivo, para a emenda não mexer nessa borda).
+      const copias = palavras.slice(i, fim + 1);
+      const sobreposta = copias.some((c, n) => n > 0 && c.start < copias[n - 1].end - 0.02);
+      if (sobreposta) {
+        const ate = Math.max(...copias.map((c) => c.end)) - normal;
+        if (ate > palavras[i].start + 0.05) {
+          remocoes.push({ de: palavras[i].start, ate, motivo: `palavra repetida: "${ultima.word}" (rabo gaguejado, cópias sobrepostas)` });
+        }
+        i = fim + 1;
+        continue;
+      }
       const arrastada = ultima.end - ultima.start >= normal * 1.8 + 0.08;
       remocoes.push({
         de: palavras[i].start,

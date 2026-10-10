@@ -313,12 +313,37 @@ export async function falaDoCorte(p: {
     );
     manter = intervalosDoTrecho(remocoes, p.inicio, p.fim, todas);
   }
+  // A palavra que a remoção pega pelo começo e devolve pelo fim (o rabo
+  // gaguejado e as cópias sobrepostas de detectarRepeticoes cortam DENTRO dela
+  // de propósito) está no áudio: entra no começo do pedaço que a devolve. Antes
+  // ela sumia do texto e a pessoa era ouvida sem legenda (o "Porque" do Viral, 09/10).
+  // Soma as durações em vez de converter o começo do pedaço de volta pelo
+  // noTempoDoCorte: 106 + 1,6 - 106 dá 1,5999..., que cai fora do pedaço.
+  const devolvida = (w: Word): number | null => {
+    const t = w.end - p.inicio;
+    let acumulado = 0;
+    for (const m of manter) {
+      if (t >= m.de && t <= m.ate) return t - m.de < 0.12 || w.start - p.inicio >= m.de ? null : acumulado;
+      acumulado += m.ate - m.de;
+    }
+    return null;
+  };
   const palavras: PalavraNoCorte[] = [];
   for (const w of todas) {
     if (w.start < p.inicio || w.start > p.fim) continue;
-    const a = noTempoDoCorte(w.start, p.inicio, manter);
+    // Palavra que começa na borda FINAL de um pedaço e passa dele não está no
+    // ar: a remoção começa no ataque dela (o "tá?" do Viral, 114,59), e o `<=`
+    // do noTempoDoCorte a punha no texto sem som. Pode ainda ser devolvida.
+    const t = w.start - p.inicio;
+    const naBorda = manter.some((m) => Math.abs(t - m.ate) < 0.02 && w.end - p.inicio > m.ate + 0.05);
+    const noAr = naBorda ? null : noTempoDoCorte(w.start, p.inicio, manter);
+    let a = noAr ?? devolvida(w);
     if (a === null) continue;
     const b = noTempoDoCorte(w.end, p.inicio, manter) ?? a + Math.min(0.4, w.end - w.start);
+    // Duas devolvidas no mesmo pedaço ("Porque" e "produtividade" no Viral)
+    // começariam no mesmo instante: a segunda entra quando a anterior acaba.
+    const anterior = palavras[palavras.length - 1];
+    if (noAr === null && anterior && a < anterior.fim && anterior.fim < b - 0.05) a = anterior.fim;
     palavras.push({ texto: w.word, inicio: +a.toFixed(3), fim: +Math.max(a + 0.05, b).toFixed(3) });
   }
   return { manter, palavras, duracao: +duracaoDosIntervalos(manter).toFixed(3) };
