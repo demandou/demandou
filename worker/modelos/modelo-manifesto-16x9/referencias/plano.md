@@ -226,7 +226,7 @@ O `conferir.mjs` exige pelo menos um dos dois.
 
 - `topo` (até 3 linhas) acima da janela, `negacoes` (até 3) e `base` (até 2 linhas) abaixo. Cada linha `{ em, texto, tamanho?, acento? }`: uma linha só (não quebra), que encolhe se não couber na largura do quadro (~840 px no 16:9); o `tamanho` (px do vertical, padrão 96; no 16:9 sai × 0,84) dá a hierarquia. Quantos caracteres cabem: 230 px → 4 · 170 → 6 · 150 → 7 · 120 → 9 · 96 → 11 · 84 → 12 · 72 → 15 · 64 → 17. Não use menos de 56 px. Se sobrar uma faixa vazia embaixo, aumente a `base`.
 - `acento: true` pinta a linha na cor de acento (uma por pôster).
-- `janela`: aqui é um objeto `{ em, linhas, batidas?, zoom? }`: `linhas` já quebradas (`["VO", "CÊ"]`, `["NÃO"]`), `batidas` = instantes em que a palavra bate de novo (cada "não" de uma lista), `zoom` 1 a 1,4 aproxima o vídeo nas letras.
+- `janela`: aqui é um objeto `{ em, linhas, batidas?, zoom? }`: `linhas` já quebradas (`["VO", "CÊ"]`, `["NÃO"]`), `batidas` = instantes em que a palavra bate de novo (cada "não" de uma lista), `zoom` 1 a 1,4 aproxima o vídeo nas letras (no quadro deitado o rosto já entra do tamanho da primeira linha e o `zoom` nunca o deixa passar da letra; quase nunca é preciso).
 - `negacoes`: `antes` (o começo da frase, 54 px) e `palavra` (a palavra negada, 150 px), riscada em `riscoEm` (perto do fim da palavra). `em` é a primeira palavra de `antes`; a `palavra` é a que vem logo depois na fala. Para um "não significa dinheiro no bolso", risque a palavra que perde ("DINHEIRO") e ponha o resto na `base`.
 - `fecho` (só no último): `{ "icone": "comentar" }` (`comentar`, `salvar`, `seguir`, `enviar`, `link`): ícone antes da primeira linha do `topo`, assinatura embaixo, fica até o fim.
 

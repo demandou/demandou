@@ -9,11 +9,11 @@
 //   seca abre a partir do rosto, e a pessoa volta cheia, limpa.
 // - Selos ficam fora disso: são pequenos, na altura do peito, por cima do quadro cheio.
 import { type Cartaz, type Escalada, ehPlaca, type Linha, type Palavra, type Placa, type Plano, type Poster } from "./plano";
-import { type Caixa, type JanelaPosta, montarFileira, type Unidade, zoomQueCobre } from "./fileira";
+import { type Caixa, type JanelaPosta, montarFileira, QUADRO_INTEIRO, type Retangulo, type Unidade, zoomQueCobre } from "./fileira";
 import { BASE_COM_ASSINATURA, BASE_UTIL, QUADRO } from "./tema";
 
 // as medidas comuns moram na fileira (a diagramação deitada); daqui saem para quem já importava
-export { type Caixa, type JanelaPosta, medidasDaJanela, vaoEntre, zoomQueCobre } from "./fileira";
+export { type Caixa, type JanelaPosta, medidasDaJanela, QUADRO_INTEIRO, type Retangulo, vaoEntre, zoomQueCobre } from "./fileira";
 
 // quanto dura a subida do pôster (quando não entra num corte) e o mergulho de saída
 export const ENTRADA = 0.22;
@@ -70,9 +70,11 @@ export type Desenho = {
   janela?: JanelaPosta;
   negacoes: NegacaoPosta[];
   base: LinhaPosta[];
-  // onde o centro do rosto fica no quadro durante o pôster, e o zoom do vídeo
+  // onde o centro do rosto fica no quadro durante o pôster, e a escala do vídeo (1 = na largura do quadro)
   alvo: { x: number; y: number };
   escala: number;
+  // a caixa que o vídeo cobre durante o pôster (as letras da janela); sem ela, o quadro inteiro
+  moldura?: Retangulo;
 };
 
 const TAMANHO_PADRAO = 96;
@@ -109,8 +111,11 @@ export const diagramar = (
       });
     }
   }
-  const escala = Math.max(c.janela?.zoom ?? 1, f.escala);
-  return { topo, janela: f.janela, negacoes, base, alvo: f.alvo, escala };
+  // `zoom` do plano (até 1,4) aproxima a pessoa dentro das letras, sem o rosto passar da letra
+  // (10/10: antes era a escala absoluta, e o rosto ficava maior que a janela)
+  const zoom = c.janela?.zoom ?? 1;
+  const escala = zoom > 1 ? Math.max(f.escala, Math.min(f.escala * zoom, f.limiteDoRosto ?? f.escala * zoom)) : f.escala;
+  return { topo, janela: f.janela, negacoes, base, alvo: f.alvo, escala, moldura: f.moldura };
 };
 
 export const desenhoDoCartaz = (plano: Plano, m: Cartaz) =>
@@ -129,7 +134,12 @@ export const desenhoDoMomento = (plano: Plano, m: Cartaz | Escalada) =>
 
 // ——— O vídeo da pessoa ao longo do tempo ———
 // Um estado vale a partir de `de`; a troca leva `dur` segundos.
-export type EstadoDoVideo = { de: number; escala: number; alvoX: number; alvoY: number; dur: number };
+// `moldura`: a caixa que o vídeo cobre (o quadro inteiro fora dos pôsteres; as letras da janela
+// num pôster em que o rosto precisa ficar menor que a letra). Fora dela aparece o campo do pôster.
+// `curva`: "entra" (devagar no começo: o campo sobe e cobre antes de a moldura encolher) e "sai"
+// (rápido no começo: no mergulho a moldura volta ao quadro cheio antes de o círculo abrir; sem
+// isso o círculo mostrava a borda reta do vídeo). Sem ela, a troca de sempre.
+export type EstadoDoVideo = { de: number; escala: number; alvoX: number; alvoY: number; dur: number; moldura?: Retangulo; curva?: "entra" | "sai" };
 
 export const estadosDoVideo = (
   plano: Plano,
@@ -149,10 +159,19 @@ export const estadosDoVideo = (
     if (m.de - cursor > 0.05) livres.push({ de: cursor, ate: m.de });
     const d = desenhos[i];
     // atrás de um pôster que entra seco o vídeo já pula para o lugar (o campo cobre tudo)
-    estados.push({ de: Math.max(0, m.de), escala: d.escala, alvoX: d.alvo.x, alvoY: d.alvo.y, dur: entraSeco(m, momentos, plano) ? 0.02 : ENTRADA });
+    const comMoldura = Boolean(d.moldura);
+    estados.push({
+      de: Math.max(0, m.de),
+      escala: d.escala,
+      alvoX: d.alvo.x,
+      alvoY: d.alvo.y,
+      dur: entraSeco(m, momentos, plano) ? 0.02 : ENTRADA,
+      moldura: d.moldura,
+      ...(comMoldura ? { curva: "entra" as const } : {}),
+    });
     const fim = fimDoMomento(m, momentos, plano.duracao);
     if (fim < plano.duracao && !colado(m, momentos)) {
-      estados.push({ de: fim - 0.08, escala: 1, alvoX: rostoX, alvoY: rostoY, dur: MERGULHO, cheio: true });
+      estados.push({ de: fim - 0.08, escala: 1, alvoX: rostoX, alvoY: rostoY, dur: comMoldura ? MERGULHO * 0.6 : MERGULHO, cheio: true, ...(comMoldura ? { curva: "sai" as const } : {}) });
       cursor = fim;
     } else cursor = Math.max(cursor, fim);
   });
@@ -181,20 +200,24 @@ export const estadosDoVideo = (
     e.escala = Math.max(cheioBase, ZOOM_CHEIO[z % 2]);
     z += 1;
   }
-  return estados.map(({ de, escala, alvoX, alvoY, dur }) => ({ de, escala, alvoX, alvoY, dur }));
+  return estados.map(({ de, escala, alvoX, alvoY, dur, moldura, curva }) => ({ de, escala, alvoX, alvoY, dur, moldura: moldura ?? QUADRO_INTEIRO, ...(curva ? { curva } : {}) }));
 };
 
-export const videoNoTempo = (t: number, estados: EstadoDoVideo[]) => {
+export const videoNoTempo = (t: number, estados: EstadoDoVideo[]): { escala: number; alvoX: number; alvoY: number; moldura: Retangulo } => {
   let i = 0;
   for (let k = 0; k < estados.length; k++) if (estados[k].de <= t) i = k;
   const agora = estados[i];
   const antes = estados[Math.max(0, i - 1)];
-  if (i === 0 || agora.dur <= 0) return { escala: agora.escala, alvoX: agora.alvoX, alvoY: agora.alvoY };
+  const mAgora = agora.moldura ?? QUADRO_INTEIRO;
+  if (i === 0 || agora.dur <= 0) return { escala: agora.escala, alvoX: agora.alvoX, alvoY: agora.alvoY, moldura: mAgora };
   const x = Math.min(1, Math.max(0, (t - agora.de) / agora.dur));
-  const p = x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2;
+  const p = agora.curva === "entra" ? x * x * x : agora.curva === "sai" ? 1 - (1 - x) ** 3 : x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2;
+  const mAntes = antes.moldura ?? QUADRO_INTEIRO;
+  const mix = (a: number, b: number) => a + (b - a) * p;
   return {
-    escala: antes.escala + (agora.escala - antes.escala) * p,
-    alvoX: antes.alvoX + (agora.alvoX - antes.alvoX) * p,
-    alvoY: antes.alvoY + (agora.alvoY - antes.alvoY) * p,
+    escala: mix(antes.escala, agora.escala),
+    alvoX: mix(antes.alvoX, agora.alvoX),
+    alvoY: mix(antes.alvoY, agora.alvoY),
+    moldura: { x: mix(mAntes.x, mAgora.x), y: mix(mAntes.y, mAgora.y), w: mix(mAntes.w, mAgora.w), h: mix(mAntes.h, mAgora.h) },
   };
 };

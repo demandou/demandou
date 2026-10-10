@@ -75,6 +75,39 @@ export const zoomQueCobre = (plano: Plano, alvoX: number, alvoY: number) => {
   return Math.max(1, (s * 1.002) / base);
 };
 
+// --- a moldura do vídeo no pôster (10/10, revisão do Bruno do protótipo deitado) ---
+// "O rosto maior que as letras da janela": no 16:9 o rosto gravado tem ~250 px de largura, e para
+// cobrir o quadro inteiro com ele levado até a moldura da direita o vídeo precisava aproximar (até
+// 1,4x). As letras da janela, presas na altura útil do quadro deitado, ficavam menores que o rosto
+// (o "CA/RO" da prova: a cabeça passava da primeira linha). Agora, num pôster com janela, o vídeo
+// só precisa cobrir a MOLDURA (a caixa das letras): fora dela o campo do pôster cobre tudo. A escala
+// sai do tamanho das letras (o rosto ocupa até ~80% da altura da maiúscula da primeira linha) e
+// nunca fica abaixo do que cobre a moldura. Fora do pôster, o vídeo volta ao quadro cheio.
+export type Retangulo = { x: number; y: number; w: number; h: number };
+export const QUADRO_INTEIRO: Retangulo = { x: 0, y: 0, w: QUADRO.w, h: QUADRO.h };
+
+// A escala do vídeo (1 = na largura do quadro) que cobre o retângulo `r` com o rosto em `alvo`.
+export const escalaQueCobre = (plano: Plano, alvo: { x: number; y: number }, r: Retangulo) => {
+  const H0 = Math.min(QUADRO.h, plano.videoAltura ?? QUADRO.h);
+  const fx = plano.rosto.x;
+  const fy = (plano.rosto.y * QUADRO.h) / H0;
+  const s = Math.max(
+    (alvo.x - r.x) / (fx * QUADRO.w),
+    (r.x + r.w - alvo.x) / ((1 - fx) * QUADRO.w),
+    ((alvo.y - r.y) * (QUADRO.h / H0)) / (fy * QUADRO.h),
+    ((r.y + r.h - alvo.y) * (QUADRO.h / H0)) / ((1 - fy) * QUADRO.h),
+  );
+  return s * 1.002;
+};
+
+// quanto o rosto ocupa da altura da maiúscula (ou do círculo) da janela: o alvo e o teto
+export const ROSTO_NA_LETRA = 0.8;
+const ROSTO_NA_LETRA_MAX = 0.95;
+// folga da moldura em volta das letras (px)
+const FOLGA_DA_MOLDURA = 24;
+// a altura do rosto (testa ao queixo) é ~1,35 vez a largura medida pelo rastro
+const ALTURA_DO_ROSTO = 1.35;
+
 // --- as unidades de uma coluna ---
 export type Alinhar = "esquerda" | "direita" | "centro";
 // a caixa de uma linha na tela: onde a coluna começa, a largura e para que lado o texto encosta
@@ -287,6 +320,10 @@ export type Fileira = {
   escala: number;
   // comparação: y da emenda entre os dois campos (o de cima e o de baixo), na altura do rosto
   divisao?: number;
+  // a caixa que o vídeo precisa cobrir no pôster (as letras da janela); sem ela, o quadro inteiro
+  moldura?: Retangulo;
+  // a maior escala em que o rosto ainda cabe na letra (o `zoom` do plano não passa dela)
+  limiteDoRosto?: number;
   custo: number;
 };
 
@@ -349,13 +386,37 @@ const empilhar = (c: Coluna, y0: number, caixa: Caixa): Posta[] => {
   });
 };
 
+// a altura que o rosto pode ocupar na janela: a maiúscula da primeira linha, ou o círculo
+const alturaParaORosto = (jM: JanelaMedida) => (jM.u.tipo === "circulo" ? jM.tam * 1.25 : jM.capa);
+const escalaDoRosto = (plano: Plano, jM: JanelaMedida, fracao: number) =>
+  (fracao * alturaParaORosto(jM)) / (larguraDoRosto(plano) * QUADRO.w * ALTURA_DO_ROSTO);
+
+// O vídeo na janela: a escala em que o rosto cabe na letra, sem descobrir a moldura (as letras e
+// a folga) nem passar da escala do quadro cheio. Quando o rosto já cabe com o quadro inteiro
+// coberto, nada muda em relação a antes (sem moldura).
+const videoNaJanela = (plano: Plano, jM: JanelaMedida, janela: JanelaPosta, alvo: { x: number; y: number }) => {
+  const cheio = zoomQueCobre(plano, alvo.x, alvo.y);
+  const x0 = Math.max(0, janela.cx - jM.largura / 2 - FOLGA_DA_MOLDURA);
+  const y0 = Math.max(0, janela.topo - FOLGA_DA_MOLDURA);
+  const x1 = Math.min(QUADRO.w, janela.cx + jM.largura / 2 + FOLGA_DA_MOLDURA);
+  const y1 = Math.min(QUADRO.h, janela.topo + jM.altura + FOLGA_DA_MOLDURA);
+  const moldura: Retangulo = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  const minimo = escalaQueCobre(plano, alvo, moldura);
+  const escala = Math.max(minimo, Math.min(cheio, escalaDoRosto(plano, jM, ROSTO_NA_LETRA)));
+  return {
+    escala,
+    moldura: escala < cheio - 0.005 ? moldura : undefined,
+    limiteDoRosto: Math.max(escala, Math.min(cheio, escalaDoRosto(plano, jM, ROSTO_NA_LETRA_MAX))),
+  };
+};
+
 // custo comum: aproximar demais, janela pequena para o rosto, texto encolhido, espaço vazio
 const custoBase = (plano: Plano, escala: number, jM: JanelaMedida | null, colunas: Coluna[], largura: number, altura: number, avail: number) => {
   const zoom = Math.max(0, escala - 1.05) * 2.5;
-  // o rosto (já aproximado) contra a altura da maiúscula da janela: rosto bem maior que a letra
-  // vira um pedaço de rosto nas letras
-  const rostoPx = larguraDoRosto(plano) * QUADRO.w * escala;
-  const pequena = jM ? Math.max(0, 1.0 * rostoPx - jM.capa) / 60 + Math.max(0, 300 - jM.capa) / 80 : 0;
+  // o rosto (na escala do pôster) contra a altura da maiúscula da janela: rosto maior que a letra
+  // vira um pedaço de rosto nas letras (10/10: medido pela altura do rosto, não pela largura)
+  const rostoPx = larguraDoRosto(plano) * QUADRO.w * escala * ALTURA_DO_ROSTO;
+  const pequena = jM ? Math.max(0, rostoPx - 0.9 * alturaParaORosto(jM)) / 60 + Math.max(0, 300 - jM.capa) / 80 : 0;
   const texto = colunas.reduce((s, c) => s + custoDoFator(c.f, 3), 0);
   const vazio = Math.max(0, 1 - largura / LARGURA_UTIL - 0.3) * 3 + Math.max(0, 1 - altura / avail - 0.35) * 3;
   const estouro = colunas.some((c) => !c.ok) ? 50 : 0;
@@ -390,11 +451,11 @@ const comporComJanela = (plano: Plano, o: Opcao, jM: JanelaMedida, cfg: Config):
     // o texto do quadro fica centrado na altura da janela
     const centro = topo + jM.altura / 2;
     const postas = coluna ? empilhar(coluna, Math.round(Math.max(TOPO_UTIL, Math.min(limiteBaixo - coluna.altura, centro - coluna.altura / 2))), caixa) : [];
-    const escala = zoomQueCobre(plano, alvo.x, alvo.y);
+    const { escala, moldura, limiteDoRosto } = videoNaJanela(plano, jM, janela, alvo);
     const fora = (Math.abs(centro - meio) / avail) * 6;
     const custo =
       custoBase(plano, escala, jM, coluna ? [coluna] : [], (coluna?.largura ?? 0) + jM.largura + VAO_COLUNA, Math.max(jM.altura, coluna?.altura ?? 0), avail) + fora + o.preferencia;
-    if (!melhor || custo < melhor.custo) melhor = { postas, janela, alvo, escala, custo };
+    if (!melhor || custo < melhor.custo) melhor = { postas, janela, alvo, escala, moldura, limiteDoRosto, custo };
   }
   return melhor;
 };
@@ -420,10 +481,10 @@ const comporDividida = (plano: Plano, o: Opcao, jM: JanelaMedida, cfg: Config): 
   const topo = Math.round(Math.max(TOPO_UTIL, Math.min(limiteBaixo - jM.altura, emenda - jM.centro)));
   const { janela, alvo } = postarJanela(jM, cx, topo, cfg);
   const postas = [...empilhar(colCima, emenda - VAO_EMENDA - colCima.altura, caixa), ...empilhar(colBaixo, emenda + VAO_EMENDA, caixa)];
-  const escala = zoomQueCobre(plano, alvo.x, alvo.y);
+  const { escala, moldura, limiteDoRosto } = videoNaJanela(plano, jM, janela, alvo);
   const avail = limiteBaixo - TOPO_UTIL;
   const custo = custoBase(plano, escala, jM, [colCima, colBaixo], Math.max(colCima.largura, colBaixo.largura) + jM.largura + VAO_COLUNA, colCima.altura + colBaixo.altura + 2 * VAO_EMENDA, avail) + o.preferencia;
-  return { postas, janela, alvo, escala, custo, divisao: alvo.y };
+  return { postas, janela, alvo, escala, moldura, limiteDoRosto, custo, divisao: alvo.y };
 };
 
 // Pôster sem janela (cartaz sem palavra-janela): o texto numa coluna só, no meio do quadro.
@@ -451,8 +512,9 @@ export const montarFileira = (plano: Plano, opcoes: Opcao[], cfg: Config): Filei
       continue;
     }
     const j = o.unidades[iJ] as UJanela | UCirculo;
-    // a moldura nunca passa de ~44% da largura: o quadro do texto precisa de lugar
-    const larguraMax = cfg.dividida ? 720 : Math.min(LARGURA_JANELA, 2 * (QUADRO.w - MARGEM - X_DA_MOLDURA * QUADRO.w) + 140);
+    // a moldura nunca passa de ~44% da largura: o quadro do texto precisa de lugar. O "VS" da
+    // comparação ia até 720 px e saía apertado em volta do rosto (revisão de 10/10): 860.
+    const larguraMax = cfg.dividida ? 860 : Math.min(LARGURA_JANELA, 2 * (QUADRO.w - MARGEM - X_DA_MOLDURA * QUADRO.w) + 140);
     for (const tam of tamanhosDaJanela(j, larguraMax, avail)) {
       const jM = medirJanela(j, tam);
       guardar(cfg.dividida ? comporDividida(plano, o, jM, cfg) : comporComJanela(plano, o, jM, cfg));

@@ -1,430 +1,487 @@
 {
-  "video": "base.mp4",
-  "fps": 25,
-  "largura": 1080,
-  "altura": 1920,
-  "duracao": 21.6,
-  "videoAltura": 1920,
-  "rosto": {
-    "x": 0.5,
-    "y": 0.3
-  },
-  "zona": {
-    "topo": 976,
-    "altura": 465
-  },
-  "marca": {
-    "nome": "Tiago",
-    "area": "Mentalidade"
-  },
-  "sfx": true,
-  "cortesEm": [
-    2.04,
-    7.53,
-    10.42,
-    14.45,
-    18.83,
-    19.55
-  ],
-  "momentos": [
+ "video": "base.mp4",
+ "fps": 30,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 152.267,
+ "videoAltura": 1080,
+ "rosto": {
+  "x": 0.495,
+  "y": 0.357
+ },
+ "zona": {
+  "topo": 640,
+  "altura": 368
+ },
+ "marca": {
+  "nome": "Tiago",
+  "area": "Gestão e fé"
+ },
+ "sfx": true,
+ "cortesEm": [
+  18.85,
+  146.11
+ ],
+ "momentos": [
+  {
+   "tipo": "cartaz",
+   "de": 0,
+   "ate": 3.68,
+   "topo": [
     {
-      "tipo": "cartaz",
-      "de": 0.08,
-      "ate": 2.04,
-      "topo": [
-        {
-          "em": 0.3,
-          "texto": "NINGUÉM",
-          "tamanho": 150
-        },
-        {
-          "em": 0.68,
-          "texto": "VAI FAZER POR",
-          "tamanho": 72
-        }
-      ],
-      "janela": {
-        "em": 1.63,
-        "linhas": [
-          "VO",
-          "CÊ"
-        ]
-      }
+     "em": 1.12,
+     "texto": "ESTOU TRAZENDO",
+     "tamanho": 96
     },
     {
-      "tipo": "cartaz",
-      "de": 2.04,
-      "ate": 7.62,
-      "janela": {
-        "em": 2.13,
-        "linhas": [
-          "NÃO"
-        ],
-        "batidas": [
-          4.0,
-          5.98
-        ]
-      },
-      "negacoes": [
-        {
-          "em": 2.45,
-          "antes": "O MOMENTO",
-          "palavra": "PERFEITO",
-          "riscoEm": 3.9
-        },
-        {
-          "em": 4.47,
-          "antes": "A FERRAMENTA",
-          "palavra": "CERTA",
-          "riscoEm": 5.68
-        },
-        {
-          "em": 6.36,
-          "antes": "O CURSO QUE",
-          "palavra": "FALTA",
-          "riscoEm": 7.3
-        }
-      ]
-    },
-    {
-      "tipo": "escalada",
-      "de": 10.42,
-      "ate": 14.5,
-      "degraus": [
-        {
-          "em": 10.52,
-          "texto": "COMEÇA",
-          "nota": "PEQUENO.",
-          "notaEm": 10.94
-        },
-        {
-          "em": 11.94,
-          "texto": "COMEÇA",
-          "nota": "TORTO.",
-          "notaEm": 12.51,
-          "torto": true
-        }
-      ],
-      "final": {
-        "em": 13.61,
-        "antes": "MAS",
-        "antesEm": 13.43,
-        "linhas": [
-          "CO",
-          "ME",
-          "ÇA"
-        ]
-      }
-    },
-    {
-      "tipo": "selo",
-      "de": 14.9,
-      "ate": 18.83,
-      "itens": [
-        {
-          "em": 15.04,
-          "rotulo": "DAQUI A",
-          "texto": "1 ANO"
-        },
-        {
-          "em": 18.4,
-          "texto": "AGORA.",
-          "acento": true
-        }
-      ],
-      "marcas": {
-        "de": 15.3,
-        "ate": 18.2,
-        "quantas": 12
-      }
-    },
-    {
-      "tipo": "cartaz",
-      "de": 18.83,
-      "ate": 21.6,
-      "fecho": {
-        "icone": "comentar"
-      },
-      "topo": [
-        {
-          "em": 18.93,
-          "texto": "COMENTA:",
-          "tamanho": 84
-        }
-      ],
-      "janela": {
-        "em": 19.65,
-        "linhas": [
-          "EU"
-        ]
-      },
-      "base": [
-        {
-          "em": 19.73,
-          "texto": "COMEÇO",
-          "tamanho": 170
-        },
-        {
-          "em": 20.71,
-          "texto": "HOJE.",
-          "tamanho": 230,
-          "acento": true
-        }
-      ]
+     "em": 1.92,
+     "texto": "O TERMO",
+     "tamanho": 150
     }
-  ],
-  "semLegenda": [],
-  "correcoes": {},
-  "palavras": [
+   ],
+   "janela": {
+    "em": 2.4,
+    "linhas": [
+     "BEM"
+    ]
+   },
+   "base": [
     {
-      "em": 0.3,
-      "ate": 0.68,
-      "w": "Ninguém"
-    },
-    {
-      "em": 0.68,
-      "ate": 0.94,
-      "w": "vai"
-    },
-    {
-      "em": 0.94,
-      "ate": 1.36,
-      "w": "fazer"
-    },
-    {
-      "em": 1.36,
-      "ate": 1.63,
-      "w": "por"
-    },
-    {
-      "em": 1.63,
-      "ate": 2.04,
-      "w": "você."
-    },
-    {
-      "em": 2.13,
-      "ate": 2.28,
-      "w": "Não"
-    },
-    {
-      "em": 2.28,
-      "ate": 2.45,
-      "w": "é"
-    },
-    {
-      "em": 2.45,
-      "ate": 2.53,
-      "w": "o"
-    },
-    {
-      "em": 2.53,
-      "ate": 3.15,
-      "w": "momento"
-    },
-    {
-      "em": 3.15,
-      "ate": 4,
-      "w": "perfeito,"
-    },
-    {
-      "em": 4,
-      "ate": 4.31,
-      "w": "não"
-    },
-    {
-      "em": 4.31,
-      "ate": 4.47,
-      "w": "é"
-    },
-    {
-      "em": 4.47,
-      "ate": 4.55,
-      "w": "a"
-    },
-    {
-      "em": 4.55,
-      "ate": 5.43,
-      "w": "ferramenta"
-    },
-    {
-      "em": 5.43,
-      "ate": 5.76,
-      "w": "certa,"
-    },
-    {
-      "em": 5.98,
-      "ate": 6.13,
-      "w": "Não"
-    },
-    {
-      "em": 6.13,
-      "ate": 6.36,
-      "w": "é"
-    },
-    {
-      "em": 6.36,
-      "ate": 6.42,
-      "w": "o"
-    },
-    {
-      "em": 6.38,
-      "ate": 6.83,
-      "w": "curso"
-    },
-    {
-      "em": 6.83,
-      "ate": 7.08,
-      "w": "que"
-    },
-    {
-      "em": 7.08,
-      "ate": 7.53,
-      "w": "falta."
-    },
-    {
-      "em": 7.62,
-      "ate": 7.71,
-      "w": "é"
-    },
-    {
-      "em": 7.71,
-      "ate": 8.43,
-      "w": "você"
-    },
-    {
-      "em": 8.7,
-      "ate": 9.32,
-      "w": "hoje"
-    },
-    {
-      "em": 9.57,
-      "ate": 9.69,
-      "w": "com"
-    },
-    {
-      "em": 9.69,
-      "ate": 9.87,
-      "w": "o"
-    },
-    {
-      "em": 9.87,
-      "ate": 10.12,
-      "w": "que"
-    },
-    {
-      "em": 10.12,
-      "ate": 10.42,
-      "w": "tem"
-    },
-    {
-      "em": 10.52,
-      "ate": 10.94,
-      "w": "Começa"
-    },
-    {
-      "em": 10.94,
-      "ate": 11.58,
-      "w": "pequeno."
-    },
-    {
-      "em": 11.94,
-      "ate": 12.51,
-      "w": "Começa"
-    },
-    {
-      "em": 12.51,
-      "ate": 13.08,
-      "w": "torto."
-    },
-    {
-      "em": 13.43,
-      "ate": 13.61,
-      "w": "mas"
-    },
-    {
-      "em": 13.61,
-      "ate": 14.45,
-      "w": "começa."
-    },
-    {
-      "em": 14.54,
-      "ate": 14.93,
-      "w": "Daqui"
-    },
-    {
-      "em": 14.93,
-      "ate": 15.04,
-      "w": "a"
-    },
-    {
-      "em": 15.04,
-      "ate": 15.27,
-      "w": "um"
-    },
-    {
-      "em": 15.27,
-      "ate": 15.65,
-      "w": "ano"
-    },
-    {
-      "em": 15.88,
-      "ate": 16.07,
-      "w": "você"
-    },
-    {
-      "em": 16.07,
-      "ate": 16.3,
-      "w": "vai"
-    },
-    {
-      "em": 16.3,
-      "ate": 16.97,
-      "w": "agradecer"
-    },
-    {
-      "em": 16.97,
-      "ate": 17.04,
-      "w": "a"
-    },
-    {
-      "em": 17.04,
-      "ate": 17.53,
-      "w": "pessoa"
-    },
-    {
-      "em": 17.53,
-      "ate": 17.79,
-      "w": "que"
-    },
-    {
-      "em": 17.79,
-      "ate": 18.4,
-      "w": "decidiu"
-    },
-    {
-      "em": 18.4,
-      "ate": 18.83,
-      "w": "agora."
-    },
-    {
-      "em": 18.93,
-      "ate": 19.35,
-      "w": "Comenta."
-    },
-    {
-      "em": 19.65,
-      "ate": 19.73,
-      "w": "Eu"
-    },
-    {
-      "em": 19.73,
-      "ate": 20.71,
-      "w": "começo"
-    },
-    {
-      "em": 20.71,
-      "ate": 21.29,
-      "w": "hoje."
+     "em": 2.64,
+     "texto": "FEITO",
+     "tamanho": 230,
+     "acento": true
     }
-  ]
+   ]
+  },
+  {
+   "tipo": "definicao",
+   "de": 3.68,
+   "ate": 9.87,
+   "termo": "Bem feito",
+   "em": 4.24,
+   "significado": "Fazer o certo com o que você tem",
+   "significadoEm": 6.24,
+   "janela": "FEI/TO"
+  },
+  {
+   "tipo": "cartaz",
+   "de": 12.2,
+   "ate": 18.85,
+   "topo": [
+    {
+     "em": 12.43,
+     "texto": "A EXCELÊNCIA É",
+     "tamanho": 72
+    },
+    {
+     "em": 13.95,
+     "texto": "O PRODUTO MAIS",
+     "tamanho": 72
+    }
+   ],
+   "janela": {
+    "em": 14.82,
+    "linhas": [
+     "CA",
+     "RO"
+    ]
+   },
+   "negacoes": [
+    {
+     "em": 15.95,
+     "antes": "O COMPUTADOR MAIS",
+     "palavra": "CARO",
+     "riscoEm": 17.39
+    },
+    {
+     "em": 17.46,
+     "antes": "O CELULAR MAIS",
+     "palavra": "CARO",
+     "riscoEm": 18.34
+    }
+   ]
+  },
+  {
+   "tipo": "frase",
+   "de": 18.85,
+   "ate": 24.3,
+   "texto": "O que Deus nos pede é fazer bem feito com o que nós temos",
+   "destaque": "bem feito",
+   "janela": "DEUS",
+   "em": 20.18
+  },
+  {
+   "tipo": "destaque",
+   "de": 24.3,
+   "ate": 30.04,
+   "texto": "Essencial bem feito",
+   "em": 25.17,
+   "nivel": "chave",
+   "detalhe": "Excelência e produtividade",
+   "detalheEm": 28.29
+  },
+  {
+   "tipo": "destaque",
+   "de": 35,
+   "ate": 38.9,
+   "texto": "Evitei a palavra produtividade",
+   "em": 35.3,
+   "nivel": "alerta"
+  },
+  {
+   "tipo": "escalada",
+   "de": 39,
+   "ate": 45.91,
+   "degraus": [
+    {
+     "em": 40.07,
+     "texto": "TRABALHAR",
+     "nota": "MAIS,",
+     "notaEm": 40.55
+    },
+    {
+     "em": 41.19,
+     "texto": "FAZER",
+     "nota": "MAIS,",
+     "notaEm": 41.35
+    },
+    {
+     "em": 42.08,
+     "texto": "ENTREGAR",
+     "nota": "MAIS.",
+     "notaEm": 42.39,
+     "torto": true
+    }
+   ],
+   "final": {
+    "em": 44.23,
+    "antes": "NEM SEMPRE É",
+    "antesEm": 43.51,
+    "linhas": [
+     "IS",
+     "SO"
+    ]
+   }
+  },
+  {
+   "tipo": "destaque",
+   "de": 47.4,
+   "ate": 51.7,
+   "texto": "Ser produtivo",
+   "em": 47.59,
+   "nivel": "chave",
+   "detalhe": "É o essencial bem feito",
+   "detalheEm": 49.04
+  },
+  {
+   "tipo": "cartaz",
+   "de": 52.05,
+   "ate": 58.25,
+   "janela": {
+    "em": 52.27,
+    "linhas": [
+     "NÃO"
+    ]
+   },
+   "negacoes": [
+    {
+     "em": 53.07,
+     "antes": "FAZER MUITAS",
+     "palavra": "COISAS",
+     "riscoEm": 54.03
+    },
+    {
+     "em": 54.27,
+     "antes": "OU TRABALHAR MUITAS",
+     "palavra": "HORAS",
+     "riscoEm": 55.47
+    }
+   ],
+   "base": [
+    {
+     "em": 56.83,
+     "texto": "REMIR O TEMPO",
+     "tamanho": 72,
+     "acento": true
+    }
+   ]
+  },
+  {
+   "tipo": "frase",
+   "de": 58.25,
+   "ate": 62.2,
+   "texto": "Saber qual é a única coisa necessária",
+   "destaque": "coisa necessária",
+   "janela": "ÚNICA",
+   "em": 58.75
+  },
+  {
+   "tipo": "comparacao",
+   "de": 62.45,
+   "ate": 68.24,
+   "titulo": "Jesus, Marta e Maria",
+   "modo": "contra",
+   "lados": [
+    {
+     "rotulo": "Maria",
+     "texto": "Nos pés de Jesus",
+     "em": 63.71
+    },
+    {
+     "rotulo": "Marta",
+     "texto": "Monte de coisa",
+     "em": 65.92
+    }
+   ]
+  },
+  {
+   "tipo": "frase",
+   "de": 71.8,
+   "ate": 76.6,
+   "texto": "Eu sou mais produtiva que ela",
+   "destaque": "mais produtiva",
+   "janela": "EU",
+   "em": 72
+  },
+  {
+   "tipo": "destaque",
+   "de": 79.5,
+   "ate": 85.15,
+   "texto": "Ficou com a melhor parte",
+   "em": 80.57,
+   "nivel": "chave",
+   "detalhe": "Não vai ser tirada dela",
+   "detalheEm": 83.61
+  },
+  {
+   "tipo": "comparacao",
+   "de": 85.15,
+   "ate": 91.6,
+   "modo": "contra",
+   "lados": [
+    {
+     "rotulo": "A melhor parte",
+     "texto": "Deus não vai tirar",
+     "em": 85.21
+    },
+    {
+     "rotulo": "Todo o resto",
+     "texto": "Você pode remover",
+     "em": 89.08
+    }
+   ],
+   "vencedor": 0,
+   "vencedorEm": 90.71
+  },
+  {
+   "tipo": "definicao",
+   "de": 91.85,
+   "ate": 99,
+   "termo": "Produtividade",
+   "em": 92.44,
+   "significado": "O essencial bem feito",
+   "significadoEm": 96.6
+  },
+  {
+   "tipo": "destaque",
+   "de": 99.9,
+   "ate": 103.3,
+   "texto": "Excelência",
+   "em": 100.28,
+   "nivel": "chave",
+   "detalhe": "Naquilo que deveria ser feito",
+   "detalheEm": 100.92
+  },
+  {
+   "tipo": "topicos",
+   "de": 106.1,
+   "ate": 113.3,
+   "titulo": "Quais são os nãos",
+   "itens": [
+    {
+     "texto": "Algumas coisas",
+     "em": 108.76
+    },
+    {
+     "texto": "Algumas pessoas",
+     "em": 109.71
+    },
+    {
+     "texto": "Alguns projetos",
+     "em": 110.83
+    },
+    {
+     "texto": "Alguns convites",
+     "em": 111.95
+    }
+   ]
+  },
+  {
+   "tipo": "frase",
+   "de": 113.3,
+   "ate": 116,
+   "texto": "Os nãos são tão importantes quanto os sims",
+   "destaque": "sims",
+   "janela": "NÃOS",
+   "em": 113.3
+  },
+  {
+   "tipo": "selo",
+   "de": 116.1,
+   "ate": 120.55,
+   "itens": [
+    {
+     "em": 118.02,
+     "rotulo": "COM",
+     "texto": "DEUS"
+    },
+    {
+     "em": 119.3,
+     "rotulo": "MUITO MAIS DE",
+     "texto": "NÃO.",
+     "acento": true
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "de": 120.55,
+   "ate": 123.6,
+   "texto": "Quantas orações Deus não respondeu?",
+   "janela": "DEUS",
+   "em": 120.66
+  },
+  {
+   "tipo": "destaque",
+   "de": 126.9,
+   "ate": 130.8,
+   "texto": "Maturidade",
+   "em": 128.89,
+   "nivel": "chave"
+  },
+  {
+   "tipo": "cartaz",
+   "de": 131.45,
+   "ate": 138.28,
+   "topo": [
+    {
+     "em": 131.6,
+     "texto": "O MEU CASAMENTO",
+     "tamanho": 72
+    },
+    {
+     "em": 134.39,
+     "texto": "AS BÊNÇÃOS",
+     "tamanho": 96
+    }
+   ],
+   "janela": {
+    "em": 136.07,
+    "linhas": [
+     "FRU",
+     "TO"
+    ]
+   },
+   "base": [
+    {
+     "em": 136.47,
+     "texto": "DE NÃOS",
+     "tamanho": 150,
+     "acento": true
+    }
+   ]
+  },
+  {
+   "tipo": "destaque",
+   "de": 138.3,
+   "ate": 141.9,
+   "texto": "Aprender a dizer não",
+   "em": 141.03,
+   "nivel": "alerta"
+  },
+  {
+   "tipo": "cartaz",
+   "de": 143.6,
+   "ate": 146.11,
+   "topo": [
+    {
+     "em": 143.74,
+     "texto": "O QUE EU VOU",
+     "tamanho": 96
+    },
+    {
+     "em": 144.17,
+     "texto": "FAZER HOJE?",
+     "tamanho": 96
+    }
+   ],
+   "janela": {
+    "em": 145.61,
+    "linhas": [
+     "NÃO"
+    ]
+   },
+   "negacoes": [
+    {
+     "em": 144.73,
+     "antes": "VOU FAZER",
+     "palavra": "TUDO",
+     "riscoEm": 145.61
+    }
+   ]
+  },
+  {
+   "tipo": "passos",
+   "de": 146.11,
+   "ate": 150,
+   "titulo": "O que é",
+   "itens": [
+    {
+     "texto": "O importante",
+     "em": 146.81
+    },
+    {
+     "texto": "O relevante",
+     "em": 147.85
+    },
+    {
+     "texto": "O essencial",
+     "em": 148.73
+    }
+   ]
+  },
+  {
+   "tipo": "cartaz",
+   "de": 150,
+   "ate": 152.267,
+   "topo": [
+    {
+     "em": 150.17,
+     "texto": "EU VOU FAZER",
+     "tamanho": 72
+    },
+    {
+     "em": 150.65,
+     "texto": "O ESSENCIAL",
+     "tamanho": 96
+    },
+    {
+     "em": 151.21,
+     "texto": "BEM",
+     "tamanho": 150,
+     "acento": true
+    }
+   ],
+   "janela": {
+    "em": 151.45,
+    "linhas": [
+     "FEI",
+     "TO."
+    ]
+   }
+  }
+ ],
+ "semLegenda": [],
+ "correcoes": {}
 }
