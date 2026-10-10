@@ -3,7 +3,8 @@
     "9:16": "modelo-agenda"
   },
   "modelo-anatomia": {
-    "9:16": "modelo-anatomia"
+    "9:16": "modelo-anatomia",
+    "16:9": "modelo-anatomia-16x9"
   },
   "modelo-ao-pe-da-letra": {
     "9:16": "modelo-ao-pe-da-letra"
@@ -36,25 +37,32 @@
     "9:16": "modelo-case"
   },
   "modelo-chave": {
-    "9:16": "modelo-chave"
+    "9:16": "modelo-chave",
+    "16:9": "modelo-chave-16x9"
   },
   "modelo-cifra": {
-    "9:16": "modelo-cifra"
+    "9:16": "modelo-cifra",
+    "16:9": "modelo-cifra-16x9"
   },
   "modelo-cinema": {
-    "9:16": "modelo-cinema"
+    "9:16": "modelo-cinema",
+    "16:9": "modelo-cinema-16x9"
   },
   "modelo-clinico": {
-    "9:16": "modelo-clinico"
+    "9:16": "modelo-clinico",
+    "16:9": "modelo-clinico-16x9"
   },
   "modelo-constelacao": {
-    "9:16": "modelo-constelacao"
+    "9:16": "modelo-constelacao",
+    "16:9": "modelo-constelacao-16x9"
   },
   "modelo-conversa": {
-    "9:16": "modelo-conversa"
+    "9:16": "modelo-conversa",
+    "16:9": "modelo-conversa-16x9"
   },
   "modelo-convite": {
-    "9:16": "modelo-convite"
+    "9:16": "modelo-convite",
+    "16:9": "modelo-convite-16x9"
   },
   "modelo-criativo": {
     "9:16": "modelo-criativo"
@@ -123,7 +131,8 @@
     "9:16": "modelo-lookbook"
   },
   "modelo-lousa": {
-    "9:16": "modelo-lousa"
+    "9:16": "modelo-lousa",
+    "16:9": "modelo-lousa-16x9"
   },
   "modelo-manchete": {
     "9:16": "modelo-manchete"
@@ -136,7 +145,8 @@
     "9:16": "modelo-mapa"
   },
   "modelo-medida": {
-    "9:16": "modelo-medida"
+    "9:16": "modelo-medida",
+    "16:9": "modelo-medida-16x9"
   },
   "modelo-mosaico": {
     "9:16": "modelo-mosaico"
@@ -154,10 +164,12 @@
     "9:16": "modelo-oferta"
   },
   "modelo-orbita": {
-    "9:16": "modelo-orbita"
+    "9:16": "modelo-orbita",
+    "16:9": "modelo-orbita-16x9"
   },
   "modelo-painel": {
-    "9:16": "modelo-painel"
+    "9:16": "modelo-painel",
+    "16:9": "modelo-painel-16x9"
   },
   "modelo-palco": {
     "9:16": "modelo-palco"
@@ -217,7 +229,8 @@
     "9:16": "modelo-tese"
   },
   "modelo-torre": {
-    "9:16": "modelo-torre"
+    "9:16": "modelo-torre",
+    "16:9": "modelo-torre-16x9"
   },
   "modelo-transformacao": {
     "9:16": "modelo-transformacao"
@@ -226,7 +239,8 @@
     "9:16": "modelo-versus"
   },
   "modelo-viral": {
-    "9:16": "modelo-viral"
+    "9:16": "modelo-viral",
+    "16:9": "modelo-viral-16x9"
   },
   "modelo-visor": {
     "9:16": "modelo-visor"

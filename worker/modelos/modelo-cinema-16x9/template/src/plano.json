@@ -1,0 +1,522 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 32.12,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Histórias"
+  },
+  "sfx": true,
+  "intensidade": [
+    {
+      "de": 0,
+      "nivel": 1
+    },
+    {
+      "de": 14.82,
+      "nivel": 2
+    },
+    {
+      "de": 16.97,
+      "nivel": 3
+    },
+    {
+      "de": 18.72,
+      "nivel": 0
+    },
+    {
+      "de": 22.38,
+      "nivel": 3
+    },
+    {
+      "de": 29.13,
+      "nivel": 4
+    }
+  ],
+  "cortesEm": [],
+  "momentos": [
+    {
+      "tipo": "letreiro",
+      "de": 0.0,
+      "ate": 2.83,
+      "rotulo": "Todo dia",
+      "rotuloEm": -0.6,
+      "titulo": "18:00",
+      "tituloEm": 0.32,
+      "contarDe": "17:52",
+      "desenho": {
+        "tipo": "sol",
+        "em": -1.2
+      },
+      "cabeca": "Todo dia · 18:00",
+      "nivel": 3,
+      "pousaEm": 2.21
+    },
+    {
+      "tipo": "letreiro",
+      "de": 2.86,
+      "ate": 7.45,
+      "nivel": 2,
+      "rotulo": "Um senhor",
+      "rotuloEm": 2.91,
+      "titulo": "O mesmo banco",
+      "tituloEm": 4.07,
+      "desenho": {
+        "tipo": "banco",
+        "em": 3.2,
+        "passos": [
+          {
+            "em": 4.47
+          },
+          {
+            "em": 6.18
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "cartela",
+      "de": 7.53,
+      "ate": 11.18,
+      "desenho": {
+        "tipo": "xicaras",
+        "em": 7.83,
+        "passos": [
+          {
+            "em": 8.98
+          },
+          {
+            "em": 9.93
+          }
+        ]
+      },
+      "linhas": [
+        {
+          "em": 8.1,
+          "texto": "Bebia uma."
+        },
+        {
+          "em": 9.44,
+          "texto": "A outra esfriava."
+        }
+      ],
+      "cabeca": "Duas xícaras"
+    },
+    {
+      "tipo": "frase",
+      "de": 11.3,
+      "ate": 14.87,
+      "linhas": [
+        "Durante anos,",
+        "ninguém",
+        "perguntou nada."
+      ],
+      "enfase": "ninguém",
+      "texto": "Durante anos, ninguém perguntou nada.",
+      "destaque": "ninguém"
+    },
+    {
+      "tipo": "frase",
+      "de": 14.91,
+      "ate": 18.45,
+      "texto": "Até que uma menina sentou do lado e pegou a xícara.",
+      "destaque": "pegou a xícara."
+    },
+    {
+      "tipo": "fala",
+      "de": 22.91,
+      "ate": 25.93,
+      "texto": "Minha esposa sentava aí",
+      "quem": "ele disse",
+      "quemEm": 24.77
+    },
+    {
+      "tipo": "frase",
+      "de": 26.02,
+      "ate": 29.38,
+      "linhas": [
+        "Faz dez anos",
+        "que eu espero alguém",
+        "tomar esse café."
+      ],
+      "enfase": "esse café.",
+      "texto": "Faz dez anos que eu espero alguém tomar esse café.",
+      "destaque": "esse café."
+    },
+    {
+      "tipo": "creditos",
+      "de": 29.92,
+      "ate": 32.12,
+      "texto": "Segue pra mais histórias como essa.",
+      "icone": "seguir",
+      "nivel": 2
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "10": "dez"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.67,
+      "w": "Todo"
+    },
+    {
+      "em": 0.67,
+      "ate": 1.37,
+      "w": "dia,"
+    },
+    {
+      "em": 1.37,
+      "ate": 1.64,
+      "w": "às"
+    },
+    {
+      "em": 1.64,
+      "ate": 2.04,
+      "w": "seis"
+    },
+    {
+      "em": 2.04,
+      "ate": 2.18,
+      "w": "da"
+    },
+    {
+      "em": 2.18,
+      "ate": 2.64,
+      "w": "tarde,"
+    },
+    {
+      "em": 2.88,
+      "ate": 2.94,
+      "w": "um"
+    },
+    {
+      "em": 2.91,
+      "ate": 3.45,
+      "w": "senhor"
+    },
+    {
+      "em": 3.45,
+      "ate": 3.91,
+      "w": "sentava"
+    },
+    {
+      "em": 3.91,
+      "ate": 4.07,
+      "w": "no"
+    },
+    {
+      "em": 4.07,
+      "ate": 4.47,
+      "w": "mesmo"
+    },
+    {
+      "em": 4.47,
+      "ate": 4.88,
+      "w": "banco"
+    },
+    {
+      "em": 4.88,
+      "ate": 5.03,
+      "w": "da"
+    },
+    {
+      "em": 5.03,
+      "ate": 5.57,
+      "w": "praça"
+    },
+    {
+      "em": 5.57,
+      "ate": 5.83,
+      "w": "com"
+    },
+    {
+      "em": 5.83,
+      "ate": 6.18,
+      "w": "duas"
+    },
+    {
+      "em": 6.18,
+      "ate": 6.89,
+      "w": "xícaras"
+    },
+    {
+      "em": 6.89,
+      "ate": 7.03,
+      "w": "de"
+    },
+    {
+      "em": 7.03,
+      "ate": 7.52,
+      "w": "café."
+    },
+    {
+      "em": 8.1,
+      "ate": 8.64,
+      "w": "bebia"
+    },
+    {
+      "em": 8.64,
+      "ate": 9.09,
+      "w": "uma"
+    },
+    {
+      "em": 9.44,
+      "ate": 9.5,
+      "w": "a"
+    },
+    {
+      "em": 9.47,
+      "ate": 9.88,
+      "w": "outra"
+    },
+    {
+      "em": 9.88,
+      "ate": 10.71,
+      "w": "esfriava"
+    },
+    {
+      "em": 11.35,
+      "ate": 12.03,
+      "w": "Durante"
+    },
+    {
+      "em": 12.03,
+      "ate": 12.7,
+      "w": "anos,"
+    },
+    {
+      "em": 12.7,
+      "ate": 13.34,
+      "w": "ninguém"
+    },
+    {
+      "em": 13.34,
+      "ate": 14,
+      "w": "perguntou"
+    },
+    {
+      "em": 14,
+      "ate": 14.33,
+      "w": "nada."
+    },
+    {
+      "em": 14.96,
+      "ate": 15.09,
+      "w": "Até"
+    },
+    {
+      "em": 15.09,
+      "ate": 15.31,
+      "w": "que"
+    },
+    {
+      "em": 15.31,
+      "ate": 15.54,
+      "w": "uma"
+    },
+    {
+      "em": 15.54,
+      "ate": 16,
+      "w": "menina"
+    },
+    {
+      "em": 16,
+      "ate": 16.46,
+      "w": "sentou"
+    },
+    {
+      "em": 16.46,
+      "ate": 16.61,
+      "w": "do"
+    },
+    {
+      "em": 16.61,
+      "ate": 17.05,
+      "w": "lado"
+    },
+    {
+      "em": 17.06,
+      "ate": 17.12,
+      "w": "e"
+    },
+    {
+      "em": 17.09,
+      "ate": 17.54,
+      "w": "pegou"
+    },
+    {
+      "em": 17.54,
+      "ate": 17.64,
+      "w": "a"
+    },
+    {
+      "em": 17.64,
+      "ate": 18.35,
+      "w": "xícara."
+    },
+    {
+      "em": 19.04,
+      "ate": 19.11,
+      "w": "Ele"
+    },
+    {
+      "em": 19.11,
+      "ate": 19.62,
+      "w": "sorriu"
+    },
+    {
+      "em": 19.62,
+      "ate": 20.04,
+      "w": "pela"
+    },
+    {
+      "em": 20.04,
+      "ate": 20.74,
+      "w": "primeira"
+    },
+    {
+      "em": 20.74,
+      "ate": 20.95,
+      "w": "vez"
+    },
+    {
+      "em": 20.95,
+      "ate": 21.16,
+      "w": "em"
+    },
+    {
+      "em": 21.16,
+      "ate": 21.71,
+      "w": "muito"
+    },
+    {
+      "em": 21.71,
+      "ate": 22.23,
+      "w": "tempo."
+    },
+    {
+      "em": 22.96,
+      "ate": 23.15,
+      "w": "Minha"
+    },
+    {
+      "em": 23.15,
+      "ate": 23.61,
+      "w": "esposa"
+    },
+    {
+      "em": 23.61,
+      "ate": 24.15,
+      "w": "sentava"
+    },
+    {
+      "em": 24.15,
+      "ate": 24.77,
+      "w": "aí,"
+    },
+    {
+      "em": 24.77,
+      "ate": 24.83,
+      "w": "ele"
+    },
+    {
+      "em": 24.81,
+      "ate": 25.23,
+      "w": "disse."
+    },
+    {
+      "em": 26.07,
+      "ate": 26.13,
+      "w": "Faz"
+    },
+    {
+      "em": 26.09,
+      "ate": 26.48,
+      "w": "10"
+    },
+    {
+      "em": 26.48,
+      "ate": 26.75,
+      "w": "anos"
+    },
+    {
+      "em": 26.75,
+      "ate": 26.95,
+      "w": "que"
+    },
+    {
+      "em": 26.95,
+      "ate": 27.09,
+      "w": "eu"
+    },
+    {
+      "em": 27.09,
+      "ate": 27.54,
+      "w": "espero"
+    },
+    {
+      "em": 27.54,
+      "ate": 28.05,
+      "w": "alguém"
+    },
+    {
+      "em": 28.05,
+      "ate": 28.32,
+      "w": "tomar"
+    },
+    {
+      "em": 28.32,
+      "ate": 28.57,
+      "w": "esse"
+    },
+    {
+      "em": 28.57,
+      "ate": 29,
+      "w": "café."
+    },
+    {
+      "em": 30.01,
+      "ate": 30.13,
+      "w": "Segue"
+    },
+    {
+      "em": 30.13,
+      "ate": 30.4,
+      "w": "para"
+    },
+    {
+      "em": 30.4,
+      "ate": 30.61,
+      "w": "mais"
+    },
+    {
+      "em": 30.61,
+      "ate": 31.22,
+      "w": "histórias"
+    },
+    {
+      "em": 31.22,
+      "ate": 31.47,
+      "w": "como"
+    },
+    {
+      "em": 31.47,
+      "ate": 31.77,
+      "w": "essa."
+    }
+  ]
+}

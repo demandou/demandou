@@ -1,0 +1,615 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 23.4,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Tiago Moura",
+    "area": "Planejador financeiro"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.27,
+    8.74,
+    11.63,
+    16.75,
+    20.95
+  ],
+  "momentos": [
+    {
+      "tipo": "gancho",
+      "de": 0,
+      "ate": 3.27,
+      "rotulo": "Planejamento financeiro",
+      "linhas": [
+        {
+          "em": 0.34,
+          "texto": "R$ 500 por mês"
+        },
+        {
+          "em": 1.96,
+          "texto": "podem virar"
+        }
+      ],
+      "numero": {
+        "em": 2.37,
+        "de": 500,
+        "para": 100000,
+        "prefixo": "R$ "
+      }
+    },
+    {
+      "tipo": "grafico",
+      "de": 3.27,
+      "ate": 8.74,
+      "legenda": true,
+      "forma": "linha",
+      "tendencia": "sobe",
+      "tendenciaEm": 6.45,
+      "ilustrativo": true,
+      "rotulo": "Juros compostos",
+      "ficha": [
+        {
+          "em": 3.65,
+          "rotulo": "Aporte",
+          "valor": "R$ 500/mês"
+        },
+        {
+          "em": 4.21,
+          "rotulo": "Taxa",
+          "valor": "10% a.a."
+        },
+        {
+          "em": 5.67,
+          "rotulo": "Prazo",
+          "valor": "10 anos"
+        }
+      ],
+      "nota": "Simulação ilustrativa",
+      "eixo": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "eixoNome": "anos",
+      "prefixo": "R$ ",
+      "series": [
+        {
+          "nome": "Seu dinheiro",
+          "valores": [
+            0,
+            6000,
+            12000,
+            18000,
+            24000,
+            30000,
+            36000,
+            42000,
+            48000,
+            54000,
+            60000
+          ]
+        },
+        {
+          "nome": "Juros",
+          "valores": [
+            0,
+            270,
+            1168,
+            2755,
+            5100,
+            8281,
+            12379,
+            17487,
+            23706,
+            31147,
+            39932
+          ]
+        }
+      ],
+      "desenho": {
+        "de": 4.05,
+        "ate": 6.45
+      },
+      "total": "saldo no ano {x}",
+      "itens": [
+        {
+          "em": 7.39,
+          "texto": "do seu bolso",
+          "serie": 0
+        }
+      ]
+    },
+    {
+      "tipo": "divisao",
+      "de": 8.74,
+      "ate": 11.63,
+      "legenda": true,
+      "rotulo": "De onde vem o saldo",
+      "prefixo": "R$ ",
+      "total": "total em 10 anos",
+      "itens": [
+        {
+          "em": 8.81,
+          "valor": 60000,
+          "texto": "do seu bolso"
+        },
+        {
+          "em": 9.35,
+          "valor": 39932,
+          "texto": "juros sobre juros"
+        }
+      ],
+      "fatias": [
+        270,
+        898,
+        1587,
+        2345,
+        3181,
+        4098,
+        5108,
+        6219,
+        7441,
+        8785
+      ],
+      "grifoEm": 10.47,
+      "nota": "Simulação ilustrativa"
+    },
+    {
+      "tipo": "destaque",
+      "de": 11.63,
+      "ate": 16.75,
+      "legenda": true,
+      "texto": "nos últimos 3 anos",
+      "em": 15.26,
+      "rotulo": "Juros ganhos em cada ano",
+      "nota": "Simulação ilustrativa",
+      "prefixo": "R$ ",
+      "eixo": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "valores": [
+        270,
+        898,
+        1587,
+        2345,
+        3181,
+        4098,
+        5108,
+        6219,
+        7441,
+        8785
+      ],
+      "faixa": {
+        "de": 7,
+        "ate": 9
+      },
+      "numero": {
+        "em": 13.01,
+        "de": 0,
+        "para": 56,
+        "sufixo": "%",
+        "texto": "dos juros"
+      }
+    },
+    {
+      "tipo": "comparacao",
+      "de": 16.75,
+      "ate": 20.95,
+      "lados": [
+        {
+          "rotulo": "Começa cedo",
+          "texto": "ganha",
+          "em": 16.88,
+          "vereditoEm": 17.85
+        },
+        {
+          "rotulo": "Para no meio",
+          "texto": "perde a melhor parte",
+          "em": 18.63,
+          "vereditoEm": 19.72
+        }
+      ],
+      "vencedor": 0
+    },
+    {
+      "tipo": "cta",
+      "de": 20.95,
+      "ate": 23.4,
+      "texto": "Me segue",
+      "apoio": "pra fazer a conta com o seu valor",
+      "icone": "seguir",
+      "campo": {
+        "em": 21.87,
+        "rotulo": "Seu aporte",
+        "valores": [
+          "R$ 1.000"
+        ]
+      }
+    }
+  ],
+  "semLegenda": [
+    {
+      "de": 12.69,
+      "ate": 12.7
+    }
+  ],
+  "correcoes": {
+    "500,00": "500",
+    "100,00": "100 mil",
+    "sobre juros": "sobre juros."
+  },
+  "palavras": [
+    {
+      "em": 0.34,
+      "ate": 0.4,
+      "w": "R$"
+    },
+    {
+      "em": 0.39,
+      "ate": 1.37,
+      "w": "500,00"
+    },
+    {
+      "em": 1.37,
+      "ate": 1.57,
+      "w": "por"
+    },
+    {
+      "em": 1.57,
+      "ate": 1.96,
+      "w": "mês"
+    },
+    {
+      "em": 1.96,
+      "ate": 2.14,
+      "w": "podem"
+    },
+    {
+      "em": 2.14,
+      "ate": 2.37,
+      "w": "virar"
+    },
+    {
+      "em": 2.37,
+      "ate": 2.45,
+      "w": "R$"
+    },
+    {
+      "em": 2.45,
+      "ate": 3.27,
+      "w": "100,00"
+    },
+    {
+      "em": 3.37,
+      "ate": 4.12,
+      "w": "Investindo"
+    },
+    {
+      "em": 4.12,
+      "ate": 4.21,
+      "w": "a"
+    },
+    {
+      "em": 4.21,
+      "ate": 4.87,
+      "w": "10%"
+    },
+    {
+      "em": 4.87,
+      "ate": 5.06,
+      "w": "ao"
+    },
+    {
+      "em": 5.06,
+      "ate": 5.54,
+      "w": "ano,"
+    },
+    {
+      "em": 5.54,
+      "ate": 5.67,
+      "w": "em"
+    },
+    {
+      "em": 5.67,
+      "ate": 6.13,
+      "w": "10"
+    },
+    {
+      "em": 6.13,
+      "ate": 6.44,
+      "w": "anos"
+    },
+    {
+      "em": 6.44,
+      "ate": 6.82,
+      "w": "você"
+    },
+    {
+      "em": 6.82,
+      "ate": 7.39,
+      "w": "coloca"
+    },
+    {
+      "em": 7.39,
+      "ate": 7.74,
+      "w": "60"
+    },
+    {
+      "em": 7.74,
+      "ate": 7.97,
+      "w": "mil"
+    },
+    {
+      "em": 7.97,
+      "ate": 8.12,
+      "w": "do"
+    },
+    {
+      "em": 8.12,
+      "ate": 8.35,
+      "w": "seu"
+    },
+    {
+      "em": 8.35,
+      "ate": 8.74,
+      "w": "bolso."
+    },
+    {
+      "em": 8.81,
+      "ate": 8.87,
+      "w": "Os"
+    },
+    {
+      "em": 8.84,
+      "ate": 9.35,
+      "w": "outros"
+    },
+    {
+      "em": 9.35,
+      "ate": 9.71,
+      "w": "40"
+    },
+    {
+      "em": 9.71,
+      "ate": 9.94,
+      "w": "mil"
+    },
+    {
+      "em": 9.94,
+      "ate": 10.24,
+      "w": "vêm"
+    },
+    {
+      "em": 10.24,
+      "ate": 10.47,
+      "w": "dos"
+    },
+    {
+      "em": 10.47,
+      "ate": 10.84,
+      "w": "juros"
+    },
+    {
+      "em": 10.84,
+      "ate": 11.22,
+      "w": "sobre"
+    },
+    {
+      "em": 11.22,
+      "ate": 11.63,
+      "w": "juros"
+    },
+    {
+      "em": 11.69,
+      "ate": 11.75,
+      "w": "E"
+    },
+    {
+      "em": 11.72,
+      "ate": 11.78,
+      "w": "o"
+    },
+    {
+      "em": 11.74,
+      "ate": 12.46,
+      "w": "detalhe?"
+    },
+    {
+      "em": 12.71,
+      "ate": 12.85,
+      "w": "Mais"
+    },
+    {
+      "em": 12.85,
+      "ate": 13.01,
+      "w": "da"
+    },
+    {
+      "em": 13.01,
+      "ate": 13.54,
+      "w": "metade"
+    },
+    {
+      "em": 13.54,
+      "ate": 14.11,
+      "w": "desses"
+    },
+    {
+      "em": 14.11,
+      "ate": 14.53,
+      "w": "juros"
+    },
+    {
+      "em": 14.53,
+      "ate": 15.16,
+      "w": "aparece"
+    },
+    {
+      "em": 15.16,
+      "ate": 15.26,
+      "w": "só"
+    },
+    {
+      "em": 15.26,
+      "ate": 15.48,
+      "w": "nos"
+    },
+    {
+      "em": 15.48,
+      "ate": 16.08,
+      "w": "últimos"
+    },
+    {
+      "em": 16.08,
+      "ate": 16.45,
+      "w": "três"
+    },
+    {
+      "em": 16.45,
+      "ate": 16.75,
+      "w": "anos,"
+    },
+    {
+      "em": 16.88,
+      "ate": 16.97,
+      "w": "Quem"
+    },
+    {
+      "em": 16.97,
+      "ate": 17.53,
+      "w": "começa"
+    },
+    {
+      "em": 17.53,
+      "ate": 17.85,
+      "w": "cedo"
+    },
+    {
+      "em": 17.85,
+      "ate": 18.27,
+      "w": "ganha."
+    },
+    {
+      "em": 18.63,
+      "ate": 18.75,
+      "w": "Quem"
+    },
+    {
+      "em": 18.75,
+      "ate": 19.08,
+      "w": "para"
+    },
+    {
+      "em": 19.08,
+      "ate": 19.23,
+      "w": "no"
+    },
+    {
+      "em": 19.23,
+      "ate": 19.72,
+      "w": "meio"
+    },
+    {
+      "em": 19.72,
+      "ate": 19.98,
+      "w": "perde"
+    },
+    {
+      "em": 19.98,
+      "ate": 20.06,
+      "w": "a"
+    },
+    {
+      "em": 20.06,
+      "ate": 20.55,
+      "w": "melhor"
+    },
+    {
+      "em": 20.55,
+      "ate": 20.95,
+      "w": "parte."
+    },
+    {
+      "em": 21.02,
+      "ate": 21.08,
+      "w": "Me"
+    },
+    {
+      "em": 21.05,
+      "ate": 21.28,
+      "w": "segue"
+    },
+    {
+      "em": 21.28,
+      "ate": 21.51,
+      "w": "para"
+    },
+    {
+      "em": 21.51,
+      "ate": 21.81,
+      "w": "fazer"
+    },
+    {
+      "em": 21.81,
+      "ate": 21.87,
+      "w": "a"
+    },
+    {
+      "em": 21.87,
+      "ate": 22.17,
+      "w": "conta"
+    },
+    {
+      "em": 22.17,
+      "ate": 22.35,
+      "w": "com"
+    },
+    {
+      "em": 22.35,
+      "ate": 22.41,
+      "w": "o"
+    },
+    {
+      "em": 22.41,
+      "ate": 22.59,
+      "w": "seu"
+    },
+    {
+      "em": 22.59,
+      "ate": 22.93,
+      "w": "valor."
+    }
+  ]
+}

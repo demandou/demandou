@@ -1,0 +1,523 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 20.52,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 700,
+    "altura": 308
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Vendas no direct"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.1,
+    4.86,
+    6.83,
+    13.01,
+    15.23,
+    17.07,
+    18.57
+  ],
+  "momentos": [
+    {
+      "tipo": "balao",
+      "de": 0,
+      "ate": 3.1,
+      "legenda": true,
+      "mensagem": {
+        "de": "outro",
+        "em": 1.28,
+        "digitando": 0.95,
+        "texto": "Oi! Quanto custa?"
+      },
+      "offlineEm": 2.46
+    },
+    {
+      "tipo": "conversa",
+      "de": 3.1,
+      "ate": 4.86,
+      "nova": true,
+      "fixada": {
+        "rotulo": "Errado",
+        "tom": "errado",
+        "texto": "Responder só com o valor"
+      },
+      "mensagens": [
+        {
+          "de": "eu",
+          "em": 4.08,
+          "digitando": 0.62,
+          "texto": "R$ 197.",
+          "vistoEm": 4.5,
+          "esfriaEm": 4.62
+        },
+        {
+          "de": "outro",
+          "tipo": "digitando",
+          "em": 4.42,
+          "ate": 4.84
+        }
+      ]
+    },
+    {
+      "tipo": "conversa",
+      "de": 4.86,
+      "ate": 6.83,
+      "nova": true,
+      "fixada": {
+        "rotulo": "1/3",
+        "tom": "certo",
+        "texto": "Pergunta o que ele precisa"
+      },
+      "mensagens": [
+        {
+          "de": "outro",
+          "em": 4.86,
+          "digitando": 0,
+          "texto": "Oi! Quanto custa?"
+        },
+        {
+          "de": "eu",
+          "em": 5.36,
+          "digitando": 0.4,
+          "texto": "Me conta: o que você precisa?"
+        },
+        {
+          "de": "outro",
+          "em": 6.45,
+          "digitando": 0.5,
+          "texto": "É pra presente."
+        }
+      ]
+    },
+    {
+      "tipo": "balao",
+      "de": 6.83,
+      "ate": 9.93,
+      "legenda": false,
+      "fixada": {
+        "rotulo": "2/3",
+        "tom": "certo",
+        "texto": "Mostra como o seu produto resolve isso"
+      },
+      "mensagem": {
+        "de": "eu",
+        "tipo": "cartao",
+        "em": 7.59,
+        "digitando": 0.5,
+        "desenho": "presente",
+        "titulo": "Seu produto",
+        "linha": "Resolve isso",
+        "linhaEm": 8.98
+      }
+    },
+    {
+      "tipo": "conversa",
+      "de": 9.93,
+      "ate": 11.95,
+      "fixada": {
+        "rotulo": "3/3",
+        "tom": "certo",
+        "texto": "Só então fala o preço"
+      },
+      "mensagens": [
+        {
+          "de": "eu",
+          "tipo": "preco",
+          "em": 11.17,
+          "digitando": 0.7,
+          "valor": "R$ 197",
+          "condicao": {
+            "em": 12.21,
+            "texto": "Pagando hoje, frete grátis",
+            "desenho": "frete"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "conversa",
+      "de": 11.95,
+      "ate": 15.75,
+      "fixada": {
+        "rotulo": "3/3",
+        "tom": "certo",
+        "texto": "Com uma condição"
+      },
+      "mensagens": [
+        {
+          "de": "outro",
+          "em": 14.8,
+          "digitando": 0.4,
+          "texto": "Fechado!",
+          "reacao": {
+            "em": 15.08,
+            "icone": "check"
+          }
+        },
+        {
+          "de": "eu",
+          "tipo": "confirmacao",
+          "em": 15.36,
+          "digitando": 0,
+          "valor": "R$ 197,00",
+          "texto": "Pagamento recebido"
+        }
+      ]
+    },
+    {
+      "tipo": "contraste",
+      "de": 15.75,
+      "ate": 18.45,
+      "esquerdaEm": 15.8,
+      "direitaEm": 17.17,
+      "esquerda": {
+        "titulo": "Resposta seca",
+        "mensagens": [
+          {
+            "de": "eu",
+            "em": 15.4,
+            "texto": "R$ 197.",
+            "esfriaEm": 15.0,
+            "vistoEm": 15.0
+          }
+        ],
+        "resultado": {
+          "em": 16.53,
+          "texto": "vácuo",
+          "tipo": "ruim"
+        },
+        "viraEm": 16.19
+      },
+      "direita": {
+        "titulo": "Conversa",
+        "mensagens": [
+          {
+            "de": "outro",
+            "em": 17.2,
+            "texto": "Fechado!"
+          }
+        ],
+        "resultado": {
+          "em": 17.96,
+          "texto": "venda",
+          "tipo": "bom",
+          "valor": "R$ 197",
+          "rotulo": "Pago"
+        },
+        "viraEm": 17.63
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 18.45,
+      "ate": 20.52,
+      "texto": "Salva e testa hoje.",
+      "toqueEm": 18.95,
+      "reacao": {
+        "em": 19.85,
+        "icone": "coracao"
+      },
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "Direct": "direct",
+    "Primeiro": "Primeiro,"
+  },
+  "palavras": [
+    {
+      "em": 0.33,
+      "ate": 0.39,
+      "w": "Seu"
+    },
+    {
+      "em": 0.38,
+      "ate": 0.66,
+      "w": "cliente"
+    },
+    {
+      "em": 0.66,
+      "ate": 1.21,
+      "w": "pergunta"
+    },
+    {
+      "em": 1.21,
+      "ate": 1.28,
+      "w": "o"
+    },
+    {
+      "em": 1.28,
+      "ate": 1.69,
+      "w": "preço"
+    },
+    {
+      "em": 1.69,
+      "ate": 1.81,
+      "w": "no"
+    },
+    {
+      "em": 1.81,
+      "ate": 2.3,
+      "w": "Direct"
+    },
+    {
+      "em": 2.3,
+      "ate": 2.46,
+      "w": "e"
+    },
+    {
+      "em": 2.46,
+      "ate": 3.1,
+      "w": "some."
+    },
+    {
+      "em": 3.2,
+      "ate": 3.28,
+      "w": "Para"
+    },
+    {
+      "em": 3.28,
+      "ate": 3.42,
+      "w": "de"
+    },
+    {
+      "em": 3.42,
+      "ate": 4.08,
+      "w": "responder"
+    },
+    {
+      "em": 4.08,
+      "ate": 4.26,
+      "w": "só"
+    },
+    {
+      "em": 4.26,
+      "ate": 4.47,
+      "w": "com"
+    },
+    {
+      "em": 4.47,
+      "ate": 4.54,
+      "w": "o"
+    },
+    {
+      "em": 4.54,
+      "ate": 4.86,
+      "w": "valor."
+    },
+    {
+      "em": 4.95,
+      "ate": 5.36,
+      "w": "Primeiro"
+    },
+    {
+      "em": 5.36,
+      "ate": 5.95,
+      "w": "pergunta"
+    },
+    {
+      "em": 5.95,
+      "ate": 6.01,
+      "w": "o"
+    },
+    {
+      "em": 5.97,
+      "ate": 6.16,
+      "w": "que"
+    },
+    {
+      "em": 6.16,
+      "ate": 6.37,
+      "w": "ele"
+    },
+    {
+      "em": 6.37,
+      "ate": 6.83,
+      "w": "precisa."
+    },
+    {
+      "em": 6.92,
+      "ate": 7.59,
+      "w": "Depois,"
+    },
+    {
+      "em": 7.59,
+      "ate": 7.84,
+      "w": "mostra"
+    },
+    {
+      "em": 7.84,
+      "ate": 8.13,
+      "w": "como"
+    },
+    {
+      "em": 8.13,
+      "ate": 8.2,
+      "w": "o"
+    },
+    {
+      "em": 8.2,
+      "ate": 8.43,
+      "w": "seu"
+    },
+    {
+      "em": 8.43,
+      "ate": 8.98,
+      "w": "produto"
+    },
+    {
+      "em": 8.98,
+      "ate": 9.48,
+      "w": "resolve"
+    },
+    {
+      "em": 9.48,
+      "ate": 9.89,
+      "w": "isso."
+    },
+    {
+      "em": 9.97,
+      "ate": 10.3,
+      "w": "Só"
+    },
+    {
+      "em": 10.3,
+      "ate": 10.73,
+      "w": "então"
+    },
+    {
+      "em": 10.73,
+      "ate": 11.08,
+      "w": "fala"
+    },
+    {
+      "em": 11.08,
+      "ate": 11.17,
+      "w": "o"
+    },
+    {
+      "em": 11.17,
+      "ate": 11.75,
+      "w": "preço."
+    },
+    {
+      "em": 12.03,
+      "ate": 12.09,
+      "w": "com"
+    },
+    {
+      "em": 12.07,
+      "ate": 12.21,
+      "w": "uma"
+    },
+    {
+      "em": 12.21,
+      "ate": 12.83,
+      "w": "condição."
+    },
+    {
+      "em": 13.11,
+      "ate": 13.48,
+      "w": "Pagando"
+    },
+    {
+      "em": 13.48,
+      "ate": 14.05,
+      "w": "hoje,"
+    },
+    {
+      "em": 14.07,
+      "ate": 14.13,
+      "w": "o"
+    },
+    {
+      "em": 14.1,
+      "ate": 14.49,
+      "w": "frete"
+    },
+    {
+      "em": 14.49,
+      "ate": 14.62,
+      "w": "é"
+    },
+    {
+      "em": 14.62,
+      "ate": 15.23,
+      "w": "grátis."
+    },
+    {
+      "em": 15.32,
+      "ate": 15.95,
+      "w": "Resposta"
+    },
+    {
+      "em": 15.95,
+      "ate": 16.19,
+      "w": "seca"
+    },
+    {
+      "em": 16.19,
+      "ate": 16.53,
+      "w": "vira"
+    },
+    {
+      "em": 16.53,
+      "ate": 17.07,
+      "w": "vácuo."
+    },
+    {
+      "em": 17.17,
+      "ate": 17.63,
+      "w": "conversa"
+    },
+    {
+      "em": 17.63,
+      "ate": 17.96,
+      "w": "vira"
+    },
+    {
+      "em": 17.96,
+      "ate": 18.39,
+      "w": "venda."
+    },
+    {
+      "em": 18.73,
+      "ate": 18.9,
+      "w": "Salva"
+    },
+    {
+      "em": 18.9,
+      "ate": 18.97,
+      "w": "e"
+    },
+    {
+      "em": 18.97,
+      "ate": 19.4,
+      "w": "testa"
+    },
+    {
+      "em": 19.4,
+      "ate": 19.77,
+      "w": "hoje."
+    }
+  ],
+  "contato": {
+    "nome": "Cliente",
+    "hora": "14:02"
+  }
+}

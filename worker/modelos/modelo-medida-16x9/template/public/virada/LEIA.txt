@@ -1,0 +1,2 @@
+Opcional: a mesma gravação de public/base.mp4 com a roupa trocada por uma IA de vídeo.
+Salve aqui como base.mp4 e ponha no plano: "videoVirada": "virada/base.mp4" (SKILL.md, passo 4c).

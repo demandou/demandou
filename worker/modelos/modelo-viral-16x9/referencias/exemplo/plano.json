@@ -1,0 +1,566 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 20.68,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.36,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "",
+    "area": ""
+  },
+  "sfx": true,
+  "cortesEm": [3.79, 9.44, 13.03, 14.79, 18.85],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 2.08,
+      "texto": "O mel praticamente não estraga",
+      "destaque": "não estraga",
+      "em": 0
+    },
+    {
+      "tipo": "corte",
+      "de": 2.12,
+      "ate": 3.32,
+      "imagem": {
+        "id": "escorrendo",
+        "efeito": "aproximar"
+      }
+    },
+    {
+      "tipo": "pop",
+      "de": 4.7,
+      "ate": 5.7,
+      "imagem": {
+        "id": "potes"
+      }
+    },
+    {
+      "tipo": "corte",
+      "de": 5.7,
+      "ate": 6.8,
+      "imagem": {
+        "id": "piramides",
+        "efeito": "aproximar"
+      },
+      "zoom": 1.4
+    },
+    {
+      "tipo": "numero",
+      "de": 6.8,
+      "ate": 8.36,
+      "valor": 3000,
+      "em": 7.34,
+      "prefixo": "+",
+      "rotulo": "anos",
+      "rotuloEm": 7.9
+    },
+    {
+      "tipo": "destaque",
+      "de": 8.36,
+      "ate": 9.44,
+      "texto": "ainda dava para comer",
+      "em": 8.42,
+      "nivel": "chave"
+    },
+    {
+      "tipo": "comparacao",
+      "de": 9.47,
+      "ate": 13.03,
+      "titulo": "O segredo é simples",
+      "modo": "contra",
+      "lados": [
+        {
+          "rotulo": "Água",
+          "texto": "quase nenhuma",
+          "em": 10.82,
+          "imagem": {
+            "id": "agua"
+          }
+        },
+        {
+          "rotulo": "Açúcar",
+          "texto": "muito",
+          "em": 12,
+          "imagem": {
+            "id": "acucar"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "corte",
+      "de": 13.05,
+      "ate": 14.22,
+      "imagem": {
+        "id": "bacteria",
+        "efeito": "aproximar"
+      }
+    },
+    {
+      "tipo": "pop",
+      "de": 15.42,
+      "ate": 16.3,
+      "imagem": {
+        "id": "cristalizado"
+      }
+    },
+    {
+      "tipo": "destaque",
+      "de": 16.45,
+      "ate": 17.46,
+      "texto": "não joga fora",
+      "em": 16.48,
+      "nivel": "alerta"
+    },
+    {
+      "tipo": "pop",
+      "de": 17.5,
+      "ate": 18.85,
+      "imagem": {
+        "id": "banhomaria"
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 18.88,
+      "ate": 20.68,
+      "texto": "Manda pra quem joga mel fora",
+      "destaque": "joga mel fora",
+      "em": 18.95
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {},
+  "palavras": [
+    {
+      "em": 0.29,
+      "ate": 0.35,
+      "w": "O"
+    },
+    {
+      "em": 0.32,
+      "ate": 0.38,
+      "w": "mel"
+    },
+    {
+      "em": 0.34,
+      "ate": 0.48,
+      "w": "é"
+    },
+    {
+      "em": 0.48,
+      "ate": 0.64,
+      "w": "um"
+    },
+    {
+      "em": 0.64,
+      "ate": 0.88,
+      "w": "dos"
+    },
+    {
+      "em": 0.88,
+      "ate": 1.36,
+      "w": "poucos"
+    },
+    {
+      "em": 1.36,
+      "ate": 2.1,
+      "w": "alimentos"
+    },
+    {
+      "em": 2.1,
+      "ate": 2.26,
+      "w": "que"
+    },
+    {
+      "em": 2.26,
+      "ate": 3.04,
+      "w": "praticamente"
+    },
+    {
+      "em": 3.04,
+      "ate": 3.34,
+      "w": "não"
+    },
+    {
+      "em": 3.34,
+      "ate": 3.79,
+      "w": "estragam"
+    },
+    {
+      "em": 3.89,
+      "ate": 4.43,
+      "w": "Arqueólogos"
+    },
+    {
+      "em": 4.43,
+      "ate": 4.88,
+      "w": "acharam"
+    },
+    {
+      "em": 4.88,
+      "ate": 5.18,
+      "w": "potes"
+    },
+    {
+      "em": 5.18,
+      "ate": 5.3,
+      "w": "de"
+    },
+    {
+      "em": 5.3,
+      "ate": 5.53,
+      "w": "mel"
+    },
+    {
+      "em": 5.53,
+      "ate": 5.76,
+      "w": "em"
+    },
+    {
+      "em": 5.76,
+      "ate": 6.07,
+      "w": "tumbas"
+    },
+    {
+      "em": 6.07,
+      "ate": 6.18,
+      "w": "do"
+    },
+    {
+      "em": 6.18,
+      "ate": 6.51,
+      "w": "Egito"
+    },
+    {
+      "em": 6.51,
+      "ate": 6.79,
+      "w": "com"
+    },
+    {
+      "em": 6.79,
+      "ate": 7.24,
+      "w": "mais"
+    },
+    {
+      "em": 7.24,
+      "ate": 7.34,
+      "w": "de"
+    },
+    {
+      "em": 7.34,
+      "ate": 7.62,
+      "w": "3"
+    },
+    {
+      "em": 7.62,
+      "ate": 7.9,
+      "w": "mil"
+    },
+    {
+      "em": 7.9,
+      "ate": 8.34,
+      "w": "anos"
+    },
+    {
+      "em": 8.39,
+      "ate": 8.45,
+      "w": "e"
+    },
+    {
+      "em": 8.42,
+      "ate": 8.62,
+      "w": "ainda"
+    },
+    {
+      "em": 8.62,
+      "ate": 8.87,
+      "w": "dava"
+    },
+    {
+      "em": 8.87,
+      "ate": 9.12,
+      "w": "para"
+    },
+    {
+      "em": 9.12,
+      "ate": 9.44,
+      "w": "comer."
+    },
+    {
+      "em": 9.5,
+      "ate": 9.56,
+      "w": "O"
+    },
+    {
+      "em": 9.53,
+      "ate": 9.9,
+      "w": "segredo"
+    },
+    {
+      "em": 9.9,
+      "ate": 9.99,
+      "w": "é"
+    },
+    {
+      "em": 9.99,
+      "ate": 10.56,
+      "w": "simples:"
+    },
+    {
+      "em": 10.82,
+      "ate": 10.98,
+      "w": "quase"
+    },
+    {
+      "em": 10.98,
+      "ate": 11.5,
+      "w": "nenhuma"
+    },
+    {
+      "em": 11.5,
+      "ate": 11.98,
+      "w": "água"
+    },
+    {
+      "em": 11.98,
+      "ate": 12.04,
+      "w": "e"
+    },
+    {
+      "em": 12,
+      "ate": 12.44,
+      "w": "muito"
+    },
+    {
+      "em": 12.44,
+      "ate": 13.03,
+      "w": "açúcar."
+    },
+    {
+      "em": 13.13,
+      "ate": 13.52,
+      "w": "Bactéria"
+    },
+    {
+      "em": 13.52,
+      "ate": 13.99,
+      "w": "nenhuma"
+    },
+    {
+      "em": 13.99,
+      "ate": 14.58,
+      "w": "sobrevive"
+    },
+    {
+      "em": 14.58,
+      "ate": 14.79,
+      "w": "ali."
+    },
+    {
+      "em": 14.88,
+      "ate": 15.13,
+      "w": "Então,"
+    },
+    {
+      "em": 15.13,
+      "ate": 15.23,
+      "w": "se"
+    },
+    {
+      "em": 15.23,
+      "ate": 15.29,
+      "w": "o"
+    },
+    {
+      "em": 15.29,
+      "ate": 15.46,
+      "w": "seu"
+    },
+    {
+      "em": 15.46,
+      "ate": 15.7,
+      "w": "mel"
+    },
+    {
+      "em": 15.7,
+      "ate": 16.48,
+      "w": "cristalizou,"
+    },
+    {
+      "em": 16.48,
+      "ate": 16.7,
+      "w": "não"
+    },
+    {
+      "em": 16.7,
+      "ate": 17,
+      "w": "joga"
+    },
+    {
+      "em": 17,
+      "ate": 17.32,
+      "w": "fora."
+    },
+    {
+      "em": 17.51,
+      "ate": 17.57,
+      "w": "É"
+    },
+    {
+      "em": 17.54,
+      "ate": 17.65,
+      "w": "só"
+    },
+    {
+      "em": 17.65,
+      "ate": 18.09,
+      "w": "aquecer"
+    },
+    {
+      "em": 18.09,
+      "ate": 18.19,
+      "w": "em"
+    },
+    {
+      "em": 18.19,
+      "ate": 18.85,
+      "w": "banho-maria."
+    },
+    {
+      "em": 18.95,
+      "ate": 19.07,
+      "w": "Manda"
+    },
+    {
+      "em": 19.07,
+      "ate": 19.26,
+      "w": "pra"
+    },
+    {
+      "em": 19.26,
+      "ate": 19.52,
+      "w": "quem"
+    },
+    {
+      "em": 19.52,
+      "ate": 19.77,
+      "w": "joga"
+    },
+    {
+      "em": 19.77,
+      "ate": 19.96,
+      "w": "mel"
+    },
+    {
+      "em": 19.96,
+      "ate": 20.26,
+      "w": "fora."
+    }
+  ],
+  "imagens": {
+    "escorrendo": {
+      "arquivo": "img/escorrendo.jpg",
+      "largura": 1916,
+      "altura": 2400,
+      "foco": {
+        "x": 0.5,
+        "y": 0.4
+      },
+      "transparente": false,
+      "palavra": "mel"
+    },
+    "potes": {
+      "arquivo": "img/potes.jpg",
+      "largura": 816,
+      "altura": 1024,
+      "foco": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "transparente": false,
+      "palavra": "potes de mel"
+    },
+    "piramides": {
+      "arquivo": "img/piramides.jpg",
+      "largura": 2400,
+      "altura": 1800,
+      "foco": {
+        "x": 0.71,
+        "y": 0.55
+      },
+      "transparente": false,
+      "palavra": "tumbas do Egito"
+    },
+    "agua": {
+      "arquivo": "img/agua.jpg",
+      "largura": 960,
+      "altura": 600,
+      "foco": {
+        "x": 0.48,
+        "y": 0.45
+      },
+      "transparente": false,
+      "palavra": "água"
+    },
+    "acucar": {
+      "arquivo": "img/acucar.jpg",
+      "largura": 1532,
+      "altura": 2048,
+      "foco": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "transparente": false,
+      "palavra": "açúcar"
+    },
+    "bacteria": {
+      "arquivo": "img/bacteria.jpg",
+      "largura": 2400,
+      "altura": 2068,
+      "foco": {
+        "x": 0.55,
+        "y": 0.5
+      },
+      "transparente": false,
+      "palavra": "bactéria"
+    },
+    "cristalizado": {
+      "arquivo": "img/cristalizado.jpg",
+      "largura": 768,
+      "altura": 1024,
+      "foco": {
+        "x": 0.5,
+        "y": 0.6
+      },
+      "transparente": false,
+      "palavra": "mel cristalizado"
+    },
+    "banhomaria": {
+      "arquivo": "img/banhomaria.jpg",
+      "largura": 918,
+      "altura": 924,
+      "foco": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "transparente": false,
+      "palavra": "banho-maria"
+    }
+  }
+}

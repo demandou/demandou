@@ -1,0 +1,377 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 19.92,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Prof. Tiago Moura",
+    "area": "Matemática"
+  },
+  "sfx": true,
+  "cortesEm": [
+    5.17,
+    8.15,
+    10.16,
+    10.7,
+    12.51,
+    15.18,
+    16.79
+  ],
+  "momentos": [
+    {
+      "tipo": "titulo",
+      "de": 0.45,
+      "ate": 3.5,
+      "legenda": true,
+      "rotulo": "Cálculo mental",
+      "linhas": [
+        "15%",
+        "de cabeça?"
+      ],
+      "destaque": "15%",
+      "sublinharEm": 2.95
+    },
+    {
+      "tipo": "virgula",
+      "de": 3.5,
+      "ate": 8.15,
+      "legenda": true,
+      "passo": "Passo 1",
+      "titulo": "10%",
+      "tituloEm": 5.21,
+      "prefixo": "R$",
+      "numero": "80",
+      "numeroEm": 4.12,
+      "casas": 1,
+      "moverEm": 6.38,
+      "resultado": "8",
+      "resultadoEm": 7.6
+    },
+    {
+      "tipo": "fracao",
+      "de": 8.15,
+      "ate": 10.7,
+      "legenda": true,
+      "passo": "Passo 2",
+      "titulo": "5%",
+      "tituloEm": 9.4,
+      "numerador": "8",
+      "nota": "metade",
+      "notaEm": 8.2,
+      "tracoEm": 8.5,
+      "denominador": "2",
+      "denominadorEm": 8.72,
+      "resultado": "4",
+      "resultadoEm": 10.2
+    },
+    {
+      "tipo": "coluna",
+      "de": 10.7,
+      "ate": 12.51,
+      "legenda": true,
+      "passo": "Passo 3",
+      "titulo": "soma",
+      "tituloEm": 10.76,
+      "operador": "+",
+      "operadorEm": 11.0,
+      "itens": [
+        {
+          "valor": "8",
+          "rotulo": "10%"
+        },
+        {
+          "valor": "4",
+          "rotulo": "5%"
+        }
+      ],
+      "tracoEm": 11.5,
+      "total": {
+        "valor": "12",
+        "rotulo": "15%",
+        "em": 11.95
+      }
+    },
+    {
+      "tipo": "resultado",
+      "de": 12.51,
+      "ate": 15.18,
+      "rotulo": "Resposta",
+      "conta": "15% de 80",
+      "contaEm": 12.6,
+      "destaque": "15%",
+      "valor": "R$ 12",
+      "valorEm": 14.37
+    },
+    {
+      "tipo": "cta",
+      "de": 15.18,
+      "ate": 19.92,
+      "regra": {
+        "rotulo": "Funciona com qualquer valor",
+        "linhas": [
+          {
+            "texto": "15% = 10% + metade",
+            "em": 15.28,
+            "destaque": "15%"
+          }
+        ],
+        "molduraEm": 17.05
+      },
+      "texto": "Salva e testa na próxima conta",
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [
+    {
+      "de": 0.85,
+      "ate": 2.5
+    }
+  ],
+  "correcoes": {
+    "DOSI": "Doze.",
+    "80,00": "80.",
+    "12,00": "12",
+    "4": "Quatro."
+  },
+  "palavras": [
+    {
+      "em": 0.13,
+      "ate": 0.29,
+      "w": "Quer"
+    },
+    {
+      "em": 0.29,
+      "ate": 0.93,
+      "w": "calcular"
+    },
+    {
+      "em": 0.93,
+      "ate": 1.53,
+      "w": "15%"
+    },
+    {
+      "em": 1.53,
+      "ate": 1.71,
+      "w": "de"
+    },
+    {
+      "em": 1.71,
+      "ate": 2.34,
+      "w": "cabeça?"
+    },
+    {
+      "em": 2.61,
+      "ate": 2.74,
+      "w": "Olha"
+    },
+    {
+      "em": 2.74,
+      "ate": 2.98,
+      "w": "que"
+    },
+    {
+      "em": 2.98,
+      "ate": 3.48,
+      "w": "fácil."
+    },
+    {
+      "em": 3.84,
+      "ate": 4.16,
+      "w": "Pega"
+    },
+    {
+      "em": 4.16,
+      "ate": 4.42,
+      "w": "R$"
+    },
+    {
+      "em": 4.42,
+      "ate": 5.17,
+      "w": "80,00"
+    },
+    {
+      "em": 5.26,
+      "ate": 6.2,
+      "w": "10%"
+    },
+    {
+      "em": 6.2,
+      "ate": 6.26,
+      "w": "é"
+    },
+    {
+      "em": 6.24,
+      "ate": 6.41,
+      "w": "só"
+    },
+    {
+      "em": 6.41,
+      "ate": 6.74,
+      "w": "andar"
+    },
+    {
+      "em": 6.74,
+      "ate": 6.8,
+      "w": "a"
+    },
+    {
+      "em": 6.8,
+      "ate": 7.37,
+      "w": "vírgula."
+    },
+    {
+      "em": 7.66,
+      "ate": 8.15,
+      "w": "Oito."
+    },
+    {
+      "em": 8.24,
+      "ate": 8.69,
+      "w": "Metade"
+    },
+    {
+      "em": 8.69,
+      "ate": 9.27,
+      "w": "disso"
+    },
+    {
+      "em": 9.27,
+      "ate": 9.44,
+      "w": "é"
+    },
+    {
+      "em": 9.44,
+      "ate": 10.16,
+      "w": "5%."
+    },
+    {
+      "em": 10.25,
+      "ate": 10.7,
+      "w": "4"
+    },
+    {
+      "em": 10.8,
+      "ate": 11.01,
+      "w": "Soma"
+    },
+    {
+      "em": 11.01,
+      "ate": 11.22,
+      "w": "os"
+    },
+    {
+      "em": 11.22,
+      "ate": 11.66,
+      "w": "dois"
+    },
+    {
+      "em": 11.99,
+      "ate": 12.51,
+      "w": "DOSI"
+    },
+    {
+      "em": 12.65,
+      "ate": 13.23,
+      "w": "15%"
+    },
+    {
+      "em": 13.23,
+      "ate": 13.47,
+      "w": "de"
+    },
+    {
+      "em": 13.47,
+      "ate": 14.29,
+      "w": "80"
+    },
+    {
+      "em": 14.29,
+      "ate": 14.41,
+      "w": "é"
+    },
+    {
+      "em": 14.41,
+      "ate": 14.61,
+      "w": "R$"
+    },
+    {
+      "em": 14.61,
+      "ate": 15.18,
+      "w": "12,00."
+    },
+    {
+      "em": 15.3,
+      "ate": 15.75,
+      "w": "Funciona"
+    },
+    {
+      "em": 15.75,
+      "ate": 15.88,
+      "w": "com"
+    },
+    {
+      "em": 15.88,
+      "ate": 16.46,
+      "w": "qualquer"
+    },
+    {
+      "em": 16.46,
+      "ate": 16.79,
+      "w": "valor"
+    },
+    {
+      "em": 16.88,
+      "ate": 17.02,
+      "w": "Salva"
+    },
+    {
+      "em": 17.02,
+      "ate": 17.08,
+      "w": "e"
+    },
+    {
+      "em": 17.08,
+      "ate": 17.5,
+      "w": "testa"
+    },
+    {
+      "em": 17.5,
+      "ate": 17.56,
+      "w": "na"
+    },
+    {
+      "em": 17.54,
+      "ate": 18.08,
+      "w": "próxima"
+    },
+    {
+      "em": 18.08,
+      "ate": 18.42,
+      "w": "conta"
+    },
+    {
+      "em": 18.42,
+      "ate": 18.54,
+      "w": "do"
+    },
+    {
+      "em": 18.54,
+      "ate": 19.37,
+      "w": "restaurante"
+    }
+  ]
+}
