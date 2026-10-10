@@ -33,6 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     conferencia?: unknown;
     /** A duração da abertura no arquivo pronto (02/10), para a revisão visual. */
     aberturaSeg?: number;
+    /** O completo no modelo do curso (10/10): o resumo do fluxo do curso no worker. */
+    curso?: { modelo?: string; versao?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[]; blocos?: unknown[]; render?: unknown } | null;
   };
   try {
     corpo = JSON.parse(corpoCru);

@@ -34,7 +34,8 @@ export type Janela = {
   linhas: string[];
   // instantes em que a palavra "bate" de novo (ex.: cada "não" de uma lista de negações)
   batidas?: number[];
-  // aproximação do vídeo dentro das letras (1 = como foi gravado; até 1,4)
+  // aproximação extra do vídeo dentro das letras (1 = o rosto do tamanho da primeira linha; até 1,4;
+  // no quadro deitado o rosto nunca passa da letra)
   zoom?: number;
 };
 

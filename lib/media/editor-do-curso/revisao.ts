@@ -33,6 +33,8 @@ export async function revisarQuadrosDoModelo(args: {
   plano: Record<string, unknown> | null;
   folhas: string[];
   legendas?: string[];
+  /** Um trecho do vídeo longo (10/10): os tempos do plano e das folhas são os do trecho. */
+  bloco?: { indice: number; total: number; inicio: number; fim: number } | null;
   modelo?: string;
   usage: { projectId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -45,7 +47,13 @@ export async function revisarQuadrosDoModelo(args: {
   const momentos = (args.plano?.momentos as unknown[] | undefined) ?? [];
   const resposta = await askClaudeComImagens(
     SISTEMA,
-    `Os momentos do plano aprovado (tipo, de, ate e os textos), para você ligar cada quadro ao momento:
+    `${
+      args.bloco
+        ? `Este é o trecho ${args.bloco.indice + 1} de ${args.bloco.total} de um vídeo longo editado em trechos; os tempos dos momentos e das folhas são os do trecho (ele começa no zero). Abertura só existe no primeiro trecho e a chamada final só no último: a falta delas aqui não é defeito.
+
+`
+        : ""
+    }Os momentos do plano aprovado (tipo, de, ate e os textos), para você ligar cada quadro ao momento:
 ${JSON.stringify(momentos).slice(0, 40_000)}
 
 Olhe as folhas do vídeo montado e devolva os defeitos.`,

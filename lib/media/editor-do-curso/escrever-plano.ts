@@ -101,6 +101,70 @@ const NOME_DA_PECA: Record<TipoDePecaParada, string> = {
   infografico: "infográfico",
 };
 
+/**
+ * O VÍDEO LONGO EM TRECHOS (10/10/2026, o completo no modelo do curso): o
+ * worker escreve o plano em blocos de ~150 s (worker/src/modelo/blocos-do-plano.mjs)
+ * e cada bloco chega aqui como um vídeo curto que começa no zero, com o lugar
+ * dele no vídeo e o fim do bloco anterior (para a continuidade). O treinamento
+ * (o prefixo do cache) é o mesmo em todos os blocos.
+ */
+export type CaudaDoBloco = {
+  /** Os últimos momentos do trecho anterior: tipo (e campo) e o texto da tela, sem tempo. */
+  ultimos: Array<{ tipo: string; campo?: string; texto: string }>;
+  /** As últimas linhas do mapa do trecho anterior. */
+  mapa: string;
+  /** Quantas vezes cada tipo foi usado no trecho anterior. */
+  tipos: Record<string, number>;
+};
+
+export type BlocoDoPlano = {
+  /** 0, 1, 2... */
+  indice: number;
+  total: number;
+  /** Onde o trecho fica no vídeo inteiro (s). */
+  inicio: number;
+  fim: number;
+  cauda?: CaudaDoBloco | null;
+};
+
+const s1 = (t: number) => `${t.toFixed(1).replace(".", ",")} s`;
+
+/** O bloco de instrução de um trecho do vídeo longo (vai no pedido, fora do cache). */
+export function instrucaoDoBloco(b: BlocoDoPlano, duracaoDoTrecho: number): string {
+  const n = b.indice + 1;
+  const primeiro = b.indice === 0;
+  const ultimo = n === b.total;
+  const linhas = [
+    `# VÍDEO LONGO: VOCÊ EDITA O TRECHO ${n} DE ${b.total}`,
+    "",
+    `O vídeo inteiro é longo e está sendo editado em trechos de cerca de 2,5 min, um de cada vez, todos neste mesmo modelo, e depois os trechos são emendados num vídeo só. Este é o trecho ${n} de ${b.total} (de ${s1(b.inicio)} a ${s1(b.fim)} do vídeo inteiro). A fala acima e todos os tempos (de, ate, em e os campos "...Em") são DESTE TRECHO: ele começa no zero e termina em ${s1(duracaoDoTrecho)}. Escreva só os momentos deste trecho, dentro dele.`,
+    "",
+    "Regras dos trechos (valem junto com a skill):",
+    primeiro
+      ? "- É o COMEÇO do vídeo: abra com o bloco de abertura mais forte que a skill oferece para a fala."
+      : "- NÃO é o começo do vídeo: não abra com bloco de abertura nem com gancho de começo; continue a edição do trecho anterior sem quebra, como se fosse o mesmo vídeo.",
+    ultimo
+      ? "- É o FIM do vídeo: feche como a skill manda (a chamada final e a assinatura, no último momento)."
+      : "- NÃO é o fim do vídeo: nada de chamada final, de pôster de fecho nem de assinatura neste trecho (eles só existem no último trecho).",
+    "- A densidade, a cobertura, a variedade de blocos, a assinatura e os efeitos próprios valem para este trecho como se ele fosse um vídeo inteiro: ele é conferido sozinho e junto com os outros.",
+    '- Use em "marca" exatamente o nome e a área de quem fala, iguais em todos os trechos.',
+  ];
+  if (b.cauda) {
+    const tipos = Object.entries(b.cauda.tipos ?? {})
+      .sort((a, z) => z[1] - a[1])
+      .map(([t, q]) => `${t} (${q})`)
+      .join(", ");
+    linhas.push(
+      "",
+      "Como o trecho anterior terminou (só contexto para a continuidade, não repita nem reescreva):",
+      ...b.cauda.ultimos.map((m) => `- ${m.tipo}${m.campo ? ` (campo ${m.campo})` : ""}: ${m.texto}`),
+      ...(tipos ? [`- Tipos usados no trecho anterior: ${tipos}. Varie: não comece repetindo o último tipo dele, e prefira os blocos que ele usou menos.`] : []),
+      ...(b.cauda.mapa ? ["- O fim do mapa dele:", b.cauda.mapa] : [])
+    );
+  }
+  return linhas.join("\n");
+}
+
 /** O bloco de instrução do modo peças paradas (o mesmo no mapa das imagens e no plano). */
 export function instrucaoDasPecasParadas(pp: PecasParadas): string {
   const lista = pp.pecas
@@ -205,6 +269,8 @@ export async function escreverPlanoDoModelo(args: {
   mapa?: string | null;
   /** Os posts da campanha no estilo do modelo (arte-no-modelo.mjs): sem isto, é o vídeo de sempre. */
   pecasParadas?: PecasParadas | null;
+  /** Um trecho do vídeo longo (o completo no modelo, 10/10): sem isto, o vídeo inteiro numa chamada. */
+  bloco?: BlocoDoPlano | null;
   modelo?: string;
   usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -240,7 +306,13 @@ A fala no vídeo já cortado, uma palavra por linha (início–fim em segundos e
 ${formatarPalavras(palavras)}
 
 ${imagens && Object.keys(imagens).length ? `\nAs imagens já escolhidas no passo 6b (plano.imagens, gravado pelo imagens.mjs; use só estes ids em "imagem": { "id", "efeito" }, e "sem": true quer dizer cartão com a palavra):\n${JSON.stringify(imagens)}\n` : ""}${args.mapa ? `\nO mapa editorial já feito no passo 6 (siga-o; ajuste só o que a conferência pedir):\n${args.mapa}\n` : ""}
-${args.pecasParadas ? `${instrucaoDasPecasParadas(args.pecasParadas)}\n\nFaça o mapa editorial (uma linha por peça) e o plano destas peças neste modelo.` : "Faça o mapa editorial e o plano deste vídeo neste modelo."}`;
+${
+    args.pecasParadas
+      ? `${instrucaoDasPecasParadas(args.pecasParadas)}\n\nFaça o mapa editorial (uma linha por peça) e o plano destas peças neste modelo.`
+      : args.bloco
+        ? `${instrucaoDoBloco(args.bloco, Number(resto.duracao) || 0)}\n\nFaça o mapa editorial e o plano deste trecho neste modelo.`
+        : "Faça o mapa editorial e o plano deste vídeo neste modelo."
+  }`;
 
   if (args.anterior) {
     pedido += `

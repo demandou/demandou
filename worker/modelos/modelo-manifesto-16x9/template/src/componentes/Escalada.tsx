@@ -1,7 +1,7 @@
 import { mix, prog, temposDaLinha, troca } from "../anim";
 import type { Desenho } from "../layout";
 import type { Campo as CampoT, Degrau as DegrauT, Escalada as EscaladaT, Palavra, Plano } from "../plano";
-import { APERTO, BASE_UTIL, CAMPOS, caber, MARGEM, TOPO_UTIL } from "../tema";
+import { APERTO, BASE_UTIL, CAMPOS, caber, MARGEM, QUADRO, TOPO_UTIL } from "../tema";
 import { CampoDoPoster, Letreiros, vazadoDaJanela } from "./Cartaz";
 import { LinhaDeTexto } from "./Texto";
 
@@ -9,18 +9,21 @@ import { LinhaDeTexto } from "./Texto";
 // O degrau da vez fica no meio; quando o próximo chega, ele encolhe subindo e vira uma linha
 // pequena no topo (o rastro). No fim, tudo sai para cima e a última vez vira a janela gigante,
 // com a pessoa dentro das letras.
-// No quadro deitado os degraus crescem no lado do quadro (à esquerda, como o texto dos pôsteres):
-// o lado direito fica livre para a moldura (a janela com a pessoa) que abre no fim.
+// No quadro deitado os degraus crescem no MEIO do quadro, na largura útil inteira. Até 10/10 eles
+// ficavam à esquerda (1000 px) para deixar o lado direito livre para a moldura que abre no fim, e a
+// revisão do Bruno apontou o terço da direita vazio durante os degraus: os degraus saem para cima
+// antes de a janela abrir, então não há o que guardar do lado direito.
 const CENTRO = (TOPO_UTIL + BASE_UTIL) / 2;
 const ESQUERDA = MARGEM;
-const LARGURA_ESCALADA = 1000;
+const LARGURA_ESCALADA = QUADRO.w - 2 * MARGEM;
+const DEGRAU_MAX = 240;
 const RASTRO = 46;
 const VAO_RASTRO = 18;
 const INCLINACAO = -7;
 
 export const tamanhosDosDegraus = (m: EscaladaT) =>
   m.degraus.map((d, k) => {
-    const maximo = caber(d.texto, LARGURA_ESCALADA, 210, 900, APERTO);
+    const maximo = caber(d.texto, LARGURA_ESCALADA, DEGRAU_MAX, 900, APERTO);
     const n = m.degraus.length;
     const fracao = n === 1 ? 0.8 : 0.55 + (0.45 * k) / (n - 1);
     return Math.round(maximo * fracao);

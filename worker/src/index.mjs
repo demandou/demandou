@@ -2483,7 +2483,10 @@ const servidor = createServer((req, res) => {
       }
       chavesDoCursoAndando.add(pedido.chave);
       if (assincrono) responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
-      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarNoModelo(pedido, assincrono).finally(() => chavesDoCursoAndando.delete(pedido.chave)) });
+      // O COMPLETO NO MODELO (10/10, `completo: true`): entra na fila como o
+      // completo de sempre (prioridade 1, a fatia do completo; os cortes passam
+      // na frente dele enquanto ele espera).
+      enfileirarMontagem({ pedido, prioridade: pedido.completo === true ? 1 : 0, executar: () => executarNoModelo(pedido, assincrono).finally(() => chavesDoCursoAndando.delete(pedido.chave)) });
     });
     return;
   }
@@ -2492,8 +2495,10 @@ const servidor = createServer((req, res) => {
     emAndamento += 1;
     const inicio = Date.now();
     const destino = { callbackUrl: pedido.callbackUrl, videoJobId: pedido.videoJobId ?? pedido.chave };
-    // O render mais até 3 voltas do plano no app (cada uma até ~15 min).
-    const prazoMs = prazoDaMontagem(pedido) + 45 * 60_000;
+    // O render mais até 3 voltas do plano no app (cada uma até ~15 min). No
+    // completo (10/10, plano em blocos de ~150 s): a escrita, o conserto e a
+    // revisão de cada bloco, ~12 min por bloco, além do render.
+    const prazoMs = prazoDaMontagem(pedido) + (pedido.completo === true ? Math.ceil((Number(pedido.duracao) || 1200) / 150) * 12 * 60_000 : 45 * 60_000);
     const soltar = assincrono
       ? registrarTrabalho({
           videoJobId: destino.videoJobId,
@@ -2536,7 +2541,7 @@ const servidor = createServer((req, res) => {
         ok: true,
         montado,
         tempos: e.tempos,
-        curso: { modelo: pedido.modelo, mapa: e.mapa, voltas: e.voltas, historico: e.historico, custoUsd: e.custoUsd, avisos: e.avisos },
+        curso: { modelo: pedido.modelo, versao: e.modelo, mapa: e.mapa, voltas: e.voltas, historico: e.historico, custoUsd: e.custoUsd, avisos: e.avisos, ...(e.blocos ? { blocos: e.blocos } : {}), ...(e.render ? { render: e.render } : {}) },
         segundos: Math.round((Date.now() - inicio) / 1000),
         retorno: pedido.retorno ?? null,
       };

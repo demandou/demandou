@@ -6,6 +6,7 @@ import { corpoAssinadoConfere, CABECALHO_ASSINATURA } from "@/lib/media/worker-t
 import {
   escreverPlanoDoModelo,
   numerosSemLastro,
+  type BlocoDoPlano,
   type EsqueletoDoPlano,
   type PecasParadas,
   type ReferenciasDoModelo,
@@ -28,6 +29,9 @@ import { revisarQuadrosDoModelo } from "@/lib/media/editor-do-curso/revisao";
  * Com `pecasParadas` (10/10, worker/src/modelo/arte-no-modelo.mjs), a mesma
  * escrita serve aos posts da campanha no estilo do modelo: o mapa e o plano
  * ganham o bloco de instrução das peças paradas; sem ele, nada muda no vídeo.
+ * Com `bloco` (10/10, o completo no modelo, worker/src/modelo/blocos-do-plano.mjs),
+ * o plano é de um TRECHO do vídeo longo (a fala e os tempos dele, o lugar no
+ * vídeo e o fim do trecho anterior); a guarda de número olha a fala do trecho.
  * Sem sessão, como todo pedido do worker, e autenticado pela assinatura sobre
  * o corpo inteiro.
  */
@@ -55,6 +59,7 @@ export async function POST(req: NextRequest) {
     runId?: string | null;
     /** "arte-no-modelo" (10/10): o lote de peças da campanha; sem ele, o corte de sempre. */
     operacao?: string | null;
+    bloco?: BlocoDoPlano | null;
   };
   try {
     corpo = JSON.parse(corpoCru);
@@ -75,7 +80,7 @@ export async function POST(req: NextRequest) {
   };
   try {
     if (corpo.fase === "revisar") {
-      const problemas = await revisarQuadrosDoModelo({ referencias: corpo.referencias, plano: corpo.plano ?? null, folhas: corpo.folhas ?? [], legendas: corpo.legendas, ...comum });
+      const problemas = await revisarQuadrosDoModelo({ referencias: corpo.referencias, plano: corpo.plano ?? null, folhas: corpo.folhas ?? [], legendas: corpo.legendas, bloco: corpo.bloco ?? null, ...comum });
       return NextResponse.json({ problemas, custoUsd });
     }
     if (corpo.fase === "escolher") {
@@ -97,6 +102,7 @@ export async function POST(req: NextRequest) {
       anterior: corpo.anterior ?? null,
       mapa: corpo.mapa ?? null,
       pecasParadas: corpo.pecasParadas ?? null,
+      bloco: corpo.bloco ?? null,
       ...comum,
     });
     const semLastro = numerosSemLastro(escrito.plano, corpo.esqueleto.palavras, escrito.plano.correcoes as Record<string, string> | undefined);

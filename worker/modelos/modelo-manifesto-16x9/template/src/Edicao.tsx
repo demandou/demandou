@@ -22,12 +22,13 @@ import {
   MERGULHO,
   ordenar,
   placas as listarPlacas,
+  QUADRO_INTEIRO,
   videoNoTempo,
 } from "./layout";
 import { VideoNaCaixa } from "./motor/caixa";
 import { corrigirPalavras, montarFrases } from "./motor/frases";
 import type { Placa as PlacaT, Plano, Poster } from "./plano";
-import { cor, LIMITE_APP, QUADRO } from "./tema";
+import { CAMPOS, cor, LIMITE_APP, QUADRO } from "./tema";
 
 // No quadro deitado a legenda fica no terço de baixo, terminando antes dos controles do player
 // (y 984), e a placa fica no peito, logo abaixo do queixo, centrada no rosto.
@@ -105,7 +106,7 @@ export const Edicao: React.FC<{ plano: Plano; guias?: boolean }> = ({ plano, gui
   );
 
   // nas guias, a pessoa fica em quadro cheio e sem pôsteres: é só para conferir o enquadramento
-  const video = guias ? { escala: 1, alvoX: plano.rosto.x * QUADRO.w, alvoY: plano.rosto.y * QUADRO.h } : videoNoTempo(t, estados);
+  const video = guias ? { escala: 1, alvoX: plano.rosto.x * QUADRO.w, alvoY: plano.rosto.y * QUADRO.h, moldura: QUADRO_INTEIRO } : videoNoTempo(t, estados);
   // dentro de um bloco universal a câmera aproxima devagar dentro das letras (nada fica parado)
   const blocoAgora = guias ? -1 : momentos.findIndex((m, i) => ehBloco(desenhos[i]) && t >= m.de && t < fimDoMomento(m, momentos, plano.duracao));
   const empurra =
@@ -119,15 +120,20 @@ export const Edicao: React.FC<{ plano: Plano; guias?: boolean }> = ({ plano, gui
             Easing.linear,
           )
       : 1;
+  // A MOLDURA (10/10): no pôster em que o rosto precisa ficar menor que a letra da janela, o vídeo
+  // cobre só a caixa das letras (fileira.ts, videoNaJanela); fora dela, o campo do pôster. A escala
+  // é a do vídeo (1 = na largura do quadro): o zoom da caixa é ela sobre a escala que cobre a caixa.
+  const mold = video.moldura;
+  const cobre = Math.max(mold.w / QUADRO.w, mold.h / videoAltura);
   const caixa = {
-    x: 0,
-    y: 0,
-    w: QUADRO.w,
-    h: QUADRO.h,
+    x: mold.x,
+    y: mold.y,
+    w: mold.w,
+    h: mold.h,
     raio: 0,
-    zoom: video.escala * empurra,
-    ancoraX: video.alvoX / QUADRO.w,
-    ancoraY: video.alvoY / QUADRO.h,
+    zoom: Math.max(1, (video.escala * empurra) / Math.max(0.05, cobre)),
+    ancoraX: (video.alvoX - mold.x) / Math.max(1, mold.w),
+    ancoraY: (video.alvoY - mold.y) / Math.max(1, mold.h),
   };
 
   // legenda: no terço de baixo; o selo e a placa, no peito, logo abaixo do queixo (o cortar.mjs do
@@ -159,9 +165,11 @@ export const Edicao: React.FC<{ plano: Plano; guias?: boolean }> = ({ plano, gui
   const cobrindo = ativos.some(({ m, fim }) => t >= m.de && t <= fim - 0.08);
   const mergulhando = ativos.find(({ m, fim }) => !colado(m, momentos) && t > fim - 0.08);
   const legendaVisivel = cobrindo ? 0 : mergulhando ? prog(t, mergulhando.fim - 0.12 + MERGULHO, 0.12) : 1;
+  // fora da moldura do vídeo (na subida e no mergulho do pôster) aparece a cor do campo dele
+  const fundo = ativos.length ? CAMPOS[listaDeCampos[ativos[0].i]].fundo : cor.preto;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: cor.preto }}>
+    <AbsoluteFill style={{ backgroundColor: fundo }}>
       {/* a pessoa, sempre montada (a voz vem daqui): por baixo de tudo */}
       <VideoNaCaixa src={plano.video} caixa={caixa} rosto={plano.rosto} videoAltura={videoAltura} filtro="contrast(1.05) saturate(0.95)" />
 
