@@ -1,10 +1,25 @@
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { opcaoDeFiltro, rodar } from "../ffmpeg.mjs";
 import { fatiaAtual } from "../capacidade.mjs";
+import {
+  BLOCO_ALVO_SEG,
+  LIMIAR_DOS_BLOCOS_SEG,
+  VOLTAS_POR_BLOCO,
+  blocosDoPlano,
+  caudaDoBloco,
+  conferirEmBlocos,
+  esqueletoDoBloco,
+  instantesDaRevisao,
+  juntarPlanos,
+  paralelismoDoRender,
+  partesDoRender,
+  regraGeral,
+  textoDaConferencia,
+} from "./blocos-do-plano.mjs";
 
 /**
  * O EDITOR DOS MODELOS DO CURSO (09/10/2026).
@@ -408,6 +423,11 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   await justar(projeto);
   marcar("preparar");
   const analise = JSON.parse(readFileSync(join(projeto, "work", "analise.json"), "utf8"));
+  // A versão deitada só serve à gravação deitada (10/10): gravação em pé no
+  // modelo 16:9 sairia recortada; falha aqui e o editor de antes entra.
+  if (formatoDoModelo(modelo) === "16:9" && Number(analise.altura) > Number(analise.largura)) {
+    throw new Error(`a gravação é em pé (${analise.largura}x${analise.altura}); a versão deitada do modelo não serve`);
+  }
   const medida = await medirRosto(projeto, trecho, analise.duracao);
   const corte = await cortar(projeto, medida);
   const avisos = corte.saida.split("\n").filter((l) => /^Aviso/.test(l));
@@ -422,6 +442,37 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     return r;
   };
   const comum = { modelo, referencias, nicho: pedido.nicho ?? null };
+
+  // O VÍDEO LONGO (10/10, o completo no modelo): o plano em blocos de ~150 s,
+  // a conferência do plano inteiro com o conserto só dos blocos reprovados e a
+  // revisão do passo 8 bloco a bloco (blocos-do-plano.mjs). Corte curto segue
+  // o fluxo de sempre, numa chamada.
+  const duracaoCortada = Number(lerPlano(projeto).duracao) || analise.duracao || 0;
+  const emBlocos = pedido.blocos === true || (pedido.blocos !== false && duracaoCortada > LIMIAR_DOS_BLOCOS_SEG);
+  if (emBlocos) {
+    if (referencias.imagens) throw new Error(`o plano em blocos ainda não faz o passo das imagens (${modelo})`);
+    const r = await planoEmBlocos(projeto, { comum, pedido, pedir: (c) => pedirPlano(c).then(somar), gasto: () => gasto, teto, aoPasso });
+    marcar("plano");
+    const render = await renderizarEmPartes(projeto, `${modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil(duracaoCortada / 60) * 25) * 60_000 });
+    marcar("render");
+    const arquivo = await comTrilha(render.arquivo, { pedido, pasta, modelo, obterTrilha, avisos, marcar });
+    return {
+      arquivo,
+      modelo,
+      formato: formatoDoModelo(modelo),
+      mapa: r.mapa,
+      voltas: r.voltas,
+      historico: r.historico,
+      revisao: r.revisao,
+      blocos: r.blocos,
+      render: render.resumo,
+      creditos: null,
+      custoUsd: +gasto.toFixed(4),
+      tomadas,
+      avisos,
+      tempos,
+    };
+  }
 
   // PASSO 6b, nos modelos com imagem (references/imagens.md): mapa, pedidos,
   // busca, folha numerada, escolha olhando a folha.
@@ -519,29 +570,267 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     marcar("revisao");
   }
 
-  let arquivo = await renderizar(projeto, `${modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil((analise.duracao || 60) / 60) * 25) * 60_000 });
+  // Vídeo longo que não veio em blocos (pedido.blocos false) ainda sai em partes.
+  const emPartes = pedido.partes === true || duracaoCortada > LIMIAR_DOS_BLOCOS_SEG;
+  const prazoDoRender = Math.max(30, Math.ceil((analise.duracao || 60) / 60) * 25) * 60_000;
+  let arquivo = emPartes ? (await renderizarEmPartes(projeto, `${modelo}.mp4`, { prazoMs: prazoDoRender })).arquivo : await renderizar(projeto, `${modelo}.mp4`, { prazoMs: prazoDoRender });
   marcar("render");
+  arquivo = await comTrilha(arquivo, { pedido, pasta, modelo, obterTrilha, avisos, marcar });
+  return { arquivo, modelo, formato: formatoDoModelo(modelo), mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
+}
 
-  // A TRILHA DO PROJETO (10/10, Bruno: "sumiu a parte de escolher a música"): o
-  // modelo renderiza a voz e os sons dele; a música escolhida entra por baixo,
-  // do mesmo jeito do editor de antes (sons.mjs, misturarAudio: no volume do
-  // estilo, abaixando sob a voz, com fade, em laço). Falhou, o vídeo sai sem
-  // ela, nunca deixa de sair.
-  if (pedido.trilha?.url && obterTrilha) {
+/**
+ * A TRILHA DO PROJETO (10/10, Bruno: "sumiu a parte de escolher a música"): o
+ * modelo renderiza a voz e os sons dele; a música escolhida entra por baixo,
+ * do mesmo jeito do editor de antes (sons.mjs, misturarAudio: no volume do
+ * estilo, abaixando sob a voz, com fade, em laço). Falhou, o vídeo sai sem
+ * ela, nunca deixa de sair.
+ */
+async function comTrilha(arquivo, { pedido, pasta, modelo, obterTrilha, avisos, marcar }) {
+  if (!pedido.trilha?.url || !obterTrilha) return arquivo;
+  let saida = arquivo;
+  try {
+    const ext = String(pedido.trilha.url).match(/\.[a-z0-9]{2,4}(?=\?|$)/i)?.[0] ?? ".mp3";
+    const trilha = await obterTrilha(pedido.trilha.url, join(pasta, `trilha${ext}`));
+    const { misturarAudio } = await import("../sons.mjs");
+    const duracao = Number(spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", arquivo], { encoding: "utf8" }).stdout.trim());
+    if (duracao > 0) {
+      saida = await misturarAudio(arquivo, { trilha: { arquivo: trilha, volume: pedido.trilha.volume, abaixar: pedido.trilha.abaixar } }, duracao, pasta, join(pasta, `${modelo}-com-trilha.mp4`));
+    }
+  } catch (e) {
+    avisos.push(`a trilha não entrou: ${e instanceof Error ? e.message.slice(0, 160) : e}`);
+  }
+  marcar("trilha");
+  return saida;
+}
+
+/** Os tipos de momento do modelo, lidos do src/plano.ts do projeto (a mesma conta do conferir.mjs). */
+function tiposDoProjeto(projeto) {
+  const arquivo = join(projeto, "src", "plano.ts");
+  if (!existsSync(arquivo)) return null;
+  const achados = [...readFileSync(arquivo, "utf8").matchAll(/tipo\s*:\s*"([a-zA-Z0-9_-]+)"/g)].map((m) => m[1]);
+  return achados.length ? new Set(achados) : null;
+}
+
+/** `n` de cada vez, na ordem. */
+async function emPiscina(itens, n, fn) {
+  let proximo = 0;
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(n, itens.length)) }, async () => {
+      while (proximo < itens.length) {
+        const k = proximo++;
+        await fn(itens[k], k);
+      }
+    })
+  );
+}
+
+/** Blocos escritos em paralelo (o conserto e a revisão); a escrita em ordem é uma a uma. */
+const BLOCOS_JUNTOS = Number(process.env.EDITOR_DO_CURSO_BLOCOS_JUNTOS) || 3;
+
+/**
+ * O PLANO EM BLOCOS (10/10, o completo no modelo do curso; blocos-do-plano.mjs).
+ *
+ *  1. Escrita, em ordem: cada bloco (~150 s, cortado na pausa) é um pedido ao
+ *     redator do app (o treinamento inteiro no cache), com a fala e o tempo do
+ *     bloco, e o FIM do bloco anterior (últimos momentos, mapa e tipos usados)
+ *     para a continuidade.
+ *  2. Conferência: os blocos juntos no plano.json e o conferir.mjs do curso no
+ *     plano INTEIRO (o mesmo do render.mjs), o gate de tempo e a guarda de
+ *     número. Reprovado, só os blocos com defeito voltam ao redator, com a
+ *     saída da conferência no tempo deles (até VOLTAS_POR_BLOCO por bloco).
+ *  3. Revisão (passo 8): os quadros de conferência de todos os momentos num
+ *     render de quadros só; cada bloco é olhado nas folhas dele e o que tem
+ *     defeito é consertado (até 2 tentativas, aceitas só sem erro novo na
+ *     conferência do bloco). O plano consertado passa de novo na conferência
+ *     do plano inteiro; se reprovar, vale o plano aprovado.
+ * Teto de gasto: a escrita que passa do teto falha (a reserva entra); conserto
+ * e revisão só acontecem dentro dele.
+ */
+async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPasso }) {
+  const esqueleto = esqueletoParaEscrever(lerPlano(projeto));
+  const blocos = blocosDoPlano(esqueleto.palavras, esqueleto.duracao, Number(pedido.blocoSeg) || BLOCO_ALVO_SEG);
+  const total = blocos.length;
+  const modeloJson = existsSync(join(projeto, "modelo.json")) ? JSON.parse(readFileSync(join(projeto, "modelo.json"), "utf8")) : {};
+  const tipos = tiposDoProjeto(projeto);
+  const { conferirPlano } = await import(pathToFileURL(join(projeto, "scripts", "conferir.mjs")).href);
+  const escritos = new Array(total).fill(null);
+  const escreverBloco = async (b, anterior) => {
+    const ant = b.indice > 0 ? escritos[b.indice - 1] : null;
+    const r = await pedir({
+      ...comum,
+      esqueleto: esqueletoDoBloco(esqueleto, b),
+      marca: pedido.marca,
+      anterior,
+      bloco: { indice: b.indice, total, inicio: b.inicio, fim: b.fim, cauda: ant ? caudaDoBloco(ant.plano, ant.mapa) : null },
+    });
+    if (!r?.plano || !Array.isArray(r.plano.momentos)) throw new Error(`o bloco ${b.indice + 1} voltou sem plano`);
+    return { plano: r.plano, mapa: String(r.mapa ?? ""), semLastro: r.numerosSemLastro ?? [] };
+  };
+  const conferirOBloco = (planoDoBloco, b) => {
+    const sub = { ...esqueletoDoBloco(lerPlano(projeto), b), momentos: planoDoBloco?.momentos ?? [] };
+    return conferirPlano(sub, modeloJson, tipos);
+  };
+  const juntarEGravar = () => gravarPlano(projeto, juntarPlanos(blocos, escritos.map((e) => e?.plano ?? null)));
+  const mapaInteiro = () =>
+    escritos
+      .map((e, k) => `## Trecho ${k + 1} de ${total} (${blocos[k].inicio.toFixed(1)} a ${blocos[k].fim.toFixed(1)} s do vídeo; tempos do trecho)\n\n${e?.mapa ?? ""}`)
+      .join("\n\n");
+
+  // 1. A escrita, um bloco depois do outro (cada um lê o fim do anterior).
+  for (const b of blocos) {
+    if (gasto() >= teto) throw new Error(`o teto de US$ ${teto.toFixed(2)} da edição foi atingido antes do bloco ${b.indice + 1} de ${total}`);
+    escritos[b.indice] = await escreverBloco(b, null);
+    aoPasso(`plano: bloco ${b.indice + 1} de ${total} escrito (US$ ${gasto().toFixed(3)})`);
+  }
+
+  // 2. A conferência do plano inteiro; o conserto vai só aos blocos reprovados.
+  const historico = [];
+  const consertos = new Array(total).fill(0);
+  let aprovado = false;
+  let ultimaSaida = "";
+  for (let rodada = 1; ; rodada++) {
+    juntarEGravar();
+    const conf = await conferir(projeto);
+    const tempo = await gateDeTempo(projeto);
+    const cb = conferirEmBlocos({ plano: lerPlano(projeto), blocos, conferirPlano, modelo: modeloJson, tipos });
+    const semLastro = escritos.flatMap((e) => e.semLastro);
+    const falhos = blocos
+      .map((b) => b.indice)
+      .filter((i) => (!conf.aprovado && cb.porBloco[i].erros.length) || escritos[i].semLastro.length || !tempo.ok);
+    historico.push({ volta: rodada, conferir: conf.aprovado, tempo: tempo.ok, semLastro, blocos: falhos.map((i) => i + 1) });
+    ultimaSaida = conf.saida;
+    if (conf.aprovado && tempo.ok && !semLastro.length) {
+      aprovado = true;
+      break;
+    }
+    const consertar = falhos.filter((i) => consertos[i] < VOLTAS_POR_BLOCO);
+    if (!consertar.length || gasto() >= teto) break;
+    await emPiscina(consertar, BLOCOS_JUNTOS, async (i) => {
+      if (gasto() >= teto) return;
+      consertos[i]++;
+      const pb = cb.porBloco[i];
+      const saidas = [];
+      if (!conf.aprovado && pb.erros.length) saidas.push(textoDaConferencia(pb.erros, pb.avisos));
+      if (!tempo.ok) saidas.push(...tempo.resultados.filter((g) => !g.ok).map((g) => `${g.ferramenta}:\n${g.saida}`));
+      escritos[i] = await escreverBloco(blocos[i], { plano: escritos[i].plano, saidas, numerosSemLastro: escritos[i].semLastro });
+    });
+    aoPasso(`plano: conserto ${rodada} dos blocos ${consertar.map((i) => i + 1).join(", ")} (US$ ${gasto().toFixed(3)})`);
+  }
+  if (!aprovado) {
+    const fim = ultimaSaida.trim().split("\n").slice(-6).join(" ");
+    throw new Error(`o plano em blocos não passou na conferência do curso: ${fim.slice(0, 400)}`);
+  }
+  writeFileSync(join(projeto, "work", "mapa.md"), mapaInteiro());
+
+  // 3. A revisão dos quadros (passo 8), bloco a bloco.
+  const aprovados = escritos.map((e) => ({ ...e }));
+  const revisao = { rodadas: 0, problemas: [], aplicada: false, tentativas: 0, blocos: [] };
+  if (pedido.revisar !== false && gasto() < teto) {
     try {
-      const ext = String(pedido.trilha.url).match(/\.[a-z0-9]{2,4}(?=\?|$)/i)?.[0] ?? ".mp3";
-      const trilha = await obterTrilha(pedido.trilha.url, join(pasta, `trilha${ext}`));
-      const { misturarAudio } = await import("../sons.mjs");
-      const duracao = Number(spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", arquivo], { encoding: "utf8" }).stdout.trim());
-      if (duracao > 0) {
-        arquivo = await misturarAudio(arquivo, { trilha: { arquivo: trilha, volume: pedido.trilha.volume, abaixar: pedido.trilha.abaixar } }, duracao, pasta, join(pasta, `${modelo}-com-trilha.mp4`));
+      rmSync(join(projeto, "out", "stills"), { recursive: true, force: true });
+      const quadros = await stills(projeto, instantesDaRevisao(lerPlano(projeto)).map(String));
+      const tempoDoQuadro = (q) => Number(basename(q).match(/t(\d+\.\d+)/)?.[1] ?? NaN);
+      const problemas = new Array(total).fill(null);
+      await emPiscina(blocos, BLOCOS_JUNTOS, async (b) => {
+        const meus = quadros.filter((q) => tempoDoQuadro(q) >= b.inicio && tempoDoQuadro(q) < b.fim);
+        if (!meus.length || gasto() >= teto) return;
+        const folhas = await folhasDosQuadros(projeto, meus, { deslocamento: b.inicio, prefixo: `bloco-${b.indice + 1}-` });
+        if (!folhas.length) return;
+        const rev = await pedir({
+          ...comum,
+          fase: "revisar",
+          plano: escritos[b.indice].plano,
+          folhas: folhas.map((f) => f.base64),
+          legendas: folhas.map((f) => f.legenda),
+          bloco: { indice: b.indice, total, inicio: b.inicio, fim: b.fim },
+        });
+        problemas[b.indice] = Array.isArray(rev?.problemas) ? rev.problemas : [];
+      });
+      revisao.rodadas = 1;
+      revisao.problemas = problemas.flatMap((ps, i) => (ps ?? []).map((p) => ({ ...p, bloco: i + 1, em: p.em != null ? +(Number(p.em) + blocos[i].inicio).toFixed(2) : p.em })));
+      const comProblema = blocos.filter((b) => problemas[b.indice]?.length);
+      const aplicados = [];
+      await emPiscina(comProblema, BLOCOS_JUNTOS, async (b) => {
+        const i = b.indice;
+        const antes = conferirOBloco(aprovados[i].plano, b);
+        const regrasAntes = new Set(antes.erros.map(regraGeral).filter(Boolean));
+        const texto = problemas[i].map((p, k) => `${k + 1}. ${p.em != null ? `em ${Number(p.em).toFixed(1)} s` : ""} (${p.momento ?? "?"}): ${p.problema}${p.mudanca ? `. Mudança: ${p.mudanca}` : ""}`).join("\n");
+        const pedidoDaRevisao = `REVISÃO DOS QUADROS (passo 8 do SKILL.md, olhando cada momento renderizado deste trecho). Conserte SÓ estes momentos e mantenha todo o resto exatamente como está:\n${texto}`;
+        let paraConsertar = { plano: aprovados[i].plano, saidas: [pedidoDaRevisao], numerosSemLastro: [] };
+        for (let tentativa = 1; tentativa <= 2 && gasto() < teto; tentativa++) {
+          revisao.tentativas = Math.max(revisao.tentativas, tentativa);
+          const novo = await escreverBloco(b, paraConsertar);
+          const depois = conferirOBloco(novo.plano, b);
+          const novos = depois.erros.filter((e) => {
+            const g = regraGeral(e);
+            return !g || !regrasAntes.has(g);
+          });
+          if (!novos.length && !novo.semLastro.length) {
+            escritos[i] = novo;
+            aplicados.push(i + 1);
+            return;
+          }
+          paraConsertar = {
+            plano: novo.plano,
+            saidas: [pedidoDaRevisao, "O CONSERTO ACIMA FOI CONFERIDO E REPROVOU. Mantenha os consertos da revisão e corrija só o que a conferência apontou:", textoDaConferencia(novos.length ? novos : depois.erros, depois.avisos)],
+            numerosSemLastro: novo.semLastro,
+          };
+        }
+      });
+      if (aplicados.length) {
+        juntarEGravar();
+        const conf = await conferir(projeto);
+        const tempo = await gateDeTempo(projeto);
+        historico.push({ volta: "revisao", conferir: conf.aprovado, tempo: tempo.ok, semLastro: [], blocos: aplicados });
+        if (conf.aprovado && tempo.ok) {
+          revisao.aplicada = true;
+          revisao.blocos = aplicados;
+        } else {
+          for (let k = 0; k < total; k++) escritos[k] = aprovados[k];
+          juntarEGravar();
+          revisao.erro = "o plano consertado pela revisão reprovou na conferência do plano inteiro; vale o aprovado";
+        }
       }
     } catch (e) {
-      avisos.push(`a trilha não entrou: ${e instanceof Error ? e.message.slice(0, 160) : e}`);
+      for (let k = 0; k < total; k++) escritos[k] = aprovados[k];
+      juntarEGravar();
+      revisao.erro = e instanceof Error ? e.message.slice(0, 300) : String(e);
     }
-    marcar("trilha");
+    aoPasso(`revisão: ${revisao.problemas.length} defeito(s) apontado(s), ${revisao.blocos.length} bloco(s) consertado(s) (US$ ${gasto().toFixed(3)})`);
   }
-  return { arquivo, modelo, formato: formatoDoModelo(modelo), mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
+  writeFileSync(join(projeto, "work", "mapa.md"), mapaInteiro());
+  return {
+    mapa: mapaInteiro(),
+    voltas: historico.length,
+    historico,
+    revisao,
+    blocos: blocos.map((b) => ({ indice: b.indice + 1, inicio: b.inicio, fim: b.fim, momentos: escritos[b.indice].plano.momentos.length, consertos: consertos[b.indice] })),
+  };
+}
+
+/**
+ * O render em partes (render-em-partes.mjs): partes de ~150 s, algumas ao
+ * mesmo tempo dentro da fatia deste trabalho (as abas da fatia divididas entre
+ * elas), emendadas sem recodificar e normalizadas a -14 LUFS no fim.
+ */
+export async function renderizarEmPartes(projeto, nome = "video-editado.mp4", { prazoMs = 90 * 60_000, alvoSeg = BLOCO_ALVO_SEG } = {}) {
+  const plano = lerPlano(projeto);
+  const partes = partesDoRender(plano.duracao, plano.fps, alvoSeg);
+  const { paralelas, concorrencia } = paralelismoDoRender(fatiaAtual(), partes.length);
+  const saida = join("out", nome);
+  const r = await rodarNoProjeto(projeto, [join(AQUI, "render-em-partes.mjs"), saida], {
+    prazoMs,
+    env: { RENDER_DO_SERVIDOR: JSON.stringify(limitesDoRender()), RENDER_EM_PARTES: JSON.stringify({ partes, paralelas, concorrencia }) },
+  });
+  if (r.codigo !== 0) throw falhou("render-em-partes.mjs", r);
+  let resumo = null;
+  try {
+    resumo = JSON.parse(r.saida.trim().split("\n").filter((l) => l.trim().startsWith("{")).pop());
+  } catch {
+    // sem resumo: o arquivo vale do mesmo jeito
+  }
+  return { arquivo: join(projeto, saida), resumo };
 }
 
 /**
@@ -551,7 +840,9 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
  * folhas (72 quadros); acima disso, um quadro sim, um não. Num modelo deitado
  * (16:9) o quadro reduzido a 270 px não deixa ler o texto: 4 por linha, 480 px.
  */
-export async function folhasDosQuadros(projeto, quadros) {
+export async function folhasDosQuadros(projeto, quadros, { deslocamento = 0, prefixo = "" } = {}) {
+  // `deslocamento` (10/10, a revisão por bloco do completo): a legenda dá os instantes no tempo
+  // do bloco, o mesmo do plano que o revisor recebe; `prefixo` separa as folhas de cada bloco.
   let deitado = false;
   try {
     const p = lerPlano(projeto);
@@ -566,12 +857,16 @@ export async function folhasDosQuadros(projeto, quadros) {
   const folhas = [];
   for (let i = 0; i < lista.length; i += porFolha) {
     const grupo = lista.slice(i, i + porFolha);
-    const arquivoLista = join(projeto, "work", `folha-${folhas.length + 1}.txt`);
+    const arquivoLista = join(projeto, "work", `${prefixo}folha-${folhas.length + 1}.txt`);
     writeFileSync(arquivoLista, grupo.map((q) => `file '${q.replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n"));
-    const saida = join(projeto, "work", `folha-${folhas.length + 1}.jpg`);
+    const saida = join(projeto, "work", `${prefixo}folha-${folhas.length + 1}.jpg`);
     const r = await rodarProcesso(FFMPEG, ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", arquivoLista, "-vf", filtro, "-frames:v", "1", "-q:v", "4", saida]);
     if (r.codigo !== 0 || !existsSync(saida)) continue;
-    const instantes = grupo.map((q) => (basename(q).match(/t(\d+\.\d+)/)?.[1] ?? "?").replace(/^0+(?=\d)/, ""));
+    const instantes = grupo.map((q) => {
+      const t = basename(q).match(/t(\d+\.\d+)/)?.[1];
+      if (!t) return "?";
+      return deslocamento ? Math.max(0, Number(t) - deslocamento).toFixed(2) : t.replace(/^0+(?=\d)/, "");
+    });
     folhas.push({ base64: readFileSync(saida).toString("base64"), legenda: `Folha ${folhas.length + 1}: ${grupo.length} quadros, da esquerda para a direita e de cima para baixo, nos instantes (s) ${instantes.join(", ")}` });
   }
   return folhas;

@@ -108,6 +108,17 @@ import type { CenarioDoVideo } from "@/lib/media/cenario-do-video";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import { lerVideo as lerVideoParaLeitura, leituraVisaoLigada, medirNoWorker, type RespostaDaMedicao } from "@/lib/media/leitura-do-video";
 import {
+  caminhoDoCompleto,
+  completoPeloModeloLigado,
+  coresDaMarcaParaOModelo,
+  modeloDoCursoDoProjeto,
+  palavrasDoCurso,
+  prazoDoCompletoNoModeloMs,
+  quemFalaNoProjeto,
+  tetoDoPlanoUsd,
+} from "@/lib/media/editor-do-curso/no-corte";
+import { edicaoDaLinguagem } from "@/lib/media/linguagem-da-edicao";
+import {
   demonstracaoNaFala,
   insercoesDoPlano,
   juntarDemonstracao,
@@ -335,6 +346,28 @@ export type MontagemDoCompleto = {
    * o worker e os avisos (o do cliente diz o momento do elemento que saiu).
    */
   jornada?: EstadoDaJornadaNaMontagem | null;
+  /**
+   * O COMPLETO NO MODELO DO CURSO (10/10, COMPLETO_PELO_MODELO=1): o worker
+   * edita o completo inteiro na versão deitada do modelo escolhido no projeto
+   * (`versao`, ex.: modelo-manifesto-16x9), com o plano em blocos. Usa os
+   * estados de sempre ("preparando" no envio, "montando" no worker) e a mesma
+   * entrega (`entregarCompleto`). `desistiu`: o caminho do curso falhou e o
+   * completo voltou à fila do editor de sempre (a reserva).
+   */
+  curso?: CursoNoCompleto | null;
+};
+
+export type CursoNoCompleto = {
+  modelo: string;
+  versao?: string;
+  desistiu?: string | null;
+  mapa?: string;
+  voltas?: number;
+  custoUsd?: number;
+  historico?: unknown[];
+  avisos?: string[];
+  blocos?: unknown[];
+  render?: unknown;
 };
 
 export type EstadoDaJornadaNaMontagem = {
@@ -2088,7 +2121,19 @@ export async function avancarMontagemDoCompleto(opcoes: { orcamentoMs?: number }
     const idade = Date.now() - new Date(m.desde).getTime();
     const esperando = Boolean(m.esperarAte && Date.now() < new Date(m.esperarAte).getTime());
     try {
-      if (m.jornada && m.estado === "dirigindo" && !esperando && (!m.trabalhando || idade > PASSO_MORTO_MS)) {
+      // O COMPLETO NO MODELO DO CURSO (10/10) vem antes de todos os caminhos; o
+      // de sempre é a reserva (falha, desistência ou sem versão deitada).
+      const curso = m.estado === "na-fila" && !esperando && !m.jornada ? await caminhoDoCompletoNoModelo(v, m) : null;
+      if (curso?.caminho === "curso") {
+        r.olhados++;
+        await enviarCompletoAoModelo(v, m, curso.modelo, curso.versao);
+      } else if (m.curso && !m.curso.desistiu && m.estado === "montando") {
+        // O worker roda o curso e avisa pelo callback. Passado o prazo, pergunta antes de desistir.
+        if (idade > prazoDoCompletoNoModeloMs(m.fala?.duracao) && !(await aindaEsperaOWorker(v.id, m.chave, idade))) {
+          r.olhados++;
+          await desistirDoModeloNoCompleto(v.id, m, "o worker não terminou a edição no modelo no prazo");
+        }
+      } else if (m.jornada && m.estado === "dirigindo" && !esperando && (!m.trabalhando || idade > PASSO_MORTO_MS)) {
         // A JORNADA (E5): passos 6 e 7 e o envio do render.
         r.olhados++;
         await gerarEMontarPelaJornada(v, m);
@@ -2162,6 +2207,127 @@ export async function avancarMontagemDoCompleto(opcoes: { orcamentoMs?: number }
     }
   }
   return r;
+}
+
+// ─────────────────────────────── 2a. o completo no modelo do curso ───────────────────────────────
+
+/** O completo vai pelo modelo do curso? A trava, o modelo do projeto com versão deitada, o quadro da gravação e a desistência anterior. */
+async function caminhoDoCompletoNoModelo(v: VideoDoCompleto, m: MontagemDoCompleto) {
+  if (!completoPeloModeloLigado() || m.curso?.desistiu) return null;
+  const modelo = await modeloDoCursoDoProjeto(v.projectId).catch(() => null);
+  const r = caminhoDoCompleto({ ligado: true, modelo, desistiu: m.curso?.desistiu ?? null, quadro: m.roteiro?.telas?.quadro ?? null });
+  if (r.caminho === "reserva" && modelo) console.log(`[montagem-do-completo][${v.id}] modelo do curso fora: ${r.motivo}`);
+  return r;
+}
+
+/** O volume da trilha e o quanto ela abaixa sob a voz: os do estilo (o mesmo dos cortes). */
+function somDaTrilhaDoCompleto(v: VideoDoCompleto): { volume: number; abaixar: number } {
+  const { estilo } = edicaoDaLinguagem(v.videoEstiloEscolha, v.videoStyle, v.colorPalette);
+  return { volume: estilo.som.volumeDaTrilha, abaixar: estilo.som.abaixarSobAVoz };
+}
+
+/**
+ * A fala limpa do completo, no tempo do completo: a MESMA conta do roteiro
+ * (lib/media/roteiro-da-edicao.ts, manterDoCompleto e falaDoCompleto), que é o
+ * que o completo de hoje emendou: os pedaços mantidos da gravação e a fala
+ * neles. Sem roteiro (vídeo antigo), a limpeza do corte refeita no vídeo inteiro.
+ */
+async function falaDoCompletoParaOModelo(
+  v: VideoDoCompleto,
+  m: MontagemDoCompleto,
+  gravacao: { transcript: unknown; durationSec: number | null }
+): Promise<{ manter: Array<{ de: number; ate: number }>; palavras: PalavraNoCorte[]; duracao: number; dur: number }> {
+  const { falaDoCorte } = await import("@/lib/media/montagem-nos-cortes");
+  const brutas = ((gravacao.transcript as { words?: Word[] } | null)?.words ?? []) as Word[];
+  const dur = gravacao.durationSec ?? brutas.at(-1)?.end ?? 0;
+  if (!brutas.length || !(dur > 0)) throw new Error("o vídeo não tem a transcrição da gravação");
+  let edicao: { inicio: number; fim: number; manter: Array<{ de: number; ate: number }>; em: string } | null = null;
+  if (m.roteiro?.remocoes) {
+    const { manterDoCompleto } = await import("@/lib/media/roteiro-da-edicao");
+    const manter = manterDoCompleto({ transcript: gravacao.transcript, durationSec: gravacao.durationSec } as Parameters<typeof manterDoCompleto>[0], m.roteiro, v.videoTerms);
+    if (manter.length) edicao = { inicio: 0, fim: dur, manter, em: agora() };
+  }
+  const f = await falaDoCorte({ palavras: brutas, termos: v.videoTerms, inicio: 0, fim: dur, duracaoDaGravacao: dur, edicao, projectId: v.projectId });
+  return { ...f, dur };
+}
+
+/**
+ * na-fila -> preparando -> montando: o completo inteiro vai ao worker pelo
+ * fluxo do curso (`/editar-no-modelo` com `formato: "16:9"` e `completo:
+ * true`): a gravação ORIGINAL, do começo, com os pedaços mantidos e a fala
+ * limpa do completo, as cores da marca, a trilha do projeto e o teto de IA
+ * (US$ 1 por minuto, mínimo US$ 2). O callback é o do completo de sempre.
+ */
+async function enviarCompletoAoModelo(v: VideoDoCompleto, lido: MontagemDoCompleto, modelo: string, versao: string): Promise<void> {
+  const tomado: MontagemDoCompleto = { ...lido, estado: "preparando", desde: agora(), curso: { ...(lido.curso ?? {}), modelo, versao, desistiu: null } };
+  if (!(await trocarEstado(v.id, lido, tomado))) return;
+  let atual: MontagemDoCompleto = tomado;
+  try {
+    const gravacao = await prisma.videoJob.findUnique({ where: { id: v.id }, select: { blobUrl: true, durationSec: true, transcript: true } });
+    if (!gravacao?.blobUrl) throw new Error("o vídeo não tem a gravação original");
+    const fala = await falaDoCompletoParaOModelo(v, lido, gravacao);
+    const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
+    // "completo-editado-" no nome: a entrega nunca toma o editado por original (06/10).
+    const chave = `cortes/${v.id}/completo-editado-curso.mp4`;
+    const montando: MontagemDoCompleto = {
+      ...tomado,
+      estado: "montando",
+      desde: agora(),
+      chave,
+      tentativas: (lido.tentativas ?? 0) + 1,
+      esperarAte: null,
+      motivo: null,
+      fala: { palavras: fala.palavras, duracao: fala.duracao },
+    };
+    const corpo = JSON.stringify({
+      chave,
+      videoJobId: v.id,
+      projectId: v.projectId,
+      modelo,
+      formato: "16:9",
+      completo: true,
+      sourceUrl: gravacao.blobUrl,
+      inicio: 0,
+      duracao: fala.dur,
+      manter: fala.manter,
+      palavras: palavrasDoCurso(fala.palavras),
+      marca: await quemFalaNoProjeto(v.projectId),
+      cores: await coresDaMarcaParaOModelo(v.projectId).catch(() => null),
+      nicho: v.niche,
+      trilha: v.videoMusicUrl ? { url: v.videoMusicUrl, ...somDaTrilhaDoCompleto(v) } : null,
+      tetoUsd: tetoDoPlanoUsd(fala.duracao),
+      voltas: 3,
+      planoUrl: `${base}/api/editor-do-curso/plano`,
+      callbackUrl: `${base}/api/videos/${v.id}/montar-completo-callback`,
+      retorno: { desde: montando.desde },
+    });
+    if (!(await trocarEstado(v.id, tomado, montando))) return;
+    atual = montando;
+    const r = await fetch(`${urlDoWorker()}/editar-no-modelo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", [CABECALHO_ASSINATURA]: assinarCorpo(corpo) },
+      body: corpo,
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (r.status !== 202) await desistirDoModeloNoCompleto(v.id, montando, `o worker recusou o pedido (HTTP ${r.status})`);
+  } catch (e) {
+    await desistirDoModeloNoCompleto(v.id, atual, e instanceof Error ? e.message : "falhou");
+  }
+}
+
+/** O caminho do curso desiste e o completo volta à fila, para o editor de sempre (a reserva). */
+async function desistirDoModeloNoCompleto(id: string, lido: MontagemDoCompleto, motivo: string): Promise<void> {
+  console.warn(`[montagem-do-completo][${id}] modelo do curso desistiu: ${motivo}`);
+  await trocarEstado(id, lido, {
+    ...lido,
+    estado: "na-fila",
+    desde: agora(),
+    tentativas: 0,
+    esperarAte: null,
+    motivo: null,
+    falhaTecnica: false,
+    curso: { ...(lido.curso ?? { modelo: "" }), desistiu: motivo.slice(0, 500) },
+  });
 }
 
 // ─────────────────────────────── 2b. o editor sob medida ───────────────────────────────
@@ -2662,11 +2828,37 @@ export async function concluirMontagemDoCompleto(
     conferencia?: unknown;
     /** A duração da abertura no arquivo pronto (02/10). */
     aberturaSeg?: number;
+    /** O completo no modelo do curso (10/10): o resumo do fluxo do curso no worker. */
+    curso?: { modelo?: string; versao?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[]; blocos?: unknown[]; render?: unknown } | null;
   }
 ): Promise<"trocado" | "ignorado" | "falhou" | "revisando"> {
   const v = await lerVideo(videoJobId);
   const lido = v?.completoMontagem;
   if (!v || !lido || lido.estado !== "montando" || lido.desde !== desde) return "ignorado";
+  // O COMPLETO NO MODELO DO CURSO (10/10): o fluxo do curso já conferiu o plano
+  // antes do render; o vídeo vai ao ar pela entrega de sempre. Reinício do
+  // worker reenvia; falha volta o completo à fila do editor de sempre.
+  if (lido.curso && !lido.curso.desistiu) {
+    if (resultado.reiniciado) {
+      await trocarEstado(videoJobId, lido, { ...lido, estado: "na-fila", desde: agora(), tentativas: Math.max(0, (lido.tentativas ?? 1) - 1), esperarAte: null });
+      return "falhou";
+    }
+    if (!resultado.ok || !resultado.montado?.url) {
+      await desistirDoModeloNoCompleto(videoJobId, lido, `a edição no ${lido.curso.versao ?? lido.curso.modelo} falhou (${resumoDoErro(resultado.erro ?? "sem detalhe")})`);
+      return "falhou";
+    }
+    const c = resultado.curso ?? {};
+    return entregarCompleto(
+      v,
+      {
+        ...lido,
+        curso: { ...lido.curso, mapa: c.mapa?.slice(0, 20_000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico?.slice(-12), avisos: c.avisos, blocos: c.blocos, render: c.render },
+        custoUsd: c.custoUsd ?? lido.custoUsd,
+        revisaoVisual: null,
+      },
+      { url: resultado.montado.url, bytes: resultado.montado.bytes, tempos: resultado.tempos }
+    );
+  }
   // O WORKER REINICIOU (deploy, 01/10): o render foi cortado no meio, não
   // falhou. Volta para "gerando" sem espera e sem gastar tentativa; a próxima
   // passada do cron reenvia ao worker novo.

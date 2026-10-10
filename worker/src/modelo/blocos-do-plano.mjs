@@ -1,0 +1,302 @@
+/**
+ * O PLANO EM BLOCOS (10/10/2026): o vídeo COMPLETO num modelo do curso.
+ *
+ * O fluxo do curso escreve o plano de um vídeo numa chamada só. Num corte de
+ * 50 s isso é o certo; num completo de 15 a 20 min, não: a resposta passaria
+ * do teto de saída e a mão se perderia no meio. Então o plano é escrito em
+ * BLOCOS de ~150 s (o mesmo alvo do diretor do completo de antes,
+ * lib/media/montagem-do-completo.ts, blocosDaFala), cortados na maior pausa
+ * da fala perto do alvo. Cada bloco é uma chamada ao redator do app, com o
+ * treinamento do modelo no cache e o FIM do bloco anterior como contexto; o
+ * redator vê um vídeo curto que começa no zero, como no corte (os tempos do
+ * bloco), e aqui os momentos voltam ao tempo do vídeo inteiro.
+ *
+ * Tudo aqui é puro (sem disco, sem rede): testado em scripts/testes.
+ */
+
+/** Alvo de fala por bloco (s): o mesmo do diretor do completo. */
+export const BLOCO_ALVO_SEG = 150;
+/** Voltas de conserto por bloco reprovado (na conferência e na revisão dos quadros). */
+export const VOLTAS_POR_BLOCO = 2;
+/** Acima disto (s de vídeo cortado) o plano é escrito em blocos; abaixo, numa chamada, como no corte. */
+export const LIMIAR_DOS_BLOCOS_SEG = BLOCO_ALVO_SEG * 1.4;
+
+const r3 = (t) => +Number(t).toFixed(3);
+
+/**
+ * Os blocos da fala ([{em, ate, w}] no tempo do vídeo cortado): ~`alvo` s cada,
+ * cortados na MAIOR pausa entre palavras numa faixa de ±40 s em volta do alvo
+ * (fim de frase vale 0,3 s a mais). O último bloco absorve a sobra curta. A
+ * borda cai no meio da pausa: nenhuma palavra fica sem bloco nem em dois.
+ * Devolve [{ indice, de, ate (índices das palavras, inclusivos), inicio, fim (s) }].
+ */
+export function blocosDoPlano(palavras, duracao, alvo = BLOCO_ALVO_SEG) {
+  const n = palavras?.length ?? 0;
+  if (!n) return [{ indice: 0, de: 0, ate: -1, inicio: 0, fim: r3(duracao) }];
+  const blocos = [];
+  let de = 0;
+  while (de < n) {
+    const t0 = palavras[de].em;
+    let ate = n - 1;
+    if (palavras[n - 1].ate - t0 > alvo * 1.4) {
+      let melhor = -1;
+      let maiorPausa = -1;
+      for (let k = de + 1; k < n; k++) {
+        const t = palavras[k].em - t0;
+        if (t < alvo - 40) continue;
+        if (t > alvo + 40) break;
+        const pausa = palavras[k].em - palavras[k - 1].ate + (/[.!?]$/.test(palavras[k - 1].w) ? 0.3 : 0);
+        if (pausa > maiorPausa) {
+          maiorPausa = pausa;
+          melhor = k;
+        }
+      }
+      if (melhor > de) ate = melhor - 1;
+    }
+    blocos.push({ indice: blocos.length, de, ate, inicio: 0, fim: 0 });
+    de = ate + 1;
+  }
+  blocos.forEach((b, i) => {
+    b.inicio = i === 0 ? 0 : r3((palavras[b.de - 1].ate + palavras[b.de].em) / 2);
+    b.fim = i === blocos.length - 1 ? r3(duracao) : r3((palavras[b.ate].ate + palavras[b.ate + 1].em) / 2);
+  });
+  return blocos;
+}
+
+const CHAVE_DE_TEMPO = (k) => k === "de" || k === "ate" || k === "em" || /Em$/.test(k);
+const LISTA_DE_TEMPOS = (k) => k === "batidas" || /Ems$/.test(k);
+
+/**
+ * Desloca todos os tempos de um momento (ou de qualquer parte do plano) por
+ * `delta` segundos. Tempo é o que o curso chama de tempo: `de`, `ate`, `em` e
+ * todo campo terminado em `Em` (riscoEm, notaEm, vencedorEm...), em qualquer
+ * nível, e as listas de instantes (`batidas`). O resto (tamanho, valor, zoom,
+ * quantas...) fica como está.
+ */
+export function deslocarTempos(valor, delta, chave = "") {
+  if (Array.isArray(valor)) return valor.map((x) => (typeof x === "number" && LISTA_DE_TEMPOS(chave) ? r3(x + delta) : deslocarTempos(x, delta, chave)));
+  if (valor && typeof valor === "object") {
+    return Object.fromEntries(Object.entries(valor).map(([k, x]) => [k, typeof x === "number" && CHAVE_DE_TEMPO(k) ? r3(x + delta) : deslocarTempos(x, delta, k)]));
+  }
+  return valor;
+}
+
+/**
+ * O esqueleto de um bloco, como o redator vê um corte: a fala do bloco, a
+ * duração dele e os cortes dentro dele, no tempo do bloco (começa no zero).
+ * Rosto, zona, quadro e fps são os do vídeo inteiro.
+ */
+export function esqueletoDoBloco(esqueleto, b) {
+  const desl = (t) => r3(t - b.inicio);
+  const palavras = (esqueleto.palavras ?? []).slice(b.de, b.ate + 1).map((p) => ({ ...p, em: desl(p.em), ate: desl(p.ate) }));
+  const cortesEm = (esqueleto.cortesEm ?? []).filter((c) => c > b.inicio + 0.01 && c < b.fim - 0.01).map(desl);
+  const saida = { ...esqueleto, duracao: r3(b.fim - b.inicio), palavras, cortesEm };
+  if (Array.isArray(esqueleto.enquadramentos)) {
+    saida.enquadramentos = esqueleto.enquadramentos.filter((e) => e.ate > b.inicio && e.de < b.fim).map((e) => deslocarTempos({ ...e, de: Math.max(e.de, b.inicio), ate: Math.min(e.ate, b.fim) }, -b.inicio));
+  }
+  return saida;
+}
+
+/** Os momentos de um bloco (os que começam dentro dele), no tempo do bloco. */
+export function momentosDoBloco(plano, b) {
+  return (plano.momentos ?? []).filter((m) => m.de >= b.inicio - 0.01 && m.de < b.fim - 0.01).map((m) => deslocarTempos(m, -b.inicio));
+}
+
+/**
+ * O plano de um bloco no tempo dele, com os campos de topo que o redator
+ * escreveu (marca, correções...), para a revisão e a volta de conserto.
+ */
+export function planoDoBloco(plano, b) {
+  const { momentos, semLegenda, palavras, rosto, cortesEm, video, fps, largura, altura, duracao, videoAltura, zona, imagens, enquadramentos, ...escritos } = plano;
+  return {
+    ...escritos,
+    momentos: momentosDoBloco(plano, b),
+    ...(Array.isArray(semLegenda) ? { semLegenda: semLegenda.filter((s) => s.de >= b.inicio - 0.01 && s.de < b.fim).map((s) => deslocarTempos(s, -b.inicio)) } : {}),
+  };
+}
+
+/**
+ * Junta os planos escritos por bloco (no tempo de cada bloco) num plano só,
+ * no tempo do vídeo inteiro. Momento que passa do fim do bloco é cortado nele
+ * (o próximo bloco começa ali); momento fora do bloco sai. Os campos de topo
+ * (marca, fantasma, sfx...) são os do primeiro bloco que os escreveu; as
+ * correções somam (valem para a fala inteira, como no curso).
+ */
+export function juntarPlanos(blocos, planos) {
+  const junto = { momentos: [], semLegenda: [], correcoes: {} };
+  planos.forEach((p, k) => {
+    if (!p) return;
+    const b = blocos[k];
+    const dur = b.fim - b.inicio;
+    for (const [campo, v] of Object.entries(p)) {
+      if (campo === "momentos" || campo === "semLegenda" || campo === "correcoes") continue;
+      if (!(campo in junto) && v !== undefined && v !== null) junto[campo] = v;
+    }
+    for (const m of p.momentos ?? []) {
+      const de = Math.max(0, Number(m.de));
+      const ate = Math.min(dur, Number(m.ate));
+      if (!Number.isFinite(de) || !Number.isFinite(ate) || ate - de < 0.05) continue;
+      junto.momentos.push(deslocarTempos({ ...m, de, ate }, b.inicio));
+    }
+    for (const s of p.semLegenda ?? []) {
+      if (Number.isFinite(s?.de) && Number.isFinite(s?.ate)) junto.semLegenda.push(deslocarTempos({ ...s, de: Math.max(0, s.de), ate: Math.min(dur, s.ate) }, b.inicio));
+    }
+    Object.assign(junto.correcoes, p.correcoes ?? {});
+  });
+  junto.momentos.sort((a, b) => a.de - b.de);
+  return junto;
+}
+
+/** Os textos de um momento (o que aparece na tela), para o contexto do bloco seguinte. */
+function textosDoMomento(m) {
+  const textos = [];
+  const andar = (v, k) => {
+    if (typeof v === "string" && ["texto", "palavra", "antes", "titulo", "rotulo", "nota", "termo", "significado", "destaque"].includes(k)) textos.push(v);
+    else if (Array.isArray(v)) {
+      if (k === "linhas" && v.every((x) => typeof x === "string")) textos.push(v.join(""));
+      else v.forEach((x) => andar(x, k));
+    } else if (v && typeof v === "object") for (const [c, x] of Object.entries(v)) andar(x, c);
+  };
+  andar(m, "");
+  return textos.join(" / ").slice(0, 140);
+}
+
+/**
+ * O FIM DE UM BLOCO para o redator do bloco seguinte (continuidade): os
+ * últimos momentos (tipo e texto, sem tempo: o tempo é do outro bloco), as
+ * últimas linhas do mapa e quantas vezes cada tipo já foi usado no bloco.
+ */
+export function caudaDoBloco(planoDoBlocoAnterior, mapa, { momentos = 3, linhas = 6 } = {}) {
+  if (!planoDoBlocoAnterior) return null;
+  const ms = [...(planoDoBlocoAnterior.momentos ?? [])].sort((a, b) => a.de - b.de);
+  const tipos = {};
+  for (const m of ms) tipos[m.tipo] = (tipos[m.tipo] ?? 0) + 1;
+  return {
+    ultimos: ms.slice(-momentos).map((m) => ({ tipo: m.tipo, ...(m.campo ? { campo: m.campo } : {}), texto: textosDoMomento(m) })),
+    mapa: String(mapa ?? "")
+      .trim()
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !/^#/.test(l))
+      .slice(-linhas)
+      .join("\n"),
+    tipos,
+  };
+}
+
+// As regras da conferência do curso que olham o vídeo inteiro (as outras apontam um instante).
+const REGRAS_GERAIS = [
+  { regra: "cobertura", teste: /^Só \d+% do vídeo tem momento/ },
+  { regra: "minimo", teste: /momentos para .* de vídeo; o mínimo é/ },
+  { regra: "variedade", teste: /^Só \d+ tipo\(s\) de bloco/ },
+  { regra: "assinatura", teste: /^A assinatura do modelo/ },
+  { regra: "proprios", teste: /efeito\(s\) próprio\(s\) do modelo/ },
+];
+export const regraGeral = (erro) => REGRAS_GERAIS.find((r) => r.teste.test(erro))?.regra ?? null;
+
+const s = (t) => `${t.toFixed(1).replace(".", ",")} s`;
+
+/**
+ * A CONFERÊNCIA EM BLOCOS. Quem decide é a conferência do curso no plano
+ * inteiro (`conferirPlano` do scripts/conferir.mjs do modelo, a mesma do
+ * render.mjs). Reprovado, cada bloco é conferido sozinho (no tempo dele, como
+ * um corte), para o conserto ir só aos blocos com defeito e com a mensagem no
+ * tempo que o redator do bloco conhece. Do que o bloco sozinho aponta, vale:
+ *   - todo erro de um instante (tipo, campo, vão, momento parado): ele também
+ *     é erro no plano inteiro;
+ *   - erro de regra geral (cobertura, mínimo, variedade, assinatura, efeitos
+ *     próprios) só quando o plano inteiro também falha nessa regra.
+ * O vão que atravessa a emenda de dois blocos (cada lado curto, a soma longa)
+ * vai aos dois.
+ */
+export function conferirEmBlocos({ plano, blocos, conferirPlano, modelo = {}, tipos = null }) {
+  const geral = conferirPlano(plano, modelo, tipos);
+  const regrasQueFalham = new Set(geral.erros.map(regraGeral).filter(Boolean));
+  const porBloco = blocos.map((b) => {
+    const sub = { ...esqueletoDoBloco(plano, b), momentos: momentosDoBloco(plano, b) };
+    const r = conferirPlano(sub, modelo, tipos);
+    const erros = r.erros.filter((e) => {
+      const g = regraGeral(e);
+      return !g || regrasQueFalham.has(g);
+    });
+    return { indice: b.indice, erros, avisos: r.avisos ?? [] };
+  });
+  const lim = { vao: 3.5, ...(modelo.conferir ?? {}) };
+  for (const [a, z] of geral.vaos ?? []) {
+    if (z - a <= lim.vao) continue;
+    const tocados = blocos.filter((b) => a < b.fim - 0.01 && z > b.inicio + 0.01);
+    if (tocados.length < 2) continue;
+    for (const b of tocados) {
+      const de = Math.max(0, a - b.inicio);
+      const ate = Math.min(b.fim - b.inicio, z - b.inicio);
+      const lado = a < b.inicio ? "no começo deste trecho" : "no fim deste trecho";
+      porBloco[b.indice].erros.push(
+        `De ${s(de)} a ${s(ate)} (${lado}) só tem a pessoa e a legenda, e o vão continua no trecho vizinho: somados dão ${s(z - a)} (máximo ${s(lim.vao)}). Ponha um momento mais perto da borda.`
+      );
+    }
+  }
+  if (!geral.ok && porBloco.every((p) => !p.erros.length)) {
+    // Reprovado sem bloco apontado (não deveria acontecer): todos levam o que o plano inteiro disse.
+    for (const p of porBloco) p.erros.push(...geral.erros);
+  }
+  return { ok: geral.ok, geral, porBloco };
+}
+
+/** A saída que o redator do bloco recebe, no formato do conferir.mjs do curso. */
+export function textoDaConferencia(erros, avisos = []) {
+  const linhas = ["Conferência deste trecho (o trecho é parte de um vídeo maior; os tempos são os do trecho):"];
+  for (const a of avisos) linhas.push(`  aviso: ${a}`);
+  linhas.push("", "REPROVADO. Corrija o plano antes de renderizar:");
+  erros.forEach((e, i) => linhas.push(`  ${i + 1}. ${e}`));
+  return linhas.join("\n");
+}
+
+/**
+ * Os instantes dos quadros de conferência (passo 8) de um plano: no meio de
+ * cada momento e depois de tudo entrar (o último instante mais 0,7 s), como o
+ * stills.mjs --momentos sem as bordas (num completo seriam centenas de
+ * quadros). Devolve os tempos no vídeo inteiro, em ordem.
+ */
+export function instantesDaRevisao(plano) {
+  const instantes = (v, k = "") =>
+    Array.isArray(v) ? v.flatMap((x) => instantes(x, k)) : v && typeof v === "object" ? Object.entries(v).flatMap(([c, x]) => instantes(x, c)) : typeof v === "number" && (k === "em" || /Em$/.test(k)) ? [v] : [];
+  const dur = Number(plano.duracao) || 0;
+  const tempos = new Set();
+  for (const m of plano.momentos ?? []) {
+    const meio = m.de + (m.ate - m.de) / 2;
+    const falas = (plano.palavras ?? []).filter((p) => p.em >= m.de && p.em < m.ate).map((p) => p.em);
+    const ultimo = Math.max(m.de, ...instantes(m), ...falas.slice(-1));
+    for (const t of [meio, Math.min(m.ate - 0.1, ultimo + 0.7)]) tempos.add(+Math.min(Math.max(0, t), dur - 0.05).toFixed(2));
+  }
+  return [...tempos].sort((a, b) => a - b);
+}
+
+/**
+ * As partes do render (quadros inclusivos): ~`alvoSeg` cada, a última absorve
+ * a sobra curta (menos de 40% do alvo). Cobrem a composição inteira, em ordem.
+ */
+export function partesDoRender(duracao, fps, alvoSeg = BLOCO_ALVO_SEG) {
+  const total = Math.max(1, Math.round(Number(duracao) * Number(fps)));
+  const passo = Math.max(1, Math.round(alvoSeg * fps));
+  const partes = [];
+  for (let a = 0; a < total; a += passo) partes.push([a, Math.min(total - 1, a + passo - 1)]);
+  if (partes.length > 1) {
+    const ultima = partes[partes.length - 1];
+    if (ultima[1] - ultima[0] + 1 < passo * 0.4) {
+      partes.pop();
+      partes[partes.length - 1][1] = total - 1;
+    }
+  }
+  return partes;
+}
+
+/**
+ * Quantas partes ao mesmo tempo e quantas abas do Chrome por parte, dentro da
+ * fatia deste trabalho na fila (capacidade.mjs): as abas da fatia divididas
+ * entre as partes, nunca mais partes juntas que `rendersDoCompleto`.
+ */
+export function paralelismoDoRender(fatia, partes) {
+  const abas = Math.max(1, Number(fatia?.remotion) || 1);
+  const paralelas = Math.max(1, Math.min(partes, Number(fatia?.rendersDoCompleto) || 1, abas));
+  return { paralelas, concorrencia: Math.max(1, Math.floor(abas / paralelas)) };
+}
