@@ -1,5 +1,5 @@
 import { askClaude, askClaudeComImagens } from "@/lib/claude";
-import { treinamentoDoModelo, type EsqueletoDoPlano, type ReferenciasDoModelo } from "@/lib/media/editor-do-curso/escrever-plano";
+import { instrucaoDasPecasParadas, treinamentoDoModelo, type EsqueletoDoPlano, type PecasParadas, type ReferenciasDoModelo } from "@/lib/media/editor-do-curso/escrever-plano";
 
 /**
  * O PASSO 6b DOS MODELOS COM IMAGEM (09/10/2026): references/imagens.md do
@@ -65,6 +65,8 @@ export async function pedirImagensDoModelo(args: {
   referencias: ReferenciasDoModelo;
   esqueleto: EsqueletoDoPlano;
   nicho?: string | null;
+  /** Os posts da campanha no estilo do modelo: no máximo uma imagem por peça, junto do texto dela. */
+  pecasParadas?: PecasParadas | null;
   modelo?: string;
   usage: { projectId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -75,7 +77,13 @@ ${args.nicho ? `Assunto do perfil (contexto, não é texto de tela): ${args.nich
 Duração: ${esqueleto.duracao} s. A fala no vídeo já cortado (início–fim em segundos e a palavra):
 ${esqueleto.palavras.map((p) => `${p.em.toFixed(2)}–${p.ate.toFixed(2)} ${p.w}`).join("\n")}
 
-Faça o mapa editorial e a lista de imagens deste vídeo neste modelo.`;
+${
+    args.pecasParadas
+      ? `${instrucaoDasPecasParadas(args.pecasParadas)}
+
+Imagens no modo peças paradas: no máximo UMA imagem por peça, de uma coisa concreta que o texto da peça nomeia, e só para a peça cujo bloco vai mostrar o texto inteiro junto da imagem (do jeito que este modelo põe imagem). Peça sem coisa concreta fica sem imagem. Faça o mapa editorial (uma linha por peça) e a lista de imagens destas peças neste modelo.`
+      : "Faça o mapa editorial e a lista de imagens deste vídeo neste modelo."
+  }`;
   const opcoes = {
     cachedPrefix: treinamentoDoModelo(referencias),
     model: args.modelo,
