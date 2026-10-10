@@ -135,15 +135,19 @@ function Legenda({ redes }: { redes: string[] }) {
   );
 }
 
-/** A variação contra o período anterior, com a cor dizendo a direção. */
-export function Variacao({ atual, anterior }: { atual: number; anterior: number }) {
+/**
+ * A variação contra o período anterior, com a cor dizendo a direção.
+ * `rotulo` (09/10): contra o que se compara ("vs. antes da Demandou", nas
+ * estatísticas da conta); o padrão continua o de sempre.
+ */
+export function Variacao({ atual, anterior, rotulo = "vs. 30 dias antes" }: { atual: number; anterior: number; rotulo?: string }) {
   if (anterior === 0 && atual === 0) return <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>sem dados no período anterior</span>;
   if (anterior === 0) return <span className="text-[11px] font-semibold text-green-500">novo neste mês</span>;
   const p = ((atual - anterior) / anterior) * 100;
   const sobe = p >= 0;
   return (
     <span className={`text-[11px] font-semibold ${sobe ? "text-green-500" : "text-red-400"}`}>
-      {sobe ? "▲" : "▼"} {num(Math.abs(p))}% <span className="font-normal" style={{ color: "var(--text-muted)" }}>vs. 30 dias antes</span>
+      {sobe ? "▲" : "▼"} {num(Math.abs(p))}% <span className="font-normal" style={{ color: "var(--text-muted)" }}>{rotulo}</span>
     </span>
   );
 }

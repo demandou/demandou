@@ -26,6 +26,10 @@ import {
   type ResultadosDoProjeto,
   type ResumoDoPeriodo,
 } from "@/lib/analytics/tipos-dos-resultados";
+import type { EstatisticasDoProjeto } from "@/lib/analytics/tipos-da-conta";
+import { PainelDasContas } from "@/components/analytics/estatisticas-da-conta";
+import type { SugestaoDeImpulso } from "@/lib/analytics/tipos-do-impulso";
+import { SeloDeImpulso } from "@/components/analytics/impulso";
 
 /**
  * A ABA RESULTADOS (reescrita em 01/10 sobre a tela de "Analytics").
@@ -56,6 +60,11 @@ interface PipelineRun {
 interface Props {
   project: { id: string; name: string };
   resultados: ResultadosDoProjeto;
+  /** As estatísticas da conta inteira (09/10), acima dos números post a post. */
+  estatisticas: EstatisticasDoProjeto;
+  /** As sugestões de impulso válidas (09/10, agente de tráfego): o selo no card do post. */
+  impulsos?: SugestaoDeImpulso[];
+  souDono: boolean;
   recentRuns: PipelineRun[];
 }
 
@@ -179,7 +188,7 @@ function NumerosDoPost({ n }: { n: NumerosLidos }) {
   );
 }
 
-function LinhaDoPost({ p }: { p: PostNosResultados }) {
+function LinhaDoPost({ p, impulso }: { p: PostNosResultados; impulso?: SugestaoDeImpulso }) {
   return (
     <div className="py-3 border-b last:border-b-0" style={{ borderColor: "var(--border)" }}>
       <div className="flex items-start gap-3">
@@ -221,13 +230,15 @@ function LinhaDoPost({ p }: { p: PostNosResultados }) {
               </p>
             )}
           </div>
+          {impulso && <SeloDeImpulso s={impulso} />}
         </div>
       </div>
     </div>
   );
 }
 
-export function AnalyticsDashboard({ project, resultados, recentRuns }: Props) {
+export function AnalyticsDashboard({ project, resultados, estatisticas, impulsos = [], souDono, recentRuns }: Props) {
+  const impulsoDo = useMemo(() => new Map(impulsos.map((s) => [s.postId, s])), [impulsos]);
   const [syncing, setSyncing] = useState(false);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [loadingInsight, setLoadingInsight] = useState(false);
@@ -315,6 +326,13 @@ export function AnalyticsDashboard({ project, resultados, recentRuns }: Props) {
         </Button>
       </div>
 
+      {/* A CONTA INTEIRA PRIMEIRO (09/10): o que a rede mostra no painel
+          profissional (visualizações, seguidores e não seguidores, formatos,
+          principais conteúdos), e depois os posts da Demandou. */}
+      <PainelDasContas projectId={project.id} estatisticas={estatisticas} souDono={souDono} />
+
+      <h2 className="text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Posts da Demandou</h2>
+
       {/* Período */}
       <div className="inline-flex rounded-xl border p-0.5 mb-4" style={{ borderColor: "var(--border)", background: "var(--bg-card)" }} role="tablist" aria-label="Período do resumo">
         {BOTOES_DE_PERIODO.map(([k, rotulo]) => (
@@ -389,7 +407,7 @@ export function AnalyticsDashboard({ project, resultados, recentRuns }: Props) {
           <p className="text-xs py-6 text-center" style={{ color: "var(--text-muted)" }}>Nenhum post publicado ainda. Quando sair o primeiro, os números aparecem aqui 2 horas depois.</p>
         ) : (
           <>
-            {lista.slice(0, quantos).map((p) => <LinhaDoPost key={p.id} p={p} />)}
+            {lista.slice(0, quantos).map((p) => <LinhaDoPost key={p.id} p={p} impulso={impulsoDo.get(p.id)} />)}
             {lista.length > quantos && (
               <button onClick={() => setQuantos((q) => q + 30)} className="mt-3 text-xs font-semibold underline-offset-2 hover:underline" style={{ color: "var(--text-primary)" }}>
                 Mostrar mais {Math.min(30, lista.length - quantos)} de {lista.length - quantos}

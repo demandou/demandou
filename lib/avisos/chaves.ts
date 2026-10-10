@@ -109,6 +109,10 @@ export const PREFIXOS_DAS_TELAS = [
   "reprovacao-peca",
   // O pedido de ajuste do chat do card que parou no saldo (09/10).
   "ajuste-sem-saldo",
+  // O convite para reconectar e liberar as estatísticas da conta (09/10).
+  "estatisticas-conta",
+  // A sugestão de impulsionar um post (09/10, agente de tráfego).
+  "impulsionar",
 ] as const;
 
 /**
@@ -491,6 +495,26 @@ export function chaveDaCota(renovaEm: string | null | undefined, restantes: numb
 
 export function chaveDaContaAReconectar(accountId: string, needsReconnectAt: string | null | undefined): string | null {
   return montar("conta-reconectar", accountId, needsReconnectAt);
+}
+
+/**
+ * O aviso das estatísticas da conta (09/10): falta permissão, a Meta ainda não
+ * liberou, ou a leitura falhou. A ocorrência é o instante da tentativa: uma
+ * tentativa nova (depois de reconectar, ou no dia seguinte) com o mesmo
+ * problema volta a avisar.
+ */
+export function chaveDoAvisoDeEstatisticas(accountId: string, estado: string, tentativaEm: string | null | undefined): string | null {
+  return montar("estatisticas-conta", accountId, estado, tentativaEm);
+}
+
+/**
+ * A sugestão de impulsionar um post (09/10, agente de tráfego): a ocorrência é
+ * o marco da leitura (24, 72 ou 168 h). Descartada no 24 h, o mesmo post volta
+ * a ser sugerido se o JEV o escolher de novo na leitura de 3 dias. A mesma
+ * chave vale no bloco da primeira tela e no selo do card em Resultados.
+ */
+export function chaveDoImpulso(postId: string, marco: number | null | undefined): string | null {
+  return montar("impulsionar", postId, marco);
 }
 
 export function chaveDasPaginasDoLinkedin(projectId: string, resultado: string): string | null {

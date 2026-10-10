@@ -40,6 +40,13 @@ export function rotuloDaConta(conta: ContaParaSelo): string {
   return `${conta.displayName ?? conta.platform} (${ehPagina(conta) ? "página" : "perfil"})`;
 }
 
+/** Esconde a foto que não carregou e mostra a inicial, que é o irmão seguinte. */
+function trocarPelaInicial(img: HTMLImageElement) {
+  img.style.display = "none";
+  const irmao = img.nextElementSibling as HTMLElement | null;
+  if (irmao) irmao.style.display = "flex";
+}
+
 /** Só a foto com o selo da rede, para linhas apertadas. */
 export function FotoDaConta({
   conta,
@@ -67,10 +74,13 @@ export function FotoDaConta({
           loading="lazy"
           // A foto vem do CDN da rede e expira sem avisar. Quando ela morre, o
           // que fica é a inicial, e não um quadrado quebrado.
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-            const irmao = e.currentTarget.nextElementSibling as HTMLElement | null;
-            if (irmao) irmao.style.display = "flex";
+          onError={(e) => trocarPelaInicial(e.currentTarget)}
+          // A FOTO QUE MORREU ANTES DA HIDRATAÇÃO (09/10): na página desenhada
+          // no servidor, o erro do <img> pode disparar antes de o React ligar o
+          // onError, e o quadrado quebrado ficava (visto na página do Facebook
+          // nas estatísticas da conta). Na montagem, confere se ela já falhou.
+          ref={(el) => {
+            if (el && el.complete && el.naturalWidth === 0) trocarPelaInicial(el);
           }}
         />
       ) : null}

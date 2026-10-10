@@ -27,10 +27,27 @@ const TOKEN_URL = "https://api.instagram.com/oauth/access_token";
 const GRAPH = "https://graph.instagram.com";
 const GRAPH_V = `${GRAPH}/v23.0`;
 
-export const INSTAGRAM_SCOPES = [
-  "instagram_business_basic",
-  "instagram_business_content_publish",
-].join(",");
+/**
+ * AS ESTATÍSTICAS DA CONTA (09/10): `instagram_business_manage_insights` é a
+ * permissão que libera visualizações, alcance, seguidores e não seguidores e a
+ * divisão por formato (lib/analytics/estatisticas-da-conta.ts). Medido em
+ * 09/10: sem ela, as quatro contas conectadas responderam 403, código 10.
+ *
+ * A ORDEM IMPORTA: a permissão precisa estar no caso de uso do Instagram no
+ * painel do app da Meta ANTES de este pedido ir ao ar, ou o diálogo pode
+ * recusar o login inteiro por escopo inválido. Se isso acontecer, a variável
+ * INSTAGRAM_ESTATISTICAS_NO_LOGIN=0 tira só este escopo, sem novo deploy de
+ * código, e o login volta a ser o de antes.
+ */
+export const ESCOPO_DE_ESTATISTICAS = "instagram_business_manage_insights";
+
+export function escoposDoInstagram(env: Record<string, string | undefined> = process.env): string {
+  const escopos = ["instagram_business_basic", "instagram_business_content_publish"];
+  if (env.INSTAGRAM_ESTATISTICAS_NO_LOGIN !== "0") escopos.push(ESCOPO_DE_ESTATISTICAS);
+  return escopos.join(",");
+}
+
+export const INSTAGRAM_SCOPES = escoposDoInstagram();
 
 /** Legenda acima disso a API recusa. */
 export const INSTAGRAM_MAX_CAPTION = 2200;
@@ -48,7 +65,7 @@ export function getInstagramAuthUrl(
     client_id: process.env.INSTAGRAM_APP_ID!,
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: INSTAGRAM_SCOPES,
+    scope: escoposDoInstagram(),
     state,
     // Sem estes dois, quem tem sessão do Facebook no navegador cai no fluxo
     // errado (o de página) e o login de conta profissional nem aparece.
@@ -94,11 +111,24 @@ export function getInstagramAuthUrl(
   return `${AUTH_URL}?${params.toString()}`;
 }
 
+/**
+ * As permissões que a Meta concedeu, quando a resposta da troca as traz (09/10).
+ * A documentação mostra `permissions` como texto separado por vírgula; aceita
+ * também lista. Sem o campo, null: "não sabemos" é diferente de "nenhuma".
+ */
+export function permissoesDaResposta(resposta: unknown): string[] | null {
+  const bruto = resposta as { permissions?: unknown; data?: Array<{ permissions?: unknown }> } | null;
+  const p = bruto?.permissions ?? bruto?.data?.[0]?.permissions;
+  if (Array.isArray(p)) return p.filter((x): x is string => typeof x === "string").map((x) => x.trim()).filter(Boolean);
+  if (typeof p === "string") return p.split(",").map((x) => x.trim()).filter(Boolean);
+  return null;
+}
+
 /** Troca o code pelo token curto e este pelo longo, numa chamada só daqui. */
 export async function exchangeInstagramCode(
   code: string,
   redirectUri: string
-): Promise<{ accessToken: string; expiresAt: Date; userId: string }> {
+): Promise<{ accessToken: string; expiresAt: Date; userId: string; permissoes: string[] | null }> {
   const res = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -113,7 +143,7 @@ export async function exchangeInstagramCode(
   if (!res.ok) {
     throw new Error(`Instagram token exchange failed: ${await res.text()}`);
   }
-  const short = (await res.json()) as { access_token: string; user_id: string | number };
+  const short = (await res.json()) as { access_token: string; user_id: string | number; permissions?: unknown };
 
   const longRes = await fetch(
     `${GRAPH}/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_APP_SECRET}&access_token=${short.access_token}`
@@ -127,6 +157,7 @@ export async function exchangeInstagramCode(
     accessToken: long.access_token,
     expiresAt: new Date(Date.now() + long.expires_in * 1000),
     userId: String(short.user_id),
+    permissoes: permissoesDaResposta(short),
   };
 }
 
