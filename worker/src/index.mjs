@@ -2656,6 +2656,14 @@ const servidor = createServer((req, res) => {
             publicados.push(url);
             return url;
           },
+          // o WebM com alfa volta pelo Blob público, com token de cliente só para ele (apagado no fim)
+          destinoDoRecorte: DESTINO_PUBLICO
+            ? async () => {
+                const { saidaNoBlob } = await import("./avancado/recorte.mjs");
+                return saidaNoBlob({ token: DESTINO_PUBLICO, pathname: `cortes/${pedido.videoJobId ?? "avulso"}/alfa-do-recorte.webm` });
+              }
+            : null,
+          aoPublicar: (url) => publicados.push(url),
           pedirCena,
           aoPasso: (passo) => console.log(`[avancado ${pedido.chave}] ${passo}`),
         });
