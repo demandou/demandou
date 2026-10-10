@@ -57,6 +57,7 @@ ap.add_argument("--inicio", type=float, required=True)
 ap.add_argument("--duracao", type=float, required=True)
 ap.add_argument("--saida", required=True)
 ap.add_argument("--aquecer", type=float, default=1.5)
+ap.add_argument("--aquecer-no-comeco", action="store_true", help="o trecho começa no 0 (corte já emendado): a memória do RVM aquece nos primeiros quadros do próprio trecho, que depois são lidos de novo")
 ap.add_argument("--razao", type=float, default=0.25)
 ap.add_argument("--aperto", type=float, default=0.06)
 ap.add_argument("--fps", type=int, default=30)
@@ -107,6 +108,22 @@ rec = [np.zeros([1, 1, 1, 1], np.float32)] * 4
 razao = np.array([args.razao], np.float32)
 alfa_anterior = None
 img_anterior = None
+
+if args.aquecer_no_comeco and args.metodo == "rvm" and args.aquecer > 0:
+    # O corte emendado não tem "antes" para aquecer: a memória passa pelos primeiros
+    # quadros do próprio trecho (descartados) e a leitura de verdade recomeça do 0.
+    preparo = subprocess.Popen(
+        ["ffmpeg", "-v", "error", "-ss", f"{args.inicio:.3f}", "-i", args.video, "-t", f"{args.aquecer:.3f}",
+         "-vf", f"fps={args.fps}", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"],
+        stdout=subprocess.PIPE,
+    )
+    while True:
+        b = preparo.stdout.read(W * H * 3)
+        if len(b) < W * H * 3:
+            break
+        src = (np.frombuffer(b, np.uint8).reshape(H, W, 3).astype(np.float32) * (1 / 255.0)).transpose(2, 0, 1)[None]
+        _fgr, _pha, *rec = sess.run(None, {"src": src, "r1i": rec[0], "r2i": rec[1], "r3i": rec[2], "r4i": rec[3], "downsample_ratio": razao})
+    preparo.kill()
 
 
 def cor_da_frente(img, alfa):

@@ -99,8 +99,9 @@ import { CaixaDaEdicao, TETO_USD_DO_CORTE } from "@/lib/media/teto-da-edicao";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { leituraNoCorte } from "@/lib/media/editor-por-comando/leitura-no-plano";
-import { editorDoCursoLigado, modeloDoCursoDoProjeto, modeloPodeSerEscolhido, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd, coresDaMarcaParaOModelo } from "@/lib/media/editor-do-curso/no-corte";
+import { editorDoCursoLigado, escolhaDoEditorDoProjeto, modeloPodeSerEscolhido, modeloServeNoCorte, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd, coresDaMarcaParaOModelo } from "@/lib/media/editor-do-curso/no-corte";
 import { faltaDoMaterialNoCorte, materialParaOWorker, modeloServeNoProjeto } from "@/lib/media/editor-do-curso/material-do-modelo-servidor";
+import { caminhoDoCorte, editorAvancadoLigado, ehSobMedida, reservaDoSobMedida, tecnicaDaOpcao } from "@/lib/media/editor-avancado/no-corte";
 
 /**
  * O EDITOR COMPLETO NA ESTEIRA (30/09/2026), com a trava MONTAGEM_NA_EDICAO=1.
@@ -697,7 +698,10 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
     const worker = (process.env.VIDEO_WORKER_URL ?? "").replace(/\/$/, "");
     if (!worker) throw new Error("VIDEO_WORKER_URL não configurado");
     const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
-    const chave = `cortes/${video.id}/curso-${indice}.mp4`;
+    // A EDIÇÃO SOB MEDIDA (10/10, EDITOR_AVANCADO=1): a mesma fila e o mesmo callback,
+    // a rota /editar-avancado do worker e a IA das cenas em /api/editor-avancado/cena.
+    const avancado = ehSobMedida(modelo);
+    const chave = avancado ? `cortes/${video.id}/avancado-${indice}.mp4` : `cortes/${video.id}/curso-${indice}.mp4`;
     const montando: MontagemDoCorte = {
       ...tomado,
       estado: "montando",
@@ -730,12 +734,14 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
       material: await materialParaOWorker(video.projectId, modelo),
       tetoUsd: tetoDoPlanoUsd(fala.duracao),
       voltas: 3,
-      planoUrl: `${base}/api/editor-do-curso/plano`,
+      ...(avancado
+        ? { letra: await letraDaMarca(video.projectId).catch(() => "moderna"), tecnica: tecnicaDaOpcao(modelo), cenaUrl: `${base}/api/editor-avancado/cena` }
+        : { planoUrl: `${base}/api/editor-do-curso/plano` }),
       callbackUrl: `${base}/api/videos/${video.id}/montar-callback`,
       retorno: { indice, desde: montando.desde },
     });
     if (!(await trocarEstado(video.id, indice, tomado, montando))) return;
-    const r = await fetch(`${worker}/editar-no-modelo`, {
+    const r = await fetch(`${worker}/${avancado ? "editar-avancado" : "editar-no-modelo"}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", [CABECALHO_ASSINATURA]: assinarCorpo(corpo) },
       body: corpo,
@@ -771,8 +777,31 @@ async function esperarOMaterial(id: string, indice: number, lido: MontagemDoCort
   });
 }
 
-/** O caminho do curso desiste e o corte volta à fila, para o editor de sempre (a reserva). */
+/**
+ * O caminho do curso desiste e o corte volta à fila, para o editor de sempre (a reserva).
+ * A EDIÇÃO SOB MEDIDA (10/10) desiste para a reserva dela: o modelo do curso que o projeto
+ * usava antes (fixo neste corte), e só sem ele para o editor de sempre.
+ */
 async function desistirDoModeloDoCurso(id: string, indice: number, lido: MontagemDoCorte, motivo: string): Promise<void> {
+  if (ehSobMedida(lido.curso?.modelo)) {
+    const projeto = await prisma.videoJob.findUnique({ where: { id }, select: { projectId: true } }).catch(() => null);
+    const escolha = projeto ? await escolhaDoEditorDoProjeto(projeto.projectId).catch(() => null) : null;
+    const r = reservaDoSobMedida({ reserva: escolha?.reserva, modeloServe: (x) => Boolean(modeloServeNoCorte(x)), cursoLigado: editorDoCursoLigado() });
+    if (r.tipo === "modelo") {
+      console.warn(`[montagem][${id}] corte ${indice}: a edição sob medida desistiu (${motivo}); vai para o ${r.modelo}`);
+      await trocarEstado(id, indice, lido, {
+        ...lido,
+        estado: "na-fila",
+        desde: agora(),
+        tentativas: 0,
+        esperarAte: null,
+        motivo: null,
+        falhaTecnica: false,
+        curso: { modelo: r.modelo, fixo: true, desistiu: null, avancadoDesistiu: motivo.slice(0, 500) },
+      });
+      return;
+    }
+  }
   console.warn(`[montagem][${id}] corte ${indice}: modelo do curso desistiu: ${motivo}`);
   await trocarEstado(id, indice, lido, {
     ...lido,
@@ -788,11 +817,34 @@ async function desistirDoModeloDoCurso(id: string, indice: number, lido: Montage
 
 /** O corte vai pelo modelo do curso? Trava ligada, modelo escolhido no projeto, e o caminho não desistiu neste corte. */
 async function modeloDoCursoDoCorte(video: Pick<VideoDoPasso, "projectId">, m: MontagemDoCorte): Promise<string | null> {
-  if (!editorDoCursoLigado() || m.curso?.desistiu) return null;
-  // O corte refeito num modelo escolhido para ele (o "refazer neste estilo"):
-  // vale por cima do modelo do projeto (o que pede material, com o material que basta).
-  if (m.curso?.fixo && (await modeloServeNoProjeto(video.projectId, m.curso.modelo))) return m.curso.modelo;
-  return modeloDoCursoDoProjeto(video.projectId).catch(() => null);
+  if (m.curso?.desistiu) return null;
+  // O corte refeito num modelo escolhido para ele (o "refazer neste estilo", ou a
+  // reserva da edição sob medida): vale por cima do modelo do projeto (o que pede
+  // material, com o material que basta).
+  if (m.curso?.fixo && editorDoCursoLigado() && (await modeloServeNoProjeto(video.projectId, m.curso.modelo))) return m.curso.modelo;
+  if (!editorDoCursoLigado() && !editorAvancadoLigado()) return null;
+  const escolha = await escolhaDoEditorDoProjeto(video.projectId).catch(() => null);
+  if (!escolha) return null;
+  // O que pede material (10/10) serve neste projeto só com o material que basta: lido uma vez aqui.
+  const candidato = ehSobMedida(escolha.escolhido) ? escolha.reserva : escolha.escolhido;
+  const comMaterial = candidato && !modeloServeNoCorte(candidato) && (await modeloServeNoProjeto(video.projectId, candidato).catch(() => false)) ? candidato : null;
+  // A EDIÇÃO SOB MEDIDA (10/10) antes do modelo; desistiu neste corte, a reserva dela.
+  const c = caminhoDoCorte({
+    escolhido: escolha.escolhido,
+    reserva: escolha.reserva,
+    avancadoLigado: editorAvancadoLigado(),
+    cursoLigado: editorDoCursoLigado(),
+    avancadoDesistiu: Boolean(m.curso?.avancadoDesistiu),
+    modeloServe: (x) => Boolean(modeloServeNoCorte(x)) || (comMaterial !== null && x === comMaterial),
+  });
+  return c.tipo === "editor" ? null : c.modelo;
+}
+
+/** A letra da identidade do projeto (moderna, impacto, clássica ou amigável), para o kit do editor avançado. */
+async function letraDaMarca(projectId: string): Promise<string> {
+  const { estadoDaIdentidade } = await import("@/lib/modelos-de-arte/identidade-aprovada");
+  const p = await prisma.project.findUnique({ where: { id: projectId }, select: { colorPalette: true } });
+  return (await estadoDaIdentidade(projectId, p?.colorPalette)).letra;
 }
 
 /**
@@ -1608,7 +1660,9 @@ export async function avancarMontagens(opcoes: { orcamentoMs?: number } = {}): P
           // O worker roda o curso e avisa pelo callback. Passado o prazo (o
           // render mais as voltas do plano), pergunta ao worker antes de desistir.
           const duracaoDoCorte = (m.plano as { fala?: { duracao?: number } } | undefined)?.fala?.duracao;
-          if (idade > prazoDaMontagemMs(duracaoDoCorte, true) + 45 * 60_000 && !(await aindaEsperaOWorker(video.id, m.chave, idade))) {
+          // A edição sob medida (10/10) tem o recorte em CPU e o render da cena própria: mais folga.
+          const folga = ehSobMedida(m.curso.modelo) ? 120 * 60_000 : 45 * 60_000;
+          if (idade > prazoDaMontagemMs(duracaoDoCorte, true) + folga && !(await aindaEsperaOWorker(video.id, m.chave, idade))) {
             r.olhados++;
             await desistirDoModeloDoCurso(video.id, i, m, "o worker não terminou a edição no prazo");
           }
@@ -1682,7 +1736,7 @@ export async function concluirMontagem(
     tempos?: Record<string, number>;
     erro?: string;
     reiniciado?: boolean;
-    curso?: { modelo?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[] } | null;
+    curso?: { modelo?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[]; tecnica?: string } | null;
   }
 ): Promise<"trocado" | "ignorado" | "falhou"> {
   const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { clips: true } });
@@ -1709,7 +1763,7 @@ export async function concluirMontagem(
       t,
       {
         ...lido,
-        curso: { ...lido.curso, mapa: c.mapa?.slice(0, 8000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico, avisos: c.avisos },
+        curso: { ...lido.curso, mapa: c.mapa?.slice(0, 8000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico, avisos: c.avisos, ...(c.tecnica ? { tecnica: c.tecnica } : {}) },
         custoUsd: c.custoUsd ?? lido.custoUsd,
       },
       resultado.montado,

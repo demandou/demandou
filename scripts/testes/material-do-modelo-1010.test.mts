@@ -260,7 +260,7 @@ test("a esteira manda as URLs do material ao worker e, sem o mínimo, o corte es
   assert.match(src, /async function esperarOMaterial[\s\S]{0,400}estado: "na-fila"[\s\S]{0,200}esperarAte: depois\(ESPERA_DO_MATERIAL_MS\)[\s\S]{0,100}esperandoMaterial:/);
   // O "refazer neste estilo" também aceita os seis, e o fixo só serve com o material.
   assert.match(src, /refazerCorteNoModelo[\s\S]{0,300}modeloPodeSerEscolhido\(modelo\)/);
-  assert.match(src, /m\.curso\?\.fixo && \(await modeloServeNoProjeto\(video\.projectId, m\.curso\.modelo\)\)/);
+  assert.match(src, /m\.curso\?\.fixo && editorDoCursoLigado\(\) && \(await modeloServeNoProjeto\(video\.projectId, m\.curso\.modelo\)\)/);
   // O pacote do worker: lança sem o material que basta (nunca manda o corte sem ele).
   const servidor = ler("lib/media/editor-do-curso/material-do-modelo-servidor.ts");
   assert.match(servidor, /if \(!s\.basta\) throw new Error/);

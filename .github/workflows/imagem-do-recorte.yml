@@ -1,0 +1,73 @@
+# A IMAGEM DO RECORTE NO RUNPOD SERVERLESS (editor avançado, 10/10/2026).
+#
+# Constrói worker/avancado/runpod/Dockerfile (o RVM na GPU, licença GPL-3.0 do
+# modelo, baixado e conferido pelo sha256 na construção) e publica no GitHub
+# Container Registry da conta dona do repositório:
+#   ghcr.io/<dono>/demandou-recorte:<commit> e :latest
+# O endpoint do RunPod usa essa imagem (ver worker/avancado/runpod/LEIA.md).
+# Roda quando o handler, o Dockerfile ou o script do recorte mudam, ou à mão.
+name: Imagem do recorte (RunPod)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "worker/avancado/runpod/**"
+      - "worker/avancado/scripts/recorte-alfa.py"
+      - ".github/workflows/imagem-do-recorte.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: imagem-do-recorte-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # As bibliotecas da CUDA e do cuDNN pelo pip passam de 3 GB: abre espaço no disco do runner.
+      - name: Liberar disco
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Nome da imagem
+        id: nome
+        run: |
+          dono=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "imagem=ghcr.io/${dono}/demandou-recorte" >> "$GITHUB_OUTPUT"
+          echo "curta=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: worker/avancado
+          file: worker/avancado/runpod/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.nome.outputs.imagem }}:${{ steps.nome.outputs.curta }}
+            ${{ steps.nome.outputs.imagem }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Recorte com alfa (Robust Video Matting, GPL-3.0) do editor avançado da Demandou, para o RunPod Serverless
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Resumo
+        run: |
+          echo "### Imagem publicada" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${{ steps.nome.outputs.imagem }}:${{ steps.nome.outputs.curta }}\`" >> "$GITHUB_STEP_SUMMARY"

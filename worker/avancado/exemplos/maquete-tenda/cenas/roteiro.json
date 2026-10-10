@@ -1,0 +1,24 @@
+{
+  "tecnica": "maquete-3d",
+  "fundo": "liso",
+  "paralaxe": 0,
+  "apresentador": [
+    { "em": "inicio", "acompanhar": 1 },
+    {
+      "em": { "palavra": "prepara", "mais": 0.08 },
+      "transicao": 0.9,
+      "caixa": { "x": 50, "y": 1150, "l": 500, "a": 640 },
+      "forma": "chanfrada",
+      "borda": true,
+      "escala": 0.64,
+      "rosto": { "x": 300, "y": 1380 },
+      "acompanhar": 1,
+      "inclinacao": 7
+    }
+  ],
+  "legenda": { "topo": 1236, "esquerda": 604, "largura": 440, "tamanho": 46, "alinhar": "left", "maxLetras": 16 },
+  "cenas": [
+    { "arquivo": "cena-01.tsx", "de": { "palavra": "prepara" }, "ate": "fim", "oQue": "a maquete da tenda: planta que se eleva, tenda que alarga, vista explodida em três planos com rótulos, cordas, estacas e lona, e a reconstrução" },
+    { "arquivo": "cena-02.tsx", "de": { "palavra": "essencial", "mais": -0.05 }, "ate": "fim", "oQue": "O ESSENCIAL BEM FEITO se construindo em cima da tenda reunida" }
+  ]
+}

@@ -1,0 +1,7 @@
+As letras da marca no editor avançado (worker/avancado, kit/letra.ts), as mesmas quatro
+que o cliente escolhe na identidade (lib/modelos-de-arte/identidade.ts): moderna
+(Montserrat), impacto (Anton e Inter), clássica (Playfair Display e Inter) e amigável
+(Poppins). Cópias dos TTF estáticos de lib/media/fontes-da-capa/modelos, baixados do
+Google Fonts em 03/10/2026. Todas sob a SIL Open Font License 1.1
+(https://openfontlicense.org): uso, inclusão e redistribuição livres; não vender as
+fontes sozinhas. Ficam no repositório para o render nunca depender do Google na hora.

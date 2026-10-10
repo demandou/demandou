@@ -2,7 +2,8 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
-import { editorDoCursoLigado, escolherModeloDoCurso, modeloPodeSerEscolhido } from "@/lib/media/editor-do-curso/no-corte";
+import { editorDoCursoLigado, escolhaDoEditorDoProjeto, escolherModeloDoCurso, modeloPodeSerEscolhido } from "@/lib/media/editor-do-curso/no-corte";
+import { DETALHE_DO_SOB_MEDIDA, editorAvancadoLigado, ehSobMedida, OPCOES_SOB_MEDIDA } from "@/lib/media/editor-avancado/no-corte";
 import { modelosDaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
 import { modeloEscolhidoDoProjeto, situacaoDoMaterialNoProjeto } from "@/lib/media/editor-do-curso/material-do-modelo-servidor";
 import { pedeMaterial } from "@/lib/media/editor-do-curso/material-do-modelo";
@@ -23,7 +24,8 @@ import { registrarNota } from "@/lib/cerebro/captura";
  * depois do GET, para a grade aparecer sem esperar.
  *
  * PUT { modelo: string | null } grava a escolha (null volta ao editor de
- * antes). 400 quando o modelo ainda não serve no corte.
+ * antes; "sob-medida-3d", "sob-medida-recorte" e "sob-medida-graficos" são as
+ * edições sob medida do editor avançado, só com EDITOR_AVANCADO=1). 400 quando o modelo ainda não serve no corte.
  *
  * O MODELO QUE PEDE MATERIAL (10/10, material-do-modelo.ts): pode ser
  * escolhido sem o material; `modelo` é o escolhido, e `material` diz se o
@@ -44,11 +46,18 @@ async function podeUsar(id: string): Promise<boolean> {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!(await podeUsar(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const [modelo, s] = await Promise.all([modeloEscolhidoDoProjeto(id), situacaoDaRecomendacao(id)]);
+  const [modeloDoCurso, escolha, s] = await Promise.all([modeloEscolhidoDoProjeto(id), escolhaDoEditorDoProjeto(id), situacaoDaRecomendacao(id)]);
+  // A EDIÇÃO SOB MEDIDA (10/10): as três aulas do curso como opções no topo da biblioteca,
+  // só com EDITOR_AVANCADO=1. Escolhida, ela é o modelo em uso; o modelo do curso de antes
+  // fica de reserva (e segue nas peças).
+  const avancado = editorAvancadoLigado();
+  const sobMedida = avancado && ehSobMedida(escolha.escolhido);
   return NextResponse.json({
     ligado: editorDoCursoLigado(),
-    modelo,
-    material: modelo && pedeMaterial(modelo) ? await situacaoDoMaterialNoProjeto(id, modelo).catch(() => null) : null,
+    modelo: sobMedida ? escolha.escolhido : modeloDoCurso,
+    reserva: sobMedida ? modeloDoCurso : null,
+    sobMedida: avancado ? { opcoes: OPCOES_SOB_MEDIDA, detalhe: DETALHE_DO_SOB_MEDIDA } : null,
+    material: modeloDoCurso && pedeMaterial(modeloDoCurso) ? await situacaoDoMaterialNoProjeto(id, modeloDoCurso).catch(() => null) : null,
     recomendacao: s.recomendacao,
     pendente: s.pendente,
     modelos: modelosDaBiblioteca(),
@@ -104,10 +113,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Diga qual modelo usar, ou null para voltar ao editor de antes." }, { status: 400 });
   }
   const modelo = corpo.modelo as string | null;
-  if (modelo !== null && !modeloPodeSerEscolhido(modelo)) {
+  const sobMedida = ehSobMedida(modelo) && editorAvancadoLigado();
+  if (modelo !== null && !sobMedida && !modeloPodeSerEscolhido(modelo)) {
     return NextResponse.json({ error: "Este modelo ainda não pode ser usado nos cortes." }, { status: 400 });
   }
   await escolherModeloDoCurso(id, modelo);
-  const material = modelo && pedeMaterial(modelo) ? await situacaoDoMaterialNoProjeto(id, modelo).catch(() => null) : null;
+  const material = modelo && !sobMedida && pedeMaterial(modelo) ? await situacaoDoMaterialNoProjeto(id, modelo).catch(() => null) : null;
   return NextResponse.json({ ok: true, modelo, material });
 }
