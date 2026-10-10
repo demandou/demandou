@@ -342,17 +342,47 @@ export function textosDoMomento(valor, chave = "", saida = []) {
   return saida;
 }
 
-/** As palavras do texto da peça que o momento não mostra. Puro. */
+/**
+ * As palavras do texto da peça que o momento não mostra. Puro. Os símbolos que
+ * mudam o sentido do número (o "%" e o "R$") contam como palavra (10/10, prova
+ * integrada: a capa "35% dos donos" saiu "35 dos donos", e a conferência só
+ * olhava letras e algarismos).
+ */
 export function palavrasQueFaltam(momento, texto) {
-  const presentes = new Set(fichas(textosDoMomento(momento).join(" ")));
-  return [...new Set(fichas(texto))].filter((w) => !presentes.has(w));
+  const naTela = textosDoMomento(momento).join(" ");
+  const presentes = new Set(fichas(naTela));
+  // O "R$" é conferido inteiro abaixo; partido em fichas, viraria a palavra "r".
+  const faltam = [...new Set(fichas(String(texto).replace(/R\$/g, " ")))].filter((w) => !presentes.has(w));
+  if (/%/.test(texto) && !/%|por ?cento/i.test(naTela)) faltam.push("%");
+  if (/R\$/.test(texto) && !/R\$/.test(naTela)) faltam.push("R$");
+  return faltam;
 }
 
 /**
- * A conferência das peças paradas, por cima da do curso: um momento por peça,
- * cobrindo o trecho dela, e o texto da peça inteiro nele. Devolve os erros (vazio = aprovado).
+ * O que o template de cada modelo faz com o texto e a conferência precisa
+ * saber (10/10, prova integrada): no Manifesto, a palavra-janela passa pelo
+ * `limpar` do template (src/janela.ts: só letras e algarismos), então o "%" e o
+ * "R$" de um número na janela somem da tela ("35%" saiu "35"). Cada regra
+ * devolve o erro do momento, ou null.
  */
-export function conferirPecas(plano, pecas) {
+const SIMBOLO_DO_NUMERO = /[%$€£+]/;
+export const REGRAS_DAS_PECAS = {
+  "modelo-manifesto": [
+    (m) => {
+      const j = typeof m.janela === "string" ? m.janela : Array.isArray(m.janela?.linhas) ? m.janela.linhas.join("") : null;
+      return j && SIMBOLO_DO_NUMERO.test(j)
+        ? `a palavra-janela "${j}" tem símbolo, e a janela do Manifesto mostra só letras e algarismos (o "${j.match(SIMBOLO_DO_NUMERO)[0]}" some da tela). Escolha outra palavra-janela, sem símbolo, e deixe o número com o símbolo no texto.`
+        : null;
+    },
+  ],
+};
+
+/**
+ * A conferência das peças paradas, por cima da do curso: um momento por peça,
+ * cobrindo o trecho dela, e o texto da peça inteiro nele, mais as regras do
+ * template do modelo (REGRAS_DAS_PECAS). Devolve os erros (vazio = aprovado).
+ */
+export function conferirPecas(plano, pecas, modelo = null) {
   const momentos = [...(plano.momentos ?? [])].sort((a, b) => a.de - b.de);
   const erros = [];
   for (const p of pecas) {
@@ -371,6 +401,10 @@ export function conferirPecas(plano, pecas) {
     if (m.ate < p.ultimaAte + 1.1) erros.push(`${n}: o momento "${m.tipo}" termina em ${m.ate} s; vá até ${p.ate.toFixed(2)} s (o quadro da peça é tirado depois da última palavra).`);
     const faltam = palavrasQueFaltam(m, p.texto);
     if (faltam.length) erros.push(`${n}: o texto não aparece inteiro no momento "${m.tipo}"; faltam ${faltam.map((w) => `"${w}"`).join(", ")}. Ponha o texto completo nos campos de texto do bloco.`);
+    for (const regra of REGRAS_DAS_PECAS[modelo] ?? []) {
+      const e = regra(m);
+      if (e) erros.push(`${n}: ${e}`);
+    }
   }
   return erros;
 }
@@ -630,7 +664,7 @@ export async function conteudoDoQuadro(arquivo, W = 1080, H = 1920, { porLinha =
  * Fundo que não é liso (foto ou imagem em tela cheia): no 9:16 o quadro sai
  * como renderizado; nos outros, o quadro inteiro numa tarja da cor de fundo da marca.
  */
-export async function noFormato(quadro, formato, saida, { corDaMarca = "#111111", mascara = null, rosto = null } = {}) {
+export async function noFormato(quadro, formato, saida, { corDaMarca = "#111111", mascara = null, rosto = null, reservaDaBase = 0 } = {}) {
   const alvo = FORMATOS[formato];
   if (!alvo) throw new Error(`formato desconhecido: ${formato}`);
   const W = 1080;
@@ -683,9 +717,11 @@ export async function noFormato(quadro, formato, saida, { corDaMarca = "#111111"
     cursor = topoL + alturaL + 40;
   }
   // O corpo centrado no que sobra (ou encostado na borda em que já estava), reduzido só se não couber.
+  // `reservaDaBase` (10/10): a faixa de baixo fica livre para o logo da marca,
+  // para toda peça (e toda lâmina do carrossel) ter o canto dele.
   const y0 = Math.max(0, caixa.y0 - folga);
   const alturaC = Math.min(H, caixa.y1 + folga) - y0;
-  const espaco = Ht - margem - cursor;
+  const espaco = Ht - Math.max(margem, reservaDaBase) - cursor;
   const escala = Math.min(1, espaco / alturaC);
   const larguraC = Math.round((W * escala) / 2) * 2;
   const alturaCs = Math.round((alturaC * escala) / 2) * 2;
@@ -724,6 +760,13 @@ export async function noFormato(quadro, formato, saida, { corDaMarca = "#111111"
  */
 export const LOGO = { altura: 54, folga: 0.28, margem: 56 };
 
+/**
+ * A faixa da base que a recomposição deixa livre quando a peça leva logo: a
+ * margem, a pastilha inteira e um respiro. Medido na prova integrada de 10/10:
+ * sem ela, as lâminas reduzidas encostavam na base e saíam sem logo.
+ */
+export const RESERVA_DO_LOGO = LOGO.margem + Math.round(LOGO.altura * (1 + 2 * LOGO.folga)) + 24;
+
 /** A ordem de preferência dos cantos: a base primeiro (o modelo monta o conteúdo no alto). */
 export const CANTOS = ["inferior-direito", "inferior-esquerdo", "superior-direito", "superior-esquerdo"];
 
@@ -752,7 +795,7 @@ export function luminancia([r, g, b]) {
  * o primeiro livre na ordem de CANTOS, com a cor do fundo dele (para decidir a
  * pastilha), ou null quando nenhum está livre.
  */
-export async function cantoLivre(arquivo, W, H, w, h, { margem = LOGO.margem, folga = 16 } = {}) {
+export async function cantoLivre(arquivo, W, H, w, h, { margem = LOGO.margem, folga = 24 } = {}) {
   const k = 4;
   const lw = Math.round(W / k);
   const lh = Math.round(H / k);
@@ -1023,7 +1066,7 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
     // entrada já aconteceu, então vira aviso.
     const tempo = await gateDeTempo(projeto);
     if (!tempo.ok) avisos.push(`gate de tempo (aviso, volta ${volta + 1}): ${tempo.resultados.filter((g) => !g.ok).map((g) => g.ferramenta).join(", ")}`);
-    const dasPecas = conferirPecas(lerPlano(projeto), trechos);
+    const dasPecas = conferirPecas(lerPlano(projeto), trechos, pedido.modelo);
     const semLastro = escrito.numerosSemLastro ?? [];
     aprovado = conf.aprovado && dasPecas.length === 0 && semLastro.length === 0;
     historico.push({ volta: volta + 1, conferir: conf.aprovado, duros: conf.duros, relaxados: conf.relaxados.length, pecas: dasPecas, semLastro, custoUsd: +(Number(escrito.custoUsd) || 0).toFixed(4) });
@@ -1090,7 +1133,7 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
       const base = `peca-${e.peca.indice}-${e.peca.tipo}-${f.replace(":", "x")}`;
       const bruto = join(pastaDasPecas, `${base}.png`);
       const arquivo = join(pastaDasPecas, `${base}.jpg`);
-      const formato = await noFormato(q(instante), f, bruto, { corDaMarca: pedido.cores?.fundo, mascara: mascaras[instante.toFixed(2)] ?? null, rosto });
+      const formato = await noFormato(q(instante), f, bruto, { corDaMarca: pedido.cores?.fundo, mascara: mascaras[instante.toFixed(2)] ?? null, rosto, reservaDaBase: logo ? RESERVA_DO_LOGO : 0 });
       const acabamento = await acabarPeca(bruto, arquivo, { logo });
       if (acabamento.semCantoLivre) avisos.push(`a peça ${e.peca.indice} (${f}) não tem canto livre para o logo: saiu sem logo`);
       saidas.push({

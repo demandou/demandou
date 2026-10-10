@@ -30,8 +30,8 @@ import {
   tetoDoLoteUsd,
   textoDoInfograficoNoModelo,
   type PostDoLote,
-} from "../../lib/media/editor-do-curso/arte-pelo-modelo.ts";
-import { esperaDaIdentidade, TETO_DA_GERACAO_MS } from "../../lib/modelos-de-arte/espera-da-identidade.ts";
+} from "@/lib/media/editor-do-curso/arte-pelo-modelo";
+import { esperaDaIdentidade, TETO_DA_GERACAO_MS } from "@/lib/modelos-de-arte/espera-da-identidade";
 
 const worker = await import(pathToFileURL(path.resolve("worker/src/modelo/arte-no-modelo.mjs")).href);
 const TRACO = /[\u2014\u2013]/;
@@ -322,7 +322,50 @@ test("worker: os créditos das fotos de banco por imagem do momento", () => {
   assert.deepEqual(worker.idsDeImagemNoMomento({ tipo: "cartaz", imagem: { id: "mesa", efeito: "zoom" }, itens: [{ foto: "cafe" }, "texto"] }, ["mesa", "cafe", "outra"]).sort(), ["cafe", "mesa"]);
 });
 
+test("worker: a conferência das peças cobra o % e o R$ do número (a capa \"35% dos donos\" saiu \"35 dos donos\")", () => {
+  const momento = { tipo: "cartaz", numero: { valor: 35 }, texto: ["DOS DONOS DE NEGÓCIO", "ADIAM MARKETING"] };
+  assert.deepEqual(worker.palavrasQueFaltam(momento, "35% dos donos de negócio adiam marketing"), ["%"]);
+  assert.deepEqual(worker.palavrasQueFaltam({ ...momento, numero: { valor: 35, sufixo: "%" } }, "35% dos donos de negócio adiam marketing"), []);
+  assert.deepEqual(worker.palavrasQueFaltam({ tipo: "frase", texto: "35 por cento dos donos" }, "35% dos donos"), []);
+  assert.deepEqual(worker.palavrasQueFaltam({ tipo: "frase", texto: "custa 97 por mês" }, "custa R$ 97 por mês"), ["R$"]);
+  assert.equal(worker.RESERVA_DO_LOGO, 56 + 84 + 24);
+});
+
+test("worker: no Manifesto, número com símbolo na palavra-janela reprova (o template limpa a janela)", () => {
+  // O momento real da prova integrada: "35%" na janela saiu "35" na capa.
+  const plano = { momentos: [{ tipo: "abertura", de: 0, ate: 7.8, em: 0.4, texto: "35% dos donos de negócio adiam marketing", janela: "35%" }] };
+  const pecas = [{ indice: 1, tipo: "capa", texto: "35% dos donos de negócio adiam marketing", de: 0, ate: 7.8, primeiraEm: 0.4, ultimaAte: 5.5 }];
+  const erros = worker.conferirPecas(plano, pecas, "modelo-manifesto");
+  assert.equal(erros.length, 1);
+  assert.match(erros[0], /palavra-janela "35%" tem símbolo/);
+  assert.deepEqual(worker.conferirPecas(plano, pecas, "modelo-viral"), [], "a regra é do template do Manifesto");
+  const semSimbolo = { momentos: [{ ...plano.momentos[0], janela: "donos" }] };
+  assert.deepEqual(worker.conferirPecas(semSimbolo, pecas, "modelo-manifesto"), []);
+  const emLinhas = { momentos: [{ ...plano.momentos[0], janela: { em: 1, linhas: ["R$", "97"] } }] };
+  assert.equal(worker.conferirPecas(emLinhas, pecas, "modelo-manifesto").length, 1);
+});
+
 const temFfmpeg = spawnSync(process.env.FFMPEG_BIN ?? "ffmpeg", ["-version"]).status === 0;
+
+test("worker: a recomposição deixa a base livre para o logo quando a peça leva logo", { skip: !temFfmpeg && "sem ffmpeg" }, async () => {
+  const pasta = mkdtempSync(path.join(tmpdir(), "arte-base-"));
+  try {
+    const ff = (args: string[]) => assert.equal(spawnSync(process.env.FFMPEG_BIN ?? "ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", ...args]).status, 0);
+    // O quadro do template: fundo liso, o letreiro fino no alto e um corpo alto, que não cabe no 4:5.
+    const quadro = path.join(pasta, "quadro.png");
+    ff(["-f", "lavfi", "-i", "color=c=0x101010:s=1080x1920", "-vf", "drawbox=x=60:y=80:w=960:h=30:color=white@1:t=fill,drawbox=x=100:y=300:w=880:h=1400:color=0xf97316@1:t=fill", "-frames:v", "1", quadro]);
+    const sem = path.join(pasta, "sem.png");
+    const com = path.join(pasta, "com.png");
+    await worker.noFormato(quadro, "4:5", sem, {});
+    await worker.noFormato(quadro, "4:5", com, { reservaDaBase: worker.RESERVA_DO_LOGO });
+    const caixa = { w: 120, h: 84 };
+    assert.equal(await worker.cantoLivre(sem, 1080, 1350, caixa.w, caixa.h), null, "sem a reserva, o corpo reduzido ocupa a base e o alto tem o letreiro");
+    const livre = await worker.cantoLivre(com, 1080, 1350, caixa.w, caixa.h);
+    assert.ok(livre && livre.canto.startsWith("inferior"), "com a reserva, um canto de baixo fica livre");
+  } finally {
+    rmSync(pasta, { recursive: true, force: true });
+  }
+});
 
 test("worker: o logo vai para o canto livre, na pastilha quando o fundo é escuro", { skip: !temFfmpeg && "sem ffmpeg" }, async () => {
   const pasta = mkdtempSync(path.join(tmpdir(), "arte-logo-"));

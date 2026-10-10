@@ -119,6 +119,7 @@ ${lista}
 Regras deste modo (valem por cima do ritmo de vídeo da skill):
 - Exatamente UM momento por peça, cobrindo o trecho inteiro dela: "de" no começo do trecho e "ate" no fim do trecho. Nada de momento extra, de respiro, de transição ou de placa solta entre as peças.
 - O texto da peça aparece INTEIRO e legível no estado final do momento: todas as palavras, na ordem, sem resumir, sem trocar palavra e sem cortar (pode quebrar linha, mudar o tamanho e pôr um trecho em destaque ou na cor de acento). Os campos de texto do bloco, somados, contêm o texto todo da peça.
+- Número com símbolo ("35%", "R$ 97") aparece com o símbolo na tela: não ponha esse número num campo que o template limpa para só letras e algarismos (como a palavra-janela gigante); use outra palavra na janela e deixe o número no texto.
 - Escolha o bloco mais forte do modelo que mostra o texto inteiro parado: prefira a assinatura e os blocos próprios do modelo. Não use bloco que só funciona em movimento (o que só aparece na troca, a imagem em tela cheia que esconde o texto, o contador que só faz sentido andando) nem bloco que deixa o texto para a legenda: a legenda some em todas as peças.
 - Capa e lâminas são da mesma série de carrossel: as lâminas usam o mesmo bloco, mudando só o texto, e a capa abre a série com o bloco mais forte.
 - Dentro do momento, cada item ainda entra no "em" da palavra que o nomeia, como a skill manda; o quadro é tirado depois da última palavra da peça.
