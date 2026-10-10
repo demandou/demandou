@@ -76,11 +76,16 @@ export function marcarEspera(meta: unknown): Meta {
   return { ...m, aguardandoIdentidade: true };
 }
 
-/** Marca que o "Aprovar e gerar" começou a desenhar esta arte. */
-export function marcarGerando(meta: unknown, agora: Date = new Date()): Meta {
+/**
+ * Marca que o "Aprovar e gerar" começou a desenhar esta arte. `prazoMs` (10/10,
+ * as artes pelo modelo do curso): o trabalho que espera a vez na fila do worker
+ * leva mais que o teto padrão; com ele, o "fazendo" vale até `gerandoArte.ate`.
+ */
+export function marcarGerando(meta: unknown, agora: Date = new Date(), opcoes?: { prazoMs?: number }): Meta {
   const m = objeto(meta);
   delete m.arteFalhou;
-  return { ...m, aguardandoIdentidade: true, gerandoArte: { desde: agora.toISOString() } };
+  const ate = opcoes?.prazoMs && opcoes.prazoMs > 0 ? { ate: new Date(agora.getTime() + opcoes.prazoMs).toISOString() } : {};
+  return { ...m, aguardandoIdentidade: true, gerandoArte: { desde: agora.toISOString(), ...ate } };
 }
 
 /** Marca que a geração depois da aprovação não saiu, com o motivo que o quadro mostra. */
@@ -129,7 +134,7 @@ export const TETO_DA_GERACAO_MS = 20 * 60 * 1000;
  */
 export function esperaDaIdentidade(post: { id?: string; runId?: string | null; imageUrl?: string | null; metadata?: unknown }, agora: Date = new Date()): EsperaDaIdentidade | null {
   if (post.imageUrl) return null;
-  const m = objeto(post.metadata) as { aguardandoIdentidade?: unknown; gerandoArte?: { desde?: unknown }; arteFalhou?: { motivo?: unknown; em?: unknown }; videoJobId?: unknown };
+  const m = objeto(post.metadata) as { aguardandoIdentidade?: unknown; gerandoArte?: { desde?: unknown; ate?: unknown }; arteFalhou?: { motivo?: unknown; em?: unknown }; videoJobId?: unknown };
   if (m.aguardandoIdentidade !== true) return null;
   // De qual post e desde quando (07/10), só quando a tela mandou o id.
   const ocorrencia = (em: unknown) => (post.id ? { postId: post.id, ...(typeof em === "string" ? { em } : {}) } : {});
@@ -138,7 +143,10 @@ export function esperaDaIdentidade(post: { id?: string; runId?: string | null; i
   }
   if (m.gerandoArte && typeof m.gerandoArte === "object") {
     const desde = typeof m.gerandoArte.desde === "string" ? new Date(m.gerandoArte.desde).getTime() : NaN;
-    if (Number.isNaN(desde) || agora.getTime() - desde > TETO_DA_GERACAO_MS) return { estado: "falhou", motivo: "a geração não terminou no tempo esperado", ...ocorrencia(m.gerandoArte.desde) };
+    // O prazo próprio do trabalho (10/10, a arte na fila do worker), quando veio; senão o teto padrão.
+    const ate = typeof m.gerandoArte.ate === "string" ? new Date(m.gerandoArte.ate).getTime() : NaN;
+    const passou = Number.isNaN(ate) ? agora.getTime() - desde > TETO_DA_GERACAO_MS : agora.getTime() > ate;
+    if (Number.isNaN(desde) || passou) return { estado: "falhou", motivo: "a geração não terminou no tempo esperado", ...ocorrencia(m.gerandoArte.desde) };
     return { estado: "gerando" };
   }
   // O lote (07/10), só quando a tela mandou o id: a campanha, o vídeo ou o post.

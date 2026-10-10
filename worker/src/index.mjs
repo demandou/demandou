@@ -1371,6 +1371,15 @@ const filaDaMontagem = [];
 let montagemRodando = false;
 /** As chaves dos cortes do editor do curso na fila ou rodando (10/10): um pedido por corte de cada vez. */
 const chavesDoCursoAndando = new Set();
+/** As chaves dos lotes de peças no modelo do curso na fila ou rodando (10/10): o mesmo lote nunca roda duas vezes. */
+const chavesDaArteAndando = new Set();
+/**
+ * As peças da campanha no modelo do curso (10/10) entram na fila ABAIXO dos
+ * cortes (prioridade 0), como o completo: o cliente espera pelo corte; a arte
+ * cai no quadro depois. Mas reservam UMA unidade, e não a fatia do completo:
+ * é um render de quadros parados, leve.
+ */
+const PRIORIDADE_DA_ARTE = 1;
 /** Renders da fila rodando agora, e as unidades que eles reservaram (só a fila paralela usa). */
 let montagensRodando = 0;
 let unidadesOcupadas = 0;
@@ -1475,6 +1484,8 @@ async function andarFilaDaMontagem() {
 
 /** Quantas unidades da máquina um render da fila reserva: o completo, todas menos uma; o corte, uma. */
 function unidadesDaMontagem(trabalho) {
+  // O trabalho que diz quantas unidades usa (as peças no modelo, 10/10) manda; o resto, pela prioridade.
+  if (Number(trabalho.unidades) > 0) return Math.min(Number(trabalho.unidades), CAPACIDADE.rendersJuntos);
   return (trabalho.prioridade ?? 0) > 0 ? CAPACIDADE.unidadesDoCompleto : 1;
 }
 
@@ -1550,6 +1561,84 @@ async function andarFilaParalela() {
     acordarFila = null;
     originais.clear();
     await rm(PASTA_DOS_ORIGINAIS, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+/**
+ * Um lote de peças no modelo do curso (10/10), da fila ao callback. O plano de
+ * cada volta é escrito pelo app (`planoUrl`, fase "plano" com `pecasParadas`),
+ * a foto do cliente vem do Blob, cada peça sobe em JPEG para o store público
+ * e o app recebe { ok, pecas: [{ indice, url, formato, creditos }], custoUsd,
+ * creditos, avisos, retorno }. Falha (ou o prazo) avisa { ok: false, erro }, e
+ * o app desenha aquelas peças pelo caminho de hoje (a reserva).
+ */
+async function executarArteNoModelo(pedido) {
+  const pasta = await mkdtemp(join(tmpdir(), "arte-"));
+  emAndamento += 1;
+  const inicio = Date.now();
+  const destino = { callbackUrl: pedido.callbackUrl, videoJobId: pedido.videoJobId ?? pedido.chave };
+  const { arteNoModelo, prazoDaArteMs } = await import("./modelo/arte-no-modelo.mjs");
+  const prazoMs = prazoDaArteMs(pedido);
+  const soltar = registrarTrabalho({
+    videoJobId: destino.videoJobId,
+    tipo: "arte-no-modelo",
+    chave: pedido.chave,
+    prazoMs,
+    destino,
+    reinicio: () => ({ ok: false, reiniciado: true, erro: "reiniciado", retorno: pedido.retorno ?? null }),
+  });
+  let custoUsd = 0;
+  try {
+    const { a, subidas } = await comPrazoDoTrabalho(prazoMs, "as peças no modelo do curso", async () => {
+      const pedirPlano = async (corpo) => {
+        const recusa = motivoParaRecusarCallback(pedido.planoUrl, AMBIENTE);
+        if (recusa) throw new Error(recusa);
+        // `operacao` e `runId` (10/10): o custo da escrita entra no uso de IA do projeto como "arte-no-modelo", na campanha.
+        const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, runId: pedido.runId ?? null, videoJobId: null, operacao: "arte-no-modelo" });
+        const r = await fetch(pedido.planoUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+          body: texto,
+          signal: AbortSignal.timeout(14 * 60_000),
+        });
+        if (!r.ok) throw new Error(`o app não escreveu o plano das peças (HTTP ${r.status}): ${(await r.text().catch(() => "")).slice(0, 300)}`);
+        const resposta = await r.json();
+        custoUsd += Number(resposta?.custoUsd) || 0;
+        return resposta;
+      };
+      const obterFoto = async (url, destinoSemExtensao) => {
+        const ext = (/\.(jpe?g|png|webp)(\?|$)/i.exec(url)?.[1] ?? "jpg").toLowerCase();
+        const arquivo = `${destinoSemExtensao}.${ext}`;
+        await baixarQualquer(url, arquivo);
+        return arquivo;
+      };
+      const a = await arteNoModelo(pedido, pasta, { pedirPlano, obterFoto, aoPasso: (passo) => console.log(`[arte ${pedido.chave}] ${passo}`) });
+      const subidas = [];
+      for (const p of a.pecas) {
+        const { url } = await subir(p.arquivo, `artes-no-modelo/${pedido.chave}/peca-${p.indice}-${p.formato.replace(":", "x")}.jpg`, "image/jpeg");
+        subidas.push({ indice: p.indice, url, formato: p.formato, tipo: p.tipo, creditos: p.creditos ?? [], logo: p.logo ? p.logo.canto : null });
+      }
+      return { a, subidas };
+    });
+    await avisar(destino, {
+      ok: true,
+      pecas: subidas,
+      custoUsd: +(a.custoUsd ?? custoUsd).toFixed(4),
+      creditos: a.creditos ?? null,
+      avisos: a.avisos,
+      voltas: a.voltas,
+      tempos: a.tempos,
+      segundos: Math.round((Date.now() - inicio) / 1000),
+      retorno: pedido.retorno ?? null,
+    });
+  } catch (err) {
+    const mensagem = err instanceof Error ? err.message : "as peças no modelo falharam";
+    console.error(`[arte ${pedido.chave}] ${mensagem}`);
+    await avisar(destino, { ok: false, erro: mensagem, custoUsd: +custoUsd.toFixed(4), retorno: pedido.retorno ?? null }).catch(() => {});
+  } finally {
+    soltar();
+    emAndamento -= 1;
+    await rm(pasta, { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -2306,6 +2395,56 @@ const servidor = createServer((req, res) => {
         emAndamento -= 1;
         await rm(pasta, { recursive: true, force: true }).catch(() => {});
       }
+  }
+  // AS PEÇAS DA CAMPANHA NO MODELO DO CURSO (10/10, src/modelo/arte-no-modelo.mjs):
+  // o post, a capa e as lâminas do carrossel e o infográfico desenhados pelo
+  // template do modelo escolhido, nas cores da marca, sem a pessoa da gravação.
+  // O mesmo contrato do /editar-no-modelo: assinada, 202 na hora, a fila de
+  // montagem (abaixo dos cortes), o plano escrito pelo app (`planoUrl`) e o
+  // resultado pelo callback assinado, com `retorno` de volta como veio.
+  const ehArteNoModelo = req.method === "POST" && req.url?.startsWith("/arte-no-modelo");
+  if (ehArteNoModelo) {
+    res.on("error", () => {});
+    req.socket.on("error", () => {});
+    const pedacos = [];
+    req.on("data", (d) => pedacos.push(d));
+    req.on("end", async () => {
+      const corpoCru = Buffer.concat(pedacos).toString("utf8");
+      if (!assinaturaValida(corpoCru, req.headers["x-demandou-assinatura"])) {
+        return responder(401, { error: "Assinatura inválida" });
+      }
+      let pedido;
+      try {
+        pedido = JSON.parse(corpoCru);
+      } catch {
+        return responder(400, { error: "Corpo não é JSON" });
+      }
+      if (!pedido.chave || !pedido.modelo || !pedido.planoUrl || !pedido.callbackUrl || !Array.isArray(pedido.pecas) || !pedido.pecas.length) {
+        return responder(400, { error: "Faltam chave, modelo, pecas, planoUrl ou callbackUrl" });
+      }
+      const { modeloExiste } = await import("./modelo/editar-no-modelo.mjs");
+      if (!modeloExiste(pedido.modelo)) return responder(400, { error: `modelo desconhecido: ${pedido.modelo}` });
+      try {
+        const { validarPedido } = await import("./modelo/arte-no-modelo.mjs");
+        validarPedido(pedido);
+      } catch (e) {
+        return responder(400, { error: e instanceof Error ? e.message : "peças inválidas" });
+      }
+      // O MESMO LOTE DUAS VEZES: o que já espera ou roda segura o repetido, e o
+      // callback de quem roda vale para os dois (a regra do editar-no-modelo).
+      if (chavesDaArteAndando.has(pedido.chave)) {
+        return responder(202, { aceito: true, chave: pedido.chave, jaAndando: true });
+      }
+      chavesDaArteAndando.add(pedido.chave);
+      responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
+      enfileirarMontagem({
+        pedido,
+        prioridade: PRIORIDADE_DA_ARTE,
+        unidades: 1,
+        executar: () => executarArteNoModelo(pedido).finally(() => chavesDaArteAndando.delete(pedido.chave)),
+      });
+    });
+    return;
   }
   // O CORTE NUM MODELO DO CURSO (09/10, src/modelo/editar-no-modelo.mjs): o
   // fluxo do curso "Máquina de Edição IA" com os scripts do próprio curso. Entra

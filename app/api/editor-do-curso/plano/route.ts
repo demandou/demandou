@@ -51,6 +51,10 @@ export async function POST(req: NextRequest) {
     plano?: Record<string, unknown> | null;
     projectId?: string | null;
     pecasParadas?: PecasParadas | null;
+    /** A campanha das peças paradas (10/10): o custo entra no uso de IA dela. */
+    runId?: string | null;
+    /** "arte-no-modelo" (10/10): o lote de peças da campanha; sem ele, o corte de sempre. */
+    operacao?: string | null;
   };
   try {
     corpo = JSON.parse(corpoCru);
@@ -63,7 +67,8 @@ export async function POST(req: NextRequest) {
   let custoUsd = 0;
   const comum = {
     modelo: process.env.EDITOR_DO_CURSO_IA || undefined,
-    usage: { projectId: corpo.projectId ?? null, operation: "editor-do-curso" },
+    // O lote de peças da campanha (10/10) grava o custo como "arte-no-modelo", na campanha; o corte segue "editor-do-curso".
+    usage: corpo.operacao === "arte-no-modelo" ? { projectId: corpo.projectId ?? null, runId: corpo.runId ?? null, operation: "arte-no-modelo" } : { projectId: corpo.projectId ?? null, operation: "editor-do-curso" },
     onCusto: (usd: number) => {
       custoUsd += usd;
     },

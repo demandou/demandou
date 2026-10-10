@@ -139,6 +139,16 @@ export async function POST(req: NextRequest) {
     console.error("[fila] retomar dias da semana do vídeo falhou:", e);
     return null;
   });
+  // AS ARTES PELO MODELO DO CURSO QUE NÃO VOLTARAM (10/10): o lote passado do
+  // prazo pergunta ao worker; sem trabalho vivo, o caminho de hoje desenha (no
+  // máximo dois lotes por passada). Rápido quando não há nada: uma consulta.
+  // Ver lib/media/editor-do-curso/arte-pelo-modelo-servidor.ts.
+  const artesNoModelo = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor")
+    .then((m) => m.vigiarArtesNoModelo())
+    .catch((e) => {
+      console.error("[fila] vigia das artes no modelo falhou:", e);
+      return null;
+    });
   const r = await passadaDaFila({ orcamentoMs: Math.max(120_000, 780_000 - (Date.now() - inicio)) });
 
   // Rodou alguma coisa? Cutuca de novo, para a fila nao andar no ritmo do cron
@@ -146,7 +156,7 @@ export async function POST(req: NextRequest) {
   // cutuca ninguem, entao isto termina sozinho.
   if (r.rodados > 0) cutucar();
 
-  return NextResponse.json({ ok: true, ...r, ...(vigia && (vigia.olhados || vigia.retomados.length) ? { vigia } : {}), ...(semanas?.despachados.length ? { semanas } : {}), ...(falhasDoVideo && (falhasDoVideo.retomados.length || falhasDoVideo.avisados.length) ? { falhasDoVideo } : {}), aberturasIa: hf, montagens, completos, revisoes, gemeos, ...(regua && (regua.pulados || Object.keys(regua.enviados).length) ? { regua } : {}) });
+  return NextResponse.json({ ok: true, ...r, ...(vigia && (vigia.olhados || vigia.retomados.length) ? { vigia } : {}), ...(semanas?.despachados.length ? { semanas } : {}), ...(artesNoModelo?.olhados ? { artesNoModelo } : {}), ...(falhasDoVideo && (falhasDoVideo.retomados.length || falhasDoVideo.avisados.length) ? { falhasDoVideo } : {}), aberturasIa: hf, montagens, completos, revisoes, gemeos, ...(regua && (regua.pulados || Object.keys(regua.enviados).length) ? { regua } : {}) });
 }
 
 // O cron da Vercel chama com GET.

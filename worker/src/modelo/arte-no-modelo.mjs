@@ -64,6 +64,11 @@ import {
  *      vira vazio); quando o corpo não cabe, reduz por igual. Nunca corta texto.
  *      Fundo que não é liso (foto em tela cheia) sai inteiro: no 9:16 como
  *      renderizado, nos outros numa tarja da cor de fundo da marca.
+ *   8  o acabamento (10/10, integração na esteira): o logo da marca pequeno
+ *      num canto que o modelo deixou livre (medido na peça pronta; sem canto
+ *      livre, a peça sai sem logo, nunca com o logo por cima do texto), e a
+ *      peça em JPEG. Uma peça pode pedir vários formatos (`formatos`): o
+ *      quadro é tirado uma vez e recomposto em cada um.
  *
  * Este módulo não chama IA: a escrita mora no app (pedirPlano), como no
  * editarNoModelo.
@@ -307,6 +312,7 @@ export function trechosNoCorte(plano, fala, pecas) {
     tipo: p.tipo,
     texto: p.texto,
     formato: p.formato,
+    formatos: p.formatos ?? [p.formato],
     de: i === 0 ? 0 : fronteiras[i - 1],
     ate: i === pecas.length - 1 ? +plano.duracao.toFixed(2) : fronteiras[i],
     primeiraEm: limites[i].primeiraEm,
@@ -708,16 +714,212 @@ export async function noFormato(quadro, formato, saida, { corDaMarca = "#111111"
   return { modo: escala < 1 ? "recomposto-reduzido" : "recomposto", escala: +escala.toFixed(3), letreiro: Boolean(letreiro), caixa };
 }
 
+// ---------- 8. o acabamento: o logo da marca e o JPEG ----------
+
+/**
+ * O tamanho do logo na peça: o mesmo das artes de hoje (a `Assinatura` de
+ * lib/modelos-de-arte/pecas-do-desenho.tsx: 54 px de altura numa peça de 1080
+ * no lado menor, e a pastilha clara com folga de 28% da altura quando o fundo
+ * é escuro), a 56 px da borda.
+ */
+export const LOGO = { altura: 54, folga: 0.28, margem: 56 };
+
+/** A ordem de preferência dos cantos: a base primeiro (o modelo monta o conteúdo no alto). */
+export const CANTOS = ["inferior-direito", "inferior-esquerdo", "superior-direito", "superior-esquerdo"];
+
+/**
+ * A caixa de um canto, em pixels da peça (W x H), para um logo de `w` x `h`
+ * (já com a pastilha) a `margem` da borda. Pura.
+ */
+export function caixaDoCanto(canto, W, H, w, h, margem = LOGO.margem) {
+  const direita = canto.endsWith("direito");
+  const baixo = canto.startsWith("inferior");
+  return { x: direita ? W - margem - w : margem, y: baixo ? H - margem - h : margem, w, h };
+}
+
+/** A luminância relativa (0 a 1) de uma cor RGB 0..255, a mesma conta de `luminancia` do app. Pura. */
+export function luminancia([r, g, b]) {
+  const c = (v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
+}
+
+/**
+ * Um canto livre para o logo: a região do canto (com uma folga em volta) quase
+ * toda numa cor só, ou seja, sem texto, imagem nem bloco do modelo ali. Devolve
+ * o primeiro livre na ordem de CANTOS, com a cor do fundo dele (para decidir a
+ * pastilha), ou null quando nenhum está livre.
+ */
+export async function cantoLivre(arquivo, W, H, w, h, { margem = LOGO.margem, folga = 16 } = {}) {
+  const k = 4;
+  const lw = Math.round(W / k);
+  const lh = Math.round(H / k);
+  const px = await pixels(arquivo, lw, lh);
+  for (const canto of CANTOS) {
+    const c = caixaDoCanto(canto, W, H, w, h, margem);
+    const x0 = Math.max(0, Math.floor((c.x - folga) / k));
+    const x1 = Math.min(lw - 1, Math.ceil((c.x + c.w + folga) / k));
+    const y0 = Math.max(0, Math.floor((c.y - folga) / k));
+    const y1 = Math.min(lh - 1, Math.ceil((c.y + c.h + folga) / k));
+    const cores = [];
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = (y * lw + x) * 3;
+      cores.push([px[i], px[i + 1], px[i + 2]]);
+    }
+    if (!cores.length) continue;
+    const mediana = [0, 1, 2].map((j) => cores.map((cor) => cor[j]).sort((a, b) => a - b)[cores.length >> 1]);
+    const fora = cores.filter((cor) => Math.abs(cor[0] - mediana[0]) + Math.abs(cor[1] - mediana[1]) + Math.abs(cor[2] - mediana[2]) > 40).length;
+    if (fora / cores.length <= 0.01) return { canto, ...c, fundo: mediana, escuro: luminancia(mediana) < 0.35 };
+  }
+  return null;
+}
+
+/** Largura e altura de uma imagem pelo ffprobe. */
+async function tamanhoDaImagem(arquivo) {
+  const sonda = await rodar(FFPROBE, ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", arquivo]);
+  const [W, H] = sonda.out.trim().split(",").map(Number);
+  if (!(W > 0 && H > 0)) throw new Error(`não consegui ler o tamanho de ${arquivo}`);
+  return { W, H };
+}
+
+/**
+ * O logo que o app manda (o mesmo `logoParaArte` das artes de hoje), gravado
+ * na pasta do trabalho: o PNG do logo e, para fundo escuro, o logo na pastilha
+ * clara. `logo`: { claro, pastilha?, proporcao, proporcaoDaPastilha? }, com os
+ * PNGs em data URI. Null sem logo legível.
+ */
+export function logoDoPedido(logo, pasta) {
+  const png = (uri) => {
+    const m = /^data:image\/png;base64,(.+)$/.exec(String(uri ?? ""));
+    return m ? Buffer.from(m[1], "base64") : null;
+  };
+  const claro = png(logo?.claro);
+  const proporcao = Number(logo?.proporcao);
+  if (!claro || !(proporcao > 0)) return null;
+  mkdirSync(pasta, { recursive: true });
+  writeFileSync(join(pasta, "logo.png"), claro);
+  const pastilha = png(logo?.pastilha);
+  const proporcaoDaPastilha = Number(logo?.proporcaoDaPastilha);
+  if (pastilha && proporcaoDaPastilha > 0) writeFileSync(join(pasta, "logo-pastilha.png"), pastilha);
+  return {
+    claro: join(pasta, "logo.png"),
+    proporcao: Math.min(proporcao, 6),
+    pastilha: pastilha && proporcaoDaPastilha > 0 ? join(pasta, "logo-pastilha.png") : null,
+    proporcaoDaPastilha: proporcaoDaPastilha > 0 ? proporcaoDaPastilha : null,
+  };
+}
+
+/**
+ * A peça pronta: o logo no canto livre (a pastilha quando o canto é escuro) e
+ * o JPEG (qualidade 90; as peças são opacas, nada pede transparência). Sem
+ * logo ou sem canto livre, só o JPEG.
+ */
+export async function acabarPeca(entrada, saida, { logo = null } = {}) {
+  const { W, H } = await tamanhoDaImagem(entrada);
+  const u = Math.min(W, H) / 1080;
+  const altura = Math.round(LOGO.altura * u);
+  let colocado = null;
+  if (logo) {
+    const pad = Math.round(altura * LOGO.folga);
+    // A caixa medida é a da pastilha (a maior): o canto que cabe a pastilha cabe o logo.
+    const wPastilha = logo.pastilha ? Math.round((altura + 2 * pad) * logo.proporcaoDaPastilha) : Math.round(altura * logo.proporcao) + 2 * pad;
+    const hPastilha = altura + 2 * pad;
+    const canto = await cantoLivre(entrada, W, H, wPastilha, hPastilha, { margem: Math.round(LOGO.margem * u) });
+    if (canto) {
+      const comPastilha = canto.escuro && logo.pastilha;
+      const w = comPastilha ? wPastilha : Math.round(altura * logo.proporcao);
+      const h = comPastilha ? hPastilha : altura;
+      // Sem pastilha, o logo vai no meio da caixa medida (a mesma folga da pastilha em volta).
+      const x = comPastilha ? canto.x : canto.canto.endsWith("direito") ? canto.x + canto.w - w - pad : canto.x + pad;
+      const y = comPastilha ? canto.y : canto.y + pad;
+      colocado = { canto: canto.canto, x, y, w, h, pastilha: Boolean(comPastilha) };
+      await ffmpeg(
+        ["-i", entrada, "-i", comPastilha ? logo.pastilha : logo.claro, "-filter_complex", `[1:v]scale=${w}:${h}:flags=lanczos[l];[0:v][l]overlay=${x}:${y}:format=auto`, "-frames:v", "1", "-q:v", "3", saida],
+        "logo"
+      );
+      return { logo: colocado, formato: "jpeg" };
+    }
+  }
+  await ffmpeg(["-i", entrada, "-frames:v", "1", "-q:v", "3", saida], "jpeg");
+  return { logo: null, formato: "jpeg", ...(logo ? { semCantoLivre: true } : {}) };
+}
+
+// ---------- os créditos das fotos de banco ----------
+
+/** Os ids de imagem do plano que um momento usa (qualquer campo cujo valor é um id). Pura. */
+export function idsDeImagemNoMomento(momento, ids) {
+  const conhecidos = new Set(ids);
+  const achados = new Set();
+  const andar = (v) => {
+    if (typeof v === "string") {
+      if (conhecidos.has(v)) achados.add(v);
+    } else if (Array.isArray(v)) v.forEach(andar);
+    else if (v && typeof v === "object") Object.values(v).forEach(andar);
+  };
+  andar(momento);
+  return [...achados];
+}
+
+/**
+ * A linha de crédito de uma imagem escolhida pelo imagens.mjs do curso, para a
+ * legenda do post: a que a licença exige (CC BY e afins) e a de banco (Pexels,
+ * Pixabay, Openverse), no mesmo jeito dos créditos dos B-rolls do corte. Imagem
+ * do cliente ou sem autor não leva linha. Pura.
+ */
+export function linhaDeCredito(escolha) {
+  if (!escolha || escolha.sem || escolha.licenca === "do aluno") return null;
+  const fonte = String(escolha.fonte ?? "");
+  const banco = /pexels|pixabay|openverse|wikimedia|flickr/i.test(fonte);
+  if (!escolha.credito && !banco) return null;
+  const via = fonte.replace(/^Openverse\//, "");
+  const autor = escolha.autor && escolha.autor !== "aluno" ? escolha.autor : "autor";
+  const titulo = escolha.titulo ? `"${String(escolha.titulo).replace(/"/g, "'")}", ` : "";
+  const licenca = escolha.licenca ? ` (${escolha.licenca})` : "";
+  return `Imagem: ${titulo}de ${autor}${licenca}, via ${via || "banco de imagens"}${escolha.link ? `: ${escolha.link}` : ""}`;
+}
+
+/** Os créditos de cada imagem do trabalho (work/imagens.json do imagens.mjs), por id. */
+export function creditosDasImagens(projeto) {
+  const arquivo = join(projeto, "work", "imagens.json");
+  if (!existsSync(arquivo)) return {};
+  try {
+    const pedidos = JSON.parse(readFileSync(arquivo, "utf8"));
+    return Object.fromEntries((Array.isArray(pedidos) ? pedidos : []).filter((p) => p?.id).map((p) => [p.id, linhaDeCredito(p.escolha)]).filter(([, l]) => l));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * O prazo de um pedido de peças na fila do worker: 20 min fixos (projeto,
+ * preparar, cortar, subir), 3 min por imagem que sai (render do quadro, a
+ * máscara e o formato) e 45 min para as voltas do plano no app (cada uma até
+ * ~14 min). Puro.
+ */
+export function prazoDaArteMs(pedido) {
+  const imagens = (pedido?.pecas ?? []).reduce((s, p) => s + Math.max(1, Array.isArray(p?.formatos) ? p.formatos.length : 1), 0);
+  return Math.round((20 + 3 * Math.max(1, imagens) + 45) * 60_000);
+}
+
 // ---------- o fluxo ----------
 
-function validarPedido(pedido) {
+/**
+ * As peças do pedido, conferidas. Cada peça pede um ou mais formatos
+ * (`formatos`, ou o `formato` de antes): o quadro sai uma vez e é recomposto em
+ * cada um. Exportada para o teste.
+ */
+export function validarPedido(pedido) {
   if (!pedido?.modelo) throw new Error("falta o modelo");
   const pecas = (pedido.pecas ?? []).map((p, i) => {
     const texto = String(p?.texto ?? "").replace(/\s+/g, " ").trim();
     if (!texto) throw new Error(`a peça ${i + 1} está sem texto`);
     if (!TIPOS_DE_PECA.includes(p.tipo)) throw new Error(`a peça ${i + 1} tem tipo desconhecido: ${p.tipo}`);
-    const formato = FORMATOS[p.formato] ? p.formato : "4:5";
-    return { tipo: p.tipo, texto, formato };
+    const pedidos = Array.isArray(p.formatos) ? p.formatos : [p.formato];
+    const formatos = [...new Set(pedidos.filter((f) => FORMATOS[f]))];
+    if (!formatos.length) formatos.push("4:5");
+    return { tipo: p.tipo, texto, formato: formatos[0], formatos };
   });
   if (!pecas.length || pecas.length > 10) throw new Error("mande de 1 a 10 peças por pedido");
   return pecas;
@@ -726,11 +928,13 @@ function validarPedido(pedido) {
 /**
  * AS PEÇAS NUM MODELO DO CURSO, do pedido às imagens.
  *
- * `pedido`: { modelo, pecas: [{ tipo, texto, formato }], cores: { fundo, titulo,
- * destaque }, fotoUrl?, marca: { nome, area }, nicho, tetoUsd?, voltas? }.
+ * `pedido`: { modelo, pecas: [{ tipo, texto, formatos }], cores: { fundo, titulo,
+ * destaque }, fotoUrl?, marca: { nome, area }, nicho, tetoUsd?, voltas?, logo? }.
  * `pedirPlano(corpo)` é o mesmo do editarNoModelo (o app escreve; aqui o corpo
  * leva `pecasParadas`). `obterFoto(url, destinoSemExtensao)` baixa a foto do
- * cliente e devolve o caminho. Devolve uma imagem por peça em `pasta/pecas`.
+ * cliente e devolve o caminho. Devolve uma imagem (JPEG) por peça e formato em
+ * `pasta/pecas`, cada uma com o índice da peça (1, 2, 3... na ordem do pedido),
+ * o formato e os créditos das fotos de banco que entraram nela.
  */
 export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null, aoPasso = () => {} }) {
   const tempos = {};
@@ -855,7 +1059,8 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
   for (const e of escolhas) {
     e.movimento = await movimento(q(e.antes), q(e.t));
     e.instante = e.movimento > MOVIMENTO_MAXIMO && e.reserva > e.t ? e.reserva : e.t;
-    e.liso = e.peca.formato === "9:16" ? true : (await conteudoDoQuadro(q(e.instante))).liso;
+    // Só o formato que não é 9:16 recorta a foto (e precisa da máscara).
+    e.liso = e.peca.formatos.every((f) => f === "9:16") ? true : (await conteudoDoQuadro(q(e.instante))).liso;
   }
   const comFoto = escolhas.filter((e) => !e.liso);
   let mascaras = {};
@@ -870,25 +1075,39 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
   const rosto = pessoa && plano.rosto ? { y0: Math.round((plano.rosto.y - 0.1) * 1920), y1: Math.round((plano.rosto.y + 0.12) * 1920) } : null;
   const pastaDasPecas = join(pasta, "pecas");
   mkdirSync(pastaDasPecas, { recursive: true });
+  // 8. O acabamento: o logo da marca num canto livre e o JPEG.
+  const logo = pedido.logo ? logoDoPedido(pedido.logo, join(pasta, "logo")) : null;
+  if (pedido.logo && !logo) avisos.push("o logo da marca veio ilegível; as peças saem sem logo");
+  // Os créditos das fotos de banco: os do trabalho, e cada peça leva os das imagens do momento dela.
+  const creditosPorId = creditosDasImagens(projeto);
+  const idsDoPlano = Object.keys(plano.imagens ?? {});
   const saidas = [];
   for (const e of escolhas) {
     const instante = e.instante;
     const mov = e.movimento;
-    const nome = `peca-${e.peca.indice}-${e.peca.tipo}-${e.peca.formato.replace(":", "x")}.png`;
-    const arquivo = join(pastaDasPecas, nome);
-    const formato = await noFormato(q(instante), e.peca.formato, arquivo, { corDaMarca: pedido.cores?.fundo, mascara: mascaras[instante.toFixed(2)] ?? null, rosto });
-    saidas.push({
-      indice: e.peca.indice,
-      tipo: e.peca.tipo,
-      formato: e.peca.formato,
-      texto: e.peca.texto,
-      arquivo,
-      quadro: q(instante),
-      instante,
-      movimento: mov,
-      momento: { tipo: e.momento.tipo, de: e.momento.de, ate: e.momento.ate },
-      recorte: formato,
-    });
+    const creditosDaPeca = [...new Set(idsDeImagemNoMomento(e.momento, idsDoPlano).map((id) => creditosPorId[id]).filter(Boolean))];
+    for (const f of e.peca.formatos) {
+      const base = `peca-${e.peca.indice}-${e.peca.tipo}-${f.replace(":", "x")}`;
+      const bruto = join(pastaDasPecas, `${base}.png`);
+      const arquivo = join(pastaDasPecas, `${base}.jpg`);
+      const formato = await noFormato(q(instante), f, bruto, { corDaMarca: pedido.cores?.fundo, mascara: mascaras[instante.toFixed(2)] ?? null, rosto });
+      const acabamento = await acabarPeca(bruto, arquivo, { logo });
+      if (acabamento.semCantoLivre) avisos.push(`a peça ${e.peca.indice} (${f}) não tem canto livre para o logo: saiu sem logo`);
+      saidas.push({
+        indice: e.peca.indice,
+        tipo: e.peca.tipo,
+        formato: f,
+        texto: e.peca.texto,
+        arquivo,
+        quadro: q(instante),
+        instante,
+        movimento: mov,
+        momento: { tipo: e.momento.tipo, de: e.momento.de, ate: e.momento.ate },
+        recorte: formato,
+        logo: acabamento.logo,
+        creditos: creditosDaPeca,
+      });
+    }
   }
   marcar("formatos");
   return {

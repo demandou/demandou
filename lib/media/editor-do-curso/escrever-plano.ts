@@ -205,7 +205,7 @@ export async function escreverPlanoDoModelo(args: {
   /** Os posts da campanha no estilo do modelo (arte-no-modelo.mjs): sem isto, é o vídeo de sempre. */
   pecasParadas?: PecasParadas | null;
   modelo?: string;
-  usage: { projectId?: string | null; operation: string };
+  usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
 }): Promise<PlanoEscrito> {
   const { referencias, esqueleto, marca } = args;
@@ -260,7 +260,7 @@ Conserte o que foi apontado, mantendo o que estava certo, e devolva o mapa e o p
     model: args.modelo,
     maxTokens: 48_000,
     timeoutMs: 15 * 60_000,
-    usage: { projectId: args.usage.projectId ?? undefined, operation: args.usage.operation },
+    usage: { projectId: args.usage.projectId ?? undefined, runId: args.usage.runId ?? undefined, operation: args.usage.operation },
     onCusto: args.onCusto,
   };
   const resposta = referencias.quadros

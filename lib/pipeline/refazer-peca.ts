@@ -175,7 +175,26 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
    * Cobra só o texto: a arte é cobrada quando sair.
    */
   let aguardandoIdentidade = false;
+  /**
+   * A ARTE PELO MODELO DO CURSO (10/10, ARTE_PELO_MODELO=1): a peça da semana
+   * do vídeo que segue o modelo do projeto vai ao worker num lote de UMA peça
+   * (a manchete do texto novo, ou o infográfico extraído dele), e o post fica
+   * "o squad está fazendo" até o callback; o que não sair cai no caminho de
+   * hoje sozinho. Regra que não vale, ou worker que não aceitou: o de hoje, aqui.
+   */
+  let metadataDoModelo: Record<string, unknown> | null = null;
   if (GERA_ARTE.has(post.mediaType ?? "")) {
+    const { refazerArteNoModelo } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
+    const noModelo = await refazerArteNoModelo({ post, texto: limpo.texto, nicho: post.project.niche }).catch((e) => {
+      console.warn(`[refazer] a arte pelo modelo não saiu para ${post.id} (vale o caminho de hoje):`, e instanceof Error ? e.message : e);
+      return null;
+    });
+    if (noModelo) {
+      metadataDoModelo = noModelo.metadata;
+      arteRefeita = true;
+    }
+  }
+  if (GERA_ARTE.has(post.mediaType ?? "") && !metadataDoModelo) {
     try {
       /**
        * TEXTO EM ARTE É CÓDIGO (30/09): a manchete sai do texto novo e a cena
@@ -239,14 +258,16 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
     throw e;
   }
 
-  const metadata = (post.metadata as Record<string, unknown> | null) ?? {};
+  // A arte pelo modelo (10/10): o metadata já sai com a espera "gerando" e o lote.
+  const metadata = metadataDoModelo ?? (post.metadata as Record<string, unknown> | null) ?? {};
   const atualizado = await prisma.post.update({
     where: { id: post.id },
     data: {
       content: limpo.texto,
       // Aguardando a identidade: a arte antiga (feita para o texto antigo) sai
-      // do lugar, e a nova entra pelo "Aprovar e gerar".
-      ...(novaImagem ? { imageUrl: novaImagem } : aguardandoIdentidade ? { imageUrl: null } : {}),
+      // do lugar, e a nova entra pelo "Aprovar e gerar". Pelo modelo, a nova
+      // entra pelo callback do worker.
+      ...(novaImagem ? { imageUrl: novaImagem } : aguardandoIdentidade || metadataDoModelo ? { imageUrl: null } : {}),
       /**
        * A PEÇA REFEITA VOLTA A SER RASCUNHO.
        *

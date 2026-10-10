@@ -50,6 +50,17 @@ import type { Prisma } from "@prisma/client";
 import { diaJaEscrito, tentativasDoDia, textoDoAvisoDoDia, TETO_DE_TENTATIVAS_DO_DIA } from "@/lib/media/falha-do-dia-da-semana";
 import { CODIGO_DA_ETAPA } from "@/lib/notificacoes/tipos";
 import { avisarDiaQueDesistiu } from "@/lib/media/retomar-semana-do-video";
+import { marcarGerando } from "@/lib/modelos-de-arte/espera-da-identidade";
+import {
+  adicionarPecas,
+  diaVaiPeloModelo,
+  marcasDoModelo,
+  novaColeta,
+  pecasDoDiaNoModelo,
+  PRAZO_DA_ARTE_NO_MODELO_MS,
+  type ColetaDoModelo,
+} from "@/lib/media/editor-do-curso/arte-pelo-modelo";
+import { despacharColeta, regraDaArtePeloModelo, type RegraDoProjeto } from "@/lib/media/editor-do-curso/arte-pelo-modelo-servidor";
 
 export { principalDoDia };
 
@@ -504,6 +515,18 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
   // (05/10), e a guarda que todo texto atravessa antes do quadro (08/10).
   const elo = await eloDoVideo(video, semana, run.id);
 
+  // AS ARTES PELO TEMPLATE DO MODELO DO CURSO (10/10, ARTE_PELO_MODELO=1;
+  // lib/media/editor-do-curso/arte-pelo-modelo.ts). Projeto com modelo do curso
+  // e posts no estilo mestre: os dias com foto, carrossel e infográfico não
+  // desenham aqui. Cada dia junta as peças dele na coleta e cria os posts sem
+  // arte, "o squad está fazendo"; no fim, a coleta vai ao worker num pedido
+  // só, e o callback põe a arte em cada post (o que faltar, pelo caminho de hoje).
+  const peloModelo: RegraDoProjeto | null = await regraDaArtePeloModelo(video.projectId).catch((e) => {
+    console.warn(`[semana][${videoJobId}] a regra das artes pelo modelo não foi lida (vale o caminho de hoje):`, e instanceof Error ? e.message : e);
+    return null;
+  });
+  const coleta: ColetaDoModelo | null = peloModelo ? novaColeta(`arte-${run.id}-${Date.now().toString(36)}`) : null;
+
   // A DATA de cada dia sai do início congelado no run (30/09), e não mais da
   // segunda da semana: com a campanha começando na quarta, a terça é a da
   // semana seguinte. Run de antes de 30/09 não tem início e segue na segunda.
@@ -758,6 +781,33 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
       const aviso = avisoDoRecuo(manchetes);
       return aviso ? `${aviso}\n\n${texto}` : texto;
     };
+    // O DIA PELO MODELO DO CURSO (10/10): a regra do projeto, a escolha do dia
+    // (mestre) e nenhuma foto escolhida pela pessoa. Sem isso, o caminho de hoje.
+    const diaNoModelo =
+      peloModelo && coleta && !aguardandoIdentidade && diaVaiPeloModelo({ formato, modeloDoDia: modelo ?? null, modo: peloModelo.modo, fotosDoDia: escolhaDaArte.fotos?.length ?? 0 })
+        ? { regra: peloModelo, coleta }
+        : null;
+    /**
+     * As peças do dia na coleta e as marcas de cada post: a espera "gerando"
+     * com o prazo do lote e o `arteNoModelo` (lote, peças e o formato da rede).
+     * Null quando as peças não se montam (sem frase, sem lâminas): o dia segue
+     * pelo caminho de hoje, sem perder a peça.
+     */
+    const pecasNoModelo = (o: Parameters<typeof pecasDoDiaNoModelo>[0]) => {
+      if (!diaNoModelo) return null;
+      try {
+        const { pecas, formatoDaRede } = pecasDoDiaNoModelo(o);
+        const { lote, indices } = adicionarPecas(diaNoModelo.coleta, pecas);
+        const agora = new Date();
+        return {
+          doPost: (rede: string) => marcasDoModelo({}, { lote, indices, formato: formatoDaRede[rede] ?? (o.formato === "carousel" ? "4:5" : "1:1"), modelo: diaNoModelo.regra.modelo }, agora),
+          doCard: () => marcarGerando({}, agora, { prazoMs: PRAZO_DA_ARTE_NO_MODELO_MS }),
+        };
+      } catch (e) {
+        console.warn(`[semana][${videoJobId}] ${DIAS[dia]}: as peças não foram para o modelo (vale o caminho de hoje):`, e instanceof Error ? e.message : e);
+        return null;
+      }
+    };
 
     try {
       if (formato === "text" && principal === "twitter") {
@@ -850,16 +900,24 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
             }
           }
         }
-        // A direcao de arte do projeto (linguagem do video, estilo proprio),
-        // igual a esteira; sem ela a imagem saia "bold typographic" fixo.
-        const direcao = await direcaoDaPeca({ projectId: video.projectId, runId: run.id, dayOfWeek: dia, infografico: false, preferido: (run.config as { mediaStyle?: string } | null)?.mediaStyle });
+        const noModelo = aguardandoIdentidade ? null : pecasNoModelo({ formato: "image", redes: [principal, ...outras], frase });
         if (aguardandoIdentidade) {
           // As fotos escolhidas ficam no post (08/10): a arte que sai depois da aprovação usa as mesmas.
           const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
           await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\nImagem com a frase: "${frase}"`, mediaType: "image", mediaUrl: null, postId, extra: { rede: principal, frase, aguardandoIdentidade: true } });
           await levarParaAsOutras(postId, legenda, () => ({ mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
+        } else if (noModelo) {
+          // A ARTE PELO MODELO DO CURSO (10/10): o post nasce sem arte e "o squad
+          // está fazendo"; a frase vai ao template do modelo no lote da semana.
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: null, extra: { frase, ...doModelo, ...noModelo.doPost(principal) } });
+          await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
+          await gravarCard(AGENTES.diana, { content: `Imagem com a frase: "${frase}"`, mediaType: "image", mediaUrl: null, postId, extra: { rede: principal, frase, ...noModelo.doCard() } });
+          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "image", imageUrl: null, extra: { frase, ...doModelo, ...noModelo.doPost(rede) } }));
         } else {
+          // A direcao de arte do projeto (linguagem do video, estilo proprio),
+          // igual a esteira; sem ela a imagem saia "bold typographic" fixo.
+          const direcao = await direcaoDaPeca({ projectId: video.projectId, runId: run.id, dayOfWeek: dia, infografico: false, preferido: (run.config as { mediaStyle?: string } | null)?.mediaStyle });
           // A FRASE ENTRA EM CÓDIGO (30/09): o modelo desenha só a arte, sem
           // letra e sem gente, e a frase é composta por cima no tamanho da rede.
           // Ver lib/media/arte-com-frase.tsx para a quarta que originou a regra.
@@ -924,20 +982,28 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
             }
           }
         }
-        // Os slides não dependem um do outro: três chamadas ao mesmo tempo.
-        // Uma direcao so para as tres laminas: carrossel com cara diferente
-        // por lamina parece tres posts colados.
-        const direcao = await direcaoDaPeca({ projectId: video.projectId, runId: run.id, dayOfWeek: dia, infografico: false, preferido: (run.config as { mediaStyle?: string } | null)?.mediaStyle });
         // Cada lâmina: arte sem texto do modelo e a frase composta em código,
         // no formato do carrossel (1080x1350), como a imagem do dia. O
         // carrossel é 4:5 em todas as redes, então as lâminas servem a todas.
         const listaDasFrases = `Carrossel de ${frases.length} lâminas:\n${frases.map((f, i) => `${i + 1}. ${f}`).join("\n")}`;
+        const noModelo = aguardandoIdentidade ? null : pecasNoModelo({ formato: "carousel", redes: [principal, ...outras], slides: frases });
         if (aguardandoIdentidade) {
           const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
           await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\n${listaDasFrases}`, mediaType: "carousel", mediaUrl: null, postId, extra: { rede: principal, slides: frases, aguardandoIdentidade: true } });
           await levarParaAsOutras(postId, legenda, () => ({ mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
+        } else if (noModelo) {
+          // A CAPA E AS LÂMINAS PELO MODELO DO CURSO (10/10): a mesma série do
+          // template, todas em 4:5, no lote da semana; o post nasce "fazendo".
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, ...doModelo, ...noModelo.doPost(principal) } });
+          await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
+          await gravarCard(AGENTES.diana, { content: listaDasFrases, mediaType: "carousel", mediaUrl: null, postId, extra: { rede: principal, slides: frases, ...noModelo.doCard() } });
+          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, ...doModelo, ...noModelo.doPost(rede) } }));
         } else {
+          // Os slides não dependem um do outro: três chamadas ao mesmo tempo.
+          // Uma direcao so para as tres laminas: carrossel com cara diferente
+          // por lamina parece tres posts colados.
+          const direcao = await direcaoDaPeca({ projectId: video.projectId, runId: run.id, dayOfWeek: dia, infografico: false, preferido: (run.config as { mediaStyle?: string } | null)?.mediaStyle });
           // Cada lâmina com a foto escolhida para ela (08/10), quando houve escolha.
           const urls = await Promise.all(
             frases.map((frase, i) => arteDoDia(video, frase, direcao.styleHint, formatoDaPeca(principal, "carousel"), { projectId: video.projectId, runId: run.id }, frases[0], marcaDoDia ? marcaDaLaminaComFoto(marcaDoDia, i, frases.length) : undefined))
@@ -992,18 +1058,6 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
         const geminiKey = process.env.GEMINI_API_KEY;
         if (!geminiKey) throw new Error("GEMINI_API_KEY não configurada para o infográfico");
         const fonte = [radar ? textoDoRadar(radar) : "", "\n\nTEXTO DO POST:\n", legenda].join("");
-        // Direcao de arte por peca: `escritos` conta as pecas da semana, e e o
-        // que faz o estilo alternar de uma para a outra dentro do mesmo video.
-        const estilo = await escolherEstilo({
-          projectId: video.projectId,
-          runId: run.id,
-          dayOfWeek: escritos,
-          infografico: true,
-          // O estilo que o cliente escolheu para o projeto de vídeo manda aqui
-          // também, pela mesma razão da esteira (18/09).
-          preferido: (run.config as { mediaStyle?: string } | null)?.mediaStyle,
-        });
-        const marca = marcaDoDia ?? (await marcaDaArte(video.projectId));
         // UMA extração para todas as proporções (06/10): extrair por proporção
         // pagava duas chamadas e dava dois infográficos com textos diferentes
         // no mesmo dia (o do Instagram e o do LinkedIn não batiam).
@@ -1016,41 +1070,64 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
         // do desenho (lib/media/lastro-do-video.ts).
         const { conteudo, tirados: semLastro } = infograficoComLastro(extraido, [elo.lastro, legenda].join(" "));
         if (semLastro.length) console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: número sem lastro fora do infográfico: ${semLastro.join("; ")}`);
-        // O formato sai da tabela das redes desde 19/09: um infográfico por
-        // PROPORÇÃO das redes do dia (Instagram em retrato 4:5, o resto em
-        // paisagem 16:9), recortado no tamanho exato de cada rede. Desde 08/10
-        // quem desenha é o Nano Banana Pro, pela MESMA esteira de arte da
-        // campanha (produzirArtePorRede): a conferência lê o texto que ele
-        // escreveu contra o pedido e refaz no outro modelo quando a escrita erra.
-        const arte = await produzirArtePorRede({
-          redes: [principal, ...outras],
-          textoDoPost: legenda,
-          projectId: video.projectId,
-          runId: run.id,
-          ...pedidoDoInfografico(
-            conteudo,
-            { estilo: estilo.prompt, paleta: paletaDoProjeto(video.project.colorPalette), marca },
-            { nicho: video.project.niche, ctx: { projectId: video.projectId, runId: run.id, operation: "infografico" } }
-          ),
-        });
-        if (arte.algumaReprovada) console.warn(`[semana][${videoJobId}] ${DIAS[dia]}: o infográfico saiu com a conferência reprovada: ${arte.avisos.join(" ")}`);
-        const url = arte.porRede[principal] ?? artePrincipal(arte.porRede)!;
-        // O CONTEÚDO EXTRAÍDO FICA NO POST (06/10): refazer o infográfico (a
-        // identidade aprovada depois, o pedido pelo chat) parte dele sem
-        // extrair de novo (scripts/tmp/infografico-volta-a-espera-0610.mts).
-        const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: url, extra: { infografico: conteudo } });
-        await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
-        // O CARD MOSTRA A 4:5 DO INSTAGRAM quando o dia tem Instagram (08/10):
-        // o post de cada rede leva a arte dele, e o quadro mostra a que o
-        // cliente mais olha (arte-por-rede.ts, `artePrincipal`).
-        await gravarCard(AGENTES.diana, {
-          content: "Infográfico com os dados do briefing do Roberto.",
-          mediaType: "infographic",
-          mediaUrl: artePrincipal(arte.porRede) ?? url,
-          postId,
-          extra: { rede: principal, ...(arte.algumaReprovada ? { conferenciaDaArte: arte.avisos.join(" ").slice(0, 600) } : {}) },
-        });
-        await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: arte.porRede[rede] ?? url, extra: { infografico: conteudo } }));
+        // O INFOGRÁFICO PELO MODELO DO CURSO (10/10): o título, o destaque e os
+        // cartões vão ao template do modelo no lote da semana; o conteúdo
+        // extraído fica no post, como hoje (a reserva desenha a partir dele).
+        const noModelo = pecasNoModelo({ formato: "infographic", redes: [principal, ...outras], infografico: conteudo });
+        if (noModelo) {
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: null, extra: { infografico: conteudo, ...noModelo.doPost(principal) } });
+          await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
+          await gravarCard(AGENTES.diana, { content: "Infográfico com os dados do briefing do Roberto.", mediaType: "infographic", mediaUrl: null, postId, extra: { rede: principal, ...noModelo.doCard() } });
+          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: null, extra: { infografico: conteudo, ...noModelo.doPost(rede) } }));
+        } else {
+          // Direcao de arte por peca: `escritos` conta as pecas da semana, e e o
+          // que faz o estilo alternar de uma para a outra dentro do mesmo video.
+          const estilo = await escolherEstilo({
+            projectId: video.projectId,
+            runId: run.id,
+            dayOfWeek: escritos,
+            infografico: true,
+            // O estilo que o cliente escolheu para o projeto de vídeo manda aqui
+            // também, pela mesma razão da esteira (18/09).
+            preferido: (run.config as { mediaStyle?: string } | null)?.mediaStyle,
+          });
+          const marca = marcaDoDia ?? (await marcaDaArte(video.projectId));
+          // O formato sai da tabela das redes desde 19/09: um infográfico por
+          // PROPORÇÃO das redes do dia (Instagram em retrato 4:5, o resto em
+          // paisagem 16:9), recortado no tamanho exato de cada rede. Desde 08/10
+          // quem desenha é o Nano Banana Pro, pela MESMA esteira de arte da
+          // campanha (produzirArtePorRede): a conferência lê o texto que ele
+          // escreveu contra o pedido e refaz no outro modelo quando a escrita erra.
+          const arte = await produzirArtePorRede({
+            redes: [principal, ...outras],
+            textoDoPost: legenda,
+            projectId: video.projectId,
+            runId: run.id,
+            ...pedidoDoInfografico(
+              conteudo,
+              { estilo: estilo.prompt, paleta: paletaDoProjeto(video.project.colorPalette), marca },
+              { nicho: video.project.niche, ctx: { projectId: video.projectId, runId: run.id, operation: "infografico" } }
+            ),
+          });
+          if (arte.algumaReprovada) console.warn(`[semana][${videoJobId}] ${DIAS[dia]}: o infográfico saiu com a conferência reprovada: ${arte.avisos.join(" ")}`);
+          const url = arte.porRede[principal] ?? artePrincipal(arte.porRede)!;
+          // O CONTEÚDO EXTRAÍDO FICA NO POST (06/10): refazer o infográfico (a
+          // identidade aprovada depois, o pedido pelo chat) parte dele sem
+          // extrair de novo (scripts/tmp/infografico-volta-a-espera-0610.mts).
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: url, extra: { infografico: conteudo } });
+          await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
+          // O CARD MOSTRA A 4:5 DO INSTAGRAM quando o dia tem Instagram (08/10):
+          // o post de cada rede leva a arte dele, e o quadro mostra a que o
+          // cliente mais olha (arte-por-rede.ts, `artePrincipal`).
+          await gravarCard(AGENTES.diana, {
+            content: "Infográfico com os dados do briefing do Roberto.",
+            mediaType: "infographic",
+            mediaUrl: artePrincipal(arte.porRede) ?? url,
+            postId,
+            extra: { rede: principal, ...(arte.algumaReprovada ? { conferenciaDaArte: arte.avisos.join(" ").slice(0, 600) } : {}) },
+          });
+          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: arte.porRede[rede] ?? url, extra: { infografico: conteudo } }));
+        }
       }
       escritos++;
       // Card de espera que ninguém aproveitou sai (04/10): o "Lucas está
@@ -1093,6 +1170,15 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
       }
     }
   }));
+
+  // A COLETA DA SEMANA AO WORKER (10/10): um pedido com as peças de todos os
+  // dias que foram pelo modelo. Recusado, os posts dele vão na hora pelo
+  // caminho de hoje (lib/media/editor-do-curso/arte-pelo-modelo-servidor.ts).
+  if (peloModelo && coleta?.lotes.length) {
+    await despacharColeta({ projectId: video.projectId, runId: run.id, modelo: peloModelo.modelo, coleta }).catch((e) =>
+      console.error(`[semana][${videoJobId}] o lote das artes pelo modelo não saiu (o vigia da fila desenha pelo caminho de hoje no prazo):`, e)
+    );
+  }
 
   return { escritos, falhas };
 }

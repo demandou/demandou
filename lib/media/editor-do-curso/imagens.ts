@@ -68,7 +68,7 @@ export async function pedirImagensDoModelo(args: {
   /** Os posts da campanha no estilo do modelo: no máximo uma imagem por peça, junto do texto dela. */
   pecasParadas?: PecasParadas | null;
   modelo?: string;
-  usage: { projectId?: string | null; operation: string };
+  usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
 }): Promise<{ mapa: string; imagens: PedidoDeImagem[] }> {
   const { referencias, esqueleto } = args;
@@ -89,7 +89,7 @@ Imagens no modo peças paradas: no máximo UMA imagem por peça, de uma coisa co
     model: args.modelo,
     maxTokens: 32_000,
     timeoutMs: 12 * 60_000,
-    usage: { projectId: args.usage.projectId ?? undefined, operation: args.usage.operation },
+    usage: { projectId: args.usage.projectId ?? undefined, runId: args.usage.runId ?? undefined, operation: args.usage.operation },
     onCusto: args.onCusto,
   };
   const resposta = referencias.quadros
@@ -116,7 +116,7 @@ export async function escolherImagensDoModelo(args: {
   /** As folhas (work/imagens.jpg, imagens-2.jpg...) em base64. */
   folhas: string[];
   modelo?: string;
-  usage: { projectId?: string | null; operation: string };
+  usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
 }): Promise<EscolhaDeImagem[]> {
   if (!args.folhas.length) return [];
@@ -132,7 +132,7 @@ Escolha uma resposta para cada pedido.`,
       model: args.modelo,
       maxTokens: 16_000,
       timeoutMs: 8 * 60_000,
-      usage: { projectId: args.usage.projectId ?? undefined, operation: args.usage.operation },
+      usage: { projectId: args.usage.projectId ?? undefined, runId: args.usage.runId ?? undefined, operation: args.usage.operation },
       onCusto: args.onCusto,
     }
   );
