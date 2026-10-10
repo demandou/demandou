@@ -194,6 +194,15 @@ for (const id of modelos) {
   console.log(`${id}: copiado`);
 }
 
+// Os limites do servidor no render.mjs de cada modelo (10/10): ver limites-do-servidor.mjs.
+{
+  const { comLimitesDoServidor } = await import("./limites-do-servidor.mjs");
+  for (const id of readdirSync(AQUI).filter((n) => n.startsWith("modelo-"))) {
+    const f = path.join(AQUI, id, "template", "scripts", "render.mjs");
+    if (existsSync(f)) writeFileSync(f, comLimitesDoServidor(readFileSync(f, "utf8")));
+  }
+}
+
 // O índice e o catálogo saem do que está em worker/modelos (vale também com --so-catalogo).
 const resumo = [];
 for (const id of readdirSync(AQUI).filter((n) => n.startsWith("modelo-")).sort()) {
@@ -274,13 +283,52 @@ function trechosDoEstilo(md) {
     .join("\n");
   return texto.replace(/\s*[—–]\s*/g, ", ").slice(0, 2400);
 }
+// OS PAPÉIS DAS CORES NOS POSTS (10/10): cada tema nomeia as cores do seu
+// jeito (fundo, lousa, preto, papel, espaco), então o papel sai das próprias
+// cores, na ordem em que o curso as declara: o fundo é a primeira; o destaque,
+// a primeira cor viva depois dela (a assinatura: a tarja do Viral, o giz
+// amarelo da Lousa, o cobalto do Manifesto); o título, a de maior contraste
+// com o fundo (com piso de legibilidade).
+const rgbDe = (h) => {
+  const x = h.replace("#", "");
+  const f = x.length === 3 ? x.split("").map((c) => c + c).join("") : x.slice(0, 6);
+  return [0, 2, 4].map((i) => parseInt(f.slice(i, i + 2), 16) / 255);
+};
+const luminancia = (h) => {
+  const l = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const [r, g, b] = rgbDe(h).map(l);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const croma = (h) => {
+  const c = rgbDe(h);
+  return Math.max(...c) - Math.min(...c);
+};
+const contraste = (a, b) => {
+  const [x, y] = [luminancia(a), luminancia(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+function papeisDasCores(cores) {
+  const hex = cores.map((c) => c.hex).filter((h) => /^#[0-9A-F]{6}$/i.test(h));
+  if (!hex.length) return null;
+  const fundo = hex[0];
+  const destaque = hex.slice(1).find((h) => croma(h) >= 0.35) ?? null;
+  const resto = hex.slice(1).filter((h) => h !== destaque);
+  let titulo = resto.sort((a, b) => contraste(b, fundo) - contraste(a, fundo))[0] ?? null;
+  if (!titulo || contraste(titulo, fundo) < 4.5) titulo = contraste("#FFFFFF", fundo) >= contraste("#0A0A0A", fundo) ? "#FFFFFF" : "#0A0A0A";
+  return { fundo, titulo, destaque: destaque ?? titulo };
+}
+
 const estilos = {};
 for (const m of paraOApp) {
   const t = path.join(AQUI, m.id, "template", "src", "tema.ts");
   const e = path.join(AQUI, m.id, "referencias", "estilo.md");
   const tema = existsSync(t) ? readFileSync(t, "utf8") : "";
   const fontes = [...new Set([...tema.matchAll(/@remotion\/google-fonts\/([A-Za-z0-9]+)/g)].map((x) => nomeDaFonte(x[1])))];
-  estilos[m.id] = { cores: coresDoTema(tema), fontes, estilo: existsSync(e) ? trechosDoEstilo(readFileSync(e, "utf8")) : "" };
+  const cores = coresDoTema(tema);
+  // Os posts do modelo (10/10): com foto quando o próprio curso usa fotos
+  // (references/imagens.md); sem ela, tipográficos, desenhados em código.
+  const pecas = existsSync(path.join(AQUI, m.id, "referencias", "imagens.md")) ? "foto" : "tipografia";
+  estilos[m.id] = { cores, fontes, estilo: existsSync(e) ? trechosDoEstilo(readFileSync(e, "utf8")) : "", pecas, papeis: papeisDasCores(cores) };
 }
 writeFileSync(path.join(path.dirname(destinoApp), "estilos.json"), JSON.stringify(estilos, null, 1) + "\n");
 console.log(`estilos das peças: ${Object.keys(estilos).length} (sem cor: ${Object.values(estilos).filter((x) => !x.cores.length).length}, sem fonte: ${Object.values(estilos).filter((x) => !x.fontes.length).length})`);

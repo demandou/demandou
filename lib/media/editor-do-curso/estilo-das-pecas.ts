@@ -25,7 +25,21 @@ export type EstiloDoModelo = {
   cores: Array<{ nome: string; hex: string; papel: string | null }>;
   fontes: string[];
   estilo: string;
+  /** Os posts do modelo: com foto quando o curso usa fotos (imagens.md); senão tipográficos, em código. */
+  pecas?: "foto" | "tipografia";
+  /** Os papéis das cores nos posts, tirados da paleta do próprio tema (importar.mjs). */
+  papeis?: { fundo: string; titulo: string; destaque: string } | null;
 };
+
+/**
+ * OS POSTS TIPOGRÁFICOS DO MODELO (10/10, Bruno: "as imagens do post não
+ * herdaram o estilo do vídeo, e sempre trazem os equipamentos de gravação").
+ * Nos modelos que o curso faz sem foto (Manifesto, Lousa, Painel...), o post
+ * também sai sem foto: os modelos só texto do book, desenhados em código,
+ * nas cores do próprio modelo. Nenhuma imagem paga, nenhum objeto inventado.
+ * O "Dado gigante" só entra em frase com número (modeloServe).
+ */
+export const MODELOS_TIPOGRAFICOS_DO_CURSO = ["palavra-repetida-ao-fundo", "tipografia-gigante", "frase-fundo-cor", "dado-gigante", "capa-reels-tipografica"];
 
 const ESTILOS = estilos as Record<string, EstiloDoModelo>;
 

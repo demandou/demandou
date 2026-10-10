@@ -9,6 +9,8 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { argumentos, exigirProjeto, ffmpeg, lerJson, medirVolume } from "./comum.mjs";
 import { conferirPlano, tiposDoModelo } from "./conferir.mjs";
+// Os limites do servidor (Demandou, 10/10): abas do Chrome, cache e multiprocesso no Linux.
+const servidor = process.env.RENDER_DO_SERVIDOR ? JSON.parse(process.env.RENDER_DO_SERVIDOR) : {};
 
 exigirProjeto();
 const { posicionais, opcoes } = argumentos();
@@ -40,6 +42,7 @@ try {
     composition,
     serveUrl,
     codec: "h264",
+    ...servidor,
     crf: 17,
     audioCodec: "pcm-16",
     imageFormat: "jpeg",

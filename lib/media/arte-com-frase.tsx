@@ -268,8 +268,17 @@ export async function marcaDaArte(
   // a quem escreve a cena e à conferência (as figuras que ele pede).
   const designQueManda = doPost?.design ?? (doCliente ? doCliente.design : null);
   if (designQueManda?.linguagem?.trim()) marca.estiloDoPost = await estiloDoPostDaMarca(projectId, designQueManda);
+  // O MODELO DO CURSO TIPOGRÁFICO (10/10): as cores nos papéis do próprio modelo
+  // (o fundo, o título e a assinatura dele no destaque), como no vídeo. Só a foto
+  // que a pessoa escolheu para o post entra; a biblioteca automática não.
+  if (doPost?.papeis) {
+    const cores = coresDaIdentidade(doPost.papeis);
+    marca.cores = cores;
+    if (marca.identidade) marca.identidade = { ...marca.identidade, cores };
+    if (!fotosEscolhidas) marca.materiais = undefined;
+  }
   // O post no estilo mestre sem o design mestre (08/10): nem o book nem o design do projeto, a direção do vídeo.
-  const modelos = doPost?.semModelo ? undefined : modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente?.id ?? null, book: escolha?.ids });
+  const modelos = doPost?.ids ?? (doPost?.semModelo ? undefined : modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente?.id ?? null, book: escolha?.ids }));
   if (!modelos?.length && !marca.materiais?.length) return marca;
   const { lerMidia } = await import("@/lib/media/storage");
   const { logoParaArte } = await import("@/lib/modelos-de-arte/compor");
@@ -306,13 +315,37 @@ async function estiloDoPostDaMarca(projectId: string, d: DesignQueManda): Promis
   return { nome: d.nome, linguagem, pedeFiguras: await figuras };
 }
 
+/**
+ * O modelo do curso do projeto, quando os posts seguem ele e ele é tipográfico
+ * (10/10). Vale só enquanto o estilo dos posts confirmado é o que saiu do modelo
+ * (ou nenhum): quem disse "não gostei" e criou o próprio estilo segue o dele.
+ */
+async function pecasTipograficasDoCurso(projectId: string): Promise<{ ids: string[]; papeis: PapeisEscolhidos } | null> {
+  const { modeloDoCursoDoProjeto } = await import("@/lib/media/editor-do-curso/no-corte");
+  const modelo = await modeloDoCursoDoProjeto(projectId);
+  if (!modelo) return null;
+  const { estiloDoModelo, modeloDaFala, MODELOS_TIPOGRAFICOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/estilo-das-pecas");
+  const e = estiloDoModelo(modelo);
+  if (e?.pecas !== "tipografia" || !e.papeis) return null;
+  const { estadoDoMeuEstilo } = await import("@/lib/estilo-proprio/servidor");
+  const confirmado = (await estadoDoMeuEstilo(projectId).catch(() => null))?.confirmado ?? null;
+  if (confirmado && !modeloDaFala(confirmado.falas?.[0])) return null;
+  return { ids: MODELOS_TIPOGRAFICOS_DO_CURSO, papeis: e.papeis };
+}
+
 async function modeloEscolhidoParaOPost(
   projectId: string,
   escolhido: import("@/lib/estilo-dos-posts/tipos").ModeloDoPost
-): Promise<{ modeloId: string | null; semModelo?: boolean; design?: DesignQueManda } | null> {
+): Promise<{ modeloId: string | null; semModelo?: boolean; design?: DesignQueManda; ids?: string[]; papeis?: PapeisEscolhidos } | null> {
   const { modeloPorId } = await import("@/lib/modelos-de-arte/catalogo");
   const { comoOPostDesenha } = await import("@/lib/estilo-dos-posts/tipos");
   const como = comoOPostDesenha(escolhido);
+  // O ESTILO MESTRE VINDO DE UM MODELO DO CURSO TIPOGRÁFICO (10/10): o post sai
+  // só texto, nas cores do modelo (ver editor-do-curso/estilo-das-pecas.ts).
+  if (como === "mestre") {
+    const curso = await pecasTipograficasDoCurso(projectId).catch(() => null);
+    if (curso) return { modeloId: null, ids: curso.ids, papeis: curso.papeis };
+  }
   // O ESTILO MESTRE (08/10, à noite): a arte usa o design mestre, o design que
   // sai do estilo do vídeo. Ele só é feito de novo quando o estilo do vídeo
   // mudou (uma vez, nunca a cada post). Sem ele (biblioteca fora do ar), o
@@ -726,6 +759,10 @@ export function pedidoDaCena(o: {
     id?.padroesVisuais?.length ? `Measured visual traits that perform in this niche (Portuguese, abstract only): ${id.padroesVisuais.join(" | ")}` : "",
     id?.regrasDaArte?.length ? `Rules the client approved for this project's art (Portuguese; never against the rules above): ${id.regrasDaArte.join(" | ")}` : "",
     `Steer clear of ${id ? `${id.setor.evitar}, and of ` : ""}the generic desk with a lamp, open notebook, lantern or coffee mug.`,
+    // O EQUIPAMENTO DE GRAVAÇÃO (10/10, Bruno: "toda imagem traz um microfone, uma câmera, uma luz;
+    // não tem nada a ver com o que eu falo"): o público e o nicho da Demandou falam de quem grava, e
+    // o redator traduzia isso em microfone de pé, lente de câmera e mesa de podcast em toda arte.
+    "Never show content-production gear (microphones, cameras, lenses, ring lights, tripods, studio lights, headphones, podcast desks) unless the sentence itself names that object; who the audience is never decides the subject.",
     estiloComoLinguagem(o.estilo, { escolhidoParaOPost: o.estiloDoPost }),
     o.pessoas
       ? "People: only as the chosen style describes them (stylized figures, silhouettes), never a recognizable real person."

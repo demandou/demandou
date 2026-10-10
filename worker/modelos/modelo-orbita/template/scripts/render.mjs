@@ -9,6 +9,8 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { argumentos, exigirProjeto, ffmpeg, lerJson, medirVolume } from "./comum.mjs";
 import { conferirPlano, tiposDoModelo } from "./conferir.mjs";
+// Os limites do servidor (Demandou, 10/10): abas do Chrome, cache e multiprocesso no Linux.
+const servidor = process.env.RENDER_DO_SERVIDOR ? JSON.parse(process.env.RENDER_DO_SERVIDOR) : {};
 
 exigirProjeto();
 const { posicionais, opcoes } = argumentos();
@@ -29,7 +31,7 @@ const { posicionais, opcoes } = argumentos();
 const saida = posicionais[0] ?? "out/video-editado.mp4";
 // modelos com 3D (WebGL) declaram { "gl": "angle" } no modelo.json: sem isso o navegador do render não cria o contexto 3D
 const gl = existsSync("modelo.json") && lerJson("modelo.json").gl ? process.env.GL_DOS_MODELOS || lerJson("modelo.json").gl : undefined;
-const chromiumOptions = gl ? { gl } : {};
+const chromiumOptions = { ...(gl ? { gl } : {}), ...(servidor.chromiumOptions ?? {}) };
 // o bruto sai com áudio sem compressão: o AAC do render chega ~43 ms atrasado em relação à imagem;
 // o AAC feito aqui no fim fica no tempo certo
 const bruto = path.join(path.dirname(saida), ".render-sem-normalizar.mov");
@@ -43,6 +45,7 @@ try {
     composition,
     serveUrl,
     codec: "h264",
+    ...servidor,
     crf: 17,
     audioCodec: "pcm-16",
     imageFormat: "jpeg",

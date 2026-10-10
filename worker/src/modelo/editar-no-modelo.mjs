@@ -4,6 +4,7 @@ import { writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { opcaoDeFiltro, rodar } from "../ffmpeg.mjs";
+import { fatiaAtual } from "../capacidade.mjs";
 
 /**
  * O EDITOR DOS MODELOS DO CURSO (09/10/2026).
@@ -579,9 +580,26 @@ async function passoDasImagens(projeto, corpo, pedir) {
 }
 
 /** Passo 9: o render do curso, que recusa plano reprovado e normaliza o áudio a -14 LUFS. */
+/**
+ * Os limites do servidor para o render.mjs do curso (10/10): o primeiro corte
+ * em produção morreu duas vezes em "render 0%" (EPIPE) com uma aba do Chrome
+ * por núcleo. Os mesmos números do editor de antes (montagem.mjs,
+ * opcoesDoRender), da fatia deste trabalho na fila (capacidade.mjs). Ver
+ * worker/modelos/limites-do-servidor.mjs.
+ */
+export function limitesDoRender() {
+  return {
+    concurrency: fatiaAtual().remotion,
+    offthreadVideoCacheSizeInBytes: 512 * 1024 * 1024,
+    offthreadVideoThreads: 2,
+    chromiumOptions: process.platform === "linux" ? { enableMultiProcessOnLinux: true } : {},
+    timeoutInMilliseconds: 120_000,
+  };
+}
+
 export async function renderizar(projeto, nome = "video-editado.mp4", { prazoMs = 90 * 60_000 } = {}) {
   const saida = join("out", nome);
-  const r = await rodarNoProjeto(projeto, ["scripts/render.mjs", saida], { prazoMs });
+  const r = await rodarNoProjeto(projeto, ["scripts/render.mjs", saida], { prazoMs, env: { RENDER_DO_SERVIDOR: JSON.stringify(limitesDoRender()) } });
   if (r.codigo !== 0) throw falhou("render.mjs", r);
   return join(projeto, saida);
 }

@@ -1369,6 +1369,8 @@ process.on("SIGINT", () => void desligar("SIGINT"));
  */
 const filaDaMontagem = [];
 let montagemRodando = false;
+/** As chaves dos cortes do editor do curso na fila ou rodando (10/10): um pedido por corte de cada vez. */
+const chavesDoCursoAndando = new Set();
 /** Renders da fila rodando agora, e as unidades que eles reservaram (só a fila paralela usa). */
 let montagensRodando = 0;
 let unidadesOcupadas = 0;
@@ -2332,8 +2334,17 @@ const servidor = createServer((req, res) => {
       const { modeloExiste } = await import("./modelo/editar-no-modelo.mjs");
       if (!modeloExiste(pedido.modelo)) return responder(400, { error: `modelo desconhecido: ${pedido.modelo}` });
       const assincrono = Boolean(pedido.callbackUrl);
+      // O MESMO CORTE DUAS VEZES (10/10): o primeiro corte do Manifesto em
+      // produção rodou duas vezes ao mesmo tempo (o app pediu de novo com o
+      // primeiro ainda andando) e os dois renders disputaram a máquina. A fila
+      // já trocava o pedido repetido que ESPERAVA; o que já RODA agora também
+      // segura o repetido, e o callback de quem roda vale para os dois.
+      if (chavesDoCursoAndando.has(pedido.chave)) {
+        return responder(202, { aceito: true, chave: pedido.chave, jaAndando: true });
+      }
+      chavesDoCursoAndando.add(pedido.chave);
       if (assincrono) responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
-      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarNoModelo(pedido, assincrono) });
+      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarNoModelo(pedido, assincrono).finally(() => chavesDoCursoAndando.delete(pedido.chave)) });
     });
     return;
   }
