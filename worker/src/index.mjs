@@ -2497,8 +2497,9 @@ const servidor = createServer((req, res) => {
     const destino = { callbackUrl: pedido.callbackUrl, videoJobId: pedido.videoJobId ?? pedido.chave };
     // O render mais até 3 voltas do plano no app (cada uma até ~15 min). No
     // completo (10/10, plano em blocos de ~150 s): a escrita, o conserto e a
-    // revisão de cada bloco, ~12 min por bloco, além do render.
-    const prazoMs = prazoDaMontagem(pedido) + (pedido.completo === true ? Math.ceil((Number(pedido.duracao) || 1200) / 150) * 12 * 60_000 : 45 * 60_000);
+    // revisão de cada bloco, e o passo das imagens nos modelos com imagem,
+    // ~15 min por bloco, além do render.
+    const prazoMs = prazoDaMontagem(pedido) + (pedido.completo === true ? Math.ceil((Number(pedido.duracao) || 1200) / 150) * 15 * 60_000 : 45 * 60_000);
     const soltar = assincrono
       ? registrarTrabalho({
           videoJobId: destino.videoJobId,

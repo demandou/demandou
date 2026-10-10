@@ -85,8 +85,11 @@ export function deslocarTempos(valor, delta, chave = "") {
  * O esqueleto de um bloco, como o redator vê um corte: a fala do bloco, a
  * duração dele e os cortes dentro dele, no tempo do bloco (começa no zero).
  * Rosto, zona, quadro e fps são os do vídeo inteiro.
+ * `idsDasImagens` (10/10, o passo 6b em blocos): o plano.imagens do bloco fica
+ * só com estes ids (as imagens do trecho dele e as do cliente); sem a lista,
+ * o plano.imagens vai como está.
  */
-export function esqueletoDoBloco(esqueleto, b) {
+export function esqueletoDoBloco(esqueleto, b, idsDasImagens = null) {
   const desl = (t) => r3(t - b.inicio);
   const palavras = (esqueleto.palavras ?? []).slice(b.de, b.ate + 1).map((p) => ({ ...p, em: desl(p.em), ate: desl(p.ate) }));
   const cortesEm = (esqueleto.cortesEm ?? []).filter((c) => c > b.inicio + 0.01 && c < b.fim - 0.01).map(desl);
@@ -94,7 +97,117 @@ export function esqueletoDoBloco(esqueleto, b) {
   if (Array.isArray(esqueleto.enquadramentos)) {
     saida.enquadramentos = esqueleto.enquadramentos.filter((e) => e.ate > b.inicio && e.de < b.fim).map((e) => deslocarTempos({ ...e, de: Math.max(e.de, b.inicio), ate: Math.min(e.ate, b.fim) }, -b.inicio));
   }
+  if (idsDasImagens && esqueleto.imagens && typeof esqueleto.imagens === "object") saida.imagens = imagensDoBloco(esqueleto.imagens, idsDasImagens);
   return saida;
+}
+
+/**
+ * O PASSO DAS IMAGENS NO COMPLETO (10/10/2026). No corte, o passo 6b do curso
+ * (references/imagens.md) roda uma vez: o mapa e a lista de imagens, o
+ * scripts/imagens.mjs busca e monta a folha numerada, a escolha olhando a
+ * folha, e o plano usa `imagem: { id, efeito }` com os ids que o script gravou
+ * em plano.imagens. No completo, o plano é escrito por trecho de ~150 s; o
+ * passo 6b também: cada trecho faz o mapa e os pedidos dele (no tempo dele),
+ * todos os pedidos vão juntos para um work/imagens.json só (o script trabalha
+ * no projeto inteiro e grava plano.imagens inteiro), a escolha de cada trecho
+ * olha só as folhas dos pedidos dele, e o plano de cada trecho recebe só as
+ * imagens dele (mais as do cliente, que valem no vídeo todo).
+ */
+
+/** O id como o imagens.mjs do curso grava (sem acento, minúsculo, hífen no lugar do resto). */
+export function idDaImagem(id) {
+  return String(id ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/ /g, "-");
+}
+
+/**
+ * Os pedidos de imagem de todos os trechos num work/imagens.json só. `listas[k]`:
+ * os pedidos do bloco k no tempo dele ({ id, em, palavra, busca, tipo }).
+ * `fixos`: os pedidos do material do cliente (o par da Transformação), que
+ * entram primeiro e valem para todos os trechos. O `em` volta ao tempo do
+ * vídeo inteiro; pedido fora do trecho sai; id repetido entre trechos ganha o
+ * número do trecho ("mel" no trecho 1, "mel-3" no trecho 3), porque o script
+ * exige id único e grava a imagem em public/img/<id>. Os pedidos ficam em
+ * ordem de trecho (a folha numerada de cada trecho fica junta).
+ * Devolve { pedidos, porBloco (os ids de cada trecho), comuns (os ids fixos) }.
+ */
+export function juntarPedidosDasImagens(blocos, listas, fixos = []) {
+  const usados = new Set();
+  const pedidos = [];
+  const comuns = [];
+  for (const p of fixos ?? []) {
+    const id = idDaImagem(p?.id);
+    if (!id || usados.has(id)) continue;
+    usados.add(id);
+    pedidos.push({ ...p, id });
+    comuns.push(id);
+  }
+  const porBloco = blocos.map(() => []);
+  blocos.forEach((b, k) => {
+    const dur = b.fim - b.inicio;
+    const lista = (listas?.[k] ?? [])
+      .filter((p) => p && idDaImagem(p.id) && Number.isFinite(Number(p.em)) && Number(p.em) >= 0 && Number(p.em) <= dur + 0.01)
+      .sort((x, y) => Number(x.em) - Number(y.em));
+    for (const p of lista) {
+      const base = idDaImagem(p.id);
+      let id = base;
+      if (usados.has(id)) {
+        id = `${base}-${k + 1}`;
+        for (let n = 2; usados.has(id); n++) id = `${base}-${k + 1}-${n}`;
+      }
+      usados.add(id);
+      pedidos.push({ ...p, id, em: r3(Math.min(b.fim, b.inicio + Number(p.em))) });
+      porBloco[k].push(id);
+    }
+  });
+  return { pedidos, porBloco, comuns };
+}
+
+/** O pedaço do plano.imagens com os ids dados (os que existem). */
+export function imagensDoBloco(imagensDoPlano, ids) {
+  const quero = new Set(ids ?? []);
+  return Object.fromEntries(Object.entries(imagensDoPlano ?? {}).filter(([id]) => quero.has(id)));
+}
+
+/** As folhas numeradas (work/imagens.jpg, imagens-2.jpg...) que mostram estes pedidos (as posições deles no work/imagens.json). */
+export function folhasDosPedidos(posicoes, porFolha = 4) {
+  const ks = [...new Set((posicoes ?? []).filter((i) => Number.isInteger(i) && i >= 0).map((i) => Math.floor(i / porFolha)))].sort((a, b) => a - b);
+  return ks.map((k) => ({ numero: k + 1, arquivo: k === 0 ? "imagens.jpg" : `imagens-${k + 1}.jpg` }));
+}
+
+/** Os ids de imagem que um plano cita: `imagem`, `antes` e `depois` com `id`, em qualquer nível dos momentos. */
+export function imagensCitadas(plano) {
+  const ids = [];
+  const andar = (v) => {
+    if (Array.isArray(v)) return v.forEach(andar);
+    if (!v || typeof v !== "object") return;
+    for (const [k, x] of Object.entries(v)) {
+      if ((k === "imagem" || k === "antes" || k === "depois") && x && typeof x === "object" && typeof x.id === "string") ids.push(x.id);
+      andar(x);
+    }
+  };
+  for (const m of plano?.momentos ?? []) andar(m);
+  return ids;
+}
+
+/**
+ * A REGRA "SÓ AS IMAGENS QUE EXISTEM", por trecho: o plano do trecho cita só
+ * as imagens dele (e as do cliente). Imagem de outro trecho, ou id que o
+ * imagens.mjs não gravou, sairia no render como buraco. Devolve os erros no
+ * formato da conferência do curso; vazio é aprovado.
+ */
+export function imagensForaDoBloco(plano, permitidas) {
+  const lista = [...new Set(permitidas ?? [])];
+  const pode = new Set(lista);
+  const use = lista.length ? `Use só ${lista.map((i) => `"${i}"`).join(", ")}` : "Este trecho não tem imagem: tire o campo de imagem";
+  return [...new Set(imagensCitadas(plano))]
+    .filter((id) => !pode.has(id))
+    .map((id) => `A imagem "${id}" não está entre as imagens deste trecho (plano.imagens). ${use}; sem imagem que sirva, use outro bloco.`);
 }
 
 /** Os momentos de um bloco (os que começam dentro dele), no tempo do bloco. */

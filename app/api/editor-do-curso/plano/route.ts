@@ -33,6 +33,9 @@ import { revisarQuadrosDoModelo } from "@/lib/media/editor-do-curso/revisao";
  * Com `bloco` (10/10, o completo no modelo, worker/src/modelo/blocos-do-plano.mjs),
  * o plano é de um TRECHO do vídeo longo (a fala e os tempos dele, o lugar no
  * vídeo e o fim do trecho anterior); a guarda de número olha a fala do trecho.
+ * Nos modelos com imagem, o completo faz o passo 6b por trecho: a fase
+ * "imagens" com `bloco` é o mapa e os pedidos do trecho, e a fase "escolher"
+ * leva só as folhas dele (`rotulos` diz qual folha é cada uma).
  * Sem sessão, como todo pedido do worker, e autenticado pela assinatura sobre
  * o corpo inteiro.
  */
@@ -52,6 +55,8 @@ export async function POST(req: NextRequest) {
     mapa?: string | null;
     pedidos?: unknown[];
     folhas?: string[];
+    /** O nome de cada folha na escolha (10/10, o completo: um trecho olha só as folhas dele). */
+    rotulos?: string[];
     legendas?: string[];
     plano?: Record<string, unknown> | null;
     projectId?: string | null;
@@ -87,14 +92,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ problemas, custoUsd });
     }
     if (corpo.fase === "escolher") {
-      const escolhas = await escolherImagensDoModelo({ referencias: corpo.referencias, pedidos: corpo.pedidos ?? [], folhas: corpo.folhas ?? [], ...comum });
+      const escolhas = await escolherImagensDoModelo({ referencias: corpo.referencias, pedidos: corpo.pedidos ?? [], folhas: corpo.folhas ?? [], rotulos: corpo.rotulos ?? null, ...comum });
       return NextResponse.json({ escolhas, custoUsd });
     }
     if (!corpo.esqueleto?.palavras?.length) {
       return NextResponse.json({ error: "Falta a fala do corte" }, { status: 400 });
     }
     if (corpo.fase === "imagens") {
-      const r = await pedirImagensDoModelo({ referencias: corpo.referencias, esqueleto: corpo.esqueleto, nicho: corpo.nicho ?? null, pecasParadas: corpo.pecasParadas ?? null, material: corpo.material ?? null, ...comum });
+      const r = await pedirImagensDoModelo({
+        referencias: corpo.referencias,
+        esqueleto: corpo.esqueleto,
+        nicho: corpo.nicho ?? null,
+        pecasParadas: corpo.pecasParadas ?? null,
+        material: corpo.material ?? null,
+        bloco: corpo.bloco ?? null,
+        ...comum,
+      });
       return NextResponse.json({ ...r, custoUsd });
     }
     const escrito = await escreverPlanoDoModelo({

@@ -231,12 +231,13 @@ export function caminhoDoCompleto(p: {
 
 /**
  * O prazo do app para o callback do completo no modelo: o da montagem (render
- * de 8 s por segundo, mais a fila) e ~12 min por bloco de 150 s do plano
- * (escrita, conserto e revisão), a mesma conta do worker.
+ * de 8 s por segundo, mais a fila) e ~15 min por bloco de 150 s do plano
+ * (escrita, conserto e revisão, e o passo das imagens nos modelos com imagem,
+ * 10/10), a mesma conta do worker.
  */
 export function prazoDoCompletoNoModeloMs(duracaoSeg: number | null | undefined): number {
   const dur = Number(duracaoSeg) > 0 ? Number(duracaoSeg) : 1200;
-  return Math.round((20 * 60 + dur * 8) * 1000) + 45 * 60_000 + Math.ceil(dur / 150) * 12 * 60_000;
+  return Math.round((20 * 60 + dur * 8) * 1000) + 45 * 60_000 + Math.ceil(dur / 150) * 15 * 60_000;
 }
 
 /**
