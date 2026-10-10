@@ -19,7 +19,7 @@ export type ArquivoDoExemplo = { nome: string; conteudo: string };
 export type KitDoWorker = { api: string; versao: string; exemplos: { nome: string; leia: string; arquivos: ArquivoDoExemplo[] }[] };
 export type PalavraDaCena = { de: number; ate: number; w: string };
 export type ContextoDaCena = {
-  tecnica: "maquete-3d" | "recorte-letreiro" | "moldura-explicativa";
+  tecnica: "maquete-3d" | "recorte-letreiro" | "graficos" | "moldura-explicativa";
   duracao: number;
   marca?: { nome?: string; area?: string } | null;
   nicho?: string | null;
@@ -38,9 +38,9 @@ const blocos = (arquivos: Record<string, string> | ArquivoDoExemplo[]) =>
 /** O prefixo em cache: regras, API do kit e exemplos. */
 export function prefixoDaCena(kit: KitDoWorker): string {
   const exemplos = kit.exemplos
-    .map((e) => `## Exemplo aprovado: ${e.nome}\n\n${e.leia}\n\n${blocos(e.arquivos)}\n=== fim ===`)
+    .map((e) => `## Exemplo: ${e.nome}\n\n${e.leia}\n\n${blocos(e.arquivos)}\n=== fim ===`)
     .join("\n\n");
-  return `${REGRAS_DAS_AULAS}\n\n${kit.api}\n\n# OS EXEMPLOS APROVADOS PELO DONO (o nível a alcançar)\n\n${exemplos}`;
+  return `${REGRAS_DAS_AULAS}\n\n${kit.api}\n\n# OS EXEMPLOS (o nível a alcançar; o LEIA de cada um diz de qual aula é)\n\n${exemplos}`;
 }
 
 const SISTEMA = `Você escreve o código Remotion de um corte, sobre o kit e as regras acima.\n\n${FORMATO_DA_RESPOSTA}`;
@@ -48,6 +48,7 @@ const SISTEMA = `Você escreve o código Remotion de um corte, sobre o kit e as 
 const O_QUE_E: Record<ContextoDaCena["tecnica"], string> = {
   "maquete-3d": "aula 8.1: uma maquete 3D conceitual que explica a ideia da fala, com vista explodida, rótulos presos e reconstrução; o apresentador vai de tela cheia para a moldura chanfrada no canto inferior esquerdo",
   "recorte-letreiro": "aula 8.2: o apresentador recortado do fundo, palavras grandes atrás dele, tipografia cinética e moldura assimétrica com a cabeça por fora",
+  graficos: "aula 6: o apresentador centralizado e, uma inserção por vez, gráficos que se desenham na palavra dita (linha que rompe um nível, barras que crescem, número que conta até o valor dito), um card e ícones com função",
   "moldura-explicativa": "aula 7: o apresentador alterna tela cheia e moldura arredondada, e cartões com ícones animados explicam cada ponto da fala",
 };
 
@@ -58,7 +59,7 @@ export function blocoDoCorte(contexto: ContextoDaCena, fala: PalavraDaCena[]): s
   const quem = contexto.marca?.nome ? `Quem fala: ${contexto.marca.nome}${contexto.marca.area ? `, ${contexto.marca.area}` : ""}.` : "";
   return `# O CORTE
 
-Técnica (decidida pela fala): "${contexto.tecnica}", ${O_QUE_E[contexto.tecnica]}.
+Técnica (escolhida pelo cliente, ou pelo JEV pela fala): "${contexto.tecnica}", ${O_QUE_E[contexto.tecnica]}.
 Duração: ${contexto.duracao.toFixed(2)} s (${Math.round(contexto.duracao * 30)} quadros a 30 fps).
 Recorte com alfa: ${contexto.temRecorte ? "SIM (recorte: true vale nos quadros do apresentador)" : "NÃO (nunca use recorte: true)"}.
 Letra da marca: ${contexto.letra ?? "moderna"}.

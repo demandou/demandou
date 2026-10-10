@@ -76,7 +76,8 @@ const TECNICO = [
  * técnicas (cor, medida, caminho SVG, import) e o texto solto do JSX.
  */
 export function textosNaTela(codigo: string): string[] {
-  const limpo = semComentarios(codigo);
+  // o que vai em dito("...") é a fala procurada, não texto de tela ("oitenta e três mil" e "mil" viravam 84000)
+  const limpo = semComentarios(codigo).replace(/\b(dito|ditoAte)\s*\(\s*(["'`])(?:(?!\2)[^\\]|\\.)*\2/g, "$1(");
   const textos: string[] = [];
   for (const m of limpo.matchAll(/(["'])((?:(?!\1)[^\\\n]|\\.)*)\1|`([^`]*)`/g)) {
     const valor = (m[2] ?? m[3] ?? "").replace(/\$\{[^}]*\}/g, " ");
@@ -102,7 +103,8 @@ export function numerosSemLastroNaCena(arquivos: Record<string, string>, palavra
   for (const [nome, codigo] of Object.entries(arquivos)) {
     if (nome.endsWith(".tsx")) textos.push(...textosNaTela(codigo));
   }
-  return numerosSemLastro({ momentos: [{ tipo: "cena", texto: textos.join(" | ") }] }, palavras);
+  // cada texto sozinho: juntos, "três | mil" de dois textos diferentes viraria um número que ninguém escreveu
+  return numerosSemLastro({ momentos: textos.map((texto) => ({ tipo: "cena", texto })) }, palavras);
 }
 
 /** A fala no formato da guarda ({em, ate, w}) a partir da fala do corte ({de, ate, w}). */

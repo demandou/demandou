@@ -18,7 +18,7 @@ const recorte = await imp("worker/src/avancado/recorte.mjs");
 const geometria = await imp("worker/src/avancado/geometria.mjs");
 const editar = await imp("worker/src/avancado/editar-avancado.mjs");
 const { lerArquivosDaResposta, textosNaTela, numerosSemLastroNaCena } = await import("@/lib/media/editor-avancado/arquivos");
-const { caminhoDoCorte, reservaDoSobMedida, ID_SOB_MEDIDA } = await import("@/lib/media/editor-avancado/no-corte");
+const { caminhoDoCorte, reservaDoSobMedida, ID_SOB_MEDIDA, OPCOES_SOB_MEDIDA, ehSobMedida, tecnicaDaOpcao } = await import("@/lib/media/editor-avancado/no-corte");
 const { tetoDoPlanoUsd } = await import("@/lib/media/editor-do-curso/no-corte");
 const { revisarQuadros } = await import("@/lib/media/editor-avancado/revisao");
 const { decidirTecnica } = await import("@/lib/media/editor-avancado/tecnica");
@@ -128,14 +128,21 @@ test("nomes de arquivo e o portão inteiro sobre um conjunto de arquivos", () =>
   assert.ok(r.problemas.some((x: { arquivo: string }) => x.arquivo === "../fora.tsx"));
 });
 
-test("os dois exemplos aprovados passam no portão estático contra a própria fala", () => {
-  const falas: Record<string, string> = { "recorte-bem-feito": "fala-aula82.json", "maquete-tenda": "fala-aula81.json" };
+test("os exemplos das três aulas passam no portão estático contra a própria fala", () => {
+  const falas: Record<string, string> = {
+    "recorte-bem-feito": "worker/avancado/src/dados/fala-aula82.json",
+    "maquete-tenda": "worker/avancado/src/dados/fala-aula81.json",
+    "graficos-cripto": "worker/avancado/exemplos/graficos-cripto/fala.json",
+  };
+  assert.deepEqual(readdirSync("worker/avancado/exemplos").sort(), Object.keys(falas).sort());
   for (const [nome, arquivoDaFala] of Object.entries(falas)) {
     const dir = path.resolve("worker/avancado/exemplos", nome, "cenas");
     const arquivos = Object.fromEntries(readdirSync(dir).map((n) => [n, readFileSync(path.join(dir, n), "utf8")]));
-    const f = JSON.parse(readFileSync(path.resolve("worker/avancado/src/dados", arquivoDaFala), "utf8"));
+    const f = JSON.parse(readFileSync(path.resolve(arquivoDaFala), "utf8"));
     const r = portao.conferirArquivos(arquivos, { palavras: f.palavras, duracao: f.duracao, temRecorte: nome.includes("recorte") });
     assert.deepEqual(r.problemas, [], nome);
+    // e a guarda de número: todo número de tela dos exemplos foi dito (o 83 MIL da aula 6 também)
+    assert.deepEqual(numerosSemLastroNaCena(arquivos, f.palavras.map((p: { de: number; ate: number; w: string }) => ({ em: p.de, ate: p.ate, w: p.w }))), [], `${nome}: número não dito`);
   }
 });
 
@@ -177,8 +184,11 @@ test("a reserva quando a edição sob medida falha: o modelo do curso de antes, 
   assert.deepEqual(reservaDoSobMedida({ reserva: "modelo-viral", modeloServe: serve, cursoLigado: false }), { tipo: "editor" });
   assert.deepEqual(reservaDoSobMedida({ reserva: "modelo-sumiu", modeloServe: serve, cursoLigado: true }), { tipo: "editor" });
   assert.deepEqual(reservaDoSobMedida({ reserva: null, modeloServe: serve, cursoLigado: true }), { tipo: "editor" });
-  const base = { escolhido: ID_SOB_MEDIDA, reserva: "modelo-viral", avancadoLigado: true, cursoLigado: true, avancadoDesistiu: false, modeloServe: serve };
-  assert.deepEqual(caminhoDoCorte(base), { tipo: "sob-medida" });
+  // a reserva nunca é outra edição sob medida
+  assert.deepEqual(reservaDoSobMedida({ reserva: "sob-medida-3d", modeloServe: () => true, cursoLigado: true }), { tipo: "editor" });
+  const base = { escolhido: "sob-medida-recorte", reserva: "modelo-viral", avancadoLigado: true, cursoLigado: true, avancadoDesistiu: false, modeloServe: serve };
+  assert.deepEqual(caminhoDoCorte(base), { tipo: "sob-medida", modelo: "sob-medida-recorte" });
+  assert.deepEqual(caminhoDoCorte({ ...base, escolhido: ID_SOB_MEDIDA }), { tipo: "sob-medida", modelo: ID_SOB_MEDIDA });
   assert.deepEqual(caminhoDoCorte({ ...base, avancadoDesistiu: true }), { tipo: "modelo", modelo: "modelo-viral" });
   // a trava desligada (o padrão): quem escolheu a sob medida segue a reserva
   assert.deepEqual(caminhoDoCorte({ ...base, avancadoLigado: false }), { tipo: "modelo", modelo: "modelo-viral" });
@@ -278,4 +288,22 @@ test("os instantes da conferência: um a cada 1,5 s, o começo de cada cena e o 
   assert.ok(ts.includes(0.75) && ts.includes(2.25));
   for (let i = 1; i < ts.length; i++) assert.ok(ts[i] - ts[i - 1] >= 0.4);
   assert.deepEqual(portao.cenasNoInstante(roteiro, 1, fala, 3.5).map((c: { arquivo: string }) => c.arquivo), ["cena-01.tsx"]);
+});
+
+test("as três aulas do curso são três opções, cada uma com a sua técnica fixa; a genérica deixa o JEV escolher", () => {
+  assert.deepEqual(OPCOES_SOB_MEDIDA.map((o) => [o.id, o.tecnica]), [
+    ["sob-medida-3d", "maquete-3d"],
+    ["sob-medida-recorte", "recorte-letreiro"],
+    ["sob-medida-graficos", "graficos"],
+  ]);
+  for (const o of OPCOES_SOB_MEDIDA) {
+    assert.ok(ehSobMedida(o.id));
+    assert.equal(tecnicaDaOpcao(o.id), o.tecnica);
+    assert.doesNotMatch(`${o.nome} ${o.resumo}`, /[—–]/);
+    // a técnica de cada opção é uma que o portão do worker aceita
+    assert.ok(portao.TECNICAS.includes(o.tecnica), o.tecnica);
+  }
+  assert.ok(ehSobMedida(ID_SOB_MEDIDA));
+  assert.equal(tecnicaDaOpcao(ID_SOB_MEDIDA), null);
+  assert.ok(!ehSobMedida("modelo-viral") && !ehSobMedida(null));
 });

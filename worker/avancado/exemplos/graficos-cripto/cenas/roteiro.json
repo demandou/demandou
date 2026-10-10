@@ -1,0 +1,23 @@
+{
+  "tecnica": "graficos",
+  "fundo": "grade",
+  "paralaxe": 0.6,
+  "apresentador": [
+    { "em": "inicio", "acompanhar": 0.6 },
+    {
+      "em": { "palavra": "bitcoin" },
+      "transicao": 0.8,
+      "caixa": { "x": 60, "y": 760, "l": 960, "a": 860 },
+      "forma": "arredondada",
+      "borda": true,
+      "rosto": { "x": 540, "y": 1060 },
+      "acompanhar": 0.8
+    }
+  ],
+  "legenda": { "topo": 1672, "esquerda": 70, "largura": 940, "tamanho": 46, "alinhar": "center" },
+  "cenas": [
+    { "arquivo": "cena-01.tsx", "de": { "palavra": "bitcoin" }, "ate": { "palavra": "mas", "mais": -0.1 }, "oQue": "painel acima da cabeça: o número dito contando até US$ 83 MIL e a linha ilustrativa que rompe o nível tracejado, depois CICLO DE ALTA" },
+    { "arquivo": "cena-02.tsx", "de": { "palavra": "mercado" }, "ate": { "palavra": "mesmo", "mais": -0.1 }, "oQue": "o card da frase-chave: SUBINDO ≠ DINHEIRO NO BOLSO" },
+    { "arquivo": "cena-03.tsx", "de": { "palavra": "impulso", "mais": -0.15 }, "ate": "fim", "oQue": "os três motivos de quem perde, com ícones entrando um a um: IMPULSO, SEM CRITÉRIO, RISCOS" }
+  ]
+}

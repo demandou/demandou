@@ -7,7 +7,7 @@ import { decidirChoice, jevLigado, perguntarAoJev, type RespostaDoJev, type UsoD
  * baixa ou JEV fora do ar: o recorte com letreiro, a assinatura do cartão
  * "Edição sob medida".
  */
-export const TECNICAS = ["maquete-3d", "recorte-letreiro", "moldura-explicativa"] as const;
+export const TECNICAS = ["maquete-3d", "recorte-letreiro", "graficos", "moldura-explicativa"] as const;
 export type TecnicaDoCorte = (typeof TECNICAS)[number];
 export const TECNICA_PADRAO: TecnicaDoCorte = "recorte-letreiro";
 
@@ -16,6 +16,8 @@ export const CRITERIOS_DA_TECNICA: Record<TecnicaDoCorte, string> = {
     "Aula 8.1, maquete 3D: a fala descreve algo com forma, lugar ou partes físicas que se montam, se organizam ou se preparam (um ambiente, uma estrutura, uma construção, um objeto em camadas, um espaço). Uma maquete que se abre em camadas e se reconstrói mostra a ideia melhor que palavras.",
   "recorte-letreiro":
     "Aula 8.2, recorte com letreiro: a fala é um argumento ou conceito com palavras-chave fortes (definição, contraste, sim e não, o que é e o que não é). Palavras grandes atrás da pessoa recortada e tipografia cinética dão hierarquia à mensagem.",
+  graficos:
+    "Aula 6, gráficos com função: a fala traz números, valores, comparação ou um movimento de subir, cair, romper ou crescer. Um gráfico que se desenha na palavra dita, um card e ícones que entram um por vez explicam melhor que a pessoa sozinha.",
   "moldura-explicativa":
     "Aula 7, moldura e motion explicativo: a fala enumera passos, pontos ou itens de um processo (primeiro, segundo, três pontos, planejar, acompanhar). A pessoa vai para uma moldura e cartões com ícones animados explicam cada ponto.",
 };

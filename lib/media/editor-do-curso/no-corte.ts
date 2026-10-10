@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import catalogo from "./catalogo.json";
-import { editorAvancadoLigado, ID_SOB_MEDIDA } from "@/lib/media/editor-avancado/no-corte";
+import { editorAvancadoLigado, ehSobMedida } from "@/lib/media/editor-avancado/no-corte";
 
 /**
  * OS MODELOS DO CURSO NA ESTEIRA DOS CORTES (09/10/2026).
@@ -64,7 +64,7 @@ export async function escolhaDoEditorDoProjeto(projectId: string): Promise<{ esc
  */
 export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
   const { escolhido, reserva } = await escolhaDoEditorDoProjeto(projectId);
-  return modeloServeNoCorte(escolhido === ID_SOB_MEDIDA ? reserva : escolhido)?.id ?? null;
+  return modeloServeNoCorte(ehSobMedida(escolhido) ? reserva : escolhido)?.id ?? null;
 }
 
 /**
@@ -79,10 +79,10 @@ export async function escolherModeloDoCurso(projectId: string, modelo: string | 
     return;
   }
   let value: Record<string, unknown>;
-  if (modelo === ID_SOB_MEDIDA) {
+  if (ehSobMedida(modelo)) {
     if (!editorAvancadoLigado()) throw new Error("a edição sob medida ainda não está ligada");
     const antes = await escolhaDoEditorDoProjeto(projectId);
-    const reserva = modeloServeNoCorte(antes.escolhido === ID_SOB_MEDIDA ? antes.reserva : antes.escolhido)?.id ?? null;
+    const reserva = modeloServeNoCorte(ehSobMedida(antes.escolhido) ? antes.reserva : antes.escolhido)?.id ?? null;
     value = { modelo, reserva, em: new Date().toISOString() };
   } else {
     if (!modeloServeNoCorte(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);

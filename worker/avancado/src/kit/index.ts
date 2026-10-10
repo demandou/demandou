@@ -20,4 +20,5 @@ export type { NomeDoIcone } from "./Icone";
 export { Cartao, Traco, LinhaEntre } from "./Cartao";
 export { Cena3D, LuzesDaMarca, ChaoDaMarca, COR_3D, cameraEm, projetar, useDescartar } from "./tres";
 export type { ChaveDeCamera, Rotulo3D, Vetor } from "./tres";
+export { GraficoDeLinha, GraficoDeBarras, Contador, Etiqueta, PainelDeDado, formatarNumero } from "./grafico";
 export type { CenaProps } from "./Palco";

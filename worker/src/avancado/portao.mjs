@@ -23,7 +23,7 @@
 export const IMPORTS_PERMITIDOS = new Set(["react", "remotion", "@remotion/three", "three", "@react-three/fiber", "../kit"]);
 export const TETO_DE_CENAS = 12;
 export const TETO_DO_ARQUIVO = 60_000;
-export const TECNICAS = ["maquete-3d", "recorte-letreiro", "moldura-explicativa"];
+export const TECNICAS = ["maquete-3d", "recorte-letreiro", "graficos", "moldura-explicativa"];
 const FORMAS = new Set(["reta", "arredondada", "assimetrica", "chanfrada"]);
 
 /** O arquivo que a IA pode escrever em src/cenas. */

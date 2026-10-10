@@ -29,7 +29,7 @@ Imports permitidos, e só estes: `react`, `remotion`, `@remotion/three`, `three`
 
 ÂNCORA (todo instante do roteiro): `{ "palavra": "frase dita", "vez": 2, "mais": -0.2 }` (a `vez`-ésima vez que a frase é dita, mais `mais` segundos, de -0,6 a 0,6), um número de segundos, `"inicio"` ou `"fim"`. A frase é a fala como foi dita, uma ou mais palavras seguidas; acento, caixa e pontuação não contam. O `de` de toda cena é uma palavra da fala (o portão de tempo confere).
 
-`tecnica`: `"maquete-3d"` (aula 8.1), `"recorte-letreiro"` (aula 8.2) ou `"moldura-explicativa"` (aula 7). Use a que o pedido mandar.
+`tecnica`: `"maquete-3d"` (aula 8.1), `"recorte-letreiro"` (aula 8.2), `"graficos"` (aula 6) ou `"moldura-explicativa"` (aula 7). Use a que o pedido mandar.
 
 `fundo`: `"estudio"` (degradê da marca, luz atrás da cabeça, grade fina e arcos), `"grade"` ou `"liso"`. `paralaxe`: 0 a 1,5 (0 desliga).
 
@@ -131,6 +131,26 @@ const chaves: ChaveDeCamera[] = [
 - Explodir em camadas: a mesma geometria em `<group position={[0, elevacao * abre, 0]}>`, com `abre` 0 → 1 → 0 pela fala; a base fica alinhada e a reconstrução acontece NA TELA, sem corte.
 - Dentro do `Cena3D` só malha, grupo, luz e material; texto e rótulo ficam fora (os `rotulos`).
 - Sem GPU no servidor: até ~40 malhas, uma luz com sombra, sem pós-processamento. Nada de modelo externo, textura ou imagem.
+
+## 7b. Os gráficos (aula 6)
+
+```tsx
+import { PainelDeDado, GraficoDeLinha, GraficoDeBarras, Contador, Etiqueta, formatarNumero } from "../kit";
+
+<PainelDeDado x={60} y={96} largura={960} altura={600} visivel={v.visivel}>
+  <Contador t={t} ate={83} inicio={dito("oitenta e três mil")} fim={ditoAte("mil")} prefixo="US$ " texto="US$ 83 MIL" />
+  <GraficoDeLinha largura={920} altura={320} pontos={[0.2, 0.35, 0.3, 0.6, 0.9]} progresso={desenho} suave nivel={{ valor: 0.62, progresso: nivel }} />
+  <Etiqueta texto="ILUSTRAÇÃO" cor="apoio" />
+</PainelDeDado>
+```
+
+- `<PainelDeDado x y largura altura visivel? style?>`: o painel do gráfico (degradê do painel da marca, cantos de 36 px, borda fina, sombra), com entrada por `visivel` (0 a 1). Os filhos se posicionam em px DENTRO do painel.
+- `<GraficoDeLinha largura altura pontos progresso nivel? rotuloDaPonta? grade? suave? margem? />`: a linha no destaque da marca com a área em degradê, desenhada da esquerda para a direita por `progresso` (0 a 1), com o ponto brilhando na ponta. `pontos` de 0 (baixo) a 1 (alto) é DESENHO, não dado. `nivel: { valor, rotulo?, progresso }` é a linha tracejada de um patamar; `rotuloDaPonta` sai da ponta quando a linha chega (texto da fala).
+- `<GraficoDeBarras largura altura barras t margem? />`: barras `{ rotulo, valor (0 a 1, desenho), inicio (o dito() de cada uma), destaque? }` que crescem uma a uma, o rótulo embaixo.
+- `<Contador t ate inicio fim casas? prefixo? sufixo? texto? style? />`: conta de 0 até `ate` (o número DITO) entre `inicio` e `fim`; com `texto`, termina mostrando o texto (ex.: "US$ 83 MIL"). Número que não foi dito, nunca.
+- `<Etiqueta texto cor? tamanho? style? />`: a etiqueta pequena (`cor`: "destaque", "titulo" ou "apoio", esta com borda e sem fundo, para o aviso "ILUSTRAÇÃO").
+- `formatarNumero(n, casas?)`: o número como se escreve no Brasil (83.000; 1,5).
+- A curva é ilustração: sem eixo com valor e sem data inventada. Quando o painel mostra uma curva, leve `<Etiqueta texto="ILUSTRAÇÃO" cor="apoio" />`.
 
 ## 8. O que o portão recusa (a cena volta para você corrigir)
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Box, Check, ChevronDown, Layers, Loader2, Play, Sparkles, Undo2 } from "lucide-react";
+import { Box, ChartLine, Check, ChevronDown, Loader2, Play, Scissors, Sparkles, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BotaoDescartar } from "@/components/ui/descartar";
 import type { ModeloNaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
@@ -28,15 +28,19 @@ import { PecasNoEstiloDoModelo } from "@/components/video/pecas-no-estilo-do-mod
  * passar o mouse ou tocar na imagem, uma por vez, cobrindo o quadro do meio.
  */
 
-type CartaoSobMedida = { id: string; nome: string; resumo: string; detalhe: string };
+type OpcaoSobMedida = { id: string; nome: string; aula: string; resumo: string; icone: "box" | "scissors" | "chart" };
+type SobMedida = { opcoes: OpcaoSobMedida[]; detalhe: string };
+
+/** Os modelos do curso com 3D (as três aulas do curso ficam ao lado deles, no topo). */
+const MODELOS_3D = ["modelo-medida", "modelo-orbita", "modelo-torre"];
 
 type Dados = {
   ligado: boolean;
   modelo: string | null;
   /** Com a edição sob medida em uso: o modelo do curso de reserva (ou null, o editor de antes). */
   reserva?: string | null;
-  /** O cartão especial da edição sob medida (10/10), só com o editor avançado ligado. */
-  sobMedida?: CartaoSobMedida | null;
+  /** As edições sob medida (10/10, as aulas 8.1, 8.2 e 6 do curso), só com o editor avançado ligado. */
+  sobMedida?: SobMedida | null;
   recomendacao: Recomendacao | null;
   pendente: boolean;
   modelos: ModeloNaBiblioteca[];
@@ -137,8 +141,9 @@ export function ModelosDoCurso({
   // O resto da tela sabe qual editor vale.
   useEffect(() => {
     if (!dados) return;
-    if (dados.sobMedida && modelo === dados.sobMedida.id) {
-      aoMudarRef.current?.({ id: dados.sobMedida.id, nome: dados.sobMedida.nome });
+    const opcao = dados.sobMedida?.opcoes.find((o) => o.id === modelo);
+    if (opcao) {
+      aoMudarRef.current?.({ id: opcao.id, nome: opcao.nome });
       return;
     }
     const m = dados.modelos.find((x) => x.id === modelo);
@@ -177,7 +182,8 @@ export function ModelosDoCurso({
 
   const porId = new Map(dados.modelos.map((m) => [m.id, m]));
   const sobMedida = dados.sobMedida ?? null;
-  const sobMedidaEmUso = Boolean(sobMedida && modelo === sobMedida.id);
+  const opcaoEmUso = sobMedida?.opcoes.find((o) => o.id === modelo) ?? null;
+  const sobMedidaEmUso = Boolean(opcaoEmUso);
   const emUso = modelo && !sobMedidaEmUso ? porId.get(modelo) ?? null : null;
   const reservaDoSobMedida = sobMedidaEmUso && dados.reserva ? porId.get(dados.reserva) ?? null : null;
   const recomendado = recomendacao ? porId.get(recomendacao.modelo) ?? null : null;
@@ -185,9 +191,14 @@ export function ModelosDoCurso({
   const prontos = dados.modelos
     .filter((m) => m.serve)
     .sort((a, b) => {
-      const ia = primeiro.indexOf(a.id);
-      const ib = primeiro.indexOf(b.id);
-      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      // a recomendação e o em uso primeiro; depois os modelos 3D, ao lado das aulas sob medida
+      const posicao = (id: string) => {
+        const i = primeiro.indexOf(id);
+        if (i >= 0) return i;
+        const j = MODELOS_3D.indexOf(id);
+        return j >= 0 ? 10 + j : 99;
+      };
+      return posicao(a.id) - posicao(b.id);
     });
   const emBreve = dados.modelos.filter((m) => !m.serve);
   const visiveis = verTodos ? prontos : prontos.slice(0, VISIVEIS);
@@ -335,10 +346,10 @@ export function ModelosDoCurso({
         className="mb-3 rounded-lg border px-3 py-2.5 text-xs"
         style={{ borderColor: emUso || sobMedidaEmUso ? "var(--brand)" : "var(--border)", background: "var(--bg-surface)", color: "var(--text-muted)" }}
       >
-        {sobMedida && sobMedidaEmUso ? (
+        {opcaoEmUso ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="min-w-0 flex-1">
-              Seus cortes verticais saem pela <b style={{ color: "var(--text-primary)" }}>{sobMedida.nome}</b>.{" "}
+              Seus cortes verticais saem na edição sob medida <b style={{ color: "var(--text-primary)" }}>{opcaoEmUso.nome}</b>, nas cores da sua marca.{" "}
               {reservaDoSobMedida
                 ? `O modelo ${reservaDoSobMedida.nome} fica de reserva e segue nas peças: entra se um corte não sair.`
                 : `${maiuscula(reserva)} fica de reserva: entra se um corte não sair.`}
@@ -436,45 +447,63 @@ export function ModelosDoCurso({
         </div>
       )}
 
-      {/* A EDIÇÃO SOB MEDIDA (10/10): um cartão especial, uma edição escrita para cada corte (aulas 7, 8.1 e 8.2). */}
-      {sobMedida && (
-        <div
-          className={cn("mb-4 flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center", sobMedidaEmUso && "ring-2 ring-orange-500")}
-          style={{ borderColor: sobMedidaEmUso ? "var(--brand)" : "var(--border)", background: "var(--bg-surface)" }}
-        >
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center gap-1 rounded-lg bg-black/30 text-orange-400" aria-hidden="true">
-            <Box className="h-6 w-6" />
-            <Layers className="h-6 w-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="flex flex-wrap items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              {sobMedida.nome}
-              <span className="rounded-md bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">avançado</span>
-            </p>
-            <p className="mt-1 text-xs" style={{ color: "var(--text-primary)" }}>
-              {sobMedida.resumo}
-            </p>
-            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-              {sobMedida.detalhe}
-            </p>
-          </div>
-          <div className="sm:w-48 sm:shrink-0">
-            {sobMedidaEmUso ? (
-              <span className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-orange-400">
-                <Check className="h-3.5 w-3.5" aria-hidden="true" /> Em uso nos seus cortes
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void escolher(sobMedida.id)}
-                disabled={salvando !== null}
-                className="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition hover:border-orange-500 disabled:opacity-50"
-                style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
-              >
-                {salvando === sobMedida.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Usar a edição sob medida
-              </button>
-            )}
+      {/* A EDIÇÃO SOB MEDIDA (10/10): as três aulas do curso como opções, no topo, ao lado dos modelos 3D. */}
+      {sobMedida && sobMedida.opcoes.length > 0 && (
+        <div className="mb-4">
+          <p className="mb-1 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+            Edição sob medida: as aulas do curso
+            <span className="rounded-md bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">avançado</span>
+          </p>
+          <p className="mb-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            {sobMedida.detalhe}
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {sobMedida.opcoes.map((o) => {
+              const ativo = o.id === modelo;
+              const Icone = o.icone === "box" ? Box : o.icone === "scissors" ? Scissors : ChartLine;
+              return (
+                <div
+                  key={o.id}
+                  className={cn("flex flex-col rounded-xl border p-3", ativo && "ring-2 ring-orange-500")}
+                  style={{ borderColor: ativo ? "var(--brand)" : "var(--border)", background: "var(--bg-surface)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/30 text-orange-400" aria-hidden="true">
+                      <Icone className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-primary)" }}>
+                        {o.nome}
+                      </p>
+                      <p className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+                        {o.aula} do curso
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                    {o.resumo}
+                  </p>
+                  <div className="mt-auto pt-2">
+                    {ativo ? (
+                      <span className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-orange-400">
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" /> Em uso nos seus cortes
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void escolher(o.id)}
+                        disabled={salvando !== null}
+                        className="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition hover:border-orange-500 disabled:opacity-50"
+                        style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+                      >
+                        {salvando === o.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        Usar nos meus cortes
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

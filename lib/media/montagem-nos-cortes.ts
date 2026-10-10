@@ -100,7 +100,7 @@ import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { leituraNoCorte } from "@/lib/media/editor-por-comando/leitura-no-plano";
 import { editorDoCursoLigado, escolhaDoEditorDoProjeto, modeloServeNoCorte, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd, coresDaMarcaParaOModelo } from "@/lib/media/editor-do-curso/no-corte";
-import { caminhoDoCorte, editorAvancadoLigado, ID_SOB_MEDIDA, reservaDoSobMedida } from "@/lib/media/editor-avancado/no-corte";
+import { caminhoDoCorte, editorAvancadoLigado, ehSobMedida, reservaDoSobMedida, tecnicaDaOpcao } from "@/lib/media/editor-avancado/no-corte";
 
 /**
  * O EDITOR COMPLETO NA ESTEIRA (30/09/2026), com a trava MONTAGEM_NA_EDICAO=1.
@@ -699,7 +699,7 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
     const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
     // A EDIÇÃO SOB MEDIDA (10/10, EDITOR_AVANCADO=1): a mesma fila e o mesmo callback,
     // a rota /editar-avancado do worker e a IA das cenas em /api/editor-avancado/cena.
-    const avancado = modelo === ID_SOB_MEDIDA;
+    const avancado = ehSobMedida(modelo);
     const chave = avancado ? `cortes/${video.id}/avancado-${indice}.mp4` : `cortes/${video.id}/curso-${indice}.mp4`;
     const montando: MontagemDoCorte = {
       ...tomado,
@@ -730,7 +730,7 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
       tetoUsd: tetoDoPlanoUsd(fala.duracao),
       voltas: 3,
       ...(avancado
-        ? { letra: await letraDaMarca(video.projectId).catch(() => "moderna"), cenaUrl: `${base}/api/editor-avancado/cena` }
+        ? { letra: await letraDaMarca(video.projectId).catch(() => "moderna"), tecnica: tecnicaDaOpcao(modelo), cenaUrl: `${base}/api/editor-avancado/cena` }
         : { planoUrl: `${base}/api/editor-do-curso/plano` }),
       callbackUrl: `${base}/api/videos/${video.id}/montar-callback`,
       retorno: { indice, desde: montando.desde },
@@ -759,7 +759,7 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
  * usava antes (fixo neste corte), e só sem ele para o editor de sempre.
  */
 async function desistirDoModeloDoCurso(id: string, indice: number, lido: MontagemDoCorte, motivo: string): Promise<void> {
-  if (lido.curso?.modelo === ID_SOB_MEDIDA) {
+  if (ehSobMedida(lido.curso?.modelo)) {
     const projeto = await prisma.videoJob.findUnique({ where: { id }, select: { projectId: true } }).catch(() => null);
     const escolha = projeto ? await escolhaDoEditorDoProjeto(projeto.projectId).catch(() => null) : null;
     const r = reservaDoSobMedida({ reserva: escolha?.reserva, modeloServe: (x) => Boolean(modeloServeNoCorte(x)), cursoLigado: editorDoCursoLigado() });
@@ -809,7 +809,7 @@ async function modeloDoCursoDoCorte(video: Pick<VideoDoPasso, "projectId">, m: M
     avancadoDesistiu: Boolean(m.curso?.avancadoDesistiu),
     modeloServe: (x) => Boolean(modeloServeNoCorte(x)),
   });
-  return c.tipo === "sob-medida" ? ID_SOB_MEDIDA : c.tipo === "modelo" ? c.modelo : null;
+  return c.tipo === "editor" ? null : c.modelo;
 }
 
 /** A letra da identidade do projeto (moderna, impacto, clássica ou amigável), para o kit do editor avançado. */
@@ -1623,7 +1623,7 @@ export async function avancarMontagens(opcoes: { orcamentoMs?: number } = {}): P
           // render mais as voltas do plano), pergunta ao worker antes de desistir.
           const duracaoDoCorte = (m.plano as { fala?: { duracao?: number } } | undefined)?.fala?.duracao;
           // A edição sob medida (10/10) tem o recorte em CPU e o render da cena própria: mais folga.
-          const folga = m.curso.modelo === ID_SOB_MEDIDA ? 120 * 60_000 : 45 * 60_000;
+          const folga = ehSobMedida(m.curso.modelo) ? 120 * 60_000 : 45 * 60_000;
           if (idade > prazoDaMontagemMs(duracaoDoCorte, true) + folga && !(await aindaEsperaOWorker(video.id, m.chave, idade))) {
             r.olhados++;
             await desistirDoModeloDoCurso(video.id, i, m, "o worker não terminou a edição no prazo");

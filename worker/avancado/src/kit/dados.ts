@@ -9,7 +9,7 @@ import pedido from "../dados/pedido.json";
  */
 export type Palavra = { de: number; ate: number; w: string };
 export type PontoDoRosto = { x: number; y: number; queixo: number };
-export type Tecnica = "maquete-3d" | "recorte-letreiro" | "moldura-explicativa";
+export type Tecnica = "maquete-3d" | "recorte-letreiro" | "graficos" | "moldura-explicativa";
 export type LetraId = "impacto" | "moderna" | "classica" | "amigavel";
 
 export type DadosDoCorte = {

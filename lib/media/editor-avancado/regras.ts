@@ -22,6 +22,13 @@ O vídeo final é julgado contra as provas aprovadas pelo dono (os exemplos abai
 - Entradas com opacidade, deslocamento curto e escala suave, aceleração e desaceleração naturais. Mude a composição quando o assunto mudar, com tempo de leitura.
 - Títulos curtos e fortes, textos de apoio curtos, uma grade discreta no fundo. Chamada (convite, "toque em saiba mais") só se a fala fizer o convite: volte à tela cheia e ponha o convite acima da cabeça, legível até o fim.
 
+## Aula 6: "graficos" (imagens e movimento com função: os gráficos do kit cripto)
+- O apresentador centralizado, com a voz natural; as inserções entram pela fala, UMA inserção principal por vez, com entradas discretas, e saem antes da próxima. Se faltar espaço acima da cabeça, ajuste o enquadramento (o apresentador numa janela mais baixa ou menor), nunca cubra o rosto.
+- O gráfico EXPLICA o que é dito: a linha que sobe e rompe um nível tracejado quando a fala fala de rompimento ou alta, as barras que crescem uma a uma quando a fala compara ou enumera, o contador que sobe até o número no instante em que ele é dito, o card com a frase-chave quando a fala vira a ideia ("mercado subindo não significa dinheiro no bolso").
+- No painel do gráfico (PainelDeDado), a curva é ILUSTRAÇÃO: forma desenhada, sem eixo com valor inventado. Número só se foi dito, do jeito que foi dito (o Contador termina no valor dito). Quando o painel mostra uma curva, leve uma Etiqueta discreta "ILUSTRAÇÃO" (a aula: "preserve o aviso de ilustração didática; não transforme a curva em um gráfico histórico real").
+- Ícones com função: entram um por vez com opacidade e deslocamento curto, o falado em destaque, e o grupo sai depois da frase. No máximo dois títulos curtos no vídeo inteiro, e nunca título, card e ícones disputando o mesmo espaço.
+- Nada de promessa de retorno, recomendação, ranking ou porcentagem que não foi dita. Convite (aula gratuita, saiba mais) só se a fala fizer, acima da cabeça e legível até o fim.
+
 ## Aula 8.1: "maquete-3d" (maquete 3D que explica a ideia)
 - Uma maquete CONCEITUAL simples, de volumes paramétricos (piso, paredes, caixas, cilindros, formas extrudadas), feita com Three.js de verdade no Cena3D, que mostra a ideia da fala como relação espacial. É ilustração, não projeto técnico: nada de medida, orçamento, eficiência ou dado inventado.
 - O ponto alto: a maquete se abre em camadas (vista explodida, planos separados no eixo vertical, a base alinhada e a MESMA geometria) e depois se RECONSTRÓI na tela, sem corte que esconda a volta. Rótulos curtos perto de cada camada, ligados por linha de chamada, que continuam presos aos objetos com a câmera andando.

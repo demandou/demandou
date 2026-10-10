@@ -2517,7 +2517,7 @@ const servidor = createServer((req, res) => {
         ok: true,
         montado,
         tempos: e.tempos,
-        curso: { modelo: "sob-medida", tecnica: e.tecnica, custoUsd: e.custoUsd, historico: e.historico, avisos: e.avisos, voltas: e.revisao?.rodadas ?? 0 },
+        curso: { modelo: pedido.modelo ?? "sob-medida", tecnica: e.tecnica, custoUsd: e.custoUsd, historico: e.historico, avisos: e.avisos, voltas: e.revisao?.rodadas ?? 0 },
         segundos: Math.round((Date.now() - inicio) / 1000),
         retorno: pedido.retorno ?? null,
       };
