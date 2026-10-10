@@ -29,6 +29,9 @@ const PRICING: Record<string, { input: number; output: number }> = {
    * escondeu 80% de prejuízo por operação no Veo em agosto.
    */
   "claude-opus-5": { input: 5, output: 25 },
+  // O Opus 5.5 (09/10, o redator do editor pelos modelos do curso): mais barato
+  // que o Opus 5. Sem a linha, o registro cobrava como Opus 5 (25% a mais).
+  "claude-opus-5-5": { input: 4, output: 20 },
   "claude-fable-5": { input: 10, output: 50 },
   "claude-fable-5-1": { input: 10, output: 50 },
 };
