@@ -1,4 +1,5 @@
-import { MODELOS_DO_CURSO, modeloServeNoCorte, type ModeloDoCurso } from "./no-corte";
+import { MODELOS_DO_CURSO, modeloPodeSerEscolhido, modeloServeNoCorte, type ModeloDoCurso } from "./no-corte";
+import { MATERIAL_DOS_MODELOS, pedidoDeMaterialNaTela, type PedidoDeMaterialNaTela } from "./material-do-modelo";
 import artesProntas from "./artes.json";
 
 /**
@@ -29,10 +30,12 @@ export type ModeloNaBiblioteca = {
   /** Uma ou duas frases tiradas da descrição oficial, para o cartão. */
   resumo: string;
   formato: "9:16" | "16:9";
-  /** Já pode ser escolhido para os cortes (automático e vertical). */
+  /** Já pode ser escolhido para os cortes: automático e vertical, ou (10/10) o que pede material do cliente. */
   serve: boolean;
   /** Para os que não servem: o que falta, em uma frase curta ("Em breve: ..."). */
   falta: string | null;
+  /** O material do cliente que o modelo pede (capturas, prints, fotos de antes e depois), ou null. */
+  material: PedidoDeMaterialNaTela | null;
   /** A arte do cartão (pessoa inventada no modelo), ou null quando ainda não há. */
   arte: string | null;
   /** A prévia curta em vídeo, ou null (ainda não há nenhuma). */
@@ -106,7 +109,10 @@ function juntar(itens: string[]): string {
 
 /** Para o modelo que ainda não serve no corte: o que falta, em uma frase. Null quando já serve. */
 export function faltaDoModelo(m: ModeloDoCurso): string | null {
-  if (modeloServeNoCorte(m.id)) return null;
+  if (modeloPodeSerEscolhido(m.id)) return null;
+  // O que pede material e ainda não está pronto do nosso lado (o Guia, sem o recorte): o motivo dele.
+  const emBreve = MATERIAL_DOS_MODELOS[m.id]?.emBreve;
+  if (emBreve) return emBreve;
   const itens = [...new Set(m.pede.map((p) => O_QUE_FALTA[p] ?? p))];
   if (itens.length) return `Em breve: precisa de ${juntar(itens)}.`;
   if (m.formato === "16:9") return "Em breve: é para vídeo deitado (16:9), e os cortes são verticais.";
@@ -126,8 +132,9 @@ export function modelosDaBiblioteca(): ModeloNaBiblioteca[] {
     nome: m.nome,
     resumo: resumoDoModelo(m),
     formato: m.formato,
-    serve: Boolean(modeloServeNoCorte(m.id)),
+    serve: modeloPodeSerEscolhido(m.id),
     falta: faltaDoModelo(m),
+    material: pedidoDeMaterialNaTela(m.id),
     arte: arteDoModelo(m.id),
     // Sem prévia em vídeo por enquanto (09/10): o cartão mostra só a arte.
     previa: null,

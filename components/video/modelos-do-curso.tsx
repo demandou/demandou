@@ -7,6 +7,7 @@ import { BotaoDescartar } from "@/components/ui/descartar";
 import type { ModeloNaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
 import type { Recomendacao } from "@/lib/media/editor-do-curso/recomendacao";
 import { PecasNoEstiloDoModelo } from "@/components/video/pecas-no-estilo-do-modelo";
+import { MaterialDoModelo } from "@/components/video/material-do-modelo";
 
 /**
  * O EDITOR NOVO NA BIBLIOTECA DE ESTILOS (09/10/2026, noite).
@@ -275,6 +276,8 @@ export function ModelosDoCurso({
           <p className="mt-1 line-clamp-3 text-xs" style={{ color: "var(--text-muted)" }}>
             {m.resumo}
           </p>
+          {/* O MATERIAL DO CLIENTE (10/10): o modelo que usa capturas, prints ou fotos diz isso antes da escolha. */}
+          {m.serve && m.material && <p className="mt-1 text-[11px] font-medium text-orange-400">Usa material seu: {m.material.oQue}.</p>}
           <div className="mt-auto pt-2">
             {!m.serve ? (
               <p className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
@@ -344,6 +347,8 @@ export function ModelosDoCurso({
         )}
         {!dados.ligado && <p className="mt-1.5">O editor novo está sendo ligado. A sua escolha fica guardada e passa a valer assim que ele entrar no ar.</p>}
       </div>
+      {/* O MATERIAL QUE O MODELO PEDE (10/10): sem o mínimo, a edição não começa e a caixa diz o que falta. */}
+      {emUso?.material && <MaterialDoModelo key={emUso.id} projectId={projectId} modelo={{ id: emUso.id, nome: emUso.nome }} pedido={emUso.material} />}
 
       {/* AS PEÇAS NO ESTILO DO MODELO (10/10): escolheu o modelo, as artes, os carrosséis e os vídeos curtos seguem; a prévia sai no clique. */}
       {emUso && dados.ligado && (

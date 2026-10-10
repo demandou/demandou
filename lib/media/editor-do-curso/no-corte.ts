@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import catalogo from "./catalogo.json";
+import { materialBasta, materialDisponivel, type SituacaoDoMaterial } from "./material-do-modelo";
 
 /**
  * OS MODELOS DO CURSO NA ESTEIRA DOS CORTES (09/10/2026).
@@ -35,19 +36,38 @@ export function editorDoCursoLigado(): boolean {
   return process.env.EDITOR_DO_CURSO === "1";
 }
 
-/** Só entra no corte o modelo vertical que roda inteiro sem ninguém de fora. */
-export function modeloServeNoCorte(id: string | null | undefined): ModeloDoCurso | null {
+/**
+ * Só entra no corte o modelo vertical que roda inteiro sem ninguém de fora, ou
+ * (10/10) o que pede material do cliente quando o `material` do projeto basta
+ * (material-do-modelo.ts). Os outros não automáticos seguem recusados.
+ */
+export function modeloServeNoCorte(id: string | null | undefined, material?: SituacaoDoMaterial | null): ModeloDoCurso | null {
   const m = MODELOS_DO_CURSO.find((x) => x.id === id);
-  return m && m.automatico && m.formato === "9:16" ? m : null;
+  return m && (m.automatico || materialBasta(m.id, material)) && m.formato === "9:16" ? m : null;
 }
 
-export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
+/** Pode ser escolhido (10/10): o que serve sozinho e o que pede material do cliente, que fica escolhido esperando por ele. */
+export function modeloPodeSerEscolhido(id: string | null | undefined): boolean {
+  const m = MODELOS_DO_CURSO.find((x) => x.id === id);
+  return Boolean(m && m.formato === "9:16" && (m.automatico || materialDisponivel(m.id)));
+}
+
+/** O modelo gravado no projeto, sem conferir se serve. */
+export async function modeloGravadoNoProjeto(projectId: string): Promise<string | null> {
   const linha = await prisma.projectMemory.findUnique({
     where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } },
     select: { value: true },
   });
   const v = linha?.value as { modelo?: string } | null;
-  return modeloServeNoCorte(v?.modelo)?.id ?? null;
+  return typeof v?.modelo === "string" ? v.modelo : null;
+}
+
+/** O modelo que serve nos cortes do projeto agora; o que pede material só com o material que basta. */
+export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
+  const modelo = await modeloGravadoNoProjeto(projectId);
+  if (modeloServeNoCorte(modelo)) return modelo;
+  const { modeloServeNoProjeto } = await import("./material-do-modelo-servidor");
+  return modelo && (await modeloServeNoProjeto(projectId, modelo)) ? modelo : null;
 }
 
 /** Grava (ou apaga, com `null`) o modelo do curso do projeto. */
@@ -56,7 +76,7 @@ export async function escolherModeloDoCurso(projectId: string, modelo: string | 
     await prisma.projectMemory.delete({ where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } } }).catch(() => {});
     return;
   }
-  if (!modeloServeNoCorte(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);
+  if (!modeloPodeSerEscolhido(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);
   const value = { modelo, em: new Date().toISOString() };
   await prisma.projectMemory.upsert({
     where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } },
