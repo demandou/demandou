@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 const { modelosDaBiblioteca, resumoDoModelo, descricaoParaDecidir, faltaDoModelo, modelosQueServem, ordemDaGrade, AVANCADOS_DO_CURSO, EM_DESTAQUE } = await import("@/lib/media/editor-do-curso/biblioteca");
 const { MODELOS_DO_CURSO, VERSOES_DOS_MODELOS, modeloServeNoCorte, versaoNoFormato } = await import("@/lib/media/editor-do-curso/no-corte");
+const { MATERIAL_DOS_MODELOS } = await import("@/lib/media/editor-do-curso/material-do-modelo");
 const { chaveDaOpcao, visualSemNome, lerEscolha, hashDaRecomendacao, limparMotivo, motivoEmCodigo, perguntasDoJev, temPerfilParaRecomendar, estadoDoJev, CONFIANCA_MINIMA } = await import(
   "@/lib/media/editor-do-curso/recomendacao"
 );
@@ -18,17 +19,18 @@ const raiz = new URL("../../", import.meta.url);
 const ler = (f: string) => readFileSync(new URL(f, raiz), "utf8").replace(/\r\n/g, "\n");
 const TRAVESSAO = /[—–]/;
 
-test("os cartões são os 79 do catálogo, e serve é o que o catálogo marca como automático e tem a versão vertical", () => {
+test("os cartões são os 79 do catálogo, e serve é o que tem a versão vertical e roda sozinho, ou (10/10) pede material do cliente e está disponível", () => {
   const cartoes = modelosDaBiblioteca();
   assert.equal(cartoes.length, MODELOS_DO_CURSO.length);
   for (const c of cartoes) {
     const m = MODELOS_DO_CURSO.find((x) => x.id === c.id)!;
-    assert.equal(c.serve, m.automatico && Boolean(versaoNoFormato(m.id, "9:16")), c.id);
-    if (m.formato === "9:16") assert.equal(c.serve, m.automatico, c.id);
+    assert.equal(c.serve, Boolean(versaoNoFormato(m.id, "9:16")) && (m.automatico || Boolean(MATERIAL_DOS_MODELOS[m.id]?.disponivel)), c.id);
     assert.equal(c.falta === null, c.serve, `${c.id}: só o que não serve diz o que falta`);
     if (c.falta) assert.match(c.falta, /^Em breve/);
   }
-  assert.equal(modelosQueServem().length, cartoes.filter((c) => c.serve).length);
+  // A recomendação só escolhe entre os que servem sem material do cliente (10/10): o que pede material
+  // deixaria os cortes esperando por ele.
+  assert.equal(modelosQueServem().length, cartoes.filter((c) => c.serve && !c.material).length);
 });
 
 test("o Aula e o Canal (nascem 16:9) entram no corte quando a versão 9:16 está no versoes.json, e só então", () => {
@@ -226,13 +228,14 @@ test("o motivo sai limpo: sem travessão, sem aspas, sem repetir o começo da te
   assert.ok(!TRAVESSAO.test(doCodigo));
 });
 
-test("a rota confere dono ou equipe, o GET não paga nada e o PUT recusa modelo que não serve", () => {
+test("a rota confere dono ou equipe, o GET não paga nada e o PUT recusa modelo que não pode ser escolhido", () => {
   const src = ler("app/api/projects/[id]/modelo-do-curso/route.ts");
   assert.match(src, /podeUsarProjeto\(userId, p\)/);
   assert.equal((src.match(/if \(!\(await podeUsar\(id\)\)\)/g) ?? []).length, 3, "GET, POST e PUT");
   const get = src.slice(src.indexOf("export async function GET"), src.indexOf("export async function POST"));
   assert.ok(!/recomendarModelo/.test(get), "o GET só lê a guardada");
-  assert.match(src, /!modeloServeNoCorte\(modelo\)[\s\S]{0,200}status: 400/);
+  // Desde 10/10 o que pede material do cliente pode ser escolhido (fica esperando por ele); o resto segue recusado.
+  assert.match(src, /!modeloPodeSerEscolhido\(modelo\)[\s\S]{0,200}status: 400/);
 });
 
 test("a tela mostra o editor novo no topo da linguagem, antes dos melhores modelos, e nenhum texto novo tem travessão", () => {

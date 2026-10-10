@@ -94,6 +94,12 @@ export type MontagemDoCorte = {
    * de sempre (a reserva). Tipo aberto: este módulo é lido pela tela.
    */
   curso?: { modelo: string; desistiu?: string | null; voltas?: number; custoUsd?: number; mapa?: string; [k: string]: unknown } | null;
+  /**
+   * O CORTE ESPERA O MATERIAL DO CLIENTE (10/10, lib/media/editor-do-curso/material-do-modelo.ts):
+   * o modelo escolhido pede capturas, prints ou fotos que ainda não bastam. Vale só enquanto
+   * `esperarAte` está no futuro (a esteira renova a cada 10 min); depois disso é história.
+   */
+  esperandoMaterial?: { modelo: string; falta: string } | null;
 };
 
 /** O que a tela diz quando a montagem de efeitos desistiu por erro técnico. */
@@ -119,6 +125,10 @@ export function lerMontagem(
   // Estado que sobrevive ao fato vira mentira na tela: trabalho parado além
   // do prazo não é mostrado como "montando".
   const trabalhando = TRABALHANDO.includes(m.estado) && idade < PRAZO_NA_TELA_MS;
+  // O modelo espera o material do cliente (10/10): a edição não começou, e a tela diz o que falta.
+  if (trabalhando && m.estado === "na-fila" && m.esperandoMaterial && m.esperarAte && Date.now() < new Date(m.esperarAte).getTime()) {
+    return { estado: m.estado, trabalhando, rotulo: "A edição espera o seu material", detalhe: `${m.esperandoMaterial.falta} O material vai na caixa do modelo, onde você escolhe o estilo.` };
+  }
   if (trabalhando) {
     const detalhe =
       m.estado === "na-fila"

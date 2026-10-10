@@ -13,6 +13,7 @@ import {
   type RetornoDaConferencia,
 } from "@/lib/media/editor-do-curso/escrever-plano";
 import { escolherImagensDoModelo, pedirImagensDoModelo } from "@/lib/media/editor-do-curso/imagens";
+import type { MaterialParaORedator } from "@/lib/media/editor-do-curso/material-do-modelo";
 import { revisarQuadrosDoModelo } from "@/lib/media/editor-do-curso/revisao";
 
 /**
@@ -60,6 +61,8 @@ export async function POST(req: NextRequest) {
     /** "arte-no-modelo" (10/10): o lote de peças da campanha; sem ele, o corte de sempre. */
     operacao?: string | null;
     bloco?: BlocoDoPlano | null;
+    /** O material do cliente no projeto do trabalho (10/10, material-do-modelo.ts): o mapa e o plano usam só ele. */
+    material?: MaterialParaORedator | null;
   };
   try {
     corpo = JSON.parse(corpoCru);
@@ -91,7 +94,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta a fala do corte" }, { status: 400 });
     }
     if (corpo.fase === "imagens") {
-      const r = await pedirImagensDoModelo({ referencias: corpo.referencias, esqueleto: corpo.esqueleto, nicho: corpo.nicho ?? null, pecasParadas: corpo.pecasParadas ?? null, ...comum });
+      const r = await pedirImagensDoModelo({ referencias: corpo.referencias, esqueleto: corpo.esqueleto, nicho: corpo.nicho ?? null, pecasParadas: corpo.pecasParadas ?? null, material: corpo.material ?? null, ...comum });
       return NextResponse.json({ ...r, custoUsd });
     }
     const escrito = await escreverPlanoDoModelo({
@@ -103,6 +106,7 @@ export async function POST(req: NextRequest) {
       mapa: corpo.mapa ?? null,
       pecasParadas: corpo.pecasParadas ?? null,
       bloco: corpo.bloco ?? null,
+      material: corpo.material ?? null,
       ...comum,
     });
     const semLastro = numerosSemLastro(escrito.plano, corpo.esqueleto.palavras, escrito.plano.correcoes as Record<string, string> | undefined);

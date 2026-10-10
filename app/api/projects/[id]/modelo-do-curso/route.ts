@@ -2,8 +2,10 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
-import { editorDoCursoLigado, escolherModeloDoCurso, modeloDoCursoDoProjeto, modeloServeNoCorte } from "@/lib/media/editor-do-curso/no-corte";
+import { editorDoCursoLigado, escolherModeloDoCurso, modeloPodeSerEscolhido } from "@/lib/media/editor-do-curso/no-corte";
 import { modelosDaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
+import { modeloEscolhidoDoProjeto, situacaoDoMaterialNoProjeto } from "@/lib/media/editor-do-curso/material-do-modelo-servidor";
+import { pedeMaterial } from "@/lib/media/editor-do-curso/material-do-modelo";
 import { recomendarModelo, situacaoDaRecomendacao } from "@/lib/media/editor-do-curso/recomendacao";
 import { levarModeloParaAsPecas, pecasDoModeloJaFeitas } from "@/lib/media/editor-do-curso/pecas-no-modelo";
 import { registrarNota } from "@/lib/cerebro/captura";
@@ -22,6 +24,10 @@ import { registrarNota } from "@/lib/cerebro/captura";
  *
  * PUT { modelo: string | null } grava a escolha (null volta ao editor de
  * antes). 400 quando o modelo ainda não serve no corte.
+ *
+ * O MODELO QUE PEDE MATERIAL (10/10, material-do-modelo.ts): pode ser
+ * escolhido sem o material; `modelo` é o escolhido, e `material` diz se o
+ * material dele basta e o que falta (a edição só começa com ele).
  */
 export const dynamic = "force-dynamic";
 // O redator do estilo das peças e o confirmar (biblioteca de design) levam até ~1 min cada.
@@ -38,10 +44,11 @@ async function podeUsar(id: string): Promise<boolean> {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!(await podeUsar(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const [modelo, s] = await Promise.all([modeloDoCursoDoProjeto(id), situacaoDaRecomendacao(id)]);
+  const [modelo, s] = await Promise.all([modeloEscolhidoDoProjeto(id), situacaoDaRecomendacao(id)]);
   return NextResponse.json({
     ligado: editorDoCursoLigado(),
     modelo,
+    material: modelo && pedeMaterial(modelo) ? await situacaoDoMaterialNoProjeto(id, modelo).catch(() => null) : null,
     recomendacao: s.recomendacao,
     pendente: s.pendente,
     modelos: modelosDaBiblioteca(),
@@ -70,7 +77,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
  * já existe, sem IA. Ver lib/media/editor-do-curso/pecas-no-modelo.ts.
  */
 async function pecas(id: string, levar: boolean) {
-  const modelo = await modeloDoCursoDoProjeto(id);
+  // O estilo das peças segue o modelo escolhido, mesmo o que ainda espera o material do cliente.
+  const modelo = await modeloEscolhidoDoProjeto(id);
   if (!modelo) return NextResponse.json({ pecas: null });
   const { userId } = await auth();
   const p = await prisma.project.findUnique({ where: { id }, select: { userId: true } });
@@ -96,9 +104,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Diga qual modelo usar, ou null para voltar ao editor de antes." }, { status: 400 });
   }
   const modelo = corpo.modelo as string | null;
-  if (modelo !== null && !modeloServeNoCorte(modelo)) {
+  if (modelo !== null && !modeloPodeSerEscolhido(modelo)) {
     return NextResponse.json({ error: "Este modelo ainda não pode ser usado nos cortes." }, { status: 400 });
   }
   await escolherModeloDoCurso(id, modelo);
-  return NextResponse.json({ ok: true, modelo });
+  const material = modelo && pedeMaterial(modelo) ? await situacaoDoMaterialNoProjeto(id, modelo).catch(() => null) : null;
+  return NextResponse.json({ ok: true, modelo, material });
 }

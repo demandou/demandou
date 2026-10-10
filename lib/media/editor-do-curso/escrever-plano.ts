@@ -1,5 +1,6 @@
 import { askClaude, askClaudeComImagens } from "@/lib/claude";
 import { numerosDoTexto } from "@/lib/media/numeros-falados";
+import { imagensDoMaterial, instrucaoDoMaterial, type MaterialParaORedator } from "@/lib/media/editor-do-curso/material-do-modelo";
 
 /**
  * O MAPA E O PLANO DOS MODELOS DO CURSO (09/10/2026): os passos 6 e 7 do
@@ -271,6 +272,8 @@ export async function escreverPlanoDoModelo(args: {
   pecasParadas?: PecasParadas | null;
   /** Um trecho do vídeo longo (o completo no modelo, 10/10): sem isto, o vídeo inteiro numa chamada. */
   bloco?: BlocoDoPlano | null;
+  /** O material do cliente que o worker deixou no projeto (10/10, material-do-modelo.ts): o plano usa só ele. */
+  material?: MaterialParaORedator | null;
   modelo?: string;
   usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -305,7 +308,7 @@ ${JSON.stringify(contexto)}
 A fala no vídeo já cortado, uma palavra por linha (início–fim em segundos e a palavra), como em work/palavras.json:
 ${formatarPalavras(palavras)}
 
-${imagens && Object.keys(imagens).length ? `\nAs imagens já escolhidas no passo 6b (plano.imagens, gravado pelo imagens.mjs; use só estes ids em "imagem": { "id", "efeito" }, e "sem": true quer dizer cartão com a palavra):\n${JSON.stringify(imagens)}\n` : ""}${args.mapa ? `\nO mapa editorial já feito no passo 6 (siga-o; ajuste só o que a conferência pedir):\n${args.mapa}\n` : ""}
+${imagens && Object.keys(imagens).length ? `\nAs imagens já escolhidas no passo 6b (plano.imagens, gravado pelo imagens.mjs; use só estes ids em "imagem": { "id", "efeito" }, e "sem": true quer dizer cartão com a palavra):\n${JSON.stringify(imagens)}\n` : ""}${args.mapa ? `\nO mapa editorial já feito no passo 6 (siga-o; ajuste só o que a conferência pedir):\n${args.mapa}\n` : ""}${args.material?.arquivos?.length ? `\n${instrucaoDoMaterial(args.material, "plano")}\n` : ""}
 ${
     args.pecasParadas
       ? `${instrucaoDasPecasParadas(args.pecasParadas)}\n\nFaça o mapa editorial (uma linha por peça) e o plano destas peças neste modelo.`
@@ -336,14 +339,14 @@ Conserte o que foi apontado, mantendo o que estava certo, e devolva o mapa e o p
     usage: { projectId: args.usage.projectId ?? undefined, runId: args.usage.runId ?? undefined, operation: args.usage.operation },
     onCusto: args.onCusto,
   };
-  const resposta = referencias.quadros
-    ? await askClaudeComImagens(
-        SISTEMA,
-        pedido,
-        [{ base64: referencias.quadros, rotulo: `references/exemplo/quadros.jpg do modelo ${referencias.id}: um quadro de cada momento do exemplo (estado montado), com o tipo do bloco e a fala embaixo.` }],
-        opcoes
-      )
-    : await askClaude(SISTEMA, pedido, opcoes);
+  // O material do cliente vai junto, reduzido, para o redator medir as frações nele (o passo 6b do curso).
+  const anexos = [
+    ...(referencias.quadros
+      ? [{ base64: referencias.quadros, rotulo: `references/exemplo/quadros.jpg do modelo ${referencias.id}: um quadro de cada momento do exemplo (estado montado), com o tipo do bloco e a fala embaixo.` }]
+      : []),
+    ...imagensDoMaterial(args.material),
+  ];
+  const resposta = anexos.length ? await askClaudeComImagens(SISTEMA, pedido, anexos, opcoes) : await askClaude(SISTEMA, pedido, opcoes);
   const escrito = lerJson(resposta);
   if (!escrito.plano || !Array.isArray((escrito.plano as { momentos?: unknown }).momentos)) {
     throw new Error("o plano voltou sem momentos");
