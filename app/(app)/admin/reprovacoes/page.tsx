@@ -114,10 +114,13 @@ export default async function ReprovacoesPage() {
                         <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--text-muted)" }}>
                           A peça
                         </p>
-                        {m.peca?.imageUrl && m.peca.imageUrl.length > 10 && (
+                        {m.peca?.imageUrl && m.peca.imageUrl.length > 10 && m.peca.mediaType === "video" ? (
+                          // O corte e o completo (10/10): o vídeo que está no ar, para o admin conferir o erro apontado.
+                          <video src={m.peca.imageUrl} controls preload="metadata" playsInline className="w-full max-h-72 rounded-lg border mb-2" style={{ borderColor: "var(--border)", background: "var(--bg-input)" }} />
+                        ) : m.peca?.imageUrl && m.peca.imageUrl.length > 10 ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={m.peca.imageUrl.split("|")[0]} alt="" className="w-full max-h-56 object-contain rounded-lg border mb-2" style={{ borderColor: "var(--border)", background: "var(--bg-input)" }} />
-                        )}
+                        ) : null}
                         <p className="text-xs whitespace-pre-wrap max-h-56 overflow-y-auto" style={{ color: "var(--text-primary)" }}>
                           {m.peca?.content ?? "(a peça não existe mais)"}
                         </p>

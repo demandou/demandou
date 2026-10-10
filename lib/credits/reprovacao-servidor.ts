@@ -10,6 +10,9 @@ import { avisarAdmins, type AvisoAosAdmins } from "@/lib/notificacoes/aviso-aos-
 import { provasDaPeca } from "@/lib/credits/provas-da-peca";
 import { conferirReprovacaoPeloJev, type ConferenciaDaReprovacao, type Perguntador, type ProvasDaPeca } from "@/lib/credits/reprovacao-pelo-jev";
 import { OPERACAO_DA_SOBRA_DO_AJUSTE, refDoAjustePeloAdmin } from "@/lib/credits/ajuste";
+import { OPERACAO_DO_ESTORNO_DA_EDICAO, creditosDaParteNaoEntregue, refDoEstorno, type AlvoDoEstorno } from "@/lib/credits/estorno-da-edicao";
+import { roteiroPagoNoPrecoAntigo } from "@/lib/media/limits";
+import { chaveDaPecaDoVideo } from "@/lib/posts/peca-do-video";
 import {
   NOME_DA_CATEGORIA,
   agregarMotivos,
@@ -82,6 +85,12 @@ export type DepositoDaReprovacao = {
   cobradoDoVideo?(referencia: string): Promise<number>;
   /** Credita a carteira de VÍDEO, uma vez só por refId (09/10). */
   creditarVideo?(a: { userId: string; quantidade: number; refId: string; note: string }): Promise<{ duplicado: boolean }>;
+  /**
+   * A conta de uma peça de VÍDEO (um corte ou o completo, 10/10): o custo da
+   * peça, o que o vídeo cobrou e o que já voltou dele. Null para a peça que não
+   * é de vídeo, que segue a conta da campanha (cobradoDaPeca).
+   */
+  contaDoVideo?(peca: PecaParaReprovar): Promise<ContaDaPecaDeVideo | null>;
   provas(peca: PecaParaReprovar): Promise<ProvasDaPeca>;
   gravarMotivo(m: MotivoDeReprovacao): Promise<void>;
   atualizarMotivo(id: string, campos: Partial<MotivoDeReprovacao>): Promise<void>;
@@ -93,6 +102,54 @@ export type DepositoDaReprovacao = {
   agora(): Date;
   novoId(): string;
 };
+
+/**
+ * A PEÇA DE VÍDEO NA REPROVAÇÃO (10/10/2026). O corte e o completo viram posts
+ * (um por rede) que se reprovam como qualquer peça, com a mesma regra: gosto
+ * não devolve; erro confirmado pelo código, pelo JEV ou pelo admin devolve,
+ * uma vez. O que mudava era só a conta, que dava zero: o vídeo não é cobrado
+ * pela campanha (o run do vídeo nasce pronto, sem a linha "campanha"), e sim
+ * na aprovação dos cortes (`video_aprovacao`, refId = o vídeo).
+ *
+ * Aqui a conta da peça de vídeo usa a MESMA parte da tabela que volta quando a
+ * edição não é entregue (lib/credits/estorno-da-edicao.ts,
+ * creditosDaParteNaoEntregue): a montagem do corte, ou a parte do completo na
+ * aprovação. Vale igual para o editor de antes e para o modelo do curso, que
+ * entregam pelo mesmo caminho. Os tetos:
+ *   - da peça: a parte, menos o que já voltou dela por edição não entregue e
+ *     por reprovação em qualquer rede (o mesmo corte é um post por rede, e não
+ *     devolve duas vezes);
+ *   - do vídeo: o que a aprovação cobrou, menos tudo o que já voltou dele.
+ */
+export type ContaDaPecaDeVideo = { custo: number; cobrado: number; jaDevolvido: number };
+
+export function contaDaPecaDeVideo(p: {
+  /** A parte da peça pela tabela (creditosDaParteNaoEntregue). */
+  parte: number;
+  /** O que a aprovação do vídeo cobrou (video_aprovacao). */
+  cobradoNoVideo: number;
+  /** O que já voltou do vídeo por edição não entregue (estorno_edicao), e só desta peça. */
+  estornadoNoVideo: number;
+  estornadoNaPeca: number;
+  /** O que já voltou por reprovação nos posts do vídeo, e só nos desta peça. */
+  devolvidoNoVideo: number;
+  devolvidoNaPeca: number;
+}): ContaDaPecaDeVideo {
+  const n = (x: number) => Math.max(0, Math.floor(Number(x) || 0));
+  return {
+    custo: Math.max(0, n(p.parte) - n(p.estornadoNaPeca) - n(p.devolvidoNaPeca)),
+    cobrado: n(p.cobradoNoVideo),
+    jaDevolvido: n(p.estornadoNoVideo) + n(p.devolvidoNoVideo),
+  };
+}
+
+/** De quem é a peça de vídeo: o vídeo, o alvo da tabela (corte ou completo) e a chave da peça. Null fora do vídeo. */
+export function alvoDaPecaDeVideo(metadata: unknown): { videoId: string; alvo: AlvoDoEstorno; chave: string } | null {
+  const chave = chaveDaPecaDoVideo(metadata);
+  if (!chave) return null;
+  const m = metadata as { videoJobId: string; trechoIndice?: number; gravacaoCompleta?: boolean };
+  return { videoId: m.videoJobId, alvo: m.gravacaoCompleta === true ? "completo" : (m.trechoIndice as number), chave };
+}
 
 let tabelaConferidaEm = 0;
 let tabelaExiste = false;
@@ -171,6 +228,37 @@ function depositoPadrao(): DepositoDaReprovacao {
       if (await jaCreditado(OPERACAO_DA_DEVOLUCAO, a.refId)) return { duplicado: true };
       await creditarVideo({ userId: a.userId, quantidade: a.quantidade, operation: OPERACAO_DA_DEVOLUCAO, refId: a.refId, note: a.note });
       return { duplicado: false };
+    },
+    async contaDoVideo(peca) {
+      const alvo = alvoDaPecaDeVideo(peca.metadata);
+      if (!alvo) return null;
+      const v = await prisma.videoJob.findUnique({ where: { id: alvo.videoId }, select: { durationSec: true, sizeBytes: true } });
+      if (!v) return null;
+      const [aprovacao, roteiro, estornos, posts] = await Promise.all([
+        prisma.creditTransaction.aggregate({ where: { operation: "video_aprovacao", refId: alvo.videoId, amount: { lt: 0 } }, _sum: { amount: true } }),
+        prisma.creditTransaction.findFirst({ where: { operation: "video_roteiro", refId: alvo.videoId }, select: { amount: true } }),
+        prisma.creditTransaction.findMany({ where: { operation: OPERACAO_DO_ESTORNO_DA_EDICAO, refId: { startsWith: `${alvo.videoId}:` }, amount: { gt: 0 } }, select: { refId: true, amount: true } }),
+        prisma.post.findMany({ where: { projectId: peca.projectId, metadata: { path: ["videoJobId"], equals: alvo.videoId } }, select: { id: true, metadata: true } }),
+      ]);
+      const doVideo = [...new Set([peca.id, ...posts.map((p) => p.id)])];
+      const daPeca = new Set([peca.id, ...posts.filter((p) => chaveDaPecaDoVideo(p.metadata) === alvo.chave).map((p) => p.id)]);
+      // A devolução do que um ajuste cobrou (refId "...:ajuste") é de outra cobrança, não da edição: fica fora.
+      const devolucoes = (
+        await prisma.creditTransaction.findMany({
+          where: { operation: OPERACAO_DA_DEVOLUCAO, amount: { gt: 0 }, OR: doVideo.map((id) => ({ refId: { startsWith: `${id}:` } })) },
+          select: { refId: true, amount: true },
+        })
+      ).filter((d) => !String(d.refId ?? "").endsWith(":ajuste"));
+      const soma = (ls: Array<{ amount: number }>) => ls.reduce((s, l) => s + l.amount, 0);
+      const precoAntigo = roteiroPagoNoPrecoAntigo(roteiro?.amount, v.durationSec ?? 0, Number(v.sizeBytes ?? 0) || undefined);
+      return contaDaPecaDeVideo({
+        parte: creditosDaParteNaoEntregue({ alvo: alvo.alvo, duracaoSeg: v.durationSec ?? 0, precoAntigo, comAbertura: false }),
+        cobradoNoVideo: Math.abs(aprovacao._sum.amount ?? 0),
+        estornadoNoVideo: soma(estornos),
+        estornadoNaPeca: soma(estornos.filter((e) => e.refId === refDoEstorno(alvo.videoId, alvo.alvo))),
+        devolvidoNoVideo: soma(devolucoes),
+        devolvidoNaPeca: soma(devolucoes.filter((d) => daPeca.has(String(d.refId ?? "").split(":")[0]))),
+      });
     },
     provas: (peca) => provasDaPeca(peca),
     async gravarMotivo(m) {
@@ -307,7 +395,9 @@ export async function reprovarPeca(
 
   const agora = dep.agora();
   const id = dep.novoId();
-  const custoDaPeca = custoDeRefazerPeca({ mediaType: peca.mediaType, laminas: laminasDe(peca.imageUrl) });
+  // A peça de vídeo (corte ou completo, 10/10) tem a conta dela: a parte da edição na aprovação do vídeo.
+  const doVideo = dep.contaDoVideo ? await dep.contaDoVideo(peca).catch(() => null) : null;
+  const custoDaPeca = doVideo ? doVideo.custo : custoDeRefazerPeca({ mediaType: peca.mediaType, laminas: laminasDe(peca.imageUrl) });
 
   let provas: ProvasDaPeca | null = null;
   let conferencia: ConferenciaDaReprovacao | null = null;
@@ -323,7 +413,9 @@ export async function reprovarPeca(
 
   let creditos = 0;
   if (decisao.situacao === "devolvido") {
-    const [cobrado, jaDevolvido] = await Promise.all([dep.cobradoDaPeca({ runId: peca.runId, postId: peca.id }), dep.jaDevolvidoDaCampanha({ runId: peca.runId, postId: peca.id })]);
+    const [cobrado, jaDevolvido] = doVideo
+      ? [doVideo.cobrado, doVideo.jaDevolvido]
+      : await Promise.all([dep.cobradoDaPeca({ runId: peca.runId, postId: peca.id }), dep.jaDevolvidoDaCampanha({ runId: peca.runId, postId: peca.id })]);
     creditos = creditosADevolver({ custoDaPeca, cobradoNaCampanha: cobrado, jaDevolvidoNaCampanha: jaDevolvido });
     if (creditos > 0) {
       const r = await dep.creditar({ userId: args.userId, quantidade: creditos, refId: refDaDevolucao(peca.id, id), note: `devolução: peça reprovada por ${NOME_DA_CATEGORIA[motivo.categoria].toLowerCase()}, erro confirmado (${conferencia?.detalhe ?? "prova automática"})` });
@@ -427,8 +519,12 @@ export async function decidirReprovacaoPeloAdmin(
   /** Os créditos de VÍDEO do ajuste do vídeo por IA que voltam (09/10). */
   let deVideo = 0;
   if (args.decisao === "devolver") {
-    const [cobrado, jaDevolvido] = await Promise.all([dep.cobradoDaPeca({ runId: m.runId, postId: m.postId }), dep.jaDevolvidoDaCampanha({ runId: m.runId, postId: m.postId })]);
-    creditos = creditosADevolver({ custoDaPeca: m.custoDaPeca, cobradoNaCampanha: cobrado, jaDevolvidoNaCampanha: jaDevolvido });
+    // A peça de vídeo (10/10): a conta é refeita agora, com o que já voltou do vídeo até a decisão.
+    const doVideo = dep.contaDoVideo ? await dep.contaDoVideo(peca).catch(() => null) : null;
+    const [cobrado, jaDevolvido] = doVideo
+      ? [doVideo.cobrado, doVideo.jaDevolvido]
+      : await Promise.all([dep.cobradoDaPeca({ runId: m.runId, postId: m.postId }), dep.jaDevolvidoDaCampanha({ runId: m.runId, postId: m.postId })]);
+    creditos = creditosADevolver({ custoDaPeca: doVideo ? doVideo.custo : m.custoDaPeca, cobradoNaCampanha: cobrado, jaDevolvidoNaCampanha: jaDevolvido });
     if (creditos > 0) {
       const r = await dep.creditar({ userId: m.userId, quantidade: creditos, refId: refDaDevolucao(m.postId, m.id), note: `devolução decidida pelo admin: peça reprovada por ${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}${motivoDoAdmin ? ` (${motivoDoAdmin})` : ""}` });
       if (r.duplicado) creditos = 0;
