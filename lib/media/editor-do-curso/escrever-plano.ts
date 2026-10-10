@@ -198,6 +198,20 @@ const CAMPOS_DE_TEMPO_OU_DESENHO = new Set([
   "de", "ate", "em", "inicio", "casas", "zoom", "ancoraY", "ancoraX", "destaque", "vencedor", "serie", "ponto", "peso", "fatias", "x", "y", "w", "h", "nivel", "tamanho", "escala", "volume", "ordem", "indice",
 ]);
 
+/**
+ * "424 mil" e "1,2 milhão" escritos na tela: o algarismo com a escala vira um
+ * número só (424000). Sem isto o "mil" solto contava como 1000, número que
+ * ninguém disse (prova do Case, 09/10).
+ */
+function comEscalaJunta(texto: string): string {
+  return texto.replace(/(\d+(?:[.,]\d+)*)\s*(mil|milh(?:ão|ao|ões|oes)|bilh(?:ão|ao|ões|oes))\b/gi, (_, n: string, escala: string) => {
+    const base = Number(n.replace(/\.(?=\d{3}(?!\d))/g, "").replace(",", "."));
+    if (!Number.isFinite(base)) return n;
+    const fator = /^mil$/i.test(escala) ? 1_000 : /^milh/i.test(escala) ? 1_000_000 : 1_000_000_000;
+    return String(Math.round(base * fator));
+  });
+}
+
 export function numerosSemLastro(plano: Record<string, unknown>, palavras: PalavraDoPlano[], correcoes?: Record<string, string>): string[] {
   let fala = palavras.map((p) => p.w).join(" ");
   for (const certo of Object.values(correcoes ?? {})) fala += ` ${certo}`;
@@ -221,7 +235,7 @@ export function numerosSemLastro(plano: Record<string, unknown>, palavras: Palav
     if (typeof v === "number") {
       if (!CAMPOS_DE_TEMPO_OU_DESENHO.has(chave) && !/Em$/.test(chave)) conferir(v);
     } else if (typeof v === "string") {
-      for (const n of numerosDoTexto(v)) conferir(Number(n));
+      for (const n of numerosDoTexto(comEscalaJunta(v))) conferir(Number(n));
     } else if (Array.isArray(v)) {
       for (const x of v) andar(x, chave, simulacao);
     } else if (v && typeof v === "object") {
