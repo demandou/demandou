@@ -272,6 +272,62 @@ export function instantesDaRevisao(plano) {
 }
 
 /**
+ * O TRECHO NOS QUADROS (10/10, achado na prova do completo): o trecho do curso
+ * é a gravação emendada nos pedaços mantidos (extrairTrecho, trim + concat).
+ * Cada pedaço de vídeo sai com um número inteiro de quadros e o de áudio com o
+ * tempo exato; o concat estica o pedaço até o mais longo dos dois. Num corte de
+ * 20 pedaços isso some; no completo (74 pedaços em 7 min, 171 em 17 min) a
+ * fala do trecho ficava 0,4 s (e ~1 s) atrás das palavras que o app mandou, e
+ * a legenda e o pôster entrariam adiantados no fim do vídeo.
+ *
+ * Aqui os pedaços vão para a grade de quadros da gravação (começo e fim no
+ * quadro mais perto), o vídeo e o áudio de cada pedaço passam a ter a MESMA
+ * duração, e as palavras são levadas para a linha do tempo nova (cada uma anda
+ * o que o pedaço dela andou). Pedaço que fica sem quadro sai; a palavra dele
+ * vai para o começo do pedaço seguinte. `manter` e as palavras ({em, ate, w})
+ * no tempo do trecho, relativos a `inicio`. Sem fps (gravação de quadros
+ * variáveis), nada muda.
+ */
+export function alinharAosQuadros(manter, palavras, fps, inicio = 0) {
+  if (!(Number(fps) > 0) || !Array.isArray(manter) || !manter.length) return { manter, palavras, fps: null, ajusteMaxSeg: 0 };
+  const q = (t) => Math.round((inicio + t) * fps) / fps - inicio;
+  let c = 0;
+  let c2 = 0;
+  const pedacos = manter.map((m) => {
+    const p = { de: m.de, ate: m.ate, de2: q(m.de), ate2: q(m.ate), c, c2 };
+    const quadros = Math.round((p.ate2 - p.de2) * fps);
+    p.vale = quadros >= 1;
+    c += m.ate - m.de;
+    if (p.vale) c2 += p.ate2 - p.de2;
+    return p;
+  });
+  const leva = (t) => {
+    let k = 0;
+    for (let i = 0; i < pedacos.length; i++) if (pedacos[i].c <= t + 1e-9) k = i;
+    const p = pedacos[k];
+    if (!p.vale) {
+      const seguinte = pedacos.slice(k + 1).find((x) => x.vale);
+      return seguinte ? seguinte.c2 : c2;
+    }
+    const novo = t + (p.c2 - p.c) - (p.de2 - p.de);
+    return Math.min(p.c2 + (p.ate2 - p.de2), Math.max(p.c2, novo));
+  };
+  let ajusteMaxSeg = 0;
+  const novas = (palavras ?? []).map((w) => {
+    const em = leva(w.em);
+    const ate = Math.max(em + 0.02, leva(Math.max(w.em, w.ate - 1e-6)));
+    ajusteMaxSeg = Math.max(ajusteMaxSeg, Math.abs(em - w.em));
+    return { ...w, em: r3(em), ate: r3(ate) };
+  });
+  return {
+    manter: pedacos.filter((p) => p.vale).map((p) => ({ de: +p.de2.toFixed(6), ate: +p.ate2.toFixed(6) })),
+    palavras: novas,
+    fps: Number(fps),
+    ajusteMaxSeg: r3(ajusteMaxSeg),
+  };
+}
+
+/**
  * As partes do render (quadros inclusivos): ~`alvoSeg` cada, a última absorve
  * a sobra curta (menos de 40% do alvo). Cobrem a composição inteira, em ordem.
  */

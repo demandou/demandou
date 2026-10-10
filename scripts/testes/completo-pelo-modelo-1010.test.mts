@@ -64,6 +64,42 @@ test("os blocos são cortados na maior pausa perto de 150 s, sem palavra perdida
   for (const b of bs) for (const p of ps.slice(b.de, b.ate + 1)) assert.ok(p.em >= b.inicio && p.em < b.fim);
 });
 
+test("o trecho na grade de quadros: pedaços no quadro, palavras levadas junto, nada de deriva", () => {
+  const manter = [
+    { de: 1.012, ate: 4.987 },
+    { de: 5.31, ate: 5.315 }, // menos de um quadro: sai
+    { de: 6.004, ate: 9.519 },
+    { de: 12.49, ate: 20.011 },
+  ];
+  // as palavras no tempo do trecho de antes (a soma dos pedaços originais)
+  const dur = (m: { de: number; ate: number }) => m.ate - m.de;
+  const C = [0, dur(manter[0]), dur(manter[0]) + dur(manter[1]), dur(manter[0]) + dur(manter[1]) + dur(manter[2])];
+  const naGravacao = [1.5, 4.9, 5.312, 6.2, 9.4, 12.6, 19.9];
+  const pedacoDe = [0, 0, 1, 2, 2, 3, 3];
+  const palavras = naGravacao.map((w, i) => ({ em: +(C[pedacoDe[i]] + (w - manter[pedacoDe[i]].de)).toFixed(3), ate: +(C[pedacoDe[i]] + (w - manter[pedacoDe[i]].de) + 0.08).toFixed(3), w: `p${i}` }));
+  const a = B.alinharAosQuadros(manter, palavras, 30, 100.0);
+  assert.equal(a.manter.length, 3);
+  for (const m of a.manter) {
+    assert.ok(Math.abs((100 + m.de) * 30 - Math.round((100 + m.de) * 30)) < 1e-3, "começo fora da grade");
+    assert.ok(Math.abs((100 + m.ate) * 30 - Math.round((100 + m.ate) * 30)) < 1e-3, "fim fora da grade");
+  }
+  // cada palavra fica no mesmo lugar da gravação dentro do pedaço novo
+  const C2 = [0, dur(a.manter[0]), dur(a.manter[0]) + dur(a.manter[1])];
+  const novo = [0, 0, null, 1, 1, 2, 2];
+  a.palavras.forEach((p: { em: number }, i: number) => {
+    const k = novo[i];
+    if (k === null) {
+      assert.ok(Math.abs(p.em - C2[1]) < 0.002, "a palavra do pedaço que saiu vai ao começo do seguinte");
+      return;
+    }
+    assert.ok(Math.abs(p.em - (C2[k] + (naGravacao[i] - a.manter[k].de))) < 0.002, `palavra ${i}: ${p.em}`);
+  });
+  assert.ok(a.ajusteMaxSeg < 0.1);
+  const semFps = B.alinharAosQuadros(manter, palavras, null);
+  assert.equal(semFps.manter, manter);
+  assert.equal(semFps.fps, null);
+});
+
 test("deslocar tempos mexe só em de, ate, em, ...Em e batidas", () => {
   const m = {
     tipo: "cartaz",

@@ -9,6 +9,7 @@ import {
   BLOCO_ALVO_SEG,
   LIMIAR_DOS_BLOCOS_SEG,
   VOLTAS_POR_BLOCO,
+  alinharAosQuadros,
   blocosDoPlano,
   caudaDoBloco,
   conferirEmBlocos,
@@ -199,8 +200,41 @@ function falhou(passo, r) {
  * alternado do corte simples (ffmpeg.mjs, prepararTrecho): o enquadramento
  * agora é do cortar.mjs do curso, que mede o rosto e segue a pessoa.
  */
-export async function extrairTrecho(original, saida, inicio, duracao, manter) {
-  const pedacos = (manter ?? []).filter((m) => m.ate - m.de > 0.05);
+export async function extrairTrecho(original, saida, inicio, duracao, manter, { fps = null } = {}) {
+  const pedacos = (manter ?? []).filter((m) => m.ate - m.de > (fps ? 0.5 / fps : 0.05));
+  // NA GRADE DE QUADROS (10/10, prova do completo): com `fps` (os pedaços já na grade,
+  // alinharAosQuadros), o vídeo e o áudio são emendados em dois concat separados. O concat de
+  // vídeo e áudio juntos esticava cada pedaço uns milissegundos (0,6 s em 74 pedaços) e a fala
+  // saía atrás das palavras; separados, o áudio sai com a soma exata dos pedaços e o vídeo com os
+  // quadros exatos (cada borda um quarto de quadro antes, longe do arredondamento do trim). Se a
+  // conta de quadros não bater (gravação que perdeu quadro), refaz pelo concat junto, que
+  // ressincroniza a cada pedaço.
+  if (fps && pedacos.length > 1) {
+    const quarto = 0.25 / fps;
+    const esperados = pedacos.reduce((s, m) => s + Math.round((m.ate - m.de) * fps), 0);
+    const video = pedacos.map((m, i) => `[0:v]trim=start=${Math.max(0, m.de - quarto).toFixed(6)}:end=${(m.ate - quarto).toFixed(6)},setpts=PTS-STARTPTS[v${i}]`);
+    const audio = pedacos.map((m, i) => `[0:a]atrim=start=${m.de.toFixed(6)}:end=${m.ate.toFixed(6)},asetpts=PTS-STARTPTS[a${i}]`);
+    const grafo =
+      `${video.join(";")};${pedacos.map((_, i) => `[v${i}]`).join("")}concat=n=${pedacos.length}:v=1:a=0[v];` +
+      `${audio.join(";")};${pedacos.map((_, i) => `[a${i}]`).join("")}concat=n=${pedacos.length}:v=0:a=1[a]`;
+    const pasta = dirname(saida);
+    const arquivo = join(pasta, `filtro-${basename(saida)}.txt`);
+    await writeFile(arquivo, grafo, "utf8");
+    await rodar(
+      [
+        "-ss", String(inicio), "-i", original, "-t", String(duracao),
+        opcaoDeFiltro(), basename(arquivo),
+        "-map", "[v]", "-map", "[a]",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", saida,
+      ],
+      { cwd: pasta }
+    );
+    const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-count_packets", "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0", saida], { encoding: "utf8" });
+    const quadros = Number(String(r.stdout).trim());
+    if (quadros === esperados) return { pedacos: pedacos.length, naGrade: true, quadros };
+    console.warn(`[modelo] o trecho na grade saiu com ${quadros} quadros (esperados ${esperados}); refazendo pelo concat junto`);
+  }
   if (pedacos.length <= 1) {
     const de = pedacos[0]?.de ?? 0;
     const ate = pedacos[0]?.ate ?? duracao;
@@ -235,6 +269,26 @@ export async function extrairTrecho(original, saida, inicio, duracao, manter) {
     { cwd: pasta }
   );
   return { pedacos: pedacos.length };
+}
+
+/**
+ * Os quadros por segundo da gravação, quando são constantes (r_frame_rate igual
+ * ao avg_frame_rate); null em gravação de quadros variáveis ou sem leitura.
+ */
+export function fpsConstante(arquivo) {
+  try {
+    const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate,avg_frame_rate", "-of", "json", arquivo], { encoding: "utf8" });
+    const s = JSON.parse(r.stdout).streams?.[0];
+    const valor = (f) => {
+      const [a, b] = String(f ?? "").split("/").map(Number);
+      return a > 0 && b > 0 ? a / b : null;
+    };
+    const real = valor(s?.r_frame_rate);
+    const media = valor(s?.avg_frame_rate);
+    return real && media && Math.abs(real - media) / real < 0.002 ? real : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Passo 1: o projeto do trabalho, cópia do template com os pacotes do worker. */
@@ -409,7 +463,10 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   };
   const original = await obterOriginal(pedido.sourceUrl);
   const trecho = join(pasta, "trecho.mp4");
-  await extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, pedido.manter);
+  // Os pedaços na grade de quadros da gravação e as palavras na linha do tempo do trecho
+  // (alinharAosQuadros, 10/10): sem isso, no completo a fala andava até 1 s à frente das palavras.
+  const alinhado = alinharAosQuadros(pedido.manter, pedido.palavras, fpsConstante(original), pedido.inicio ?? 0);
+  await extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, alinhado.manter, { fps: alinhado.fps });
   marcar("trecho");
   const projeto = criarProjeto(modelo, pasta);
   // AS CORES DA MARCA (10/10, regra do Bruno): o estilo é do modelo, a cor é da marca.
@@ -418,7 +475,7 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     const c = aplicarCoresDaMarca(projeto, pedido.cores);
     if (c.erro) console.warn(`[modelo] as cores da marca não entraram: ${c.erro}`);
   }
-  await preparar(projeto, trecho, pedido.palavras);
+  await preparar(projeto, trecho, alinhado.palavras);
   const tomadas = escolherTomadas(projeto);
   await justar(projeto);
   marcar("preparar");
