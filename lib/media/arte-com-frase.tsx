@@ -271,12 +271,9 @@ export async function marcaDaArte(
   // O MODELO DO CURSO TIPOGRÁFICO (10/10): as cores nos papéis do próprio modelo
   // (o fundo, o título e a assinatura dele no destaque), como no vídeo. Só a foto
   // que a pessoa escolheu para o post entra; a biblioteca automática não.
-  if (doPost?.papeis) {
-    const cores = coresDaIdentidade(doPost.papeis);
-    marca.cores = cores;
-    if (marca.identidade) marca.identidade = { ...marca.identidade, cores };
-    if (!fotosEscolhidas) marca.materiais = undefined;
-  }
+  // 10/10, mais tarde (Bruno: "mudou a cor da minha marca e colocou o azul"): a cor é sempre a da
+  // marca; do modelo vem só o desenho. As cores aprovadas acima ficam; só a biblioteca automática sai.
+  if (doPost?.papeis && !fotosEscolhidas) marca.materiais = undefined;
   // O post no estilo mestre sem o design mestre (08/10): nem o book nem o design do projeto, a direção do vídeo.
   const modelos = doPost?.ids ?? (doPost?.semModelo ? undefined : modelosDaPeca({ doPost: doPost?.modeloId, doProjeto: doCliente?.id ?? null, book: escolha?.ids }));
   if (!modelos?.length && !marca.materiais?.length) return marca;

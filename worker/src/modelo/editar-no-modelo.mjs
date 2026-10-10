@@ -364,6 +364,12 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   await extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, pedido.manter);
   marcar("trecho");
   const projeto = criarProjeto(pedido.modelo, pasta);
+  // AS CORES DA MARCA (10/10, regra do Bruno): o estilo é do modelo, a cor é da marca.
+  if (pedido.cores?.destaque) {
+    const { aplicarCoresDaMarca } = await import("./cores-da-marca.mjs");
+    const c = aplicarCoresDaMarca(projeto, pedido.cores);
+    if (c.erro) console.warn(`[modelo] as cores da marca não entraram: ${c.erro}`);
+  }
   await preparar(projeto, trecho, pedido.palavras);
   const tomadas = escolherTomadas(projeto);
   await justar(projeto);

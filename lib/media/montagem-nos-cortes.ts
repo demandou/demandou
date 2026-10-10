@@ -99,7 +99,7 @@ import { CaixaDaEdicao, TETO_USD_DO_CORTE } from "@/lib/media/teto-da-edicao";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { leituraNoCorte } from "@/lib/media/editor-por-comando/leitura-no-plano";
-import { editorDoCursoLigado, modeloDoCursoDoProjeto, modeloServeNoCorte, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd } from "@/lib/media/editor-do-curso/no-corte";
+import { editorDoCursoLigado, modeloDoCursoDoProjeto, modeloServeNoCorte, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd, coresDaMarcaParaOModelo } from "@/lib/media/editor-do-curso/no-corte";
 
 /**
  * O EDITOR COMPLETO NA ESTEIRA (30/09/2026), com a trava MONTAGEM_NA_EDICAO=1.
@@ -718,6 +718,8 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
       manter: fala.manter,
       palavras: palavrasDoCurso(fala.palavras),
       marca: await quemFalaNoProjeto(video.projectId),
+      // As cores da marca no modelo (10/10): o worker troca a assinatura do modelo pelo destaque da marca.
+      cores: await coresDaMarcaParaOModelo(video.projectId).catch(() => null),
       nicho: video.project.niche,
       // A trilha escolhida na jornada também no editor do curso (10/10): o worker mistura depois do render.
       trilha: video.project.videoMusicUrl ? { url: video.project.videoMusicUrl, ...somDaTrilha(video) } : null,

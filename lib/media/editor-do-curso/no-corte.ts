@@ -71,6 +71,19 @@ export function palavrasDoCurso(palavras: Array<{ texto: string; inicio: number;
 }
 
 /**
+ * As cores da marca para o modelo do curso (10/10, regra do Bruno: o estilo é
+ * do modelo, a cor é da marca): os papéis da identidade do projeto (aprovada,
+ * ou a da paleta salva). O worker troca a cor de assinatura do modelo pelo
+ * destaque (worker/src/modelo/cores-da-marca.mjs). Null sem projeto legível.
+ */
+export async function coresDaMarcaParaOModelo(projectId: string): Promise<{ fundo: string; titulo: string; destaque: string } | null> {
+  const { estadoDaIdentidade } = await import("@/lib/modelos-de-arte/identidade-aprovada");
+  const p = await prisma.project.findUnique({ where: { id: projectId }, select: { colorPalette: true } });
+  const e = await estadoDaIdentidade(projectId, p?.colorPalette).catch(() => null);
+  return e?.papeis ? { fundo: e.papeis.fundo, titulo: e.papeis.titulo, destaque: e.papeis.destaque } : null;
+}
+
+/**
  * Quem fala, para a etiqueta e a assinatura do modelo. O curso pede nome e
  * área; o nome é o do dono do projeto e a área fica vazia, para o redator do
  * plano resumir do assunto do perfil (sem inventar).
