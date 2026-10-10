@@ -4,14 +4,15 @@ import { comoTitulo, dito, janela, k, LETRA, MARCA, mix, PainelDeDado, TituloQue
 /**
  * O CARD DA FRASE-CHAVE (aula 6, a inserção 3: "mercado subindo não
  * significa dinheiro no seu bolso"): as duas metades da frase, ditas, com o
- * sinal de diferente entre elas. A primeira entra em "subindo", o sinal se
+ * sinal de diferente entre elas. A primeira entra com o painel, o sinal se
  * desenha em "não significa", a segunda entra em "dinheiro". Uma inserção só.
  */
 export const Frente: React.FC<CenaProps> = ({ de, ate }) => {
   const { t } = useTempo();
   const v = janela(t, de, ate, 0.45, 0.4);
   if (v.visivel <= 0) return null;
-  const sobe = k(t, dito("subindo"), dito("subindo") + 0.4);
+  // a primeira metade entra com o painel ("mercado"): painel vazio não fica no ar
+  const sobe = k(t, de, de + 0.45);
   const diferente = k(t, dito("não significa"), dito("não significa") + 0.5);
   const bolso = k(t, dito("dinheiro"), dito("dinheiro") + 0.45);
   return (

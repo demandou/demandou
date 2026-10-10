@@ -209,6 +209,8 @@ export const Contador: React.FC<{ t: number; ate: number; inicio: number; fim: n
   texto,
   style,
 }) => {
+  // nada antes de o número começar a ser dito (um "0" parado na tela seria número que ninguém disse)
+  if (t < inicio) return null;
   const p = k(t, inicio, fim, SAIDA);
   const valor = ate * p;
   return (
