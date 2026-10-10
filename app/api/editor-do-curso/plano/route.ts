@@ -7,6 +7,7 @@ import {
   escreverPlanoDoModelo,
   numerosSemLastro,
   type EsqueletoDoPlano,
+  type PecasParadas,
   type ReferenciasDoModelo,
   type RetornoDaConferencia,
 } from "@/lib/media/editor-do-curso/escrever-plano";
@@ -24,6 +25,9 @@ import { revisarQuadrosDoModelo } from "@/lib/media/editor-do-curso/revisao";
  *   - "revisar":  o passo 8, olhar os quadros de cada momento e apontar defeito;
  *   - "plano" (padrão): o plano (passo 7); a conferência do curso roda no worker,
  *     e a reprovada volta para cá em `anterior`.
+ * Com `pecasParadas` (10/10, worker/src/modelo/arte-no-modelo.mjs), a mesma
+ * escrita serve aos posts da campanha no estilo do modelo: o mapa e o plano
+ * ganham o bloco de instrução das peças paradas; sem ele, nada muda no vídeo.
  * Sem sessão, como todo pedido do worker, e autenticado pela assinatura sobre
  * o corpo inteiro.
  */
@@ -46,6 +50,7 @@ export async function POST(req: NextRequest) {
     legendas?: string[];
     plano?: Record<string, unknown> | null;
     projectId?: string | null;
+    pecasParadas?: PecasParadas | null;
   };
   try {
     corpo = JSON.parse(corpoCru);
@@ -76,7 +81,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta a fala do corte" }, { status: 400 });
     }
     if (corpo.fase === "imagens") {
-      const r = await pedirImagensDoModelo({ referencias: corpo.referencias, esqueleto: corpo.esqueleto, nicho: corpo.nicho ?? null, ...comum });
+      const r = await pedirImagensDoModelo({ referencias: corpo.referencias, esqueleto: corpo.esqueleto, nicho: corpo.nicho ?? null, pecasParadas: corpo.pecasParadas ?? null, ...comum });
       return NextResponse.json({ ...r, custoUsd });
     }
     const escrito = await escreverPlanoDoModelo({
@@ -86,6 +91,7 @@ export async function POST(req: NextRequest) {
       nicho: corpo.nicho ?? null,
       anterior: corpo.anterior ?? null,
       mapa: corpo.mapa ?? null,
+      pecasParadas: corpo.pecasParadas ?? null,
       ...comum,
     });
     const semLastro = numerosSemLastro(escrito.plano, corpo.esqueleto.palavras, escrito.plano.correcoes as Record<string, string> | undefined);

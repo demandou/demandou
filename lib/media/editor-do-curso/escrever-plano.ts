@@ -62,6 +62,70 @@ export type RetornoDaConferencia = {
 
 const CAMPOS_DO_MOTOR = new Set(["video", "fps", "largura", "altura", "duracao", "videoAltura", "rosto", "zona", "cortesEm", "palavras", "enquadramentos", "imagens"]);
 
+/**
+ * AS PEÇAS PARADAS (10/10/2026, regra do Bruno): os posts da campanha (post,
+ * capa e lâminas de carrossel, infográfico) saem no MESMO estilo do vídeo
+ * editado pelo modelo do curso, desenhados pelo template do próprio modelo
+ * (worker/src/modelo/arte-no-modelo.mjs). O worker lê o texto das peças como
+ * uma fala sintética, uma peça depois da outra, e cada peça vira um quadro
+ * parado do render. O plano é o mesmo do vídeo; o que muda é este bloco de
+ * instrução, que só entra quando `pecasParadas` vem no pedido.
+ */
+export type TipoDePecaParada = "post" | "capa" | "lamina" | "infografico";
+
+export type PecaParada = {
+  /** 1, 2, 3... na ordem da fala. */
+  indice: number;
+  tipo: TipoDePecaParada;
+  texto: string;
+  formato: "4:5" | "9:16" | "1:1";
+  /** O trecho da peça no vídeo já cortado: o momento dela cobre de `de` a `ate`. */
+  de: number;
+  ate: number;
+  /** O "em" da primeira palavra e o fim da última (o quadro sai depois da última). */
+  primeiraEm: number;
+  ultimaAte: number;
+};
+
+export type PecasParadas = {
+  pecas: PecaParada[];
+  /** Sem foto do cliente: onde o modelo põe a pessoa fica um fundo liso nesta cor. */
+  semPessoa: boolean;
+  corDoFundo?: string | null;
+};
+
+const NOME_DA_PECA: Record<TipoDePecaParada, string> = {
+  post: "post (imagem única)",
+  capa: "capa de carrossel",
+  lamina: "lâmina de carrossel",
+  infografico: "infográfico",
+};
+
+/** O bloco de instrução do modo peças paradas (o mesmo no mapa das imagens e no plano). */
+export function instrucaoDasPecasParadas(pp: PecasParadas): string {
+  const lista = pp.pecas
+    .map((p) => `${p.indice}. ${NOME_DA_PECA[p.tipo] ?? p.tipo} (${p.formato}), trecho de ${p.de.toFixed(2)} a ${p.ate.toFixed(2)} s (primeira palavra em ${p.primeiraEm.toFixed(2)}, última termina em ${p.ultimaAte.toFixed(2)}): "${p.texto}"`)
+    .join("\n");
+  const pessoa = pp.semPessoa
+    ? `Não há pessoa nestas peças: onde o modelo põe o vídeo da pessoa (quadro cheio, janela, letras vazadas, moldura, metade de baixo), aparece um fundo liso na cor ${pp.corDoFundo ?? "do fundo da marca"}. Não escolha um campo, placa ou fundo de bloco dessa mesma cor nem perto dela, para o que o modelo desenha por cima do vídeo continuar visível.`
+    : "Onde o modelo põe a pessoa, entra uma foto parada do cliente (não é quadro de gravação).";
+  return `# MODO PEÇAS PARADAS (posts da campanha, não um vídeo)
+
+Esta "fala" não é uma gravação: é o texto das peças de uma campanha lido em sequência, uma peça por trecho, para o fluxo do curso funcionar. Ninguém vai assistir a este vídeo. Cada peça vira UMA IMAGEM PARADA, tirada do render depois que o bloco dela assentou (todas as palavras já ditas e tudo já entrou). O estilo é o deste modelo (a letra, o layout, os blocos, o jeito de pôr imagem); as cores já foram trocadas pelas da marca.
+
+As peças, com o trecho de cada uma no vídeo cortado:
+${lista}
+
+Regras deste modo (valem por cima do ritmo de vídeo da skill):
+- Exatamente UM momento por peça, cobrindo o trecho inteiro dela: "de" no começo do trecho e "ate" no fim do trecho. Nada de momento extra, de respiro, de transição ou de placa solta entre as peças.
+- O texto da peça aparece INTEIRO e legível no estado final do momento: todas as palavras, na ordem, sem resumir, sem trocar palavra e sem cortar (pode quebrar linha, mudar o tamanho e pôr um trecho em destaque ou na cor de acento). Os campos de texto do bloco, somados, contêm o texto todo da peça.
+- Escolha o bloco mais forte do modelo que mostra o texto inteiro parado: prefira a assinatura e os blocos próprios do modelo. Não use bloco que só funciona em movimento (o que só aparece na troca, a imagem em tela cheia que esconde o texto, o contador que só faz sentido andando) nem bloco que deixa o texto para a legenda: a legenda some em todas as peças.
+- Capa e lâminas são da mesma série de carrossel: as lâminas usam o mesmo bloco, mudando só o texto, e a capa abre a série com o bloco mais forte.
+- Dentro do momento, cada item ainda entra no "em" da palavra que o nomeia, como a skill manda; o quadro é tirado depois da última palavra da peça.
+- ${pessoa}
+- A densidade de momentos por segundo, a cobertura, a variedade de blocos e os efeitos que só existem em movimento, que a skill pede para vídeo, não valem aqui e não são conferidos. A assinatura do modelo continua obrigatória pelo menos uma vez, as regras de fidelidade (nada inventado) e os campos obrigatórios de cada bloco também.`;
+}
+
 /** O prefixo estável por modelo, que vai para o cache: o treinamento inteiro. */
 export function treinamentoDoModelo(r: ReferenciasDoModelo): string {
   const partes: string[] = [];
@@ -138,6 +202,8 @@ export async function escreverPlanoDoModelo(args: {
   anterior?: RetornoDaConferencia | null;
   /** O mapa já feito no passo das imagens (modelos com imagem): o plano segue ele. */
   mapa?: string | null;
+  /** Os posts da campanha no estilo do modelo (arte-no-modelo.mjs): sem isto, é o vídeo de sempre. */
+  pecasParadas?: PecasParadas | null;
   modelo?: string;
   usage: { projectId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -166,7 +232,7 @@ A fala no vídeo já cortado, uma palavra por linha (início–fim em segundos e
 ${formatarPalavras(palavras)}
 
 ${imagens && Object.keys(imagens).length ? `\nAs imagens já escolhidas no passo 6b (plano.imagens, gravado pelo imagens.mjs; use só estes ids em "imagem": { "id", "efeito" }, e "sem": true quer dizer cartão com a palavra):\n${JSON.stringify(imagens)}\n` : ""}${args.mapa ? `\nO mapa editorial já feito no passo 6 (siga-o; ajuste só o que a conferência pedir):\n${args.mapa}\n` : ""}
-Faça o mapa editorial e o plano deste vídeo neste modelo.`;
+${args.pecasParadas ? `${instrucaoDasPecasParadas(args.pecasParadas)}\n\nFaça o mapa editorial (uma linha por peça) e o plano destas peças neste modelo.` : "Faça o mapa editorial e o plano deste vídeo neste modelo."}`;
 
   if (args.anterior) {
     pedido += `
