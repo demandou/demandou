@@ -539,8 +539,9 @@ export async function folhasDosQuadros(projeto, quadros) {
  * scripts/imagens.mjs do curso busca e monta a folha, o app escolhe olhando a
  * folha (uma nova busca permitida por pedido) e o script grava a escolha, o
  * foco, o crédito e o resumo em plano.imagens. Sem nenhum pedido, segue sem imagem.
+ * Exportado para as peças paradas (arte-no-modelo.mjs), que passam pelo mesmo passo.
  */
-async function passoDasImagens(projeto, corpo, pedir) {
+export async function passoDasImagens(projeto, corpo, pedir) {
   const r = await pedir({ ...corpo, fase: "imagens" });
   const pedidos = Array.isArray(r.imagens) ? r.imagens : [];
   if (!pedidos.length) return { mapa: r.mapa ?? null, creditos: null };
