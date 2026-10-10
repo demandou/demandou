@@ -23,13 +23,18 @@ import artesProntas from "./artes.json";
  * Prévia em vídeo ainda não há (`previa` null).
  */
 
+/** Os grupos da grade de escolha, nesta ordem (10/10): "3D e efeitos", "Em destaque" e os outros. */
+export type GrupoNaGrade = "3d-e-efeitos" | "destaque" | "todos";
+
 export type ModeloNaBiblioteca = {
   id: string;
   nome: string;
   /** Uma ou duas frases tiradas da descrição oficial, para o cartão. */
   resumo: string;
   formato: "9:16" | "16:9";
-  /** Já pode ser escolhido para os cortes (automático e vertical). */
+  /** O grupo da grade: "3D e efeitos", "Em destaque" ou os outros (ordemDaGrade). */
+  grupo: GrupoNaGrade;
+  /** Já pode ser escolhido para os cortes (automático, com a versão vertical). */
   serve: boolean;
   /** Para os que não servem: o que falta, em uma frase curta ("Em breve: ..."). */
   falta: string | null;
@@ -119,22 +124,74 @@ export function arteDoModelo(id: string): string | null {
   return COM_ARTE.has(id) ? `/estilos/curso/${id}.webp` : null;
 }
 
-/** Os 79 cartões, na ordem do catálogo. */
-export function modelosDaBiblioteca(): ModeloNaBiblioteca[] {
-  return MODELOS_DO_CURSO.map((m) => ({
-    id: m.id,
-    nome: m.nome,
-    resumo: resumoDoModelo(m),
-    formato: m.formato,
-    serve: Boolean(modeloServeNoCorte(m.id)),
-    falta: faltaDoModelo(m),
-    arte: arteDoModelo(m.id),
-    // Sem prévia em vídeo por enquanto (09/10): o cartão mostra só a arte.
-    previa: null,
-  }));
+/**
+ * A ORDEM DA GRADE (10/10/2026, para a prova do Bruno na terça).
+ *
+ *   1. "3D e efeitos": os modelos em 3D (o campo `three` do catálogo, que o
+ *      importar.mjs lê do template; hoje Anatomia, Medida, Órbita e Torre) e,
+ *      depois deles, as opções avançadas do curso na ordem de AVANCADOS_DO_CURSO;
+ *   2. "Em destaque": os já provados em vídeo de verdade (EM_DESTAQUE), menos o
+ *      que já entrou no grupo de cima;
+ *   3. todos os outros, na ordem do catálogo, liberados como os de cima.
+ * Cada modelo aparece uma vez só, no primeiro grupo em que cabe. A grade só
+ * ordena: quem pode ser escolhido continua sendo `serve`, e a recomendação pelo
+ * perfil (recomendacao.ts) segue com as opções na ordem do catálogo.
+ */
+
+/**
+ * As três opções avançadas do curso que entram no grupo "3D e efeitos", nesta
+ * ordem. Outro trabalho está criando as três; cada uma entra na grade quando o
+ * `id` dela for preenchido aqui e o modelo estiver no catálogo (sem id, não
+ * aparece nada).
+ */
+export const AVANCADOS_DO_CURSO: ReadonlyArray<{ aula: string; oQue: string; id: string | null }> = [
+  { aula: "8.1", oQue: "maquete 3D", id: null },
+  { aula: "8.2", oQue: "recorte com lettering", id: null },
+  { aula: "6", oQue: "gráficos", id: null },
+];
+
+/** Os modelos já provados em vídeo de verdade (10/10), na ordem do grupo "Em destaque". */
+export const EM_DESTAQUE: readonly string[] = ["modelo-manifesto", "modelo-viral", "modelo-lousa", "modelo-medida", "modelo-orbita", "modelo-painel"];
+
+/** Os ids na ordem da grade, cada um com o grupo dele. Puro: o catálogo, as listas acima e o `three`. */
+export function ordemDaGrade(modelos: ReadonlyArray<Pick<ModeloDoCurso, "id"> & { three?: boolean }> = MODELOS_DO_CURSO): Array<{ id: string; grupo: GrupoNaGrade }> {
+  const existe = new Set(modelos.map((m) => m.id));
+  const vistos = new Set<string>();
+  const saida: Array<{ id: string; grupo: GrupoNaGrade }> = [];
+  const por = (grupo: GrupoNaGrade, ids: Iterable<string | null>) => {
+    for (const id of ids) {
+      if (!id || !existe.has(id) || vistos.has(id)) continue;
+      vistos.add(id);
+      saida.push({ id, grupo });
+    }
+  };
+  por("3d-e-efeitos", [...modelos.filter((m) => m.three).map((m) => m.id), ...AVANCADOS_DO_CURSO.map((a) => a.id)]);
+  por("destaque", EM_DESTAQUE);
+  por("todos", modelos.map((m) => m.id));
+  return saida;
 }
 
-/** Os que podem ser escolhidos hoje (são as opções da recomendação). */
+/** Os 79 cartões, na ordem da grade (ordemDaGrade). */
+export function modelosDaBiblioteca(): ModeloNaBiblioteca[] {
+  const porId = new Map(MODELOS_DO_CURSO.map((m) => [m.id, m]));
+  return ordemDaGrade().map(({ id, grupo }) => {
+    const m = porId.get(id)!;
+    return {
+      id: m.id,
+      nome: m.nome,
+      resumo: resumoDoModelo(m),
+      formato: m.formato,
+      grupo,
+      serve: Boolean(modeloServeNoCorte(m.id)),
+      falta: faltaDoModelo(m),
+      arte: arteDoModelo(m.id),
+      // Sem prévia em vídeo por enquanto (09/10): o cartão mostra só a arte.
+      previa: null,
+    };
+  });
+}
+
+/** Os que podem ser escolhidos hoje (são as opções da recomendação, na ordem do catálogo). */
 export function modelosQueServem(): ModeloDoCurso[] {
   return MODELOS_DO_CURSO.filter((m) => modeloServeNoCorte(m.id));
 }

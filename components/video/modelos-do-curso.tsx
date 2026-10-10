@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Check, ChevronDown, Loader2, Play, Sparkles, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BotaoDescartar } from "@/components/ui/descartar";
-import type { ModeloNaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
+import type { GrupoNaGrade, ModeloNaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
 import type { Recomendacao } from "@/lib/media/editor-do-curso/recomendacao";
 import { PecasNoEstiloDoModelo } from "@/components/video/pecas-no-estilo-do-modelo";
 
@@ -17,9 +17,14 @@ import { PecasNoEstiloDoModelo } from "@/components/video/pecas-no-estilo-do-mod
  * mantém ou muda, e escolhe na grade. Escolheu, os cortes verticais saem pelo
  * modelo e a linguagem de baixo (o editor de antes) fica de reserva.
  *
- * Quem pode ser escolhido vem do catálogo (`serve`, que é automático e
- * vertical): quando um modelo passa a rodar sozinho, ele sobe para a grade sem
- * mudar nada aqui. Os outros aparecem apagados, com o que falta, como "em breve".
+ * Quem pode ser escolhido vem do catálogo (`serve`, que é automático e tem a
+ * versão vertical): quando um modelo passa a rodar sozinho, ele sobe para a
+ * grade sem mudar nada aqui. Os outros aparecem apagados, com o que falta, como
+ * "em breve".
+ *
+ * A GRADE EM GRUPOS (10/10): "3D e efeitos" primeiro, depois "Em destaque" e
+ * depois todos os outros, liberados do mesmo jeito. A ordem e o grupo de cada
+ * modelo vêm prontos da biblioteca (`grupo`, ordemDaGrade); aqui só se desenha.
  *
  * A ARTE nunca é quadro do exemplo do curso (são as pessoas do treinamento):
  * é o próprio modelo editando uma pessoa criada por IA (lib/media/editor-do-curso/
@@ -36,8 +41,17 @@ type Dados = {
   modelos: ModeloNaBiblioteca[];
 };
 
-/** Quantos cartões prontos aparecem antes do "ver todos" (três linhas no celular). */
+/** Quantos cartões do último grupo aparecem antes do "ver todos" (três linhas no celular). */
 const VISIVEIS = 6;
+
+/** A ordem dos grupos na grade. Os dois primeiros aparecem inteiros; o último abre no "ver todos". */
+const GRUPOS: GrupoNaGrade[] = ["3d-e-efeitos", "destaque", "todos"];
+
+const TITULO_DO_GRUPO: Record<GrupoNaGrade, string> = {
+  "3d-e-efeitos": "3D e efeitos",
+  destaque: "Em destaque",
+  todos: "Mais modelos para os seus cortes",
+};
 
 const maiuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
@@ -169,15 +183,21 @@ export function ModelosDoCurso({
   const emUso = modelo ? porId.get(modelo) ?? null : null;
   const recomendado = recomendacao ? porId.get(recomendacao.modelo) ?? null : null;
   const primeiro = [recomendacao?.modelo, modeloAoAbrir].filter((x): x is string => Boolean(x));
-  const prontos = dados.modelos
-    .filter((m) => m.serve)
-    .sort((a, b) => {
+  // A ordem vem da biblioteca; no último grupo, o recomendado e o escolhido ao abrir vão para o começo (ficam à vista antes do "ver todos").
+  const prontos = dados.modelos.filter((m) => m.serve);
+  const doGrupo = (g: GrupoNaGrade) => {
+    const lista = prontos.filter((m) => (m.grupo ?? "todos") === g);
+    if (g !== "todos") return lista;
+    return lista.sort((a, b) => {
       const ia = primeiro.indexOf(a.id);
       const ib = primeiro.indexOf(b.id);
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
     });
+  };
+  const grupos = GRUPOS.map((g) => ({ grupo: g, modelos: doGrupo(g) })).filter((g) => g.modelos.length > 0);
+  const ultimo = grupos.at(-1);
+  const escondidos = ultimo && ultimo.modelos.length > VISIVEIS ? ultimo.modelos.length - VISIVEIS : 0;
   const emBreve = dados.modelos.filter((m) => !m.serve);
-  const visiveis = verTodos ? prontos : prontos.slice(0, VISIVEIS);
   const temPrevia = dados.modelos.some((m) => m.previa);
 
   /**
@@ -404,12 +424,24 @@ export function ModelosDoCurso({
         </div>
       )}
 
-      {/* OS QUE JÁ SERVEM NOS CORTES */}
+      {/* OS QUE JÁ SERVEM NOS CORTES, em grupos: 3D e efeitos, em destaque e os outros. */}
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
         Prontos para os seus cortes ({prontos.length})
       </p>
-      <div ref={grade} className="grid scroll-mt-4 grid-cols-2 gap-3 md:grid-cols-3">{visiveis.map((m) => cartao(m))}</div>
-      {prontos.length > VISIVEIS && (
+      <div ref={grade} className="scroll-mt-4 space-y-4">
+        {grupos.map(({ grupo, modelos }) => {
+          const recolhe = grupo === ultimo?.grupo && !verTodos;
+          return (
+            <div key={grupo} role="group" aria-labelledby={`grupo-${grupo}`}>
+              <p id={`grupo-${grupo}`} className="mb-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                {TITULO_DO_GRUPO[grupo]}
+              </p>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">{(recolhe ? modelos.slice(0, VISIVEIS) : modelos).map((m) => cartao(m))}</div>
+            </div>
+          );
+        })}
+      </div>
+      {escondidos > 0 && (
         <button
           type="button"
           onClick={() => setVerTodos((v) => !v)}
