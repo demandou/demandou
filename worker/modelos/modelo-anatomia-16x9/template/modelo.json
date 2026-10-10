@@ -1,0 +1,28 @@
+{
+  "formato": "16:9",
+  "variante": {
+    "de": "modelo-anatomia",
+    "formato": "16:9"
+  },
+  "blocos": {
+    "assinatura": [
+      "anatomia"
+    ]
+  },
+  "palavraPorPalavra": [
+    "virada",
+    "mito",
+    "abertura",
+    "frase",
+    "cta",
+    "pergunta",
+    "destaque",
+    "definicao"
+  ],
+  "conferir": {
+    "cobertura": 0.5,
+    "vao": 8,
+    "parado": 6,
+    "segundosPorMomento": 10
+  }
+}

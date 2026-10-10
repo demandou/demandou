@@ -1,0 +1,27 @@
+{
+  "formato": "16:9",
+  "variante": {
+    "de": "modelo-medida",
+    "formato": "16:9"
+  },
+  "gl": "angle",
+  "blocos": {
+    "assinatura": [
+      "medida"
+    ]
+  },
+  "palavraPorPalavra": [
+    "abertura",
+    "frase",
+    "pergunta",
+    "cta",
+    "virada",
+    "destaque"
+  ],
+  "conferir": {
+    "cobertura": 0.5,
+    "vao": 8,
+    "parado": 6,
+    "segundosPorMomento": 10
+  }
+}

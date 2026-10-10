@@ -1,0 +1,488 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 19.32,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.4,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 680,
+    "altura": 328
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Céu noturno"
+  },
+  "ceu": {
+    "estrelas": [
+      {
+        "id": "acrux"
+      },
+      {
+        "id": "mimosa"
+      },
+      {
+        "id": "gacrux"
+      },
+      {
+        "id": "imai"
+      },
+      {
+        "id": "ginan"
+      },
+      {
+        "id": "alfa-centauro"
+      },
+      {
+        "id": "beta-centauro"
+      }
+    ],
+    "pontos": [
+      {
+        "id": "polo-sul"
+      }
+    ],
+    "centro": {
+      "ar": 12.45,
+      "dec": -70
+    },
+    "viaLactea": true
+  },
+  "sfx": true,
+  "cortesEm": [
+    1.62,
+    6.23,
+    9.98,
+    16.16
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 1.67,
+      "rotulo": "Céu noturno",
+      "texto": "Sabe achar o Cruzeiro do Sul?",
+      "destaque": "Cruzeiro do Sul?"
+    },
+    {
+      "tipo": "carta",
+      "de": 1.67,
+      "ate": 6.25,
+      "legenda": true,
+      "ocular": "topo-direita",
+      "passos": [
+        {
+          "acao": "acender",
+          "em": 2.03,
+          "estrelas": [
+            "gacrux",
+            "mimosa",
+            "acrux",
+            "imai"
+          ],
+          "ritmo": 0.5,
+          "contador": "estrelas brilhantes"
+        },
+        {
+          "acao": "ligar",
+          "em": 3.94,
+          "linhas": [
+            [
+              "gacrux",
+              "acrux"
+            ],
+            [
+              "mimosa",
+              "imai"
+            ]
+          ],
+          "nome": "Cruzeiro do Sul",
+          "nomeEm": 4.38
+        },
+        {
+          "acao": "afastar",
+          "em": 4.71,
+          "fator": 0.62
+        },
+        {
+          "acao": "rumo",
+          "em": 5.45,
+          "direcao": "S"
+        }
+      ]
+    },
+    {
+      "tipo": "carta",
+      "de": 6.25,
+      "ate": 10.03,
+      "legenda": true,
+      "ocular": "meio-direita",
+      "enquadrar": [
+        "gacrux",
+        "mimosa",
+        "acrux",
+        "imai"
+      ],
+      "passos": [
+        {
+          "acao": "destacar",
+          "em": 6.33,
+          "de": "gacrux",
+          "ate": "acrux",
+          "texto": "braço mais comprido"
+        },
+        {
+          "acao": "prolongar",
+          "em": 7.78,
+          "de": "gacrux",
+          "ate": "acrux",
+          "alvo": "polo-sul",
+          "chegaEm": 8.85,
+          "marca": {
+            "texto": "Polo Sul Celeste",
+            "em": 8.8,
+            "rosa": true
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "carta",
+      "de": 10.03,
+      "ate": 16.21,
+      "legenda": true,
+      "ocular": "baixo-direita",
+      "enquadrar": [
+        "gacrux",
+        "mimosa",
+        "acrux",
+        "imai",
+        "alfa-centauro",
+        "beta-centauro"
+      ],
+      "passos": [
+        {
+          "acao": "acender",
+          "em": 10.92,
+          "estrelas": [
+            "alfa-centauro",
+            "beta-centauro"
+          ],
+          "ritmo": 0.3,
+          "contador": "estrelas muito brilhantes"
+        },
+        {
+          "acao": "brilhar",
+          "em": 11.8,
+          "estrelas": [
+            "alfa-centauro",
+            "beta-centauro"
+          ]
+        },
+        {
+          "acao": "nomear",
+          "em": 13.23,
+          "estrela": "alfa-centauro",
+          "texto": "Alfa Centauro",
+          "lado": "baixo"
+        },
+        {
+          "acao": "nomear",
+          "em": 13.83,
+          "estrela": "beta-centauro",
+          "texto": "Beta Centauro",
+          "lado": "cima"
+        },
+        {
+          "acao": "apontar",
+          "em": 15.12,
+          "de": "alfa-centauro",
+          "por": "beta-centauro",
+          "alvo": "gacrux",
+          "texto": "confirmado",
+          "textoEm": 15.5
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 16.21,
+      "ate": 19.32,
+      "texto": "Salva e testa",
+      "icone": "salvar",
+      "detalhe": "na próxima noite sem nuvem",
+      "acaoEm": 16.26,
+      "nuvemEm": 18.2
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "céu do sul": "céu do sul.",
+    "Celeste": "Celeste."
+  },
+  "palavras": [
+    {
+      "em": 0.1,
+      "ate": 0.19,
+      "w": "Sabe"
+    },
+    {
+      "em": 0.19,
+      "ate": 0.56,
+      "w": "achar"
+    },
+    {
+      "em": 0.56,
+      "ate": 0.63,
+      "w": "o"
+    },
+    {
+      "em": 0.63,
+      "ate": 1.3,
+      "w": "Cruzeiro"
+    },
+    {
+      "em": 1.3,
+      "ate": 1.37,
+      "w": "do"
+    },
+    {
+      "em": 1.37,
+      "ate": 1.62,
+      "w": "Sul?"
+    },
+    {
+      "em": 1.72,
+      "ate": 2.03,
+      "w": "Procura"
+    },
+    {
+      "em": 2.03,
+      "ate": 2.48,
+      "w": "quatro"
+    },
+    {
+      "em": 2.48,
+      "ate": 3.08,
+      "w": "estrelas"
+    },
+    {
+      "em": 3.08,
+      "ate": 3.94,
+      "w": "brilhantes"
+    },
+    {
+      "em": 3.94,
+      "ate": 4.21,
+      "w": "formando"
+    },
+    {
+      "em": 4.21,
+      "ate": 4.38,
+      "w": "uma"
+    },
+    {
+      "em": 4.38,
+      "ate": 4.71,
+      "w": "cruz"
+    },
+    {
+      "em": 4.71,
+      "ate": 5.3,
+      "w": "pequena"
+    },
+    {
+      "em": 5.3,
+      "ate": 5.48,
+      "w": "no"
+    },
+    {
+      "em": 5.48,
+      "ate": 5.94,
+      "w": "céu"
+    },
+    {
+      "em": 5.94,
+      "ate": 6,
+      "w": "do"
+    },
+    {
+      "em": 5.98,
+      "ate": 6.23,
+      "w": "sul"
+    },
+    {
+      "em": 6.3,
+      "ate": 6.36,
+      "w": "O"
+    },
+    {
+      "em": 6.33,
+      "ate": 6.7,
+      "w": "braço"
+    },
+    {
+      "em": 6.7,
+      "ate": 7.04,
+      "w": "mais"
+    },
+    {
+      "em": 7.04,
+      "ate": 7.78,
+      "w": "comprido"
+    },
+    {
+      "em": 7.78,
+      "ate": 7.96,
+      "w": "aponta"
+    },
+    {
+      "em": 7.96,
+      "ate": 8.17,
+      "w": "para"
+    },
+    {
+      "em": 8.17,
+      "ate": 8.23,
+      "w": "a"
+    },
+    {
+      "em": 8.19,
+      "ate": 8.63,
+      "w": "direção"
+    },
+    {
+      "em": 8.63,
+      "ate": 8.8,
+      "w": "do"
+    },
+    {
+      "em": 8.8,
+      "ate": 9.25,
+      "w": "Polo"
+    },
+    {
+      "em": 9.25,
+      "ate": 9.4,
+      "w": "Sul"
+    },
+    {
+      "em": 9.4,
+      "ate": 9.98,
+      "w": "Celeste"
+    },
+    {
+      "em": 10.08,
+      "ate": 10.18,
+      "w": "Do"
+    },
+    {
+      "em": 10.18,
+      "ate": 10.92,
+      "w": "lado,"
+    },
+    {
+      "em": 10.92,
+      "ate": 11.19,
+      "w": "duas"
+    },
+    {
+      "em": 11.19,
+      "ate": 11.8,
+      "w": "estrelas"
+    },
+    {
+      "em": 11.8,
+      "ate": 12.18,
+      "w": "muito"
+    },
+    {
+      "em": 12.18,
+      "ate": 12.98,
+      "w": "brilhantes"
+    },
+    {
+      "em": 13.23,
+      "ate": 13.78,
+      "w": "Alfa"
+    },
+    {
+      "em": 13.78,
+      "ate": 13.84,
+      "w": "e"
+    },
+    {
+      "em": 13.83,
+      "ate": 14.16,
+      "w": "Beta"
+    },
+    {
+      "em": 14.16,
+      "ate": 14.85,
+      "w": "Centauro."
+    },
+    {
+      "em": 15.12,
+      "ate": 15.39,
+      "w": "ajudam"
+    },
+    {
+      "em": 15.39,
+      "ate": 15.46,
+      "w": "a"
+    },
+    {
+      "em": 15.46,
+      "ate": 16.16,
+      "w": "confirmar."
+    },
+    {
+      "em": 16.26,
+      "ate": 16.43,
+      "w": "Salva"
+    },
+    {
+      "em": 16.43,
+      "ate": 16.5,
+      "w": "e"
+    },
+    {
+      "em": 16.5,
+      "ate": 16.87,
+      "w": "testa"
+    },
+    {
+      "em": 16.87,
+      "ate": 17.06,
+      "w": "na"
+    },
+    {
+      "em": 17.06,
+      "ate": 17.62,
+      "w": "próxima"
+    },
+    {
+      "em": 17.62,
+      "ate": 17.99,
+      "w": "noite"
+    },
+    {
+      "em": 17.99,
+      "ate": 18.21,
+      "w": "sem"
+    },
+    {
+      "em": 18.21,
+      "ate": 18.86,
+      "w": "nuvem."
+    }
+  ]
+}

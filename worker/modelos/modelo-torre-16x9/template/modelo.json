@@ -1,0 +1,8 @@
+{
+  "formato": "16:9",
+  "variante": { "de": "modelo-torre", "formato": "16:9" },
+  "gl": "angle",
+  "blocos": { "assinatura": ["torre", "rota", "planta", "preco"] },
+  "palavraPorPalavra": ["abertura", "frase", "cta", "pergunta"],
+  "conferir": { "cobertura": 0.5, "vao": 8, "parado": 6, "segundosPorMomento": 10 }
+}
