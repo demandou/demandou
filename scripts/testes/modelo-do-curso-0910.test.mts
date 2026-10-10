@@ -91,7 +91,7 @@ test("as três opções avançadas entram no grupo 3D e efeitos pelo id, depois 
     { id: "modelo-lettering" },
     { id: "modelo-graficos" },
   ];
-  const vagas = AVANCADOS_DO_CURSO as Array<{ id: string | null }>;
+  const vagas = AVANCADOS_DO_CURSO as unknown as Array<{ id: string | null }>;
   const antes = vagas.map((v) => v.id);
   try {
     // sem id preenchido, nenhuma entra
