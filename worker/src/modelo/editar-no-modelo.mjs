@@ -484,15 +484,19 @@ export async function stills(projeto, args = ["--momentos"]) {
  *
  * `pedido`: { modelo, sourceUrl, inicio, duracao, manter, palavras ([{em, ate, w}]
  * no tempo do corte, a fala limpa), marca {nome, area}, nicho, tetoUsd, voltas,
- * formato }. `formato` ("16:9", opcional) pede a versão deitada do modelo
- * (`modeloNoFormato`); sem ele, o fluxo é o de sempre, no formato do modelo.
+ * formato, formatoPelaGravacao }. `formato` ("16:9" ou "9:16", opcional) pede a
+ * versão do modelo naquele formato (`modeloNoFormato`); sem ele, o fluxo é o de
+ * sempre, no formato do modelo. `formatoPelaGravacao` (o completo, 10/10): o
+ * trecho extraído é medido e, se a gravação for do outro formato (em pé num
+ * pedido 16:9, deitada num 9:16), vale a versão do formato dela; sem essa
+ * versão, falha e a reserva entra.
  * `pedirPlano(corpo)` chama o app (a IA mora lá) e devolve { mapa, plano,
  * custoUsd, numerosSemLastro }. Volta reprovada leva ao app a saída do
  * conferir.mjs, como o curso manda; o teto de gasto para antes de passar.
  */
 export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano, aoPasso = () => {}, obterTrilha = null }) {
   // a versão no formato pedido (sem `formato`, o próprio modelo): falha antes de baixar nada
-  const modelo = modeloNoFormato(pedido.modelo, pedido.formato);
+  let modelo = modeloNoFormato(pedido.modelo, pedido.formato);
   const tempos = {};
   let t = Date.now();
   const marcar = (nome) => {
@@ -507,6 +511,18 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   const alinhado = alinharAosQuadros(pedido.manter, pedido.palavras, fpsConstante(original), pedido.inicio ?? 0);
   await extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, alinhado.manter, { fps: alinhado.fps });
   marcar("trecho");
+  // O COMPLETO NO FORMATO DA GRAVAÇÃO (10/10): em pé sai no 9:16 do modelo, deitada no 16:9. O
+  // app escolhe pela medida do quadro que ele tem; aqui a gravação é medida de novo, e quando ela
+  // é do outro formato vale a versão dele (sem a versão, falha aqui e a reserva entra).
+  if (pedido.formatoPelaGravacao && pedido.formato) {
+    const q = quadroDoArquivo(trecho);
+    const daGravacao = q ? (q.altura > q.largura ? "9:16" : "16:9") : null;
+    if (daGravacao && daGravacao !== formatoDoModelo(modelo)) {
+      const pedida = modelo;
+      modelo = modeloNoFormato(pedido.modelo, daGravacao);
+      aoPasso(`a gravação é ${daGravacao === "9:16" ? "em pé" : "deitada"} (${q.largura}x${q.altura}): ${pedida} trocado por ${modelo}`);
+    }
+  }
   const projeto = criarProjeto(modelo, pasta);
   // AS CORES DA MARCA (10/10, regra do Bruno): o estilo é do modelo, a cor é da marca.
   if (pedido.cores?.destaque) {

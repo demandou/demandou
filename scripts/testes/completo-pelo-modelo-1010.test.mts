@@ -8,7 +8,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const raiz = new URL("../../", import.meta.url);
 const B = await import(new URL("worker/src/modelo/blocos-do-plano.mjs", raiz).href);
@@ -271,16 +274,48 @@ test("os quadros da revisão: dois por momento, dentro do vídeo", () => {
   assert.deepEqual(ts, [...ts].sort((a: number, b: number) => a - b));
 });
 
-test("curso ou reserva: trava, modelo, versão deitada, desistência e gravação em pé", () => {
+test("curso ou reserva: trava, modelo, desistência e o formato da gravação", () => {
   const base = { ligado: true, modelo: "modelo-manifesto" };
-  assert.deepEqual(caminhoDoCompleto(base), { caminho: "curso", modelo: "modelo-manifesto", versao: "modelo-manifesto-16x9" });
+  const deitada = { largura: 1920, altura: 1080 };
+  const emPe = { largura: 1080, altura: 1920 };
+  assert.deepEqual(caminhoDoCompleto({ ...base, quadro: deitada }), { caminho: "curso", modelo: "modelo-manifesto", versao: "modelo-manifesto-16x9", formato: "16:9" });
+  // gravação em pé: o completo sai no próprio modelo vertical (10/10), e não mais na reserva
+  assert.deepEqual(caminhoDoCompleto({ ...base, quadro: emPe }), { caminho: "curso", modelo: "modelo-manifesto", versao: "modelo-manifesto", formato: "9:16" });
+  // sem a medida do quadro: a deitada quando existe (o worker mede a gravação e troca se for em pé)
+  assert.deepEqual(caminhoDoCompleto(base), { caminho: "curso", modelo: "modelo-manifesto", versao: "modelo-manifesto-16x9", formato: "16:9" });
   assert.equal(caminhoDoCompleto({ ...base, ligado: false }).caminho, "reserva");
   assert.equal(caminhoDoCompleto({ ...base, modelo: null }).caminho, "reserva");
-  assert.equal(caminhoDoCompleto({ ...base, modelo: "modelo-viral" }).caminho, "reserva");
   assert.equal(caminhoDoCompleto({ ...base, desistiu: "o render falhou" }).caminho, "reserva");
-  assert.equal(caminhoDoCompleto({ ...base, quadro: { largura: 1080, altura: 1920 } }).caminho, "reserva");
-  assert.equal(caminhoDoCompleto({ ...base, quadro: { largura: 1920, altura: 1080 } }).caminho, "curso");
-  for (const r of [caminhoDoCompleto({ ...base, ligado: false }), caminhoDoCompleto({ ...base, modelo: "modelo-viral" })]) {
+  // um vertical sem a versão deitada: em pé vai pelo curso; deitada fica na reserva até a versão existir
+  const lista = VERSOES_DOS_MODELOS as Record<string, Record<string, string>>;
+  const antes = { ...lista["modelo-viral"] };
+  try {
+    delete lista["modelo-viral"]["16:9"];
+    assert.deepEqual(caminhoDoCompleto({ ...base, modelo: "modelo-viral", quadro: emPe }), { caminho: "curso", modelo: "modelo-viral", versao: "modelo-viral", formato: "9:16" });
+    const r = caminhoDoCompleto({ ...base, modelo: "modelo-viral", quadro: deitada });
+    assert.equal(r.caminho, "reserva");
+    if (r.caminho === "reserva") assert.match(r.motivo, /versão deitada \(16:9\)/);
+    // sem medida e sem a deitada: vai na em pé, e o worker confere a gravação
+    assert.deepEqual(caminhoDoCompleto({ ...base, modelo: "modelo-viral" }), { caminho: "curso", modelo: "modelo-viral", versao: "modelo-viral", formato: "9:16" });
+    lista["modelo-viral"]["16:9"] = "modelo-viral-16x9";
+    assert.deepEqual(caminhoDoCompleto({ ...base, modelo: "modelo-viral", quadro: deitada }), { caminho: "curso", modelo: "modelo-viral", versao: "modelo-viral-16x9", formato: "16:9" });
+  } finally {
+    lista["modelo-viral"] = antes;
+  }
+  // o Aula (nasce 16:9): deitada é ele mesmo; em pé precisa da versão <id>-9x16
+  const aula = { ...lista["modelo-aula"] };
+  try {
+    delete lista["modelo-aula"]["9:16"];
+    assert.deepEqual(caminhoDoCompleto({ ...base, modelo: "modelo-aula", quadro: deitada }), { caminho: "curso", modelo: "modelo-aula", versao: "modelo-aula", formato: "16:9" });
+    const r = caminhoDoCompleto({ ...base, modelo: "modelo-aula", quadro: emPe });
+    assert.equal(r.caminho, "reserva");
+    if (r.caminho === "reserva") assert.match(r.motivo, /em pé \(9:16\)/);
+    lista["modelo-aula"]["9:16"] = "modelo-aula-9x16";
+    assert.deepEqual(caminhoDoCompleto({ ...base, modelo: "modelo-aula", quadro: emPe }), { caminho: "curso", modelo: "modelo-aula", versao: "modelo-aula-9x16", formato: "9:16" });
+  } finally {
+    lista["modelo-aula"] = aula;
+  }
+  for (const r of [caminhoDoCompleto({ ...base, ligado: false }), caminhoDoCompleto({ ...base, modelo: null }), caminhoDoCompleto({ ...base, modelo: "modelo-aula", quadro: emPe })]) {
     if (r.caminho === "reserva") assert.doesNotMatch(r.motivo, TRAVESSAO);
   }
   assert.equal(versaoDeitadaDoModelo("modelo-lousa"), VERSOES_DOS_MODELOS["modelo-lousa"]?.["16:9"] ?? null);
@@ -312,6 +347,67 @@ test("a folha do exemplo 16:9 é dela, não a do vertical", () => {
   const r = conferirPlano({ ...plano, palavras: [] }, modelo16x9, tiposDoModelo);
   // sem as palavras só a regra do "parado" palavra por palavra muda; os tipos e campos passam
   assert.ok(!r.erros.some((e: string) => /que este modelo não tem|falta|precisa de/.test(e)), r.erros.join("\n"));
+});
+
+test("gravação em pé: o plano em blocos e a conferência em blocos não dependem de ser 16:9", async () => {
+  const vertical = await import(new URL("worker/modelos/modelo-manifesto/template/scripts/conferir.mjs", raiz).href);
+  const modelo916 = JSON.parse(readFileSync(new URL("worker/modelos/modelo-manifesto/template/modelo.json", raiz), "utf8"));
+  const tipos916 = new Set([...readFileSync(new URL("worker/modelos/modelo-manifesto/template/src/plano.ts", raiz), "utf8").matchAll(/tipo\s*:\s*"([a-zA-Z0-9_-]+)"/g)].map((m) => m[1]));
+  const deitado = planoQuePassa(3);
+  const emPe = { ...deitado, largura: 1080, altura: 1920 };
+  const blocos = B.blocosDoPlano(emPe.palavras, emPe.duracao);
+  assert.deepEqual(blocos, B.blocosDoPlano(deitado.palavras, deitado.duracao), "os blocos saem da fala, não do quadro");
+  const e1 = B.esqueletoDoBloco(emPe, blocos[1]);
+  assert.deepEqual([e1.largura, e1.altura], [1080, 1920]);
+  const a = B.conferirEmBlocos({ plano: emPe, blocos, conferirPlano: vertical.conferirPlano, modelo: modelo916, tipos: tipos916 });
+  const b = B.conferirEmBlocos({ plano: deitado, blocos, conferirPlano: vertical.conferirPlano, modelo: modelo916, tipos: tipos916 });
+  assert.deepEqual(a.porBloco, b.porBloco);
+  assert.equal(a.ok, b.ok);
+  // as partes do render saem da duração e do fps
+  assert.deepEqual(B.partesDoRender(emPe.duracao, 30), B.partesDoRender(deitado.duracao, 30));
+});
+
+test("todo modelo tem o que o render em partes usa (comum.mjs, conferirPlano, tiposDoModelo e a composição Edicao)", () => {
+  const indice = JSON.parse(readFileSync(new URL("worker/modelos/indice.json", raiz), "utf8")) as Array<{ id: string }>;
+  for (const { id } of indice) {
+    const t = `worker/modelos/${id}/template`;
+    assert.ok(existsSync(new URL(`${t}/scripts/comum.mjs`, raiz)), `${id}: comum.mjs`);
+    const conferir = readFileSync(new URL(`${t}/scripts/conferir.mjs`, raiz), "utf8");
+    assert.match(conferir, /export (async )?function conferirPlano|export const conferirPlano|export \{[^}]*conferirPlano/, `${id}: conferirPlano`);
+    assert.match(conferir, /tiposDoModelo/, `${id}: tiposDoModelo`);
+  }
+});
+
+test("o completo pede ao worker o formato da gravação e deixa o worker trocar de versão pela medida", () => {
+  const src = readFileSync(new URL("lib/media/montagem-do-completo.ts", raiz), "utf8");
+  const envio = src.slice(src.indexOf("async function enviarCompletoAoModelo"), src.indexOf("async function desistirDoModeloNoCompleto"));
+  assert.match(envio, /\s+formato,\s+formatoPelaGravacao: true,\s+completo: true,/);
+  assert.doesNotMatch(envio, /formato: "16:9",/, "o formato não é mais fixo no deitado");
+  assert.match(src, /enviarCompletoAoModelo\(v, m, curso\.modelo, curso\.versao, curso\.formato\)/);
+  const worker = readFileSync(new URL("worker/src/modelo/editar-no-modelo.mjs", raiz), "utf8");
+  const fluxo = worker.slice(worker.indexOf("export async function editarNoModelo"), worker.indexOf("const projeto = criarProjeto(modelo, pasta);"));
+  assert.match(fluxo, /pedido\.formatoPelaGravacao[\s\S]*quadroDoArquivo\(trecho\)[\s\S]*modelo = modeloNoFormato\(pedido\.modelo, daGravacao\)/);
+});
+
+test("o quadro do arquivo: em pé, deitado e girado pelo celular", { skip: spawnSync("ffprobe", ["-version"]).status !== 0 && "sem ffprobe" }, async () => {
+  const W = await import(new URL("worker/src/modelo/editar-no-modelo.mjs", raiz).href);
+  const pasta = mkdtempSync(join(tmpdir(), "quadro-"));
+  try {
+    const gerar = (nome: string, tamanho: string, extra: string[] = []) => {
+      const saida = join(pasta, nome);
+      const r = spawnSync("ffmpeg", ["-v", "error", "-y", ...extra, "-f", "lavfi", "-i", `color=c=gray:s=${tamanho}:r=10`, "-t", "0.2", "-c:v", "libx264", "-pix_fmt", "yuv420p", saida]);
+      assert.equal(r.status, 0, String(r.stderr));
+      return saida;
+    };
+    assert.deepEqual(W.quadroDoArquivo(gerar("em-pe.mp4", "64x112")), { largura: 64, altura: 112 });
+    assert.deepEqual(W.quadroDoArquivo(gerar("deitado.mp4", "112x64")), { largura: 112, altura: 64 });
+    const girado = join(pasta, "girado.mp4");
+    const r = spawnSync("ffmpeg", ["-v", "error", "-y", "-display_rotation:v:0", "90", "-i", join(pasta, "deitado.mp4"), "-c", "copy", girado]);
+    if (r.status === 0) assert.deepEqual(W.quadroDoArquivo(girado), { largura: 64, altura: 112 });
+    assert.equal(W.quadroDoArquivo(join(pasta, "nao-existe.mp4")), null);
+  } finally {
+    rmSync(pasta, { recursive: true, force: true });
+  }
 });
 
 test("o prazo do app para o completo no modelo cabe no teto da espera", () => {

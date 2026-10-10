@@ -348,8 +348,9 @@ export type MontagemDoCompleto = {
   jornada?: EstadoDaJornadaNaMontagem | null;
   /**
    * O COMPLETO NO MODELO DO CURSO (10/10, COMPLETO_PELO_MODELO=1): o worker
-   * edita o completo inteiro na versão deitada do modelo escolhido no projeto
-   * (`versao`, ex.: modelo-manifesto-16x9), com o plano em blocos. Usa os
+   * edita o completo inteiro na versão do modelo escolhido no projeto que tem o
+   * formato da gravação (`versao`: modelo-manifesto-16x9 na deitada, o próprio
+   * modelo-manifesto na em pé), com o plano em blocos. Usa os
    * estados de sempre ("preparando" no envio, "montando" no worker) e a mesma
    * entrega (`entregarCompleto`). `desistiu`: o caminho do curso falhou e o
    * completo voltou à fila do editor de sempre (a reserva).
@@ -360,6 +361,8 @@ export type MontagemDoCompleto = {
 export type CursoNoCompleto = {
   modelo: string;
   versao?: string;
+  /** O formato do completo no modelo (10/10): o da gravação, "16:9" deitada ou "9:16" em pé. */
+  formato?: "16:9" | "9:16";
   desistiu?: string | null;
   mapa?: string;
   voltas?: number;
@@ -2126,7 +2129,7 @@ export async function avancarMontagemDoCompleto(opcoes: { orcamentoMs?: number }
       const curso = m.estado === "na-fila" && !esperando && !m.jornada ? await caminhoDoCompletoNoModelo(v, m) : null;
       if (curso?.caminho === "curso") {
         r.olhados++;
-        await enviarCompletoAoModelo(v, m, curso.modelo, curso.versao);
+        await enviarCompletoAoModelo(v, m, curso.modelo, curso.versao, curso.formato);
       } else if (m.curso && !m.curso.desistiu && m.estado === "montando") {
         // O worker roda o curso e avisa pelo callback. Passado o prazo, pergunta antes de desistir.
         if (idade > prazoDoCompletoNoModeloMs(m.fala?.duracao) && !(await aindaEsperaOWorker(v.id, m.chave, idade))) {
@@ -2211,7 +2214,7 @@ export async function avancarMontagemDoCompleto(opcoes: { orcamentoMs?: number }
 
 // ─────────────────────────────── 2a. o completo no modelo do curso ───────────────────────────────
 
-/** O completo vai pelo modelo do curso? A trava, o modelo do projeto com versão deitada, o quadro da gravação e a desistência anterior. */
+/** O completo vai pelo modelo do curso? A trava, o modelo do projeto com a versão no formato da gravação, o quadro dela e a desistência anterior. */
 async function caminhoDoCompletoNoModelo(v: VideoDoCompleto, m: MontagemDoCompleto) {
   if (!completoPeloModeloLigado() || m.curso?.desistiu) return null;
   const modelo = await modeloDoCursoDoProjeto(v.projectId).catch(() => null);
@@ -2253,13 +2256,15 @@ async function falaDoCompletoParaOModelo(
 
 /**
  * na-fila -> preparando -> montando: o completo inteiro vai ao worker pelo
- * fluxo do curso (`/editar-no-modelo` com `formato: "16:9"` e `completo:
- * true`): a gravação ORIGINAL, do começo, com os pedaços mantidos e a fala
+ * fluxo do curso (`/editar-no-modelo` com `completo: true` e o `formato` da
+ * gravação, "16:9" deitada ou "9:16" em pé; com `formatoPelaGravacao`, o
+ * worker mede a gravação e troca de versão quando a medida do app faltou ou
+ * errou): a gravação ORIGINAL, do começo, com os pedaços mantidos e a fala
  * limpa do completo, as cores da marca, a trilha do projeto e o teto de IA
  * (US$ 1 por minuto, mínimo US$ 2). O callback é o do completo de sempre.
  */
-async function enviarCompletoAoModelo(v: VideoDoCompleto, lido: MontagemDoCompleto, modelo: string, versao: string): Promise<void> {
-  const tomado: MontagemDoCompleto = { ...lido, estado: "preparando", desde: agora(), curso: { ...(lido.curso ?? {}), modelo, versao, desistiu: null } };
+async function enviarCompletoAoModelo(v: VideoDoCompleto, lido: MontagemDoCompleto, modelo: string, versao: string, formato: "16:9" | "9:16"): Promise<void> {
+  const tomado: MontagemDoCompleto = { ...lido, estado: "preparando", desde: agora(), curso: { ...(lido.curso ?? {}), modelo, versao, formato, desistiu: null } };
   if (!(await trocarEstado(v.id, lido, tomado))) return;
   let atual: MontagemDoCompleto = tomado;
   try {
@@ -2284,7 +2289,8 @@ async function enviarCompletoAoModelo(v: VideoDoCompleto, lido: MontagemDoComple
       videoJobId: v.id,
       projectId: v.projectId,
       modelo,
-      formato: "16:9",
+      formato,
+      formatoPelaGravacao: true,
       completo: true,
       sourceUrl: gravacao.blobUrl,
       inicio: 0,
@@ -2829,7 +2835,7 @@ export async function concluirMontagemDoCompleto(
     /** A duração da abertura no arquivo pronto (02/10). */
     aberturaSeg?: number;
     /** O completo no modelo do curso (10/10): o resumo do fluxo do curso no worker. */
-    curso?: { modelo?: string; versao?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[]; blocos?: unknown[]; render?: unknown } | null;
+    curso?: { modelo?: string; versao?: string; formato?: "16:9" | "9:16"; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[]; blocos?: unknown[]; render?: unknown } | null;
   }
 ): Promise<"trocado" | "ignorado" | "falhou" | "revisando"> {
   const v = await lerVideo(videoJobId);
@@ -2852,7 +2858,8 @@ export async function concluirMontagemDoCompleto(
       v,
       {
         ...lido,
-        curso: { ...lido.curso, mapa: c.mapa?.slice(0, 20_000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico?.slice(-12), avisos: c.avisos, blocos: c.blocos, render: c.render },
+        // A versão que o worker usou de fato (ele troca quando a gravação não é do formato pedido).
+        curso: { ...lido.curso, versao: c.versao ?? lido.curso.versao, formato: c.formato ?? lido.curso.formato, mapa: c.mapa?.slice(0, 20_000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico?.slice(-12), avisos: c.avisos, blocos: c.blocos, render: c.render },
         custoUsd: c.custoUsd ?? lido.custoUsd,
         revisaoVisual: null,
       },
