@@ -1,0 +1,6 @@
+Créditos do exemplo (Devocional, Mateus 11:28)
+
+- Textura de pergaminho (public/devocional/papel.jpg): gerada por código (ruído e fibras), sem IA e sem banco de imagens. Livre.
+- Desenhos de traço (janela com o sol nascendo, vela, livro, ramo, coração, caminho, lua, semente, carta e ícones): desenhados em vetor no próprio template. Livres.
+- Sons (public/sfx/*.wav): tons gerados por código. Livres.
+- Versículo do exemplo: Mateus 11:28, como foi dito no vídeo (domínio público).

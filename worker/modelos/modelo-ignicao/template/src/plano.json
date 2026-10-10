@@ -1,0 +1,367 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 20.36,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.31
+  },
+  "zona": {
+    "topo": 970,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Mecânica"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.6,
+    5.87,
+    8.24,
+    9.38,
+    15.09,
+    18.04
+  ],
+  "momentos": [
+    {
+      "tipo": "ignicao",
+      "de": 0,
+      "ate": 3.6,
+      "ignicaoEm": 0.32,
+      "titulo": "3 luzes do painel",
+      "apoio": "que você nunca pode ignorar"
+    },
+    {
+      "tipo": "luzes",
+      "de": 3.6,
+      "ate": 9.38,
+      "itens": [
+        {
+          "em": 3.8,
+          "icone": "oleo",
+          "nome": "Óleo",
+          "detalhe": "Parece uma lamparina",
+          "detalheEm": 5.31
+        },
+        {
+          "em": 6.24,
+          "icone": "temperatura",
+          "nome": "Temperatura",
+          "detalhe": "Um termômetro",
+          "detalheEm": 7.52
+        },
+        {
+          "em": 8.62,
+          "icone": "bateria",
+          "nome": "Bateria"
+        }
+      ]
+    },
+    {
+      "tipo": "parada",
+      "de": 9.38,
+      "ate": 15.09,
+      "icones": [
+        "oleo",
+        "temperatura"
+      ],
+      "condicao": "Óleo ou temperatura acesos em vermelho",
+      "passos": [
+        {
+          "em": 12.28,
+          "texto": "Encosta com segurança",
+          "acao": "encostar"
+        },
+        {
+          "em": 13.89,
+          "texto": "Desliga o motor",
+          "acao": "desligar"
+        }
+      ]
+    },
+    {
+      "tipo": "rota",
+      "de": 15.09,
+      "ate": 18.04,
+      "icone": "bateria",
+      "condicao": "Bateria acesa",
+      "instrucao": "Vai direto pro mecânico",
+      "destino": "Mecânico",
+      "rotaEm": 16.61,
+      "chegadaEm": 17.4,
+      "pino": "chave"
+    },
+    {
+      "tipo": "cta",
+      "de": 18.04,
+      "ate": 20.36,
+      "texto": "Salva e manda pra quem dirige"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para o mecânico": "pro mecânico",
+    "para quem": "pra quem"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.43,
+      "w": "Três"
+    },
+    {
+      "em": 0.43,
+      "ate": 0.86,
+      "w": "luzes"
+    },
+    {
+      "em": 0.86,
+      "ate": 1.02,
+      "w": "do"
+    },
+    {
+      "em": 1.02,
+      "ate": 1.6,
+      "w": "painel"
+    },
+    {
+      "em": 1.6,
+      "ate": 1.85,
+      "w": "que"
+    },
+    {
+      "em": 1.85,
+      "ate": 2.27,
+      "w": "você"
+    },
+    {
+      "em": 2.27,
+      "ate": 2.71,
+      "w": "nunca"
+    },
+    {
+      "em": 2.71,
+      "ate": 3.02,
+      "w": "pode"
+    },
+    {
+      "em": 3.02,
+      "ate": 3.6,
+      "w": "ignorar."
+    },
+    {
+      "em": 3.66,
+      "ate": 3.72,
+      "w": "a"
+    },
+    {
+      "em": 3.69,
+      "ate": 3.8,
+      "w": "do"
+    },
+    {
+      "em": 3.8,
+      "ate": 4.57,
+      "w": "óleo,"
+    },
+    {
+      "em": 4.57,
+      "ate": 4.7,
+      "w": "que"
+    },
+    {
+      "em": 4.7,
+      "ate": 5.1,
+      "w": "parece"
+    },
+    {
+      "em": 5.1,
+      "ate": 5.31,
+      "w": "uma"
+    },
+    {
+      "em": 5.31,
+      "ate": 5.87,
+      "w": "lamparina,"
+    },
+    {
+      "em": 5.97,
+      "ate": 6.1,
+      "w": "a"
+    },
+    {
+      "em": 6.11,
+      "ate": 6.24,
+      "w": "da"
+    },
+    {
+      "em": 6.24,
+      "ate": 6.92,
+      "w": "temperatura,"
+    },
+    {
+      "em": 7.31,
+      "ate": 7.46,
+      "w": "um"
+    },
+    {
+      "em": 7.46,
+      "ate": 8.08,
+      "w": "termômetro,"
+    },
+    {
+      "em": 8.31,
+      "ate": 8.37,
+      "w": "e"
+    },
+    {
+      "em": 8.34,
+      "ate": 8.4,
+      "w": "a"
+    },
+    {
+      "em": 8.36,
+      "ate": 8.59,
+      "w": "da"
+    },
+    {
+      "em": 8.59,
+      "ate": 9.38,
+      "w": "bateria."
+    },
+    {
+      "em": 9.48,
+      "ate": 9.68,
+      "w": "Óleo"
+    },
+    {
+      "em": 9.68,
+      "ate": 9.88,
+      "w": "ou"
+    },
+    {
+      "em": 9.88,
+      "ate": 10.74,
+      "w": "temperatura"
+    },
+    {
+      "em": 10.74,
+      "ate": 11.22,
+      "w": "acesos"
+    },
+    {
+      "em": 11.22,
+      "ate": 11.38,
+      "w": "em"
+    },
+    {
+      "em": 11.38,
+      "ate": 12.28,
+      "w": "vermelho"
+    },
+    {
+      "em": 12.28,
+      "ate": 12.66,
+      "w": "encosta"
+    },
+    {
+      "em": 12.66,
+      "ate": 12.9,
+      "w": "com"
+    },
+    {
+      "em": 12.9,
+      "ate": 13.87,
+      "w": "segurança"
+    },
+    {
+      "em": 13.87,
+      "ate": 13.93,
+      "w": "e"
+    },
+    {
+      "em": 13.89,
+      "ate": 14.54,
+      "w": "desliga"
+    },
+    {
+      "em": 14.54,
+      "ate": 14.63,
+      "w": "o"
+    },
+    {
+      "em": 14.63,
+      "ate": 15.09,
+      "w": "motor."
+    },
+    {
+      "em": 15.19,
+      "ate": 15.79,
+      "w": "Bateria"
+    },
+    {
+      "em": 15.79,
+      "ate": 16.52,
+      "w": "acesa"
+    },
+    {
+      "em": 16.52,
+      "ate": 16.61,
+      "w": "vai"
+    },
+    {
+      "em": 16.61,
+      "ate": 17.04,
+      "w": "direto"
+    },
+    {
+      "em": 17.04,
+      "ate": 17.33,
+      "w": "para"
+    },
+    {
+      "em": 17.33,
+      "ate": 17.4,
+      "w": "o"
+    },
+    {
+      "em": 17.4,
+      "ate": 18.04,
+      "w": "mecânico"
+    },
+    {
+      "em": 18.13,
+      "ate": 18.34,
+      "w": "Salva"
+    },
+    {
+      "em": 18.34,
+      "ate": 18.42,
+      "w": "e"
+    },
+    {
+      "em": 18.42,
+      "ate": 18.82,
+      "w": "manda"
+    },
+    {
+      "em": 18.82,
+      "ate": 19.14,
+      "w": "para"
+    },
+    {
+      "em": 19.14,
+      "ate": 19.47,
+      "w": "quem"
+    },
+    {
+      "em": 19.47,
+      "ate": 19.98,
+      "w": "dirige."
+    }
+  ]
+}

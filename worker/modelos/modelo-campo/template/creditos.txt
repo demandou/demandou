@@ -1,0 +1,5 @@
+Créditos das imagens do exemplo (preço do tomate, gotejamento e chuva)
+
+- estufas vistas de cima, caixas de tomate e gotejamento no pé de tomate (public/img/*.jpg): fotos geradas com IA no Magnific (Nano Banana 2), sem texto e sem marca. Sem obrigação de crédito.
+
+No vídeo do usuário, as imagens vêm da pasta imagens/ dele ou do scripts/imagens.mjs (o script grava aqui os créditos das que exigirem).

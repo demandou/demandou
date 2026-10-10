@@ -1,0 +1,457 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 19.72,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.31
+  },
+  "zona": {
+    "topo": 996,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago Moura",
+    "area": "Corretor de imóveis"
+  },
+  "sfx": true,
+  "cortesEm": [
+    10,
+    14.31,
+    16.96
+  ],
+  "momentos": [
+    {
+      "tipo": "porta",
+      "de": 0,
+      "ate": 3.55,
+      "numero": "302",
+      "linhas": [
+        "Antes de alugar",
+        "um apartamento,",
+        "confere 3 coisas:"
+      ],
+      "enfase": "3 coisas:",
+      "etiquetas": {
+        "n": 3,
+        "em": 2.63
+      }
+    },
+    {
+      "tipo": "item",
+      "de": 3.55,
+      "ate": 6.78,
+      "etiqueta": "Vistoria",
+      "titulo": "Laudo de vistoria",
+      "painel": {
+        "tipo": "prancheta",
+        "subtitulo": "com fotos de cada cômodo",
+        "comodos": [
+          {
+            "nome": "Sala",
+            "desenho": "sala",
+            "em": 5.3
+          },
+          {
+            "nome": "Cozinha",
+            "desenho": "cozinha",
+            "em": 5.6
+          },
+          {
+            "nome": "Quarto",
+            "desenho": "quarto",
+            "em": 5.86
+          },
+          {
+            "nome": "Banheiro",
+            "desenho": "banheiro",
+            "em": 6.12
+          }
+        ]
+      },
+      "lado": "esquerda"
+    },
+    {
+      "tipo": "item",
+      "de": 6.78,
+      "ate": 10.0,
+      "etiqueta": "Custos",
+      "etiquetaEm": 6.92,
+      "titulo": "Conta do mês",
+      "painel": {
+        "tipo": "conta",
+        "linhas": [
+          {
+            "rotulo": "Condomínio",
+            "valor": 680,
+            "em": 7.37
+          },
+          {
+            "rotulo": "IPTU",
+            "valor": 140,
+            "em": 8.5
+          },
+          {
+            "rotulo": "Aluguel",
+            "valor": 2500,
+            "em": 9.46
+          }
+        ],
+        "prefixo": "R$",
+        "total": "Total do mês",
+        "nota": "valores de exemplo"
+      },
+      "lado": "direita"
+    },
+    {
+      "tipo": "item",
+      "de": 10.0,
+      "ate": 14.31,
+      "etiqueta": "Garantia",
+      "etiquetaEm": 10.62,
+      "titulo": "Tipo de garantia",
+      "painel": {
+        "tipo": "chaveiro",
+        "chaves": [
+          {
+            "texto": "Fiador",
+            "icone": "pessoa",
+            "em": 11.69
+          },
+          {
+            "texto": "Caução",
+            "icone": "dinheiro",
+            "em": 12.16
+          },
+          {
+            "texto": "Seguro-fiança",
+            "icone": "escudo",
+            "em": 13.18
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "vezes",
+      "de": 14.31,
+      "ate": 16.96,
+      "rotulo": "Caução",
+      "prefixo": "até",
+      "n": 3,
+      "numeroEm": 15.71,
+      "unidade": "meses de aluguel",
+      "etiquetas": [
+        {
+          "texto": "1º mês",
+          "em": 15.78
+        },
+        {
+          "texto": "2º mês",
+          "em": 16.05
+        },
+        {
+          "texto": "3º mês",
+          "em": 16.32
+        }
+      ],
+      "fonte": "Lei do Inquilinato · nº 8.245/91"
+    },
+    {
+      "tipo": "cta",
+      "de": 16.96,
+      "ate": 19.72,
+      "acoes": [
+        {
+          "texto": "Salva",
+          "icone": "salvar",
+          "em": 17.04
+        },
+        {
+          "texto": "Manda",
+          "icone": "enviar",
+          "em": 17.22
+        }
+      ],
+      "texto": "pra quem está procurando casa"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "calção": "caução"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.38,
+      "w": "Antes"
+    },
+    {
+      "em": 0.37,
+      "ate": 0.52,
+      "w": "de"
+    },
+    {
+      "em": 0.52,
+      "ate": 0.97,
+      "w": "alugar"
+    },
+    {
+      "em": 0.97,
+      "ate": 1.12,
+      "w": "um"
+    },
+    {
+      "em": 1.12,
+      "ate": 2.11,
+      "w": "apartamento,"
+    },
+    {
+      "em": 2.11,
+      "ate": 2.63,
+      "w": "confere"
+    },
+    {
+      "em": 2.63,
+      "ate": 3.01,
+      "w": "três"
+    },
+    {
+      "em": 3.01,
+      "ate": 3.48,
+      "w": "coisas:"
+    },
+    {
+      "em": 3.67,
+      "ate": 3.73,
+      "w": "o"
+    },
+    {
+      "em": 3.7,
+      "ate": 4.04,
+      "w": "laudo"
+    },
+    {
+      "em": 4.04,
+      "ate": 4.22,
+      "w": "de"
+    },
+    {
+      "em": 4.22,
+      "ate": 5.09,
+      "w": "vistoria,"
+    },
+    {
+      "em": 5.09,
+      "ate": 5.3,
+      "w": "com"
+    },
+    {
+      "em": 5.3,
+      "ate": 5.71,
+      "w": "fotos"
+    },
+    {
+      "em": 5.71,
+      "ate": 5.8,
+      "w": "de"
+    },
+    {
+      "em": 5.8,
+      "ate": 6.08,
+      "w": "cada"
+    },
+    {
+      "em": 6.08,
+      "ate": 6.61,
+      "w": "cômodo"
+    },
+    {
+      "em": 6.89,
+      "ate": 6.95,
+      "w": "o"
+    },
+    {
+      "em": 6.92,
+      "ate": 7.21,
+      "w": "valor"
+    },
+    {
+      "em": 7.21,
+      "ate": 7.37,
+      "w": "do"
+    },
+    {
+      "em": 7.37,
+      "ate": 8.26,
+      "w": "condomínio"
+    },
+    {
+      "em": 8.26,
+      "ate": 8.34,
+      "w": "e"
+    },
+    {
+      "em": 8.34,
+      "ate": 8.5,
+      "w": "do"
+    },
+    {
+      "em": 8.5,
+      "ate": 9.14,
+      "w": "IPTU,"
+    },
+    {
+      "em": 9.14,
+      "ate": 9.3,
+      "w": "além"
+    },
+    {
+      "em": 9.3,
+      "ate": 9.46,
+      "w": "do"
+    },
+    {
+      "em": 9.46,
+      "ate": 10,
+      "w": "aluguel."
+    },
+    {
+      "em": 10.05,
+      "ate": 10.11,
+      "w": "e"
+    },
+    {
+      "em": 10.08,
+      "ate": 10.14,
+      "w": "o"
+    },
+    {
+      "em": 10.1,
+      "ate": 10.46,
+      "w": "tipo"
+    },
+    {
+      "em": 10.46,
+      "ate": 10.65,
+      "w": "de"
+    },
+    {
+      "em": 10.65,
+      "ate": 11.46,
+      "w": "garantia"
+    },
+    {
+      "em": 11.69,
+      "ate": 12.16,
+      "w": "fiador,"
+    },
+    {
+      "em": 12.16,
+      "ate": 12.89,
+      "w": "calção"
+    },
+    {
+      "em": 12.89,
+      "ate": 13.18,
+      "w": "ou"
+    },
+    {
+      "em": 13.18,
+      "ate": 14.31,
+      "w": "seguro-fiança."
+    },
+    {
+      "em": 14.37,
+      "ate": 14.43,
+      "w": "A"
+    },
+    {
+      "em": 14.4,
+      "ate": 14.81,
+      "w": "calção"
+    },
+    {
+      "em": 14.81,
+      "ate": 15.08,
+      "w": "pode"
+    },
+    {
+      "em": 15.08,
+      "ate": 15.28,
+      "w": "ser"
+    },
+    {
+      "em": 15.28,
+      "ate": 15.48,
+      "w": "de"
+    },
+    {
+      "em": 15.48,
+      "ate": 15.71,
+      "w": "até"
+    },
+    {
+      "em": 15.71,
+      "ate": 16.02,
+      "w": "três"
+    },
+    {
+      "em": 16.02,
+      "ate": 16.4,
+      "w": "meses"
+    },
+    {
+      "em": 16.4,
+      "ate": 16.49,
+      "w": "de"
+    },
+    {
+      "em": 16.49,
+      "ate": 16.96,
+      "w": "aluguel"
+    },
+    {
+      "em": 17.04,
+      "ate": 17.19,
+      "w": "Salva"
+    },
+    {
+      "em": 17.19,
+      "ate": 17.25,
+      "w": "e"
+    },
+    {
+      "em": 17.22,
+      "ate": 17.65,
+      "w": "manda"
+    },
+    {
+      "em": 17.65,
+      "ate": 17.76,
+      "w": "para"
+    },
+    {
+      "em": 17.76,
+      "ate": 18,
+      "w": "quem"
+    },
+    {
+      "em": 18,
+      "ate": 18.3,
+      "w": "está"
+    },
+    {
+      "em": 18.3,
+      "ate": 18.9,
+      "w": "procurando"
+    },
+    {
+      "em": 18.9,
+      "ate": 19.38,
+      "w": "casa."
+    }
+  ]
+}

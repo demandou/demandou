@@ -1,0 +1,5 @@
+Créditos das imagens do exemplo (maior órgão do corpo humano)
+
+- fígado, cérebro, pele e intestino (public/img/*.png): ilustrações geradas com IA no Magnific (Nano Banana 2), sem texto e sem marca, recortadas em PNG transparente. Sem obrigação de crédito.
+
+No vídeo do usuário, as imagens vêm da pasta imagens/ dele ou do scripts/imagens.mjs (o script grava aqui os créditos das que exigirem).

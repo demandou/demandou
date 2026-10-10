@@ -1,0 +1,479 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 18.52,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.303
+  },
+  "zona": {
+    "topo": 957,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Dr. Tiago Moura",
+    "area": "Fisioterapia"
+  },
+  "sfx": true,
+  "cortesEm": [
+    4.22,
+    7.23,
+    10.59,
+    13.21,
+    16.25
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 4.22,
+      "texto": "Home office acabando com as suas costas?",
+      "destaque": "costas?",
+      "tensaoEm": 2.04,
+      "chamada": {
+        "texto": "Ajusta 3 coisas",
+        "em": 2.86,
+        "itens": [
+          {
+            "em": 3.22
+          },
+          {
+            "em": 3.42
+          },
+          {
+            "em": 3.62
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "ajuste",
+      "de": 4.22,
+      "ate": 7.23,
+      "titulo": "Tela na altura dos olhos",
+      "apoio": "pra não curvar o pescoço",
+      "vista": "tela",
+      "passos": [
+        {
+          "tipo": "tensao",
+          "alvo": "pescoco",
+          "rotulo": "Pescoço",
+          "em": 4.55,
+          "apagaEm": 6.95
+        },
+        {
+          "tipo": "destaque",
+          "alvo": "tela",
+          "rotulo": "Tela",
+          "em": 4.32
+        },
+        {
+          "tipo": "linha",
+          "linha": "olhos",
+          "em": 4.75
+        },
+        {
+          "tipo": "corrige",
+          "parte": "tela",
+          "em": 4.85,
+          "dur": 0.95
+        },
+        {
+          "tipo": "corrige",
+          "parte": "pescoco",
+          "em": 5.6,
+          "dur": 1.2
+        },
+        {
+          "tipo": "corrige",
+          "parte": "tronco",
+          "em": 5.75,
+          "dur": 1.1
+        },
+        {
+          "tipo": "linha",
+          "linha": "prumo",
+          "em": 6.5
+        }
+      ]
+    },
+    {
+      "tipo": "ajuste",
+      "de": 7.23,
+      "ate": 10.59,
+      "titulo": "Pés apoiados no chão",
+      "apoio": "com os joelhos em 90°",
+      "vista": "pernas",
+      "passos": [
+        {
+          "tipo": "tensao",
+          "alvo": "lombar",
+          "rotulo": "Lombar",
+          "em": 7.6,
+          "apagaEm": 8.55
+        },
+        {
+          "tipo": "destaque",
+          "alvo": "pes",
+          "rotulo": "Pés",
+          "em": 7.32
+        },
+        {
+          "tipo": "corrige",
+          "parte": "pernas",
+          "em": 7.62,
+          "dur": 0.9
+        },
+        {
+          "tipo": "apoio",
+          "alvo": "pes",
+          "em": 8.33
+        },
+        {
+          "tipo": "destaque",
+          "alvo": "joelho",
+          "em": 9.12
+        },
+        {
+          "tipo": "angulo",
+          "alvo": "joelho",
+          "em": 9.55
+        }
+      ]
+    },
+    {
+      "tipo": "ajuste",
+      "de": 10.59,
+      "ate": 13.21,
+      "titulo": "Cotovelos apoiados",
+      "apoio": "perto do corpo",
+      "vista": "bracos",
+      "passos": [
+        {
+          "tipo": "tensao",
+          "alvo": "ombro",
+          "rotulo": "Ombro",
+          "em": 10.9,
+          "apagaEm": 12.85
+        },
+        {
+          "tipo": "destaque",
+          "alvo": "cotovelo",
+          "rotulo": "Cotovelo",
+          "em": 10.73
+        },
+        {
+          "tipo": "corrige",
+          "parte": "antebraco",
+          "em": 11.47,
+          "dur": 0.7
+        },
+        {
+          "tipo": "apoio",
+          "alvo": "antebraco",
+          "rotulo": "Apoio",
+          "em": 11.7
+        },
+        {
+          "tipo": "distancia",
+          "alvo": "cotovelo",
+          "em": 12.1
+        },
+        {
+          "tipo": "corrige",
+          "parte": "cotovelo",
+          "em": 12.36,
+          "dur": 0.7
+        }
+      ]
+    },
+    {
+      "tipo": "pausa",
+      "de": 13.21,
+      "ate": 16.25,
+      "titulo": "A cada hora, levanta e caminha 2 minutos",
+      "relogio": {
+        "texto": "1 h",
+        "em": 13.31,
+        "ate": 14.25
+      },
+      "levantaEm": 14.27,
+      "caminhaEm": 14.94,
+      "tempo": {
+        "texto": "2 min",
+        "em": 15.4
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 16.25,
+      "ate": 18.52,
+      "texto": "Salva e ajusta agora.",
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "Home Office": "Home office"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.38,
+      "w": "Home"
+    },
+    {
+      "em": 0.35,
+      "ate": 0.82,
+      "w": "Office"
+    },
+    {
+      "em": 0.82,
+      "ate": 1.36,
+      "w": "acabando"
+    },
+    {
+      "em": 1.36,
+      "ate": 1.59,
+      "w": "com"
+    },
+    {
+      "em": 1.59,
+      "ate": 1.74,
+      "w": "as"
+    },
+    {
+      "em": 1.74,
+      "ate": 2.04,
+      "w": "suas"
+    },
+    {
+      "em": 2.04,
+      "ate": 2.53,
+      "w": "costas"
+    },
+    {
+      "em": 2.86,
+      "ate": 3.22,
+      "w": "Ajusta"
+    },
+    {
+      "em": 3.22,
+      "ate": 3.68,
+      "w": "três"
+    },
+    {
+      "em": 3.68,
+      "ate": 4.22,
+      "w": "coisas."
+    },
+    {
+      "em": 4.29,
+      "ate": 4.35,
+      "w": "a"
+    },
+    {
+      "em": 4.32,
+      "ate": 4.57,
+      "w": "tela"
+    },
+    {
+      "em": 4.57,
+      "ate": 4.75,
+      "w": "na"
+    },
+    {
+      "em": 4.75,
+      "ate": 5.29,
+      "w": "altura"
+    },
+    {
+      "em": 5.29,
+      "ate": 5.56,
+      "w": "dos"
+    },
+    {
+      "em": 5.56,
+      "ate": 6.12,
+      "w": "olhos,"
+    },
+    {
+      "em": 6.12,
+      "ate": 6.32,
+      "w": "para"
+    },
+    {
+      "em": 6.32,
+      "ate": 6.58,
+      "w": "não"
+    },
+    {
+      "em": 6.58,
+      "ate": 6.82,
+      "w": "curvar"
+    },
+    {
+      "em": 6.82,
+      "ate": 6.88,
+      "w": "o"
+    },
+    {
+      "em": 6.87,
+      "ate": 7.23,
+      "w": "pescoço,"
+    },
+    {
+      "em": 7.29,
+      "ate": 7.35,
+      "w": "os"
+    },
+    {
+      "em": 7.32,
+      "ate": 7.58,
+      "w": "pés"
+    },
+    {
+      "em": 7.58,
+      "ate": 8.21,
+      "w": "apoiados"
+    },
+    {
+      "em": 8.21,
+      "ate": 8.33,
+      "w": "no"
+    },
+    {
+      "em": 8.33,
+      "ate": 8.75,
+      "w": "chão"
+    },
+    {
+      "em": 8.75,
+      "ate": 8.97,
+      "w": "com"
+    },
+    {
+      "em": 8.97,
+      "ate": 9.12,
+      "w": "os"
+    },
+    {
+      "em": 9.12,
+      "ate": 9.64,
+      "w": "joelhos"
+    },
+    {
+      "em": 9.64,
+      "ate": 9.79,
+      "w": "em"
+    },
+    {
+      "em": 9.79,
+      "ate": 10.24,
+      "w": "90"
+    },
+    {
+      "em": 10.24,
+      "ate": 10.59,
+      "w": "graus,"
+    },
+    {
+      "em": 10.65,
+      "ate": 10.71,
+      "w": "e"
+    },
+    {
+      "em": 10.68,
+      "ate": 10.74,
+      "w": "os"
+    },
+    {
+      "em": 10.73,
+      "ate": 11.47,
+      "w": "cotovelos"
+    },
+    {
+      "em": 11.47,
+      "ate": 12.36,
+      "w": "apoiados"
+    },
+    {
+      "em": 12.36,
+      "ate": 12.61,
+      "w": "perto"
+    },
+    {
+      "em": 12.61,
+      "ate": 12.79,
+      "w": "do"
+    },
+    {
+      "em": 12.79,
+      "ate": 13.21,
+      "w": "corpo"
+    },
+    {
+      "em": 13.28,
+      "ate": 13.34,
+      "w": "A"
+    },
+    {
+      "em": 13.31,
+      "ate": 13.66,
+      "w": "cada"
+    },
+    {
+      "em": 13.66,
+      "ate": 14.27,
+      "w": "hora,"
+    },
+    {
+      "em": 14.27,
+      "ate": 14.79,
+      "w": "levanta"
+    },
+    {
+      "em": 14.79,
+      "ate": 14.94,
+      "w": "e"
+    },
+    {
+      "em": 14.94,
+      "ate": 15.4,
+      "w": "caminha"
+    },
+    {
+      "em": 15.4,
+      "ate": 15.71,
+      "w": "dois"
+    },
+    {
+      "em": 15.71,
+      "ate": 16.25,
+      "w": "minutos."
+    },
+    {
+      "em": 16.35,
+      "ate": 16.56,
+      "w": "Salva"
+    },
+    {
+      "em": 16.56,
+      "ate": 16.63,
+      "w": "e"
+    },
+    {
+      "em": 16.63,
+      "ate": 17.14,
+      "w": "ajusta"
+    },
+    {
+      "em": 17.14,
+      "ate": 17.85,
+      "w": "agora."
+    }
+  ]
+}

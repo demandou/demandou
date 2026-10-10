@@ -1,0 +1,6 @@
+{
+  "recorte": { "vertical": "9:16" },
+  "gl": "angle",
+  "blocos": { "assinatura": ["torre", "rota", "planta", "preco"] },
+  "palavraPorPalavra": ["abertura", "frase", "cta", "pergunta"]
+}

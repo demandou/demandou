@@ -1,0 +1,481 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 20.52,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.3
+  },
+  "zona": {
+    "topo": 996,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Alimentação sem neura"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.21,
+    7.71,
+    10.85,
+    13.72,
+    15.52,
+    18.21
+  ],
+  "momentos": [
+    {
+      "tipo": "capa",
+      "de": 0.0,
+      "ate": 3.21,
+      "titulo": "3 trocas simples",
+      "subtitulo": "pra comer melhor sem passar fome"
+    },
+    {
+      "tipo": "troca",
+      "de": 3.21,
+      "ate": 7.71,
+      "sai": {
+        "texto": "Suco de caixinha",
+        "desenho": "suco-caixinha",
+        "em": 3.54
+      },
+      "riscaEm": 4.53,
+      "entra": {
+        "texto": "Fruta inteira",
+        "desenho": "fruta",
+        "em": 4.92
+      },
+      "vantagens": [
+        {
+          "em": 6.06,
+          "texto": "tem fibra"
+        },
+        {
+          "em": 6.86,
+          "texto": "mata a fome"
+        }
+      ]
+    },
+    {
+      "tipo": "troca",
+      "de": 7.71,
+      "ate": 10.85,
+      "sai": {
+        "texto": "Biscoito recheado",
+        "desenho": "biscoito",
+        "em": 8.02
+      },
+      "riscaEm": 9.06,
+      "entra": {
+        "texto": "Iogurte natural",
+        "desenho": "iogurte",
+        "em": 9.26,
+        "extra": {
+          "texto": "com banana",
+          "desenho": "banana",
+          "em": 10.24
+        }
+      }
+    },
+    {
+      "tipo": "troca",
+      "de": 10.85,
+      "ate": 13.72,
+      "sai": {
+        "texto": "Refrigerante",
+        "desenho": "refrigerante",
+        "em": 11.24
+      },
+      "riscaEm": 12.11,
+      "entra": {
+        "texto": "Água com gás",
+        "desenho": "agua",
+        "em": 12.32,
+        "extra": {
+          "texto": "e limão",
+          "desenho": "limao",
+          "em": 13.21
+        }
+      }
+    },
+    {
+      "tipo": "frase",
+      "de": 13.72,
+      "ate": 15.52,
+      "texto": "Não precisa cortar tudo de uma vez",
+      "risca": "tudo de uma vez"
+    },
+    {
+      "tipo": "calendario",
+      "de": 15.52,
+      "ate": 18.21,
+      "titulo": "1 troca por semana",
+      "destaque": "1 troca",
+      "linhas": [
+        {
+          "em": 16.1,
+          "rotulo": "Semana 1",
+          "desenho": "fruta"
+        },
+        {
+          "em": 16.36,
+          "rotulo": "Semana 2",
+          "desenho": "iogurte"
+        },
+        {
+          "em": 16.62,
+          "rotulo": "Semana 3",
+          "desenho": "agua"
+        },
+        {
+          "em": 16.88,
+          "rotulo": "Semana 4",
+          "desenho": "mais"
+        }
+      ],
+      "fechamento": {
+        "em": 16.96,
+        "texto": "muda o mês inteiro"
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 18.21,
+      "ate": 20.52,
+      "texto": "Me segue",
+      "detalhe": "pra mais trocas assim",
+      "acao": "seguir",
+      "toqueEm": 19.13
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para comer": "pra comer"
+  },
+  "palavras": [
+    {
+      "em": 0.1,
+      "ate": 0.22,
+      "w": "Três"
+    },
+    {
+      "em": 0.22,
+      "ate": 0.63,
+      "w": "trocas"
+    },
+    {
+      "em": 0.63,
+      "ate": 1.07,
+      "w": "simples"
+    },
+    {
+      "em": 1.07,
+      "ate": 1.33,
+      "w": "para"
+    },
+    {
+      "em": 1.33,
+      "ate": 1.66,
+      "w": "comer"
+    },
+    {
+      "em": 1.66,
+      "ate": 2.1,
+      "w": "melhor"
+    },
+    {
+      "em": 2.1,
+      "ate": 2.33,
+      "w": "sem"
+    },
+    {
+      "em": 2.33,
+      "ate": 2.81,
+      "w": "passar"
+    },
+    {
+      "em": 2.81,
+      "ate": 3.04,
+      "w": "fome."
+    },
+    {
+      "em": 3.32,
+      "ate": 3.52,
+      "w": "Troca"
+    },
+    {
+      "em": 3.52,
+      "ate": 3.58,
+      "w": "o"
+    },
+    {
+      "em": 3.54,
+      "ate": 3.82,
+      "w": "suco"
+    },
+    {
+      "em": 3.82,
+      "ate": 3.96,
+      "w": "de"
+    },
+    {
+      "em": 3.96,
+      "ate": 4.53,
+      "w": "caixinha"
+    },
+    {
+      "em": 4.53,
+      "ate": 4.92,
+      "w": "pela"
+    },
+    {
+      "em": 4.92,
+      "ate": 5.18,
+      "w": "fruta"
+    },
+    {
+      "em": 5.18,
+      "ate": 5.75,
+      "w": "inteira"
+    },
+    {
+      "em": 6.06,
+      "ate": 6.34,
+      "w": "tem"
+    },
+    {
+      "em": 6.34,
+      "ate": 6.83,
+      "w": "fibra"
+    },
+    {
+      "em": 6.83,
+      "ate": 6.89,
+      "w": "e"
+    },
+    {
+      "em": 6.86,
+      "ate": 7.34,
+      "w": "mata"
+    },
+    {
+      "em": 7.34,
+      "ate": 7.4,
+      "w": "a"
+    },
+    {
+      "em": 7.36,
+      "ate": 7.71,
+      "w": "fome."
+    },
+    {
+      "em": 7.81,
+      "ate": 8,
+      "w": "Troca"
+    },
+    {
+      "em": 8,
+      "ate": 8.06,
+      "w": "o"
+    },
+    {
+      "em": 8.02,
+      "ate": 8.56,
+      "w": "biscoito"
+    },
+    {
+      "em": 8.56,
+      "ate": 9.06,
+      "w": "recheado"
+    },
+    {
+      "em": 9.06,
+      "ate": 9.26,
+      "w": "por"
+    },
+    {
+      "em": 9.26,
+      "ate": 9.71,
+      "w": "iogurte"
+    },
+    {
+      "em": 9.71,
+      "ate": 10.24,
+      "w": "natural"
+    },
+    {
+      "em": 10.24,
+      "ate": 10.38,
+      "w": "com"
+    },
+    {
+      "em": 10.38,
+      "ate": 10.85,
+      "w": "banana"
+    },
+    {
+      "em": 10.91,
+      "ate": 10.97,
+      "w": "e"
+    },
+    {
+      "em": 10.94,
+      "ate": 11.17,
+      "w": "troca"
+    },
+    {
+      "em": 11.17,
+      "ate": 11.24,
+      "w": "o"
+    },
+    {
+      "em": 11.24,
+      "ate": 12.11,
+      "w": "refrigerante"
+    },
+    {
+      "em": 12.11,
+      "ate": 12.32,
+      "w": "por"
+    },
+    {
+      "em": 12.32,
+      "ate": 12.68,
+      "w": "água"
+    },
+    {
+      "em": 12.68,
+      "ate": 12.89,
+      "w": "com"
+    },
+    {
+      "em": 12.89,
+      "ate": 13.21,
+      "w": "gás"
+    },
+    {
+      "em": 13.21,
+      "ate": 13.27,
+      "w": "e"
+    },
+    {
+      "em": 13.24,
+      "ate": 13.72,
+      "w": "limão"
+    },
+    {
+      "em": 13.81,
+      "ate": 13.88,
+      "w": "Não"
+    },
+    {
+      "em": 13.88,
+      "ate": 14.38,
+      "w": "precisa"
+    },
+    {
+      "em": 14.38,
+      "ate": 14.74,
+      "w": "cortar"
+    },
+    {
+      "em": 14.74,
+      "ate": 15,
+      "w": "tudo"
+    },
+    {
+      "em": 15,
+      "ate": 15.16,
+      "w": "de"
+    },
+    {
+      "em": 15.16,
+      "ate": 15.31,
+      "w": "uma"
+    },
+    {
+      "em": 15.31,
+      "ate": 15.52,
+      "w": "vez"
+    },
+    {
+      "em": 15.61,
+      "ate": 15.67,
+      "w": "Uma"
+    },
+    {
+      "em": 15.65,
+      "ate": 16.1,
+      "w": "troca"
+    },
+    {
+      "em": 16.1,
+      "ate": 16.25,
+      "w": "por"
+    },
+    {
+      "em": 16.25,
+      "ate": 16.73,
+      "w": "semana"
+    },
+    {
+      "em": 16.73,
+      "ate": 16.96,
+      "w": "já"
+    },
+    {
+      "em": 16.96,
+      "ate": 17.26,
+      "w": "muda"
+    },
+    {
+      "em": 17.26,
+      "ate": 17.33,
+      "w": "o"
+    },
+    {
+      "em": 17.33,
+      "ate": 17.62,
+      "w": "mês"
+    },
+    {
+      "em": 17.62,
+      "ate": 18.21,
+      "w": "inteiro."
+    },
+    {
+      "em": 18.27,
+      "ate": 18.33,
+      "w": "Me"
+    },
+    {
+      "em": 18.3,
+      "ate": 18.58,
+      "w": "segue"
+    },
+    {
+      "em": 18.58,
+      "ate": 18.78,
+      "w": "pra"
+    },
+    {
+      "em": 18.78,
+      "ate": 19.13,
+      "w": "mais"
+    },
+    {
+      "em": 19.13,
+      "ate": 19.44,
+      "w": "trocas"
+    },
+    {
+      "em": 19.44,
+      "ate": 19.83,
+      "w": "assim."
+    }
+  ]
+}

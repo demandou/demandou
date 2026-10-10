@@ -1,0 +1,7 @@
+{
+  "recorte": { "vertical": "9:16" },
+  "imagens": true,
+  "blocos": { "assinatura": ["niveis"] },
+  "palavraPorPalavra": ["abertura"],
+  "conferir": { "vao": 3.2, "segundosPorMomento": 4 }
+}

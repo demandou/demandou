@@ -1,0 +1,495 @@
+{
+ "video": "base.mp4",
+ "fps": 25,
+ "largura": 1080,
+ "altura": 1920,
+ "duracao": 21.56,
+ "videoAltura": 1920,
+ "rosto": {
+  "x": 0.5,
+  "y": 0.304
+ },
+ "zona": {
+  "topo": 970,
+  "altura": 465
+ },
+ "marca": {
+  "nome": "Tiago",
+  "area": "Tecnologia sem complicação"
+ },
+ "sfx": true,
+ "cortesEm": [
+  3.1,
+  7.28,
+  11.81,
+  18.64
+ ],
+ "momentos": [
+  {
+   "tipo": "abertura",
+   "de": 0,
+   "ate": 2.9,
+   "destaque": "horas",
+   "resultado": "Atalhos de teclado",
+   "contagem": "3",
+   "enterEm": 2.6,
+   "texto": "3 atalhos que vão te poupar horas no computador",
+   "icone": "teclado"
+  },
+  {
+   "tipo": "navegador",
+   "de": 2.9,
+   "ate": 7.28,
+   "numero": 1,
+   "numeroEm": 3.2,
+   "teclas": [
+    {
+     "tecla": "Ctrl",
+     "em": 3.92
+    },
+    {
+     "tecla": "Shift",
+     "em": 4.4
+    },
+    {
+     "tecla": "T",
+     "em": 4.78
+    }
+   ],
+   "abas": [
+    {
+     "titulo": "E-mail",
+     "icone": "email"
+    },
+    {
+     "titulo": "Planilha",
+     "icone": "planilha"
+    },
+    {
+     "titulo": "Passagens",
+     "icone": "aviao"
+    }
+   ],
+   "ativa": 2,
+   "fechaEm": 3.72,
+   "reabreEm": 5.14,
+   "aviso": {
+    "texto": "Reabre a aba que você fechou sem querer",
+    "destaque": "fechou sem querer"
+   }
+  },
+  {
+   "tipo": "lista",
+   "de": 7.28,
+   "ate": 11.81,
+   "numero": 2,
+   "numeroEm": 7.43,
+   "teclas": [
+    {
+     "tecla": "Win",
+     "em": 8.26
+    },
+    {
+     "tecla": "V",
+     "em": 8.8
+    }
+   ],
+   "titulo": "Área de transferência",
+   "subtitulo": "Tudo o que você copiou",
+   "itens": [
+    {
+     "texto": "Reunião às 15h na sala 2",
+     "tipo": "texto",
+     "em": 7.3
+    },
+    {
+     "texto": "Captura de tela.png",
+     "tipo": "imagem",
+     "em": 9.09
+    },
+    {
+     "texto": "Rua das Flores, 120",
+     "tipo": "endereco",
+     "em": 9.7
+    },
+    {
+     "texto": "R$ 1.250,00",
+     "tipo": "dinheiro",
+     "em": 10.09
+    }
+   ],
+   "primeiro": "último",
+   "selo": {
+    "texto": "não só o último",
+    "em": 10.78
+   },
+   "escolhe": 2,
+   "escolheEm": 11.3,
+   "escolheTexto": "Colado"
+  },
+  {
+   "tipo": "recorte",
+   "de": 11.81,
+   "ate": 16.4,
+   "numero": 3,
+   "numeroEm": 12.02,
+   "teclas": [
+    {
+     "tecla": "Win",
+     "em": 12.78
+    },
+    {
+     "tecla": "Shift",
+     "em": 13.32
+    },
+    {
+     "tecla": "S",
+     "em": 13.76
+    }
+   ],
+   "selecionaEm": 14.3,
+   "soltaEm": 15.25,
+   "capturaEm": 15.95,
+   "rotuloSelecao": "Print de só um pedaço da tela",
+   "aviso": "Print copiado",
+   "avisoDetalhe": "na área de transferência"
+  },
+  {
+   "tipo": "teclas",
+   "de": 16.4,
+   "ate": 18.64,
+   "chip": {
+    "texto": "No Mac",
+    "em": 16.55
+   },
+   "trocaEm": 16.85,
+   "teclas": [
+    {
+     "tecla": "Cmd",
+     "em": 17.48
+    },
+    {
+     "tecla": "Shift",
+     "em": 17.98
+    },
+    {
+     "tecla": "4",
+     "em": 18.32
+    }
+   ]
+  },
+  {
+   "tipo": "cta",
+   "de": 18.64,
+   "ate": 21.56,
+   "salvarEm": 18.92,
+   "enviarEm": 19.2,
+   "para": "quem só usa o mouse",
+   "enviadoEm": 21.05,
+   "texto": "Salva e manda",
+   "avatar": "mouse"
+  }
+ ],
+ "semLegenda": [],
+ "correcoes": {
+  "O Windows": "Windows",
+  "tira a print": "tira print"
+ },
+ "palavras": [
+  {
+   "em": 0.28,
+   "ate": 0.35,
+   "w": "Três"
+  },
+  {
+   "em": 0.35,
+   "ate": 0.84,
+   "w": "atalhos"
+  },
+  {
+   "em": 0.84,
+   "ate": 1.11,
+   "w": "que"
+  },
+  {
+   "em": 1.11,
+   "ate": 1.34,
+   "w": "vão"
+  },
+  {
+   "em": 1.34,
+   "ate": 1.47,
+   "w": "te"
+  },
+  {
+   "em": 1.47,
+   "ate": 1.97,
+   "w": "poupar"
+  },
+  {
+   "em": 1.97,
+   "ate": 2.27,
+   "w": "horas"
+  },
+  {
+   "em": 2.27,
+   "ate": 2.41,
+   "w": "no"
+  },
+  {
+   "em": 2.41,
+   "ate": 3.1,
+   "w": "computador."
+  },
+  {
+   "em": 3.92,
+   "ate": 5.17,
+   "w": "Ctrl+Shift+T"
+  },
+  {
+   "em": 5.17,
+   "ate": 5.53,
+   "w": "reabre"
+  },
+  {
+   "em": 5.53,
+   "ate": 5.61,
+   "w": "a"
+  },
+  {
+   "em": 5.61,
+   "ate": 5.88,
+   "w": "aba"
+  },
+  {
+   "em": 5.88,
+   "ate": 6.07,
+   "w": "que"
+  },
+  {
+   "em": 6.07,
+   "ate": 6.38,
+   "w": "você"
+  },
+  {
+   "em": 6.38,
+   "ate": 6.75,
+   "w": "fechou"
+  },
+  {
+   "em": 6.75,
+   "ate": 6.93,
+   "w": "sem"
+  },
+  {
+   "em": 6.93,
+   "ate": 7.28,
+   "w": "querer."
+  },
+  {
+   "em": 7.37,
+   "ate": 7.96,
+   "w": "2."
+  },
+  {
+   "em": 8.2,
+   "ate": 8.55,
+   "w": "Windows"
+  },
+  {
+   "em": 8.55,
+   "ate": 8.64,
+   "w": "V"
+  },
+  {
+   "em": 8.64,
+   "ate": 9.09,
+   "w": "mostra"
+  },
+  {
+   "em": 9.09,
+   "ate": 9.4,
+   "w": "tudo"
+  },
+  {
+   "em": 9.4,
+   "ate": 9.6,
+   "w": "o"
+  },
+  {
+   "em": 9.6,
+   "ate": 9.7,
+   "w": "que"
+  },
+  {
+   "em": 9.7,
+   "ate": 10.09,
+   "w": "você"
+  },
+  {
+   "em": 10.09,
+   "ate": 10.78,
+   "w": "copiou,"
+  },
+  {
+   "em": 10.78,
+   "ate": 11.11,
+   "w": "não"
+  },
+  {
+   "em": 11.11,
+   "ate": 11.22,
+   "w": "só"
+  },
+  {
+   "em": 11.22,
+   "ate": 11.29,
+   "w": "o"
+  },
+  {
+   "em": 11.29,
+   "ate": 11.81,
+   "w": "último."
+  },
+  {
+   "em": 11.91,
+   "ate": 12.41,
+   "w": "3"
+  },
+  {
+   "em": 12.63,
+   "ate": 12.69,
+   "w": "O"
+  },
+  {
+   "em": 12.66,
+   "ate": 13.4,
+   "w": "Windows"
+  },
+  {
+   "em": 13.4,
+   "ate": 13.84,
+   "w": "Shift"
+  },
+  {
+   "em": 13.84,
+   "ate": 13.94,
+   "w": "+"
+  },
+  {
+   "em": 13.94,
+   "ate": 14.14,
+   "w": "S"
+  },
+  {
+   "em": 14.21,
+   "ate": 14.34,
+   "w": "tira"
+  },
+  {
+   "em": 14.34,
+   "ate": 14.47,
+   "w": "a"
+  },
+  {
+   "em": 14.47,
+   "ate": 14.74,
+   "w": "print"
+  },
+  {
+   "em": 14.74,
+   "ate": 14.89,
+   "w": "de"
+  },
+  {
+   "em": 14.89,
+   "ate": 15.1,
+   "w": "só"
+  },
+  {
+   "em": 15.1,
+   "ate": 15.25,
+   "w": "um"
+  },
+  {
+   "em": 15.25,
+   "ate": 15.78,
+   "w": "pedaço"
+  },
+  {
+   "em": 15.78,
+   "ate": 15.85,
+   "w": "da"
+  },
+  {
+   "em": 15.85,
+   "ate": 16.17,
+   "w": "tela."
+  },
+  {
+   "em": 16.5,
+   "ate": 16.79,
+   "w": "No"
+  },
+  {
+   "em": 16.79,
+   "ate": 17.3,
+   "w": "Mac,"
+  },
+  {
+   "em": 17.3,
+   "ate": 17.6,
+   "w": "é"
+  },
+  {
+   "em": 17.6,
+   "ate": 18.48,
+   "w": "Command+Shift+4."
+  },
+  {
+   "em": 18.75,
+   "ate": 18.95,
+   "w": "Salva"
+  },
+  {
+   "em": 18.95,
+   "ate": 19.02,
+   "w": "e"
+  },
+  {
+   "em": 19.02,
+   "ate": 19.45,
+   "w": "manda"
+  },
+  {
+   "em": 19.45,
+   "ate": 19.79,
+   "w": "para"
+  },
+  {
+   "em": 19.79,
+   "ate": 20.23,
+   "w": "quem"
+  },
+  {
+   "em": 20.23,
+   "ate": 20.39,
+   "w": "só"
+  },
+  {
+   "em": 20.39,
+   "ate": 20.64,
+   "w": "usa"
+  },
+  {
+   "em": 20.64,
+   "ate": 20.71,
+   "w": "o"
+  },
+  {
+   "em": 20.71,
+   "ate": 21.18,
+   "w": "mouse."
+  }
+ ]
+}

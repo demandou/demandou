@@ -1,0 +1,413 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 19.88,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.31
+  },
+  "zona": {
+    "topo": 976,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago Moura",
+    "area": "Entenda"
+  },
+  "barra": {
+    "tema": "Inflação",
+    "meta": 30
+  },
+  "letreiro": {
+    "rotulo": "Resumo",
+    "itens": [
+      "Inflação: os preços sobem de forma geral",
+      "Com 5% no ano, o que custava R$ 100 passa a custar R$ 105",
+      "Dinheiro parado perde poder de compra",
+      "Siga para entender a economia sem complicação"
+    ]
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.45,
+    7.55,
+    13.19,
+    16.96
+  ],
+  "momentos": [
+    {
+      "tipo": "vinheta",
+      "de": 0,
+      "ate": 2.25,
+      "titulo": "Entenda",
+      "subtitulo": "em 30 segundos"
+    },
+    {
+      "tipo": "manchete",
+      "de": 2.25,
+      "ate": 3.45,
+      "chapeu": "O que é",
+      "titulo": "Inflação?"
+    },
+    {
+      "tipo": "grafico",
+      "de": 3.45,
+      "ate": 7.55,
+      "forma": "linha",
+      "tendencia": "sobe",
+      "tendenciaEm": 4.06,
+      "ilustrativo": true,
+      "titulo": "Inflação é quando",
+      "destaque": "Inflação",
+      "series": [
+        {
+          "rotulo": "Preços sobem",
+          "em": 4.06,
+          "sentido": "sobe",
+          "detalhe": {
+            "texto": "de forma geral",
+            "em": 4.9,
+            "feixe": true
+          }
+        },
+        {
+          "rotulo": "Seu dinheiro compra menos",
+          "em": 5.93,
+          "sentido": "desce"
+        }
+      ]
+    },
+    {
+      "tipo": "etiqueta",
+      "de": 7.55,
+      "ate": 13.19,
+      "taxa": {
+        "rotulo": "Inflação do ano",
+        "valor": "5%",
+        "em": 9.16
+      },
+      "antes": {
+        "rotulo": "Custava",
+        "valor": "R$ 100",
+        "em": 10.43
+      },
+      "depois": {
+        "rotulo": "Passou a custar",
+        "valor": "R$ 105",
+        "em": 12.02
+      },
+      "diferenca": "+R$ 5",
+      "quadro": "lateral"
+    },
+    {
+      "tipo": "nota",
+      "de": 13.19,
+      "ate": 16.96,
+      "valor": "R$ 100",
+      "rotulo": "Guardar dinheiro parado",
+      "notaEm": 14.12,
+      "paradoEm": 14.64,
+      "perda": {
+        "texto": "Perde poder de compra",
+        "em": 15.64
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 16.96,
+      "ate": 19.88,
+      "texto": "Segue pra entender a economia sem complicação",
+      "destaque": "sem complicação",
+      "icone": "seguir"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "Segue para": "Segue pra"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.56,
+      "w": "Entenda"
+    },
+    {
+      "em": 0.56,
+      "ate": 0.62,
+      "w": "em"
+    },
+    {
+      "em": 0.6,
+      "ate": 1.07,
+      "w": "30"
+    },
+    {
+      "em": 1.07,
+      "ate": 1.76,
+      "w": "segundos."
+    },
+    {
+      "em": 2.33,
+      "ate": 2.39,
+      "w": "O"
+    },
+    {
+      "em": 2.35,
+      "ate": 2.41,
+      "w": "que"
+    },
+    {
+      "em": 2.37,
+      "ate": 2.56,
+      "w": "é"
+    },
+    {
+      "em": 2.56,
+      "ate": 3.27,
+      "w": "inflação?"
+    },
+    {
+      "em": 3.51,
+      "ate": 3.57,
+      "w": "é"
+    },
+    {
+      "em": 3.54,
+      "ate": 4.06,
+      "w": "quando"
+    },
+    {
+      "em": 4.06,
+      "ate": 4.12,
+      "w": "os"
+    },
+    {
+      "em": 4.08,
+      "ate": 4.55,
+      "w": "preços"
+    },
+    {
+      "em": 4.55,
+      "ate": 4.9,
+      "w": "sobem"
+    },
+    {
+      "em": 4.9,
+      "ate": 5.04,
+      "w": "de"
+    },
+    {
+      "em": 5.04,
+      "ate": 5.38,
+      "w": "forma"
+    },
+    {
+      "em": 5.38,
+      "ate": 5.86,
+      "w": "geral"
+    },
+    {
+      "em": 5.87,
+      "ate": 5.93,
+      "w": "e"
+    },
+    {
+      "em": 5.9,
+      "ate": 5.96,
+      "w": "o"
+    },
+    {
+      "em": 5.93,
+      "ate": 6.15,
+      "w": "seu"
+    },
+    {
+      "em": 6.15,
+      "ate": 6.74,
+      "w": "dinheiro"
+    },
+    {
+      "em": 6.74,
+      "ate": 7.18,
+      "w": "compra"
+    },
+    {
+      "em": 7.18,
+      "ate": 7.55,
+      "w": "menos."
+    },
+    {
+      "em": 7.64,
+      "ate": 7.7,
+      "w": "Se"
+    },
+    {
+      "em": 7.67,
+      "ate": 7.73,
+      "w": "a"
+    },
+    {
+      "em": 7.69,
+      "ate": 8.41,
+      "w": "inflação"
+    },
+    {
+      "em": 8.41,
+      "ate": 8.65,
+      "w": "do"
+    },
+    {
+      "em": 8.65,
+      "ate": 8.78,
+      "w": "ano"
+    },
+    {
+      "em": 8.78,
+      "ate": 9,
+      "w": "foi"
+    },
+    {
+      "em": 9,
+      "ate": 9.16,
+      "w": "de"
+    },
+    {
+      "em": 9.16,
+      "ate": 9.65,
+      "w": "5%,"
+    },
+    {
+      "em": 9.65,
+      "ate": 9.91,
+      "w": "o"
+    },
+    {
+      "em": 9.99,
+      "ate": 10.05,
+      "w": "que"
+    },
+    {
+      "em": 10.02,
+      "ate": 10.43,
+      "w": "custava"
+    },
+    {
+      "em": 10.43,
+      "ate": 11.11,
+      "w": "R$100"
+    },
+    {
+      "em": 11.11,
+      "ate": 11.58,
+      "w": "passou"
+    },
+    {
+      "em": 11.61,
+      "ate": 11.67,
+      "w": "a"
+    },
+    {
+      "em": 11.64,
+      "ate": 12.02,
+      "w": "custar"
+    },
+    {
+      "em": 12.02,
+      "ate": 13.03,
+      "w": "R$105."
+    },
+    {
+      "em": 13.28,
+      "ate": 13.34,
+      "w": "Por"
+    },
+    {
+      "em": 13.3,
+      "ate": 13.79,
+      "w": "isso,"
+    },
+    {
+      "em": 13.79,
+      "ate": 14.12,
+      "w": "guardar"
+    },
+    {
+      "em": 14.12,
+      "ate": 14.64,
+      "w": "dinheiro"
+    },
+    {
+      "em": 14.64,
+      "ate": 15.04,
+      "w": "parado"
+    },
+    {
+      "em": 15.04,
+      "ate": 15.26,
+      "w": "faz"
+    },
+    {
+      "em": 15.26,
+      "ate": 15.64,
+      "w": "você"
+    },
+    {
+      "em": 15.64,
+      "ate": 16.09,
+      "w": "perder"
+    },
+    {
+      "em": 16.09,
+      "ate": 16.42,
+      "w": "poder"
+    },
+    {
+      "em": 16.42,
+      "ate": 16.54,
+      "w": "de"
+    },
+    {
+      "em": 16.54,
+      "ate": 16.96,
+      "w": "compra."
+    },
+    {
+      "em": 17.06,
+      "ate": 17.16,
+      "w": "Segue"
+    },
+    {
+      "em": 17.16,
+      "ate": 17.4,
+      "w": "para"
+    },
+    {
+      "em": 17.4,
+      "ate": 17.89,
+      "w": "entender"
+    },
+    {
+      "em": 17.89,
+      "ate": 18.03,
+      "w": "a"
+    },
+    {
+      "em": 18.03,
+      "ate": 18.57,
+      "w": "economia"
+    },
+    {
+      "em": 18.57,
+      "ate": 18.63,
+      "w": "sem"
+    },
+    {
+      "em": 18.62,
+      "ate": 19.16,
+      "w": "complicação."
+    }
+  ]
+}

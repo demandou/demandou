@@ -1,0 +1,3 @@
+# Os modelos do curso (09/10) são 91 MB de templates que só o worker do Railway
+# usa; o app lê o catálogo em lib/media/editor-do-curso/catalogo.json.
+/worker/modelos

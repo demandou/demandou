@@ -1,0 +1,391 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 18.96,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.3
+  },
+  "zona": {
+    "topo": 976,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Design"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.31,
+    5.18,
+    6.94,
+    9.11,
+    13.93,
+    16.2
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "texto": "3 erros que fazem o cliente sair do seu site",
+      "de": 0,
+      "ate": 3.31,
+      "titulo": "3 erros que fazem o cliente sair do seu site",
+      "destaque": "3"
+    },
+    {
+      "tipo": "revisao",
+      "de": 3.31,
+      "ate": 9.2,
+      "erros": [
+        {
+          "em": 3.62,
+          "tipo": "texto",
+          "rotulo": "Texto demais",
+          "medeEm": 4.25
+        },
+        {
+          "em": 5.27,
+          "tipo": "botao",
+          "rotulo": "Botão escondido"
+        },
+        {
+          "em": 7.04,
+          "tipo": "contraste",
+          "rotulo": "Pouco contraste",
+          "medeEm": 8.17
+        }
+      ],
+      "legenda": true
+    },
+    {
+      "tipo": "conserto",
+      "de": 9.2,
+      "ate": 13.97,
+      "passos": [
+        {
+          "em": 9.3,
+          "tipo": "promessa"
+        },
+        {
+          "em": 11.19,
+          "tipo": "botao"
+        },
+        {
+          "em": 12.63,
+          "tipo": "contraste"
+        }
+      ],
+      "legenda": true
+    },
+    {
+      "tipo": "resultado",
+      "de": 13.97,
+      "ate": 16.2,
+      "rotulo": "Pedidos",
+      "itens": [
+        {
+          "em": 14.1,
+          "texto": "Novo pedido",
+          "detalhe": "Assinatura · agora"
+        },
+        {
+          "em": 14.91,
+          "texto": "Novo pedido",
+          "detalhe": "Assinatura · agora"
+        },
+        {
+          "em": 15.46,
+          "texto": "Novo pedido",
+          "detalhe": "Assinatura · agora"
+        }
+      ],
+      "legenda": true
+    },
+    {
+      "tipo": "cta",
+      "de": 16.2,
+      "ate": 18.96,
+      "texto": "Salva e revisa a sua página hoje.",
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "claro": "claro.",
+    "Contraste": "contraste",
+    "Forte": "forte"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.42,
+      "w": "Três"
+    },
+    {
+      "em": 0.42,
+      "ate": 0.84,
+      "w": "erros"
+    },
+    {
+      "em": 0.84,
+      "ate": 1.19,
+      "w": "que"
+    },
+    {
+      "em": 1.19,
+      "ate": 1.52,
+      "w": "fazem"
+    },
+    {
+      "em": 1.52,
+      "ate": 1.62,
+      "w": "o"
+    },
+    {
+      "em": 1.62,
+      "ate": 2.19,
+      "w": "cliente"
+    },
+    {
+      "em": 2.19,
+      "ate": 2.53,
+      "w": "sair"
+    },
+    {
+      "em": 2.53,
+      "ate": 2.7,
+      "w": "do"
+    },
+    {
+      "em": 2.7,
+      "ate": 2.95,
+      "w": "seu"
+    },
+    {
+      "em": 2.95,
+      "ate": 3.31,
+      "w": "site"
+    },
+    {
+      "em": 3.41,
+      "ate": 3.67,
+      "w": "Texto"
+    },
+    {
+      "em": 3.67,
+      "ate": 4.08,
+      "w": "demais"
+    },
+    {
+      "em": 4.08,
+      "ate": 4.25,
+      "w": "na"
+    },
+    {
+      "em": 4.25,
+      "ate": 4.87,
+      "w": "primeira"
+    },
+    {
+      "em": 4.87,
+      "ate": 5.18,
+      "w": "tela."
+    },
+    {
+      "em": 5.27,
+      "ate": 5.56,
+      "w": "Botão"
+    },
+    {
+      "em": 5.56,
+      "ate": 5.72,
+      "w": "de"
+    },
+    {
+      "em": 5.72,
+      "ate": 6.3,
+      "w": "compra"
+    },
+    {
+      "em": 6.3,
+      "ate": 6.94,
+      "w": "escondido."
+    },
+    {
+      "em": 7.01,
+      "ate": 7.07,
+      "w": "e"
+    },
+    {
+      "em": 7.04,
+      "ate": 7.45,
+      "w": "letra"
+    },
+    {
+      "em": 7.45,
+      "ate": 7.97,
+      "w": "clara"
+    },
+    {
+      "em": 7.97,
+      "ate": 8.17,
+      "w": "em"
+    },
+    {
+      "em": 8.17,
+      "ate": 8.68,
+      "w": "fundo"
+    },
+    {
+      "em": 8.68,
+      "ate": 9.11,
+      "w": "claro"
+    },
+    {
+      "em": 9.24,
+      "ate": 9.49,
+      "w": "Coloca"
+    },
+    {
+      "em": 9.49,
+      "ate": 9.55,
+      "w": "a"
+    },
+    {
+      "em": 9.53,
+      "ate": 10.13,
+      "w": "promessa"
+    },
+    {
+      "em": 10.13,
+      "ate": 10.28,
+      "w": "em"
+    },
+    {
+      "em": 10.28,
+      "ate": 10.51,
+      "w": "uma"
+    },
+    {
+      "em": 10.51,
+      "ate": 10.93,
+      "w": "frase:"
+    },
+    {
+      "em": 11.16,
+      "ate": 11.22,
+      "w": "o"
+    },
+    {
+      "em": 11.19,
+      "ate": 11.6,
+      "w": "botão"
+    },
+    {
+      "em": 11.6,
+      "ate": 11.94,
+      "w": "logo"
+    },
+    {
+      "em": 11.94,
+      "ate": 12.59,
+      "w": "abaixo"
+    },
+    {
+      "em": 12.6,
+      "ate": 12.66,
+      "w": "e"
+    },
+    {
+      "em": 12.63,
+      "ate": 13.46,
+      "w": "Contraste"
+    },
+    {
+      "em": 13.46,
+      "ate": 13.93,
+      "w": "Forte."
+    },
+    {
+      "em": 14,
+      "ate": 14.06,
+      "w": "Em"
+    },
+    {
+      "em": 14.03,
+      "ate": 14.81,
+      "w": "segundos,"
+    },
+    {
+      "em": 14.81,
+      "ate": 14.91,
+      "w": "a"
+    },
+    {
+      "em": 14.91,
+      "ate": 15.46,
+      "w": "página"
+    },
+    {
+      "em": 15.46,
+      "ate": 15.85,
+      "w": "vende"
+    },
+    {
+      "em": 15.85,
+      "ate": 16.2,
+      "w": "mais."
+    },
+    {
+      "em": 16.29,
+      "ate": 16.47,
+      "w": "Salva"
+    },
+    {
+      "em": 16.47,
+      "ate": 16.54,
+      "w": "e"
+    },
+    {
+      "em": 16.54,
+      "ate": 17.02,
+      "w": "revisa"
+    },
+    {
+      "em": 17.02,
+      "ate": 17.08,
+      "w": "a"
+    },
+    {
+      "em": 17.07,
+      "ate": 17.3,
+      "w": "sua"
+    },
+    {
+      "em": 17.3,
+      "ate": 17.84,
+      "w": "página"
+    },
+    {
+      "em": 17.84,
+      "ate": 18.21,
+      "w": "hoje."
+    }
+  ],
+  "pagina": {
+    "nome": "Página inicial",
+    "marca": "Fermento",
+    "tituloAntes": "Bem-vindos à nossa padaria artesanal",
+    "promessa": "Pão quentinho na sua porta às 7h.",
+    "botao": "Assinar agora",
+    "apoio": "Entrega grátis no bairro.",
+    "ilustracao": "pao",
+    "cor": "#FFD95A",
+    "tinta": "#17130E",
+    "palavras": 148,
+    "rolagem": 1810
+  }
+}

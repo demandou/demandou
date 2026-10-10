@@ -1,0 +1,20 @@
+{
+  "recorte": {
+    "vertical": "9:16"
+  },
+  "blocos": {
+    "assinatura": [
+      "anatomia"
+    ]
+  },
+  "palavraPorPalavra": [
+    "virada",
+    "mito",
+    "abertura",
+    "frase",
+    "cta",
+    "pergunta",
+    "destaque",
+    "definicao"
+  ]
+}

@@ -99,6 +99,7 @@ import { CaixaDaEdicao, TETO_USD_DO_CORTE } from "@/lib/media/teto-da-edicao";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { leituraNoCorte } from "@/lib/media/editor-por-comando/leitura-no-plano";
+import { editorDoCursoLigado, modeloDoCursoDoProjeto, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd } from "@/lib/media/editor-do-curso/no-corte";
 
 /**
  * O EDITOR COMPLETO NA ESTEIRA (30/09/2026), com a trava MONTAGEM_NA_EDICAO=1.
@@ -634,6 +635,108 @@ export async function pedidoDoCorte(video: VideoDoPasso, indice: number, t: Trec
     retorno: { indice, desde: tomado.desde },
   });
   return { corpo, chave };
+}
+
+// ─────────────────────────────── 2a. o modelo do curso no corte ───────────────────────────────
+
+/**
+ * O CORTE NUM MODELO DO CURSO (09/10, lib/media/editor-do-curso): o worker
+ * roda o fluxo do curso inteiro (worker/src/modelo/editar-no-modelo.mjs) a
+ * partir da gravação ORIGINAL e da fala limpa do corte, e pede o plano ao app
+ * (`/api/editor-do-curso/plano`) a cada volta da conferência. O callback é o
+ * de sempre (`montar-callback`), com o mesmo `retorno`.
+ *
+ *   na-fila -> dirigindo (a fala) -> montando (worker) -> pronto
+ *
+ * Falha (render, conferência reprovada nas voltas, teto de IA) volta o corte
+ * para "na-fila" com `curso.desistiu`, e o editor de sempre monta (a reserva).
+ */
+async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: TrechoComMontagem, lido: MontagemDoCorte, modelo: string): Promise<void> {
+  const tomado: MontagemDoCorte = { ...lido, estado: "dirigindo", desde: agora(), curso: { ...(lido.curso ?? {}), modelo, desistiu: null } };
+  if (!(await trocarEstado(video.id, indice, lido, tomado))) return;
+  try {
+    const { inicio, fim } = bordas(t, video);
+    const aprovado = planoAprovadoDoCorte(t, inicio, fim);
+    const fala = aprovado
+      ? { manter: aprovado.manter, palavras: aprovado.fala.palavras, duracao: aprovado.fala.duracao }
+      : await falaDoCorte({
+          palavras: ((video.transcript as { words?: Word[] } | null)?.words ?? []) as Word[],
+          termos: video.project.videoTerms,
+          inicio,
+          fim,
+          duracaoDaGravacao: video.durationSec ?? fim,
+          edicao: t.edicao,
+          projectId: video.projectId,
+        });
+    const worker = (process.env.VIDEO_WORKER_URL ?? "").replace(/\/$/, "");
+    if (!worker) throw new Error("VIDEO_WORKER_URL não configurado");
+    const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
+    const chave = `cortes/${video.id}/curso-${indice}.mp4`;
+    const montando: MontagemDoCorte = {
+      ...tomado,
+      estado: "montando",
+      desde: agora(),
+      chave,
+      tentativas: (lido.tentativas ?? 0) + 1,
+      esperarAte: null,
+      motivo: null,
+      plano: { fala },
+    };
+    const corpo = JSON.stringify({
+      chave,
+      videoJobId: video.id,
+      projectId: video.projectId,
+      modelo,
+      sourceUrl: video.blobUrl,
+      inicio,
+      duracao: fim - inicio,
+      manter: fala.manter,
+      palavras: palavrasDoCurso(fala.palavras),
+      marca: await quemFalaNoProjeto(video.projectId),
+      nicho: video.project.niche,
+      tetoUsd: tetoDoPlanoUsd(fala.duracao),
+      voltas: 3,
+      planoUrl: `${base}/api/editor-do-curso/plano`,
+      callbackUrl: `${base}/api/videos/${video.id}/montar-callback`,
+      retorno: { indice, desde: montando.desde },
+    });
+    if (!(await trocarEstado(video.id, indice, tomado, montando))) return;
+    const r = await fetch(`${worker}/editar-no-modelo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", [CABECALHO_ASSINATURA]: assinarCorpo(corpo) },
+      body: corpo,
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (r.status !== 202) {
+      await desistirDoModeloDoCurso(video.id, indice, montando, `o worker recusou o pedido (HTTP ${r.status})`);
+    }
+  } catch (e) {
+    const erro = e instanceof Error ? e.message : "falhou";
+    console.error(`[montagem][${video.id}] corte ${indice} no modelo do curso:`, erro);
+    const atual = ((await prisma.videoJob.findUnique({ where: { id: video.id }, select: { clips: true } }))?.clips as TrechoComMontagem[] | null)?.[indice]?.montagem;
+    if (atual && atual.curso && !atual.curso.desistiu) await desistirDoModeloDoCurso(video.id, indice, atual, erro);
+  }
+}
+
+/** O caminho do curso desiste e o corte volta à fila, para o editor de sempre (a reserva). */
+async function desistirDoModeloDoCurso(id: string, indice: number, lido: MontagemDoCorte, motivo: string): Promise<void> {
+  console.warn(`[montagem][${id}] corte ${indice}: modelo do curso desistiu: ${motivo}`);
+  await trocarEstado(id, indice, lido, {
+    ...lido,
+    estado: "na-fila",
+    desde: agora(),
+    tentativas: 0,
+    esperarAte: null,
+    motivo: null,
+    falhaTecnica: false,
+    curso: { ...(lido.curso ?? { modelo: "" }), desistiu: motivo.slice(0, 500) },
+  });
+}
+
+/** O corte vai pelo modelo do curso? Trava ligada, modelo escolhido no projeto, e o caminho não desistiu neste corte. */
+async function modeloDoCursoDoCorte(video: Pick<VideoDoPasso, "projectId">, m: MontagemDoCorte): Promise<string | null> {
+  if (!editorDoCursoLigado() || m.curso?.desistiu) return null;
+  return modeloDoCursoDoProjeto(video.projectId).catch(() => null);
 }
 
 // ─────────────────────────────── 2b. o editor sob medida no corte ───────────────────────────────
@@ -1407,10 +1510,25 @@ export async function avancarMontagens(opcoes: { orcamentoMs?: number } = {}): P
         if ((m.estado === "na-fila" && !esperando) || (m.estado === "dirigindo" && idade > PASSO_MORTO_MS)) {
           r.olhados++;
           r.dirigidos++;
+          // O MODELO DO CURSO (09/10) vem antes de todos; os editores de antes são a reserva.
+          // No "dirigindo" morto, só volta ao curso quem estava nele.
+          const modeloCurso = m.estado === "na-fila" || (m.curso && !m.curso.desistiu) ? await modeloDoCursoDoCorte(video, m) : null;
+          if (modeloCurso) {
+            pesados.push(() => enviarAoModeloDoCurso(video, i, t, m, modeloCurso));
+            continue;
+          }
           // O EDITOR SOB MEDIDA (03/10); a montagem de sempre é a reserva.
           // No "dirigindo" morto, só volta ao editor quem estava nele.
           const novo = m.estado === "na-fila" ? corteVaiSobMedida(video, m) : sobMedidaVivo;
           pesados.push(() => (novo ? editarCorteSobMedida(video, i, t, m) : dirigir(video, i, t, m)));
+        } else if (m.estado === "montando" && m.curso && !m.curso.desistiu) {
+          // O worker roda o curso e avisa pelo callback. Passado o prazo (o
+          // render mais as voltas do plano), pergunta ao worker antes de desistir.
+          const duracaoDoCorte = (m.plano as { fala?: { duracao?: number } } | undefined)?.fala?.duracao;
+          if (idade > prazoDaMontagemMs(duracaoDoCorte, true) + 45 * 60_000 && !(await aindaEsperaOWorker(video.id, m.chave, idade))) {
+            r.olhados++;
+            await desistirDoModeloDoCurso(video.id, i, m, "o worker não terminou a edição no prazo");
+          }
         } else if (m.estado === "montando" && sobMedidaVivo && sm!.reenviar && !esperando) {
           // O worker reiniciou com a prévia ou o final na fila: reenvia a mesma fase.
           r.olhados++;
@@ -1475,12 +1593,46 @@ export async function concluirMontagem(
   videoJobId: string,
   indice: number,
   desde: string,
-  resultado: { ok?: boolean; montado?: { url: string; bytes: number }; tempos?: Record<string, number>; erro?: string; reiniciado?: boolean }
+  resultado: {
+    ok?: boolean;
+    montado?: { url: string; bytes: number };
+    tempos?: Record<string, number>;
+    erro?: string;
+    reiniciado?: boolean;
+    curso?: { modelo?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[] } | null;
+  }
 ): Promise<"trocado" | "ignorado" | "falhou"> {
   const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { clips: true } });
   const t = ((video?.clips as unknown as TrechoComMontagem[] | null) ?? [])[indice];
   const lido = t?.montagem;
   if (!t || !lido || lido.estado !== "montando" || lido.desde !== desde) return "ignorado";
+
+  // O MODELO DO CURSO (09/10): o fluxo do curso já conferiu o plano (conferir.mjs
+  // e a guarda de número) antes do render; o vídeo vai ao ar. Reinício do
+  // worker reenvia; falha volta o corte ao editor de sempre (a reserva).
+  if (lido.curso && !lido.curso.desistiu) {
+    if (resultado.reiniciado) {
+      await trocarEstado(videoJobId, indice, lido, { ...lido, estado: "na-fila", desde: agora(), tentativas: Math.max(0, (lido.tentativas ?? 1) - 1), esperarAte: null });
+      return "falhou";
+    }
+    if (!resultado.ok || !resultado.montado?.url) {
+      await desistirDoModeloDoCurso(videoJobId, indice, lido, `a edição no ${lido.curso.modelo} falhou (${resumoDoErro(resultado.erro ?? "sem detalhe")})`);
+      return "falhou";
+    }
+    const c = resultado.curso ?? {};
+    return entregarCorte(
+      videoJobId,
+      indice,
+      t,
+      {
+        ...lido,
+        curso: { ...lido.curso, mapa: c.mapa?.slice(0, 8000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico, avisos: c.avisos },
+        custoUsd: c.custoUsd ?? lido.custoUsd,
+      },
+      resultado.montado,
+      resultado.tempos
+    );
+  }
 
   // O EDITOR SOB MEDIDA (03/10): a prévia volta para o revisor; o final já
   // passou pela revisão da prévia e vai ao ar. Reinício do worker reenvia a

@@ -1,0 +1,3 @@
+Créditos das imagens
+
+Prints reais de chatgpt.com (página pública, sem login), capturados em 03/10/2026 com ferramentas/capturar-tela.mjs, só para demonstração. O seletor de modelo aparece fechado: a lista de modelos só abre com login. No seu vídeo, use seus prints.

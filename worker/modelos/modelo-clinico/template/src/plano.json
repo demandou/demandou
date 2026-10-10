@@ -1,0 +1,520 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 24.44,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.304
+  },
+  "zona": {
+    "topo": 970,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Dr. Tiago Moura",
+    "area": "Cirurgião-dentista"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.58,
+    5.22,
+    8.25,
+    12.07,
+    16.5,
+    21.31
+  ],
+  "momentos": [
+    {
+      "tipo": "titulo",
+      "de": 0.0,
+      "ate": 2.63,
+      "linhas": [
+        "Você escova",
+        "os dentes do",
+        "jeito certo?"
+      ],
+      "enfase": "jeito certo?",
+      "duvidaEm": 1.76
+    },
+    {
+      "tipo": "contagem",
+      "de": 2.63,
+      "ate": 5.27,
+      "titulo": "Quase todo mundo erra em 3 coisas",
+      "enfase": "3 coisas",
+      "itens": [
+        {
+          "em": 4.29
+        },
+        {
+          "em": 4.43
+        },
+        {
+          "em": 4.57
+        }
+      ],
+      "marca": {
+        "em": 4.73,
+        "tipo": "errado"
+      }
+    },
+    {
+      "tipo": "cronometro",
+      "de": 5.27,
+      "ate": 8.29,
+      "numero": "01",
+      "titulo": "Escova por menos de 2 minutos",
+      "enfase": "menos de 2 minutos",
+      "meta": "2:00",
+      "metaEm": 7.39,
+      "inicio": 6.04,
+      "para": {
+        "em": 6.79,
+        "fracao": 0.42
+      }
+    },
+    {
+      "tipo": "anatomia",
+      "de": 8.29,
+      "ate": 12.12,
+      "numero": "02",
+      "titulo": "Aperta demais",
+      "enfase": "demais",
+      "desenho": "dente",
+      "acoes": [
+        {
+          "em": 8.61,
+          "acao": "escova"
+        },
+        {
+          "em": 9.31,
+          "acao": "pressao"
+        },
+        {
+          "em": 10.76,
+          "acao": "inflama"
+        }
+      ],
+      "rotulos": [
+        {
+          "em": 10.98,
+          "alvo": "gengiva",
+          "texto": "gengiva",
+          "erro": true
+        }
+      ],
+      "veredito": {
+        "em": 10.79,
+        "tipo": "errado",
+        "texto": "Machuca a gengiva"
+      }
+    },
+    {
+      "tipo": "anatomia",
+      "de": 12.12,
+      "ate": 16.54,
+      "layout": "lado",
+      "numero": "03",
+      "titulo": "Esquece o fio dental",
+      "enfase": "fio dental",
+      "desenho": "dentes",
+      "acoes": [
+        {
+          "em": 13.02,
+          "acao": "esquecido"
+        },
+        {
+          "em": 14.44,
+          "acao": "varre"
+        },
+        {
+          "em": 15.19,
+          "acao": "lacunas"
+        }
+      ],
+      "rotulos": [
+        {
+          "em": 15.61,
+          "alvo": "entre",
+          "texto": "entre os dentes",
+          "erro": true
+        }
+      ],
+      "aproximar": {
+        "em": 15.54,
+        "alvo": "entre",
+        "zoom": 2.2
+      },
+      "veredito": {
+        "em": 14.98,
+        "tipo": "errado",
+        "texto": "A escova não chega"
+      }
+    },
+    {
+      "tipo": "checklist",
+      "de": 16.54,
+      "ate": 21.36,
+      "titulo": "O certo",
+      "marcaEm": 16.93,
+      "itens": [
+        {
+          "em": 17.19,
+          "texto": "2 minutos",
+          "icone": "cronometro"
+        },
+        {
+          "em": 18.46,
+          "texto": "Movimento leve",
+          "icone": "escova"
+        },
+        {
+          "em": 19.66,
+          "texto": "Fio dental todo dia",
+          "icone": "fio",
+          "semanaEm": 20.62
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 21.36,
+      "ate": 24.44,
+      "texto": "Salva esse vídeo e manda para quem precisa ouvir isso",
+      "enfase": "precisa ouvir isso",
+      "botoes": [
+        {
+          "em": 21.4,
+          "icone": "salvar"
+        },
+        {
+          "em": 22.24,
+          "icone": "enviar"
+        }
+      ],
+      "assinaturaEm": 22.93
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {},
+  "palavras": [
+    {
+      "em": 0.28,
+      "ate": 0.42,
+      "w": "Você"
+    },
+    {
+      "em": 0.42,
+      "ate": 0.9,
+      "w": "escova"
+    },
+    {
+      "em": 0.9,
+      "ate": 1.06,
+      "w": "os"
+    },
+    {
+      "em": 1.06,
+      "ate": 1.55,
+      "w": "dentes"
+    },
+    {
+      "em": 1.55,
+      "ate": 1.71,
+      "w": "do"
+    },
+    {
+      "em": 1.71,
+      "ate": 2.13,
+      "w": "jeito"
+    },
+    {
+      "em": 2.13,
+      "ate": 2.58,
+      "w": "certo?"
+    },
+    {
+      "em": 2.68,
+      "ate": 2.91,
+      "w": "Quase"
+    },
+    {
+      "em": 2.91,
+      "ate": 3.26,
+      "w": "todo"
+    },
+    {
+      "em": 3.26,
+      "ate": 3.7,
+      "w": "mundo"
+    },
+    {
+      "em": 3.7,
+      "ate": 4.04,
+      "w": "erra"
+    },
+    {
+      "em": 4.04,
+      "ate": 4.29,
+      "w": "em"
+    },
+    {
+      "em": 4.29,
+      "ate": 4.65,
+      "w": "três"
+    },
+    {
+      "em": 4.65,
+      "ate": 5.22,
+      "w": "coisas:"
+    },
+    {
+      "em": 5.32,
+      "ate": 6.03,
+      "w": "Primeiro,"
+    },
+    {
+      "em": 6.03,
+      "ate": 6.56,
+      "w": "escova"
+    },
+    {
+      "em": 6.56,
+      "ate": 6.72,
+      "w": "por"
+    },
+    {
+      "em": 6.72,
+      "ate": 7.13,
+      "w": "menos"
+    },
+    {
+      "em": 7.13,
+      "ate": 7.39,
+      "w": "de"
+    },
+    {
+      "em": 7.39,
+      "ate": 7.65,
+      "w": "dois"
+    },
+    {
+      "em": 7.65,
+      "ate": 8.25,
+      "w": "minutos"
+    },
+    {
+      "em": 8.33,
+      "ate": 9.31,
+      "w": "Aperta"
+    },
+    {
+      "em": 9.31,
+      "ate": 10.49,
+      "w": "demais,"
+    },
+    {
+      "em": 10.49,
+      "ate": 10.55,
+      "w": "e"
+    },
+    {
+      "em": 10.51,
+      "ate": 10.83,
+      "w": "isso"
+    },
+    {
+      "em": 10.83,
+      "ate": 11.42,
+      "w": "machuca"
+    },
+    {
+      "em": 11.42,
+      "ate": 11.5,
+      "w": "a"
+    },
+    {
+      "em": 11.5,
+      "ate": 12.07,
+      "w": "gengiva."
+    },
+    {
+      "em": 12.16,
+      "ate": 12.98,
+      "w": "Terceiro,"
+    },
+    {
+      "em": 12.98,
+      "ate": 13.58,
+      "w": "esquece"
+    },
+    {
+      "em": 13.58,
+      "ate": 13.74,
+      "w": "o"
+    },
+    {
+      "em": 13.74,
+      "ate": 13.91,
+      "w": "fio"
+    },
+    {
+      "em": 13.91,
+      "ate": 14.47,
+      "w": "dental"
+    },
+    {
+      "em": 14.56,
+      "ate": 14.62,
+      "w": "e"
+    },
+    {
+      "em": 14.59,
+      "ate": 14.65,
+      "w": "a"
+    },
+    {
+      "em": 14.61,
+      "ate": 14.98,
+      "w": "escova"
+    },
+    {
+      "em": 14.98,
+      "ate": 15.25,
+      "w": "não"
+    },
+    {
+      "em": 15.25,
+      "ate": 15.59,
+      "w": "chega"
+    },
+    {
+      "em": 15.59,
+      "ate": 15.92,
+      "w": "entre"
+    },
+    {
+      "em": 15.92,
+      "ate": 16.06,
+      "w": "os"
+    },
+    {
+      "em": 16.06,
+      "ate": 16.5,
+      "w": "dentes"
+    },
+    {
+      "em": 16.57,
+      "ate": 16.63,
+      "w": "O"
+    },
+    {
+      "em": 16.6,
+      "ate": 17.06,
+      "w": "certo"
+    },
+    {
+      "em": 17.06,
+      "ate": 17.19,
+      "w": "é"
+    },
+    {
+      "em": 17.19,
+      "ate": 17.58,
+      "w": "dois"
+    },
+    {
+      "em": 17.58,
+      "ate": 18.46,
+      "w": "minutos,"
+    },
+    {
+      "em": 18.46,
+      "ate": 19.19,
+      "w": "movimento"
+    },
+    {
+      "em": 19.19,
+      "ate": 19.62,
+      "w": "leve"
+    },
+    {
+      "em": 19.63,
+      "ate": 19.69,
+      "w": "e"
+    },
+    {
+      "em": 19.66,
+      "ate": 19.93,
+      "w": "fio"
+    },
+    {
+      "em": 19.93,
+      "ate": 20.62,
+      "w": "dental"
+    },
+    {
+      "em": 20.62,
+      "ate": 20.99,
+      "w": "todo"
+    },
+    {
+      "em": 20.99,
+      "ate": 21.31,
+      "w": "dia."
+    },
+    {
+      "em": 21.4,
+      "ate": 21.53,
+      "w": "Salva"
+    },
+    {
+      "em": 21.53,
+      "ate": 21.8,
+      "w": "esse"
+    },
+    {
+      "em": 21.8,
+      "ate": 22.18,
+      "w": "vídeo"
+    },
+    {
+      "em": 22.18,
+      "ate": 22.24,
+      "w": "e"
+    },
+    {
+      "em": 22.24,
+      "ate": 22.56,
+      "w": "manda"
+    },
+    {
+      "em": 22.56,
+      "ate": 22.89,
+      "w": "para"
+    },
+    {
+      "em": 22.89,
+      "ate": 23.08,
+      "w": "quem"
+    },
+    {
+      "em": 23.08,
+      "ate": 23.59,
+      "w": "precisa"
+    },
+    {
+      "em": 23.59,
+      "ate": 23.82,
+      "w": "ouvir"
+    },
+    {
+      "em": 23.82,
+      "ate": 24.19,
+      "w": "isso."
+    }
+  ]
+}

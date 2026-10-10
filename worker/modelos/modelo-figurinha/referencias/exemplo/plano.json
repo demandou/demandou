@@ -1,0 +1,348 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 18.28,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.303
+  },
+  "zona": {
+    "topo": 966,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Dr. Tiago Moura",
+    "area": "Veterinário"
+  },
+  "sfx": true,
+  "cortesEm": [
+    4.28,
+    7.7,
+    10.98,
+    14.11,
+    16.11
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 4.34,
+      "texto": "3 alimentos que parecem inofensivos e fazem mal pro seu cachorro",
+      "destaque": "fazem mal",
+      "caoEm": 3.74
+    },
+    {
+      "tipo": "album",
+      "de": 4.34,
+      "ate": 14.15,
+      "carimbo": "nao",
+      "itens": [
+        {
+          "em": 4.39,
+          "nome": "Chocolate",
+          "desenho": "chocolate",
+          "motivo": "Tem teobromina, tóxica pra ele",
+          "destaque": "tóxica",
+          "carimboEm": 6.93
+        },
+        {
+          "em": 7.8,
+          "nome": "Uva e uva-passa",
+          "desenho": "uva",
+          "motivo": "Podem causar problema nos rins",
+          "destaque": "rins",
+          "carimboEm": 10.71
+        },
+        {
+          "em": 11.07,
+          "nome": "Cebola e alho",
+          "desenho": "cebola-alho",
+          "motivo": "Danificam as células do sangue",
+          "destaque": "células do sangue",
+          "carimboEm": 13.63
+        }
+      ]
+    },
+    {
+      "tipo": "especial",
+      "de": 14.15,
+      "ate": 16.15,
+      "apoio": "Se ele comer,",
+      "texto": "procure um veterinário",
+      "destaque": "veterinário"
+    },
+    {
+      "tipo": "cta",
+      "de": 16.15,
+      "ate": 18.28,
+      "texto": "Salva",
+      "icone": "salvar",
+      "em": 16.18,
+      "segunda": {
+        "em": 16.36,
+        "texto": "Manda pra quem tem cachorro",
+        "icone": "enviar"
+      }
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "uva passa": "uva-passa"
+  },
+  "palavras": [
+    {
+      "em": 0.3,
+      "ate": 0.37,
+      "w": "Três"
+    },
+    {
+      "em": 0.37,
+      "ate": 1.03,
+      "w": "alimentos"
+    },
+    {
+      "em": 1.03,
+      "ate": 1.26,
+      "w": "que"
+    },
+    {
+      "em": 1.26,
+      "ate": 1.77,
+      "w": "parecem"
+    },
+    {
+      "em": 1.77,
+      "ate": 2.67,
+      "w": "inofensivos"
+    },
+    {
+      "em": 2.67,
+      "ate": 2.73,
+      "w": "e"
+    },
+    {
+      "em": 2.69,
+      "ate": 3.01,
+      "w": "fazem"
+    },
+    {
+      "em": 3.01,
+      "ate": 3.21,
+      "w": "mal"
+    },
+    {
+      "em": 3.21,
+      "ate": 3.48,
+      "w": "para"
+    },
+    {
+      "em": 3.48,
+      "ate": 3.54,
+      "w": "o"
+    },
+    {
+      "em": 3.54,
+      "ate": 3.74,
+      "w": "seu"
+    },
+    {
+      "em": 3.74,
+      "ate": 4.28,
+      "w": "cachorro"
+    },
+    {
+      "em": 4.39,
+      "ate": 5.18,
+      "w": "Chocolate"
+    },
+    {
+      "em": 5.44,
+      "ate": 5.51,
+      "w": "tem"
+    },
+    {
+      "em": 5.51,
+      "ate": 6.58,
+      "w": "teobromina,"
+    },
+    {
+      "em": 6.58,
+      "ate": 6.76,
+      "w": "que"
+    },
+    {
+      "em": 6.76,
+      "ate": 6.93,
+      "w": "é"
+    },
+    {
+      "em": 6.93,
+      "ate": 7.27,
+      "w": "tóxica"
+    },
+    {
+      "em": 7.27,
+      "ate": 7.5,
+      "w": "para"
+    },
+    {
+      "em": 7.5,
+      "ate": 7.7,
+      "w": "ele."
+    },
+    {
+      "em": 7.8,
+      "ate": 7.98,
+      "w": "uva"
+    },
+    {
+      "em": 7.98,
+      "ate": 8.11,
+      "w": "e"
+    },
+    {
+      "em": 8.11,
+      "ate": 8.49,
+      "w": "uva"
+    },
+    {
+      "em": 8.49,
+      "ate": 9.15,
+      "w": "passa."
+    },
+    {
+      "em": 9.37,
+      "ate": 9.52,
+      "w": "podem"
+    },
+    {
+      "em": 9.52,
+      "ate": 9.96,
+      "w": "causar"
+    },
+    {
+      "em": 9.96,
+      "ate": 10.51,
+      "w": "problema"
+    },
+    {
+      "em": 10.51,
+      "ate": 10.71,
+      "w": "nos"
+    },
+    {
+      "em": 10.71,
+      "ate": 10.98,
+      "w": "rins"
+    },
+    {
+      "em": 11.07,
+      "ate": 11.54,
+      "w": "Cebola"
+    },
+    {
+      "em": 11.54,
+      "ate": 11.65,
+      "w": "e"
+    },
+    {
+      "em": 11.65,
+      "ate": 12.1,
+      "w": "alho"
+    },
+    {
+      "em": 12.33,
+      "ate": 12.79,
+      "w": "danificam"
+    },
+    {
+      "em": 12.79,
+      "ate": 12.93,
+      "w": "as"
+    },
+    {
+      "em": 12.93,
+      "ate": 13.52,
+      "w": "células"
+    },
+    {
+      "em": 13.52,
+      "ate": 13.63,
+      "w": "do"
+    },
+    {
+      "em": 13.63,
+      "ate": 14.11,
+      "w": "sangue."
+    },
+    {
+      "em": 14.19,
+      "ate": 14.25,
+      "w": "Se"
+    },
+    {
+      "em": 14.22,
+      "ate": 14.33,
+      "w": "ele"
+    },
+    {
+      "em": 14.33,
+      "ate": 14.77,
+      "w": "comer,"
+    },
+    {
+      "em": 14.77,
+      "ate": 15.22,
+      "w": "procure"
+    },
+    {
+      "em": 15.22,
+      "ate": 15.35,
+      "w": "um"
+    },
+    {
+      "em": 15.35,
+      "ate": 16.11,
+      "w": "veterinário"
+    },
+    {
+      "em": 16.18,
+      "ate": 16.34,
+      "w": "Salva"
+    },
+    {
+      "em": 16.34,
+      "ate": 16.4,
+      "w": "e"
+    },
+    {
+      "em": 16.36,
+      "ate": 16.62,
+      "w": "manda"
+    },
+    {
+      "em": 16.62,
+      "ate": 16.79,
+      "w": "pra"
+    },
+    {
+      "em": 16.79,
+      "ate": 17.02,
+      "w": "quem"
+    },
+    {
+      "em": 17.02,
+      "ate": 17.19,
+      "w": "tem"
+    },
+    {
+      "em": 17.19,
+      "ate": 17.73,
+      "w": "cachorro."
+    }
+  ],
+  "mascote": "cachorro"
+}

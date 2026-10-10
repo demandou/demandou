@@ -2305,6 +2305,101 @@ const servidor = createServer((req, res) => {
         await rm(pasta, { recursive: true, force: true }).catch(() => {});
       }
   }
+  // O CORTE NUM MODELO DO CURSO (09/10, src/modelo/editar-no-modelo.mjs): o
+  // fluxo do curso "Máquina de Edição IA" com os scripts do próprio curso. Entra
+  // na fila de montagem como um corte (um render pesado por vez), e o plano de
+  // cada volta é escrito pelo app (`planoUrl`), onde a IA mora.
+  const ehModeloDoCurso = req.method === "POST" && req.url?.startsWith("/editar-no-modelo");
+  if (ehModeloDoCurso) {
+    res.on("error", () => {});
+    req.socket.on("error", () => {});
+    const pedacos = [];
+    req.on("data", (d) => pedacos.push(d));
+    req.on("end", async () => {
+      const corpoCru = Buffer.concat(pedacos).toString("utf8");
+      if (!assinaturaValida(corpoCru, req.headers["x-demandou-assinatura"])) {
+        return responder(401, { error: "Assinatura inválida" });
+      }
+      let pedido;
+      try {
+        pedido = JSON.parse(corpoCru);
+      } catch {
+        return responder(400, { error: "Corpo não é JSON" });
+      }
+      if (!pedido.chave || !pedido.modelo || !pedido.sourceUrl || !pedido.planoUrl || !Array.isArray(pedido.palavras) || !pedido.palavras.length) {
+        return responder(400, { error: "Faltam chave, modelo, sourceUrl, planoUrl ou palavras" });
+      }
+      const { modeloExiste } = await import("./modelo/editar-no-modelo.mjs");
+      if (!modeloExiste(pedido.modelo)) return responder(400, { error: `modelo desconhecido: ${pedido.modelo}` });
+      const assincrono = Boolean(pedido.callbackUrl);
+      if (assincrono) responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
+      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarNoModelo(pedido, assincrono) });
+    });
+    return;
+  }
+  async function executarNoModelo(pedido, assincrono) {
+    const pasta = await mkdtemp(join(tmpdir(), "modelo-"));
+    emAndamento += 1;
+    const inicio = Date.now();
+    const destino = { callbackUrl: pedido.callbackUrl, videoJobId: pedido.videoJobId ?? pedido.chave };
+    // O render mais até 3 voltas do plano no app (cada uma até ~15 min).
+    const prazoMs = prazoDaMontagem(pedido) + 45 * 60_000;
+    const soltar = assincrono
+      ? registrarTrabalho({
+          videoJobId: destino.videoJobId,
+          tipo: "montar",
+          chave: pedido.chave,
+          prazoMs,
+          destino,
+          reinicio: () => ({ ok: false, reiniciado: true, erro: "reiniciado", retorno: pedido.retorno ?? null }),
+        })
+      : () => {};
+    try {
+      const { montado, e } = await comPrazoDoTrabalho(prazoMs, "a edição no modelo do curso", async () => {
+        const { editarNoModelo } = await import("./modelo/editar-no-modelo.mjs");
+        const pedirPlano = async (corpo) => {
+          const recusa = motivoParaRecusarCallback(pedido.planoUrl, AMBIENTE);
+          if (recusa) throw new Error(recusa);
+          const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null });
+          const r = await fetch(pedido.planoUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+            body: texto,
+            signal: AbortSignal.timeout(14 * 60_000),
+          });
+          if (!r.ok) throw new Error(`o app não escreveu o plano (HTTP ${r.status}): ${(await r.text().catch(() => "")).slice(0, 300)}`);
+          return r.json();
+        };
+        const e = await editarNoModelo(pedido, pasta, {
+          obterOriginal,
+          pedirPlano,
+          aoPasso: (passo) => console.log(`[modelo ${pedido.chave}] ${passo}`),
+        });
+        const montado = await subir(e.arquivo, pedido.chave, "video/mp4");
+        return { montado, e };
+      });
+      const resultado = {
+        ok: true,
+        montado,
+        tempos: e.tempos,
+        curso: { modelo: pedido.modelo, mapa: e.mapa, voltas: e.voltas, historico: e.historico, custoUsd: e.custoUsd, avisos: e.avisos },
+        segundos: Math.round((Date.now() - inicio) / 1000),
+        retorno: pedido.retorno ?? null,
+      };
+      if (assincrono) await avisar(destino, resultado);
+      else responder(200, resultado);
+    } catch (err) {
+      const mensagem = err instanceof Error ? err.message : "edição no modelo falhou";
+      console.error(`[modelo ${pedido.chave}] ${mensagem}`);
+      if (assincrono) await avisar(destino, { ok: false, erro: mensagem, retorno: pedido.retorno ?? null }).catch(() => {});
+      else responder(500, { error: mensagem });
+    } finally {
+      soltar();
+      emAndamento -= 1;
+      await rm(pasta, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
   if (!ehAudio && !ehJuntar && (req.method !== "POST" || !req.url?.startsWith("/cortar"))) {
     return responder(404, { error: "Not found" });
   }

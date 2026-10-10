@@ -1,0 +1,6 @@
+{
+  "recorte": { "vertical": "9:16" },
+  "blocos": { "assinatura": ["letreiro", "cartela"] },
+  "palavraPorPalavra": ["letreiro", "fala", "creditos"],
+  "conferir": { "vao": 4.6 }
+}

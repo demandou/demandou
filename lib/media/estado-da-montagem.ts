@@ -87,6 +87,13 @@ export type MontagemDoCorte = {
    * aqui: este módulo é lido pela tela.
    */
   sobMedida?: { fase: "editar" | "previa" | "revisar" | "final"; desistiu?: string | null; rodada?: number; [k: string]: unknown } | null;
+  /**
+   * O MODELO DO CURSO (09/10, lib/media/editor-do-curso): o corte editado por
+   * um dos modelos do curso "Máquina de Edição IA", no worker, com os scripts
+   * do próprio curso. `desistiu`: o caminho falhou e o corte voltou ao editor
+   * de sempre (a reserva). Tipo aberto: este módulo é lido pela tela.
+   */
+  curso?: { modelo: string; desistiu?: string | null; voltas?: number; custoUsd?: number; mapa?: string; [k: string]: unknown } | null;
 };
 
 /** O que a tela diz quando a montagem de efeitos desistiu por erro técnico. */

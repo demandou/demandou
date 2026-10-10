@@ -1,0 +1,420 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 18.96,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.303
+  },
+  "zona": {
+    "topo": 966,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Prof. Tiago",
+    "area": "Estudos"
+  },
+  "abreCheio": true,
+  "sfx": true,
+  "cortesEm": [
+    2.29,
+    3.88,
+    8.93,
+    13.37,
+    16.94
+  ],
+  "momentos": [
+    {
+      "tipo": "mapa",
+      "de": 0,
+      "ate": 2.29,
+      "centro": "conteúdo",
+      "ramos": [
+        {
+          "texto": "Português",
+          "em": 0.62
+        },
+        {
+          "texto": "Direito",
+          "em": 0.8
+        },
+        {
+          "texto": "Lógica",
+          "em": 0.98
+        },
+        {
+          "texto": "Informática",
+          "em": 1.16
+        }
+      ],
+      "titulo": "Estuda muito e esquece tudo?",
+      "apagado": "esquece tudo?",
+      "esqueceEm": 1.4
+    },
+    {
+      "tipo": "titulo",
+      "de": 2.29,
+      "ate": 3.88,
+      "rotulo": "o método",
+      "origem": "conteúdo",
+      "apoio": "Usa a",
+      "texto": "revisão espaçada",
+      "destaque": "espaçada",
+      "intervalos": [
+        0,
+        1,
+        7,
+        30
+      ],
+      "zero": "hoje"
+    },
+    {
+      "tipo": "curva",
+      "de": 3.88,
+      "ate": 8.93,
+      "rotulo": "curva do esquecimento",
+      "titulo": "Estudou hoje?",
+      "estudoEm": 3.97,
+      "revisoes": [
+        {
+          "dia": 1,
+          "em": 5.31
+        },
+        {
+          "dia": 7,
+          "em": 6.66
+        },
+        {
+          "dia": 30,
+          "em": 8.06
+        }
+      ],
+      "eixo": "memória",
+      "unidade": "dia",
+      "unidades": "dias",
+      "inicio": "hoje",
+      "sem": "sem revisão",
+      "com": "com revisão"
+    },
+    {
+      "tipo": "contador",
+      "de": 8.93,
+      "ate": 11.05,
+      "rotulo": "minutos por revisão",
+      "texto": "Cada revisão leva poucos minutos",
+      "destaque": "poucos minutos",
+      "valor": 5,
+      "unidade": "min",
+      "em": 10.13
+    },
+    {
+      "tipo": "barras",
+      "de": 11.05,
+      "ate": 13.37,
+      "texto": "fixa o conteúdo por muito mais tempo",
+      "destaque": "muito mais tempo",
+      "no": "conteúdo",
+      "fixaEm": 11.6,
+      "barras": [
+        {
+          "texto": "sem revisão",
+          "valor": 0.32,
+          "em": 12.07
+        },
+        {
+          "texto": "com revisão",
+          "valor": 1.12,
+          "em": 12.3,
+          "forte": true
+        }
+      ],
+      "eixo": "tempo na memória"
+    },
+    {
+      "tipo": "cartoes",
+      "de": 13.37,
+      "ate": 16.94,
+      "rotulo": "questões",
+      "texto": "Junta isso com questões",
+      "cartoes": [
+        {
+          "pergunta": "Quando revisar?",
+          "resposta": "Amanhã, 7 e 30 dias",
+          "em": 14.25
+        },
+        {
+          "pergunta": "Quanto tempo leva?",
+          "resposta": "Poucos minutos",
+          "em": 15.06
+        },
+        {
+          "pergunta": "Como fixar?",
+          "resposta": "Revisão + questões",
+          "em": 15.83
+        }
+      ],
+      "rodape": "Você para de recomeçar do zero",
+      "riscado": "recomeçar do zero",
+      "riscaEm": 16.6
+    },
+    {
+      "tipo": "cta",
+      "de": 16.94,
+      "ate": 18.96,
+      "texto": "Salva e começa hoje",
+      "destaque": "hoje",
+      "salvaEm": 17.1,
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "estuda": "Estuda",
+    "tudo": "tudo?"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.64,
+      "w": "estuda"
+    },
+    {
+      "em": 0.64,
+      "ate": 1.2,
+      "w": "muito"
+    },
+    {
+      "em": 1.2,
+      "ate": 1.27,
+      "w": "e"
+    },
+    {
+      "em": 1.27,
+      "ate": 1.94,
+      "w": "esquece"
+    },
+    {
+      "em": 1.94,
+      "ate": 2.29,
+      "w": "tudo"
+    },
+    {
+      "em": 2.38,
+      "ate": 2.44,
+      "w": "usa"
+    },
+    {
+      "em": 2.43,
+      "ate": 2.51,
+      "w": "a"
+    },
+    {
+      "em": 2.51,
+      "ate": 3.17,
+      "w": "revisão"
+    },
+    {
+      "em": 3.17,
+      "ate": 3.88,
+      "w": "espaçada."
+    },
+    {
+      "em": 3.97,
+      "ate": 4.37,
+      "w": "Estudou"
+    },
+    {
+      "em": 4.37,
+      "ate": 5.08,
+      "w": "hoje,"
+    },
+    {
+      "em": 5.08,
+      "ate": 5.31,
+      "w": "revisa"
+    },
+    {
+      "em": 5.31,
+      "ate": 6.17,
+      "w": "amanhã,"
+    },
+    {
+      "em": 6.17,
+      "ate": 6.5,
+      "w": "depois"
+    },
+    {
+      "em": 6.5,
+      "ate": 6.66,
+      "w": "em"
+    },
+    {
+      "em": 6.66,
+      "ate": 6.98,
+      "w": "sete"
+    },
+    {
+      "em": 6.98,
+      "ate": 7.47,
+      "w": "dias,"
+    },
+    {
+      "em": 7.47,
+      "ate": 7.99,
+      "w": "depois"
+    },
+    {
+      "em": 7.99,
+      "ate": 8.06,
+      "w": "em"
+    },
+    {
+      "em": 8.06,
+      "ate": 8.74,
+      "w": "trinta."
+    },
+    {
+      "em": 9.05,
+      "ate": 9.16,
+      "w": "Cada"
+    },
+    {
+      "em": 9.16,
+      "ate": 9.72,
+      "w": "revisão"
+    },
+    {
+      "em": 9.72,
+      "ate": 10.13,
+      "w": "leva"
+    },
+    {
+      "em": 10.13,
+      "ate": 10.46,
+      "w": "poucos"
+    },
+    {
+      "em": 10.46,
+      "ate": 11.08,
+      "w": "minutos"
+    },
+    {
+      "em": 11.08,
+      "ate": 11.14,
+      "w": "e"
+    },
+    {
+      "em": 11.1,
+      "ate": 11.36,
+      "w": "fixa"
+    },
+    {
+      "em": 11.36,
+      "ate": 11.54,
+      "w": "o"
+    },
+    {
+      "em": 11.54,
+      "ate": 12.07,
+      "w": "conteúdo"
+    },
+    {
+      "em": 12.07,
+      "ate": 12.3,
+      "w": "por"
+    },
+    {
+      "em": 12.3,
+      "ate": 12.69,
+      "w": "muito"
+    },
+    {
+      "em": 12.69,
+      "ate": 13,
+      "w": "mais"
+    },
+    {
+      "em": 13,
+      "ate": 13.37,
+      "w": "tempo."
+    },
+    {
+      "em": 13.46,
+      "ate": 13.71,
+      "w": "Junta"
+    },
+    {
+      "em": 13.71,
+      "ate": 13.98,
+      "w": "isso"
+    },
+    {
+      "em": 13.98,
+      "ate": 14.23,
+      "w": "com"
+    },
+    {
+      "em": 14.23,
+      "ate": 15.04,
+      "w": "questões"
+    },
+    {
+      "em": 15.04,
+      "ate": 15.1,
+      "w": "e"
+    },
+    {
+      "em": 15.06,
+      "ate": 15.48,
+      "w": "você"
+    },
+    {
+      "em": 15.48,
+      "ate": 15.69,
+      "w": "para"
+    },
+    {
+      "em": 15.69,
+      "ate": 15.83,
+      "w": "de"
+    },
+    {
+      "em": 15.83,
+      "ate": 16.54,
+      "w": "recomeçar"
+    },
+    {
+      "em": 16.54,
+      "ate": 16.67,
+      "w": "do"
+    },
+    {
+      "em": 16.67,
+      "ate": 16.94,
+      "w": "zero"
+    },
+    {
+      "em": 17.05,
+      "ate": 17.35,
+      "w": "Salva"
+    },
+    {
+      "em": 17.35,
+      "ate": 17.43,
+      "w": "e"
+    },
+    {
+      "em": 17.43,
+      "ate": 18.18,
+      "w": "começa"
+    },
+    {
+      "em": 18.18,
+      "ate": 18.62,
+      "w": "hoje!"
+    }
+  ]
+}

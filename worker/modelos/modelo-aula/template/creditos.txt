@@ -1,0 +1,3 @@
+Imagens do exemplo: nenhuma. Tudo na tela é desenhado em vetor pelo próprio modelo (gráfico, fórmula, número, ícones).
+Sons (public/sfx): tons sintetizados para este modelo — pagina.wav (troca de modo e de slide) e moldura.wav (a fórmula completa ganha a moldura).
+Fontes: Plus Jakarta Sans e STIX Two Text (Google Fonts, licença SIL Open Font License).

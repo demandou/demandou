@@ -1,0 +1,5 @@
+{
+  "recorte": { "vertical": "9:16" },
+  "blocos": { "assinatura": ["campo", "medidor", "origem", "variedade", "ano", "teor", "nota"] },
+  "palavraPorPalavra": ["campo", "nota"]
+}

@@ -1,0 +1,422 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 18.92,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.314
+  },
+  "zona": {
+    "topo": 970,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Vinhos"
+  },
+  "rotulo": {
+    "categoria": "Vinho tinto",
+    "nome": "Vale Velado",
+    "destaque": "Malbec",
+    "origem": "Mendoza · Argentina",
+    "ano": "2021",
+    "anoRotulo": "Safra",
+    "teor": "14% vol",
+    "volume": "750 ml"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.98,
+    7.07,
+    10.88,
+    13.09,
+    16.82
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 2.98,
+      "texto": "Como ler o rótulo de um vinho em 10 segundos",
+      "rotulo": "Anatomia do rótulo",
+      "linhas": [
+        "Como ler o rótulo",
+        "de um vinho",
+        "em 10 segundos"
+      ],
+      "destaque": "10 segundos",
+      "selo": {
+        "em": 1.92,
+        "valor": "10"
+      }
+    },
+    {
+      "tipo": "origem",
+      "de": 2.98,
+      "ate": 7.07,
+      "pais": {
+        "em": 3.86,
+        "texto": "Argentina",
+        "mapa": "argentina"
+      },
+      "regiao": {
+        "em": 4.43,
+        "texto": "Mendoza",
+        "lat": -32.9,
+        "lon": -68.8
+      },
+      "nota": {
+        "em": 5.43,
+        "texto": "dizem muito sobre o estilo",
+        "destaque": "estilo"
+      }
+    },
+    {
+      "tipo": "variedade",
+      "de": 7.07,
+      "ate": 10.88,
+      "em": 8.09,
+      "desenho": "cacho",
+      "itens": [
+        {
+          "em": 8.78,
+          "texto": "Cabernet Sauvignon"
+        },
+        {
+          "em": 10.21,
+          "texto": "Malbec"
+        }
+      ],
+      "conector": "ou"
+    },
+    {
+      "tipo": "ano",
+      "de": 10.88,
+      "ate": 13.09,
+      "em": 11.06,
+      "nota": {
+        "em": 12.21,
+        "texto": "o ano da colheita",
+        "destaque": "colheita"
+      }
+    },
+    {
+      "tipo": "teor",
+      "de": 13.09,
+      "ate": 16.82,
+      "em": 13.19,
+      "valor": 14,
+      "subida": {
+        "em": 14.03,
+        "texto": "mais alto"
+      },
+      "medidor": {
+        "em": 15.02,
+        "de": "leve",
+        "ate": "encorpado",
+        "nivel": 0.86,
+        "cheioEm": 16.25
+      },
+      "taca": {
+        "em": 15.54,
+        "liquido": "tinto"
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 16.82,
+      "ate": 18.92,
+      "texto": "Salva pra sua próxima compra",
+      "linhas": [
+        "Salva pra sua",
+        "próxima compra"
+      ],
+      "destaque": "próxima compra",
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para a sua": "pra sua"
+  },
+  "palavras": [
+    {
+      "em": 0.24,
+      "ate": 0.3,
+      "w": "Como"
+    },
+    {
+      "em": 0.3,
+      "ate": 0.52,
+      "w": "ler"
+    },
+    {
+      "em": 0.52,
+      "ate": 0.59,
+      "w": "o"
+    },
+    {
+      "em": 0.59,
+      "ate": 1.17,
+      "w": "rótulo"
+    },
+    {
+      "em": 1.17,
+      "ate": 1.25,
+      "w": "de"
+    },
+    {
+      "em": 1.25,
+      "ate": 1.4,
+      "w": "um"
+    },
+    {
+      "em": 1.4,
+      "ate": 1.77,
+      "w": "vinho"
+    },
+    {
+      "em": 1.77,
+      "ate": 1.92,
+      "w": "em"
+    },
+    {
+      "em": 1.92,
+      "ate": 2.36,
+      "w": "10"
+    },
+    {
+      "em": 2.36,
+      "ate": 2.98,
+      "w": "segundos?"
+    },
+    {
+      "em": 3.07,
+      "ate": 3.75,
+      "w": "Primeiro,"
+    },
+    {
+      "em": 3.75,
+      "ate": 3.86,
+      "w": "o"
+    },
+    {
+      "em": 3.86,
+      "ate": 4.34,
+      "w": "país"
+    },
+    {
+      "em": 4.34,
+      "ate": 4.4,
+      "w": "e"
+    },
+    {
+      "em": 4.36,
+      "ate": 4.43,
+      "w": "a"
+    },
+    {
+      "em": 4.43,
+      "ate": 5.1,
+      "w": "região."
+    },
+    {
+      "em": 5.33,
+      "ate": 5.43,
+      "w": "Eles"
+    },
+    {
+      "em": 5.43,
+      "ate": 5.8,
+      "w": "dizem"
+    },
+    {
+      "em": 5.8,
+      "ate": 6.21,
+      "w": "muito"
+    },
+    {
+      "em": 6.21,
+      "ate": 6.57,
+      "w": "sobre"
+    },
+    {
+      "em": 6.57,
+      "ate": 6.66,
+      "w": "o"
+    },
+    {
+      "em": 6.66,
+      "ate": 7.07,
+      "w": "estilo."
+    },
+    {
+      "em": 7.17,
+      "ate": 7.97,
+      "w": "Depois,"
+    },
+    {
+      "em": 7.97,
+      "ate": 8.09,
+      "w": "a"
+    },
+    {
+      "em": 8.09,
+      "ate": 8.48,
+      "w": "uva."
+    },
+    {
+      "em": 8.7,
+      "ate": 8.78,
+      "w": "como"
+    },
+    {
+      "em": 8.78,
+      "ate": 9.31,
+      "w": "Cabernet"
+    },
+    {
+      "em": 9.31,
+      "ate": 9.97,
+      "w": "Sauvignon"
+    },
+    {
+      "em": 9.97,
+      "ate": 10.21,
+      "w": "ou"
+    },
+    {
+      "em": 10.21,
+      "ate": 10.88,
+      "w": "Malbec"
+    },
+    {
+      "em": 10.94,
+      "ate": 11,
+      "w": "e"
+    },
+    {
+      "em": 10.97,
+      "ate": 11.06,
+      "w": "a"
+    },
+    {
+      "em": 11.06,
+      "ate": 11.9,
+      "w": "safra,"
+    },
+    {
+      "em": 11.9,
+      "ate": 12.09,
+      "w": "que"
+    },
+    {
+      "em": 12.09,
+      "ate": 12.21,
+      "w": "é"
+    },
+    {
+      "em": 12.21,
+      "ate": 12.27,
+      "w": "o"
+    },
+    {
+      "em": 12.27,
+      "ate": 12.46,
+      "w": "ano"
+    },
+    {
+      "em": 12.46,
+      "ate": 12.59,
+      "w": "da"
+    },
+    {
+      "em": 12.59,
+      "ate": 13.09,
+      "w": "colheita."
+    },
+    {
+      "em": 13.19,
+      "ate": 13.29,
+      "w": "Teor"
+    },
+    {
+      "em": 13.29,
+      "ate": 14.03,
+      "w": "alcoólico"
+    },
+    {
+      "em": 14.03,
+      "ate": 14.33,
+      "w": "mais"
+    },
+    {
+      "em": 14.33,
+      "ate": 14.64,
+      "w": "alto"
+    },
+    {
+      "em": 14.64,
+      "ate": 15.02,
+      "w": "costuma"
+    },
+    {
+      "em": 15.02,
+      "ate": 15.39,
+      "w": "indicar"
+    },
+    {
+      "em": 15.39,
+      "ate": 15.54,
+      "w": "um"
+    },
+    {
+      "em": 15.54,
+      "ate": 15.89,
+      "w": "vinho"
+    },
+    {
+      "em": 15.89,
+      "ate": 16.25,
+      "w": "mais"
+    },
+    {
+      "em": 16.25,
+      "ate": 16.82,
+      "w": "encorpado"
+    },
+    {
+      "em": 16.98,
+      "ate": 17.04,
+      "w": "Salva"
+    },
+    {
+      "em": 17,
+      "ate": 17.13,
+      "w": "para"
+    },
+    {
+      "em": 17.13,
+      "ate": 17.19,
+      "w": "a"
+    },
+    {
+      "em": 17.17,
+      "ate": 17.31,
+      "w": "sua"
+    },
+    {
+      "em": 17.31,
+      "ate": 17.68,
+      "w": "próxima"
+    },
+    {
+      "em": 17.68,
+      "ate": 18.12,
+      "w": "compra."
+    }
+  ]
+}

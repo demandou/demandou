@@ -1,0 +1,434 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 22.36,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.29
+  },
+  "zona": {
+    "topo": 957,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Podcast"
+  },
+  "episodio": {
+    "numero": "12",
+    "inicio": "32:10",
+    "total": "58:20"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.48,
+    6.24,
+    9.43,
+    11.04,
+    15.19,
+    18.33
+  ],
+  "cameras": [
+    {
+      "em": 0,
+      "plano": "aberto"
+    },
+    {
+      "em": 4.72,
+      "plano": "close"
+    },
+    {
+      "em": 6.24,
+      "plano": "aberto"
+    },
+    {
+      "em": 11.04,
+      "plano": "close"
+    },
+    {
+      "em": 15.19,
+      "plano": "aberto"
+    },
+    {
+      "em": 17.56,
+      "plano": "close"
+    }
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 3.48,
+      "capitulo": "A pergunta",
+      "texto": "A pergunta que mais mudou a minha carreira",
+      "destaque": "mudou a minha carreira"
+    },
+    {
+      "tipo": "pergunta",
+      "de": 3.48,
+      "ate": 6.24,
+      "texto": "O que você faria se ninguém estivesse olhando?",
+      "destaque": "ninguém estivesse olhando?"
+    },
+    {
+      "tipo": "resposta",
+      "de": 6.24,
+      "ate": 9.43,
+      "capitulo": "A resposta",
+      "texto": "Escreveria todos os dias.",
+      "destaque": "todos os dias.",
+      "rotuloEm": 6.35,
+      "fileira": {
+        "itens": [
+          "D",
+          "S",
+          "T",
+          "Q",
+          "Q",
+          "S",
+          "S"
+        ],
+        "em": 8.4
+      }
+    },
+    {
+      "tipo": "trilha",
+      "de": 9.43,
+      "ate": 15.19,
+      "legenda": true,
+      "capitulo": "Um ano depois",
+      "inicio": {
+        "em": 10.07,
+        "valor": 10,
+        "unidade": "minutos por dia",
+        "rotulo": "Dia 1",
+        "relogio": true
+      },
+      "contagem": {
+        "em": 11.14,
+        "ate": 13.29,
+        "valor": 300,
+        "unidade": "textos",
+        "rotulo": "1 ano"
+      },
+      "marco": {
+        "em": 13.96,
+        "texto": "1º cliente"
+      }
+    },
+    {
+      "tipo": "citacao",
+      "de": 15.19,
+      "ate": 18.33,
+      "capitulo": "A lição",
+      "texto": "Consistência não é talento, é agenda.",
+      "risca": "talento,",
+      "destaque": "é agenda."
+    },
+    {
+      "tipo": "player",
+      "de": 18.33,
+      "ate": 22.36,
+      "capitulo": "O episódio",
+      "rotulo": "O corte do episódio de hoje",
+      "titulo": "Consistência é agenda",
+      "chamada": "Segue pra ouvir o resto",
+      "seguirEm": 20.79,
+      "restoEm": 21.44
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para": "pra"
+  },
+  "palavras": [
+    {
+      "em": 0.31,
+      "ate": 0.37,
+      "w": "A"
+    },
+    {
+      "em": 0.34,
+      "ate": 0.66,
+      "w": "pergunta"
+    },
+    {
+      "em": 0.66,
+      "ate": 0.88,
+      "w": "que"
+    },
+    {
+      "em": 0.88,
+      "ate": 1.17,
+      "w": "mais"
+    },
+    {
+      "em": 1.17,
+      "ate": 1.59,
+      "w": "mudou"
+    },
+    {
+      "em": 1.59,
+      "ate": 1.65,
+      "w": "a"
+    },
+    {
+      "em": 1.61,
+      "ate": 2.03,
+      "w": "minha"
+    },
+    {
+      "em": 2.03,
+      "ate": 2.7,
+      "w": "carreira"
+    },
+    {
+      "em": 2.7,
+      "ate": 2.87,
+      "w": "foi"
+    },
+    {
+      "em": 2.87,
+      "ate": 3.48,
+      "w": "simples:"
+    },
+    {
+      "em": 3.54,
+      "ate": 3.6,
+      "w": "O"
+    },
+    {
+      "em": 3.57,
+      "ate": 3.74,
+      "w": "que"
+    },
+    {
+      "em": 3.74,
+      "ate": 4.16,
+      "w": "você"
+    },
+    {
+      "em": 4.16,
+      "ate": 4.67,
+      "w": "faria"
+    },
+    {
+      "em": 4.67,
+      "ate": 4.76,
+      "w": "se"
+    },
+    {
+      "em": 4.76,
+      "ate": 5.25,
+      "w": "ninguém"
+    },
+    {
+      "em": 5.25,
+      "ate": 5.82,
+      "w": "estivesse"
+    },
+    {
+      "em": 5.82,
+      "ate": 6.24,
+      "w": "olhando?"
+    },
+    {
+      "em": 6.33,
+      "ate": 6.39,
+      "w": "Eu"
+    },
+    {
+      "em": 6.35,
+      "ate": 7.1,
+      "w": "respondi:"
+    },
+    {
+      "em": 7.41,
+      "ate": 8.4,
+      "w": "escreveria"
+    },
+    {
+      "em": 8.4,
+      "ate": 8.78,
+      "w": "todos"
+    },
+    {
+      "em": 8.78,
+      "ate": 9,
+      "w": "os"
+    },
+    {
+      "em": 9,
+      "ate": 9.43,
+      "w": "dias"
+    },
+    {
+      "em": 9.52,
+      "ate": 9.85,
+      "w": "Comecei"
+    },
+    {
+      "em": 9.85,
+      "ate": 10.07,
+      "w": "com"
+    },
+    {
+      "em": 10.07,
+      "ate": 10.52,
+      "w": "10"
+    },
+    {
+      "em": 10.52,
+      "ate": 11.04,
+      "w": "minutos."
+    },
+    {
+      "em": 11.14,
+      "ate": 11.2,
+      "w": "Um"
+    },
+    {
+      "em": 11.16,
+      "ate": 11.45,
+      "w": "ano"
+    },
+    {
+      "em": 11.45,
+      "ate": 12.21,
+      "w": "depois,"
+    },
+    {
+      "em": 12.21,
+      "ate": 12.55,
+      "w": "eram"
+    },
+    {
+      "em": 12.55,
+      "ate": 13.29,
+      "w": "300"
+    },
+    {
+      "em": 13.29,
+      "ate": 13.86,
+      "w": "textos"
+    },
+    {
+      "em": 13.91,
+      "ate": 13.97,
+      "w": "e"
+    },
+    {
+      "em": 13.94,
+      "ate": 14,
+      "w": "o"
+    },
+    {
+      "em": 13.96,
+      "ate": 14.65,
+      "w": "primeiro"
+    },
+    {
+      "em": 14.65,
+      "ate": 15.19,
+      "w": "cliente,"
+    },
+    {
+      "em": 15.28,
+      "ate": 16.23,
+      "w": "Consistência"
+    },
+    {
+      "em": 16.23,
+      "ate": 16.55,
+      "w": "não"
+    },
+    {
+      "em": 16.55,
+      "ate": 16.75,
+      "w": "é"
+    },
+    {
+      "em": 16.75,
+      "ate": 17.35,
+      "w": "talento"
+    },
+    {
+      "em": 17.6,
+      "ate": 17.66,
+      "w": "É"
+    },
+    {
+      "em": 17.62,
+      "ate": 18.1,
+      "w": "agenda."
+    },
+    {
+      "em": 18.42,
+      "ate": 18.53,
+      "w": "Esse"
+    },
+    {
+      "em": 18.53,
+      "ate": 18.69,
+      "w": "é"
+    },
+    {
+      "em": 18.69,
+      "ate": 18.81,
+      "w": "o"
+    },
+    {
+      "em": 18.81,
+      "ate": 19.12,
+      "w": "corte"
+    },
+    {
+      "em": 19.12,
+      "ate": 19.31,
+      "w": "do"
+    },
+    {
+      "em": 19.31,
+      "ate": 19.96,
+      "w": "episódio"
+    },
+    {
+      "em": 19.96,
+      "ate": 20.11,
+      "w": "de"
+    },
+    {
+      "em": 20.11,
+      "ate": 20.46,
+      "w": "hoje"
+    },
+    {
+      "em": 20.79,
+      "ate": 20.89,
+      "w": "Segue"
+    },
+    {
+      "em": 20.89,
+      "ate": 21.14,
+      "w": "para"
+    },
+    {
+      "em": 21.14,
+      "ate": 21.44,
+      "w": "ouvir"
+    },
+    {
+      "em": 21.44,
+      "ate": 21.5,
+      "w": "o"
+    },
+    {
+      "em": 21.5,
+      "ate": 21.85,
+      "w": "resto."
+    }
+  ]
+}

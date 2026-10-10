@@ -1,0 +1,375 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 20.32,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.304
+  },
+  "zona": {
+    "topo": 970,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Cerimonial"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.6,
+    6.58,
+    9.33,
+    11.98,
+    14.48,
+    15.17,
+    17.88
+  ],
+  "momentos": [
+    {
+      "tipo": "convite",
+      "de": 0,
+      "ate": 2.6,
+      "titulo": "Vai casar?",
+      "subtitulo": "Anota esse cronograma",
+      "seloEm": 1.95
+    },
+    {
+      "tipo": "marco",
+      "de": 2.6,
+      "ate": 6.58,
+      "numero": "12",
+      "unidade": "meses antes",
+      "extenso": "Doze meses antes",
+      "numeroEm": 2.68,
+      "itens": [
+        {
+          "em": 4.21,
+          "texto": "Data",
+          "icone": "calendario"
+        },
+        {
+          "em": 4.58,
+          "texto": "Local",
+          "icone": "local"
+        },
+        {
+          "em": 5.24,
+          "texto": "Orçamento",
+          "icone": "orcamento"
+        }
+      ]
+    },
+    {
+      "tipo": "marco",
+      "de": 6.58,
+      "ate": 9.33,
+      "numero": "9",
+      "unidade": "meses",
+      "extenso": "Nove meses",
+      "numeroEm": 6.7,
+      "itens": [
+        {
+          "em": 7.89,
+          "texto": "Fotógrafo",
+          "icone": "camera"
+        },
+        {
+          "em": 8.77,
+          "texto": "Buffet",
+          "icone": "buffet"
+        }
+      ]
+    },
+    {
+      "tipo": "marco",
+      "de": 9.33,
+      "ate": 11.98,
+      "numero": "6",
+      "unidade": "meses",
+      "extenso": "Seis meses",
+      "numeroEm": 9.43,
+      "itens": [
+        {
+          "em": 10.63,
+          "texto": "Convites",
+          "icone": "convite"
+        },
+        {
+          "em": 11.41,
+          "texto": "Traje",
+          "icone": "traje"
+        }
+      ]
+    },
+    {
+      "tipo": "marco",
+      "de": 11.98,
+      "ate": 14.48,
+      "numero": "3",
+      "unidade": "meses",
+      "extenso": "Três meses",
+      "numeroEm": 12.09,
+      "itens": [
+        {
+          "em": 13.21,
+          "texto": "Envio dos convites",
+          "icone": "envio"
+        }
+      ]
+    },
+    {
+      "tipo": "marco",
+      "de": 14.48,
+      "ate": 17.88,
+      "numero": "1",
+      "unidade": "mês",
+      "extenso": "Um mês",
+      "numeroEm": 14.56,
+      "itens": [
+        {
+          "em": 15.27,
+          "texto": "Prova final",
+          "icone": "prova"
+        },
+        {
+          "em": 16.16,
+          "texto": "Confirmação dos convidados",
+          "icone": "confirmacao"
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 17.88,
+      "ate": 20.32,
+      "texto": "Salva",
+      "complemento": "e manda pro seu amor",
+      "destaque": "seu amor",
+      "seloEm": 18.1
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para o": "pro"
+  },
+  "palavras": [
+    {
+      "em": 0.1,
+      "ate": 0.16,
+      "w": "Vai"
+    },
+    {
+      "em": 0.16,
+      "ate": 0.86,
+      "w": "casar?"
+    },
+    {
+      "em": 1.14,
+      "ate": 1.32,
+      "w": "Anota"
+    },
+    {
+      "em": 1.32,
+      "ate": 1.55,
+      "w": "aí"
+    },
+    {
+      "em": 1.55,
+      "ate": 1.85,
+      "w": "esse"
+    },
+    {
+      "em": 1.85,
+      "ate": 2.6,
+      "w": "cronograma."
+    },
+    {
+      "em": 2.68,
+      "ate": 2.85,
+      "w": "Doze"
+    },
+    {
+      "em": 2.85,
+      "ate": 3.29,
+      "w": "meses"
+    },
+    {
+      "em": 3.29,
+      "ate": 4.21,
+      "w": "antes."
+    },
+    {
+      "em": 4.21,
+      "ate": 4.58,
+      "w": "Data,"
+    },
+    {
+      "em": 4.58,
+      "ate": 5.21,
+      "w": "local"
+    },
+    {
+      "em": 5.21,
+      "ate": 5.27,
+      "w": "e"
+    },
+    {
+      "em": 5.24,
+      "ate": 6.36,
+      "w": "orçamento."
+    },
+    {
+      "em": 6.7,
+      "ate": 6.76,
+      "w": "Nove"
+    },
+    {
+      "em": 6.73,
+      "ate": 7.24,
+      "w": "meses."
+    },
+    {
+      "em": 7.89,
+      "ate": 8.75,
+      "w": "fotógrafo"
+    },
+    {
+      "em": 8.75,
+      "ate": 8.81,
+      "w": "e"
+    },
+    {
+      "em": 8.77,
+      "ate": 9.33,
+      "w": "buffet"
+    },
+    {
+      "em": 9.43,
+      "ate": 9.7,
+      "w": "Seis"
+    },
+    {
+      "em": 9.7,
+      "ate": 10.31,
+      "w": "meses."
+    },
+    {
+      "em": 10.63,
+      "ate": 11.22,
+      "w": "Convites"
+    },
+    {
+      "em": 11.22,
+      "ate": 11.41,
+      "w": "e"
+    },
+    {
+      "em": 11.41,
+      "ate": 11.87,
+      "w": "traje."
+    },
+    {
+      "em": 12.09,
+      "ate": 12.28,
+      "w": "3"
+    },
+    {
+      "em": 12.28,
+      "ate": 12.98,
+      "w": "meses"
+    },
+    {
+      "em": 13.21,
+      "ate": 13.45,
+      "w": "Envio"
+    },
+    {
+      "em": 13.45,
+      "ate": 13.62,
+      "w": "dos"
+    },
+    {
+      "em": 13.62,
+      "ate": 14.25,
+      "w": "convites."
+    },
+    {
+      "em": 14.56,
+      "ate": 14.62,
+      "w": "Um"
+    },
+    {
+      "em": 14.58,
+      "ate": 14.98,
+      "w": "mês."
+    },
+    {
+      "em": 15.27,
+      "ate": 15.47,
+      "w": "prova"
+    },
+    {
+      "em": 15.47,
+      "ate": 15.87,
+      "w": "final"
+    },
+    {
+      "em": 15.87,
+      "ate": 16.16,
+      "w": "e"
+    },
+    {
+      "em": 16.16,
+      "ate": 16.95,
+      "w": "confirmação"
+    },
+    {
+      "em": 16.95,
+      "ate": 17.08,
+      "w": "dos"
+    },
+    {
+      "em": 17.08,
+      "ate": 17.67,
+      "w": "convidados."
+    },
+    {
+      "em": 18.06,
+      "ate": 18.12,
+      "w": "Salva"
+    },
+    {
+      "em": 18.12,
+      "ate": 18.19,
+      "w": "e"
+    },
+    {
+      "em": 18.19,
+      "ate": 18.66,
+      "w": "manda"
+    },
+    {
+      "em": 18.66,
+      "ate": 18.79,
+      "w": "para"
+    },
+    {
+      "em": 18.79,
+      "ate": 18.86,
+      "w": "o"
+    },
+    {
+      "em": 18.86,
+      "ate": 19.11,
+      "w": "seu"
+    },
+    {
+      "em": 19.11,
+      "ate": 19.6,
+      "w": "amor."
+    }
+  ]
+}

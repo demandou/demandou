@@ -1,0 +1,599 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 31.68,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.31
+  },
+  "zona": {
+    "topo": 986,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago Moura",
+    "area": "Documentário"
+  },
+  "sfx": true,
+  "cortesEm": [
+    4.27,
+    9.4,
+    13.17,
+    15.14,
+    20.3,
+    25.63,
+    29.68
+  ],
+  "assunto": "Cristo Redentor",
+  "passado": [
+    {
+      "de": 2.94,
+      "ate": 25.72
+    }
+  ],
+  "caixas": {
+    "topo": {
+      "zoom": 1.3,
+      "ancoraY": 0.52
+    },
+    "canto": {
+      "zoom": 2.0,
+      "ancoraY": 0.5
+    }
+  },
+  "momentos": [
+    {
+      "tipo": "credito",
+      "de": 0.0,
+      "ate": 4.31,
+      "rotulo": "Local e data",
+      "lugar": {
+        "em": 0.1,
+        "texto": "Rio de Janeiro"
+      },
+      "data": [
+        {
+          "em": 1.33,
+          "texto": "12"
+        },
+        {
+          "em": 2.05,
+          "texto": "10"
+        },
+        {
+          "em": 2.94,
+          "texto": "1931"
+        }
+      ]
+    },
+    {
+      "tipo": "ficha",
+      "de": 4.31,
+      "ate": 9.45,
+      "legenda": true,
+      "cabecalho": "Ficha de registro",
+      "titulo": {
+        "em": 6.08,
+        "texto": "Cristo Redentor",
+        "rotulo": "Objeto"
+      },
+      "campos": [
+        {
+          "em": 4.9,
+          "rotulo": "Obra · engenheiro",
+          "valor": "Heitor da Silva Costa"
+        }
+      ],
+      "carimbo": {
+        "em": 7.26,
+        "texto": "Inaugurado",
+        "detalhe": "12.10.1931"
+      },
+      "coordenadas": {
+        "em": 8.15,
+        "local": "Alto do Corcovado",
+        "lat": "22°57'05\"S",
+        "lon": "43°12'38\"W"
+      },
+      "layout": "esquerda"
+    },
+    {
+      "tipo": "escala",
+      "de": 9.45,
+      "ate": 13.22,
+      "rotulo": "Altura",
+      "unidade": "m",
+      "desenho": "estatua",
+      "partes": [
+        {
+          "em": 11.59,
+          "valor": 8,
+          "rotulo": "pedestal"
+        },
+        {
+          "em": 9.61,
+          "valor": 30,
+          "rotulo": "estátua"
+        }
+      ]
+    },
+    {
+      "tipo": "camadas",
+      "de": 13.22,
+      "ate": 20.28,
+      "dentro": {
+        "em": 13.26,
+        "titulo": "Por dentro",
+        "material": "concreto",
+        "nome": "Concreto armado",
+        "nomeEm": 14.11
+      },
+      "fora": {
+        "em": 15.23,
+        "titulo": "Por fora",
+        "material": "mosaico",
+        "nome": "Pedra-sabão",
+        "nomeEm": 18.16,
+        "cobreAte": 18.9
+      },
+      "destaque": {
+        "em": 19.17,
+        "texto": "Colocados à mão"
+      }
+    },
+    {
+      "tipo": "pessoas",
+      "de": 20.28,
+      "ate": 25.66,
+      "legenda": true,
+      "titulo": "O rosto e o projeto",
+      "pessoas": [
+        {
+          "em": 20.93,
+          "papel": "Rosto",
+          "nome": "Gheorghe Leonida",
+          "nomeEm": 22.01,
+          "detalhe": "Escultor · Romênia",
+          "detalheEm": 22.48
+        },
+        {
+          "em": 23.65,
+          "papel": "Projeto",
+          "nome": "Paul Landowski",
+          "nomeEm": 24.39,
+          "detalhe": "Escultor · França",
+          "detalheEm": 25.05
+        }
+      ],
+      "ligacao": {
+        "em": 23.27
+      },
+      "layout": "direita"
+    },
+    {
+      "tipo": "linha",
+      "de": 25.66,
+      "ate": 29.72,
+      "marcos": [
+        {
+          "em": 25.66,
+          "ano": 1931,
+          "texto": "Inauguração"
+        },
+        {
+          "em": 25.72,
+          "ano": 2007,
+          "texto": "Sete maravilhas"
+        }
+      ],
+      "manchete": "Uma das sete maravilhas do mundo moderno",
+      "enfase": "sete maravilhas",
+      "carimbo": {
+        "em": 27.61,
+        "texto": "Eleito",
+        "detalhe": "07.07.2007"
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 29.72,
+      "ate": 31.68,
+      "texto": "Segue para a próxima história",
+      "icone": "seguir"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "Alto": "alto"
+  },
+  "palavras": [
+    {
+      "em": 0.1,
+      "ate": 0.16,
+      "w": "Rio"
+    },
+    {
+      "em": 0.14,
+      "ate": 0.3,
+      "w": "de"
+    },
+    {
+      "em": 0.3,
+      "ate": 0.86,
+      "w": "Janeiro"
+    },
+    {
+      "em": 1.33,
+      "ate": 1.77,
+      "w": "12"
+    },
+    {
+      "em": 1.77,
+      "ate": 2.05,
+      "w": "de"
+    },
+    {
+      "em": 2.05,
+      "ate": 2.74,
+      "w": "outubro"
+    },
+    {
+      "em": 2.74,
+      "ate": 2.94,
+      "w": "de"
+    },
+    {
+      "em": 2.94,
+      "ate": 4.27,
+      "w": "1931"
+    },
+    {
+      "em": 4.36,
+      "ate": 4.77,
+      "w": "Depois"
+    },
+    {
+      "em": 4.77,
+      "ate": 4.93,
+      "w": "de"
+    },
+    {
+      "em": 4.93,
+      "ate": 5.32,
+      "w": "anos"
+    },
+    {
+      "em": 5.32,
+      "ate": 5.5,
+      "w": "de"
+    },
+    {
+      "em": 5.5,
+      "ate": 6.06,
+      "w": "obra,"
+    },
+    {
+      "em": 6.06,
+      "ate": 6.12,
+      "w": "o"
+    },
+    {
+      "em": 6.1,
+      "ate": 6.53,
+      "w": "Cristo"
+    },
+    {
+      "em": 6.53,
+      "ate": 7.11,
+      "w": "Redentor"
+    },
+    {
+      "em": 7.11,
+      "ate": 7.26,
+      "w": "é"
+    },
+    {
+      "em": 7.26,
+      "ate": 8.01,
+      "w": "inaugurado"
+    },
+    {
+      "em": 8.01,
+      "ate": 8.17,
+      "w": "no"
+    },
+    {
+      "em": 8.17,
+      "ate": 8.5,
+      "w": "Alto"
+    },
+    {
+      "em": 8.5,
+      "ate": 8.7,
+      "w": "do"
+    },
+    {
+      "em": 8.7,
+      "ate": 9.4,
+      "w": "Corcovado"
+    },
+    {
+      "em": 9.5,
+      "ate": 9.61,
+      "w": "São"
+    },
+    {
+      "em": 9.61,
+      "ate": 10.08,
+      "w": "30"
+    },
+    {
+      "em": 10.08,
+      "ate": 10.55,
+      "w": "metros"
+    },
+    {
+      "em": 10.55,
+      "ate": 10.7,
+      "w": "de"
+    },
+    {
+      "em": 10.7,
+      "ate": 11.34,
+      "w": "estátua."
+    },
+    {
+      "em": 11.59,
+      "ate": 11.98,
+      "w": "38"
+    },
+    {
+      "em": 11.98,
+      "ate": 12.29,
+      "w": "com"
+    },
+    {
+      "em": 12.29,
+      "ate": 12.38,
+      "w": "o"
+    },
+    {
+      "em": 12.38,
+      "ate": 13.17,
+      "w": "pedestal"
+    },
+    {
+      "em": 13.26,
+      "ate": 13.32,
+      "w": "por"
+    },
+    {
+      "em": 13.29,
+      "ate": 14.11,
+      "w": "dentro,"
+    },
+    {
+      "em": 14.11,
+      "ate": 14.63,
+      "w": "concreto"
+    },
+    {
+      "em": 14.63,
+      "ate": 15.14,
+      "w": "armado"
+    },
+    {
+      "em": 15.23,
+      "ate": 15.29,
+      "w": "Por"
+    },
+    {
+      "em": 15.26,
+      "ate": 15.66,
+      "w": "fora,"
+    },
+    {
+      "em": 15.66,
+      "ate": 16.3,
+      "w": "milhares"
+    },
+    {
+      "em": 16.3,
+      "ate": 16.44,
+      "w": "de"
+    },
+    {
+      "em": 16.44,
+      "ate": 17.05,
+      "w": "pequenos"
+    },
+    {
+      "em": 17.05,
+      "ate": 17.91,
+      "w": "triângulos"
+    },
+    {
+      "em": 17.91,
+      "ate": 18.16,
+      "w": "de"
+    },
+    {
+      "em": 18.16,
+      "ate": 18.96,
+      "w": "pedra-sabão."
+    },
+    {
+      "em": 19.17,
+      "ate": 19.79,
+      "w": "colocados"
+    },
+    {
+      "em": 19.79,
+      "ate": 19.97,
+      "w": "à"
+    },
+    {
+      "em": 19.97,
+      "ate": 20.3,
+      "w": "mão."
+    },
+    {
+      "em": 20.31,
+      "ate": 20.37,
+      "w": "O"
+    },
+    {
+      "em": 20.4,
+      "ate": 20.65,
+      "w": "rosto"
+    },
+    {
+      "em": 20.65,
+      "ate": 20.93,
+      "w": "foi"
+    },
+    {
+      "em": 20.93,
+      "ate": 21.64,
+      "w": "esculpido"
+    },
+    {
+      "em": 21.64,
+      "ate": 21.79,
+      "w": "por"
+    },
+    {
+      "em": 21.79,
+      "ate": 22.01,
+      "w": "um"
+    },
+    {
+      "em": 22.01,
+      "ate": 22.48,
+      "w": "artista"
+    },
+    {
+      "em": 22.48,
+      "ate": 23.17,
+      "w": "romeno,"
+    },
+    {
+      "em": 23.17,
+      "ate": 23.27,
+      "w": "a"
+    },
+    {
+      "em": 23.27,
+      "ate": 23.65,
+      "w": "partir"
+    },
+    {
+      "em": 23.65,
+      "ate": 23.78,
+      "w": "do"
+    },
+    {
+      "em": 23.78,
+      "ate": 24.26,
+      "w": "projeto"
+    },
+    {
+      "em": 24.26,
+      "ate": 24.39,
+      "w": "de"
+    },
+    {
+      "em": 24.39,
+      "ate": 24.51,
+      "w": "um"
+    },
+    {
+      "em": 24.51,
+      "ate": 25.05,
+      "w": "escultor"
+    },
+    {
+      "em": 25.05,
+      "ate": 25.63,
+      "w": "francês"
+    },
+    {
+      "em": 25.7,
+      "ate": 25.76,
+      "w": "Em"
+    },
+    {
+      "em": 25.72,
+      "ate": 26.96,
+      "w": "2007,"
+    },
+    {
+      "em": 26.96,
+      "ate": 27.22,
+      "w": "virou"
+    },
+    {
+      "em": 27.22,
+      "ate": 27.42,
+      "w": "uma"
+    },
+    {
+      "em": 27.42,
+      "ate": 27.61,
+      "w": "das"
+    },
+    {
+      "em": 27.61,
+      "ate": 27.93,
+      "w": "sete"
+    },
+    {
+      "em": 27.93,
+      "ate": 28.63,
+      "w": "maravilhas"
+    },
+    {
+      "em": 28.63,
+      "ate": 28.78,
+      "w": "do"
+    },
+    {
+      "em": 28.78,
+      "ate": 29.16,
+      "w": "mundo"
+    },
+    {
+      "em": 29.16,
+      "ate": 29.68,
+      "w": "moderno."
+    },
+    {
+      "em": 29.76,
+      "ate": 29.82,
+      "w": "Segue"
+    },
+    {
+      "em": 29.79,
+      "ate": 29.95,
+      "w": "para"
+    },
+    {
+      "em": 29.95,
+      "ate": 30.01,
+      "w": "a"
+    },
+    {
+      "em": 29.99,
+      "ate": 30.33,
+      "w": "próxima"
+    },
+    {
+      "em": 30.33,
+      "ate": 30.88,
+      "w": "história."
+    }
+  ]
+}

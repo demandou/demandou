@@ -1,0 +1,459 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 23.56,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.31
+  },
+  "zona": {
+    "topo": 976,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Violão"
+  },
+  "sfx": true,
+  "cortesEm": [
+    6.84,
+    10.01,
+    18.28,
+    21.49
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 3.42,
+      "apoio": "você toca centenas de músicas",
+      "destaque": "centenas",
+      "cifras": [
+        "G",
+        "D",
+        "Em",
+        "C"
+      ],
+      "texto": "4 acordes"
+    },
+    {
+      "tipo": "acordes",
+      "de": 3.42,
+      "ate": 6.84,
+      "acordes": [
+        {
+          "cifra": "G",
+          "nome": "Sol",
+          "forma": "320003",
+          "dedos": "210003",
+          "em": 3.79
+        },
+        {
+          "cifra": "D",
+          "nome": "Ré",
+          "forma": "xx0232",
+          "dedos": "xx0132",
+          "em": 4.68
+        },
+        {
+          "cifra": "Em",
+          "nome": "Mi menor",
+          "forma": "022000",
+          "dedos": "023000",
+          "em": 5.48
+        },
+        {
+          "cifra": "C",
+          "nome": "Dó",
+          "forma": "x32010",
+          "dedos": "x32010",
+          "em": 6.41
+        }
+      ]
+    },
+    {
+      "tipo": "compasso",
+      "de": 6.84,
+      "ate": 12.2,
+      "legenda": true,
+      "compassos": [
+        "G",
+        "D",
+        "Em",
+        "C"
+      ],
+      "trocaEm": 7.2,
+      "tocarEm": 9.01,
+      "andamentos": [
+        {
+          "em": 8.14,
+          "texto": "devagar",
+          "periodo": 1.05
+        },
+        {
+          "em": 11.28,
+          "texto": "acelera",
+          "periodo": 0.5
+        }
+      ]
+    },
+    {
+      "tipo": "batida",
+      "de": 12.2,
+      "ate": 18.25,
+      "titulo": "Batida simples",
+      "setas": [
+        {
+          "dir": "baixo",
+          "em": 13.92
+        },
+        {
+          "dir": "baixo",
+          "em": 14.85
+        },
+        {
+          "dir": "cima",
+          "em": 15.81
+        },
+        {
+          "dir": "cima",
+          "em": 16.76
+        },
+        {
+          "dir": "baixo",
+          "em": 17.75
+        }
+      ]
+    },
+    {
+      "tipo": "cifra",
+      "de": 18.25,
+      "ate": 21.05,
+      "titulo": "Suas músicas favoritas",
+      "tituloEm": 20.12,
+      "tom": "G",
+      "semana": {
+        "em": 18.45,
+        "rotulo": "1 semana de treino"
+      },
+      "linhas": [
+        [
+          {
+            "cifra": "G",
+            "em": 18.89
+          },
+          {
+            "cifra": "D",
+            "em": 19.4
+          }
+        ],
+        [
+          {
+            "cifra": "Em",
+            "em": 19.99
+          },
+          {
+            "cifra": "C",
+            "em": 20.38
+          }
+        ]
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 21.05,
+      "ate": 23.56,
+      "texto": "Mais aulas de violão",
+      "botao": "Seguir",
+      "botaoEm": 21.58
+    }
+  ],
+  "semLegenda": [
+    {
+      "de": 11.25,
+      "ate": 12.25
+    }
+  ],
+  "correcoes": {
+    "HÉ? Mi": "Ré, Mi",
+    "i": "e",
+    "dot.": "Dó.",
+    "sim": "cima",
+    "segue para": "segue pra"
+  },
+  "palavras": [
+    {
+      "em": 0.27,
+      "ate": 0.33,
+      "w": "Com"
+    },
+    {
+      "em": 0.3,
+      "ate": 0.81,
+      "w": "quatro"
+    },
+    {
+      "em": 0.81,
+      "ate": 1.42,
+      "w": "acordes"
+    },
+    {
+      "em": 1.42,
+      "ate": 1.74,
+      "w": "você"
+    },
+    {
+      "em": 1.74,
+      "ate": 2,
+      "w": "toca"
+    },
+    {
+      "em": 2,
+      "ate": 2.71,
+      "w": "centenas"
+    },
+    {
+      "em": 2.71,
+      "ate": 2.85,
+      "w": "de"
+    },
+    {
+      "em": 2.85,
+      "ate": 3.54,
+      "w": "músicas"
+    },
+    {
+      "em": 3.79,
+      "ate": 4.41,
+      "w": "Sol"
+    },
+    {
+      "em": 4.68,
+      "ate": 5.19,
+      "w": "HÉ?"
+    },
+    {
+      "em": 5.48,
+      "ate": 5.54,
+      "w": "Mi"
+    },
+    {
+      "em": 5.5,
+      "ate": 6.03,
+      "w": "menor"
+    },
+    {
+      "em": 6.03,
+      "ate": 6.41,
+      "w": "i"
+    },
+    {
+      "em": 6.41,
+      "ate": 6.84,
+      "w": "dot."
+    },
+    {
+      "em": 6.94,
+      "ate": 7.14,
+      "w": "Treina"
+    },
+    {
+      "em": 7.14,
+      "ate": 7.2,
+      "w": "a"
+    },
+    {
+      "em": 7.2,
+      "ate": 7.59,
+      "w": "troca"
+    },
+    {
+      "em": 7.59,
+      "ate": 7.87,
+      "w": "entre"
+    },
+    {
+      "em": 7.87,
+      "ate": 8.14,
+      "w": "eles"
+    },
+    {
+      "em": 8.14,
+      "ate": 8.98,
+      "w": "devagar,"
+    },
+    {
+      "em": 9.01,
+      "ate": 9.07,
+      "w": "um"
+    },
+    {
+      "em": 9.04,
+      "ate": 9.23,
+      "w": "por"
+    },
+    {
+      "em": 9.23,
+      "ate": 9.88,
+      "w": "compasso."
+    },
+    {
+      "em": 10.1,
+      "ate": 10.33,
+      "w": "Quando"
+    },
+    {
+      "em": 10.33,
+      "ate": 10.67,
+      "w": "ficar"
+    },
+    {
+      "em": 10.67,
+      "ate": 11.28,
+      "w": "natural,"
+    },
+    {
+      "em": 11.28,
+      "ate": 11.94,
+      "w": "acelera"
+    },
+    {
+      "em": 11.94,
+      "ate": 12,
+      "w": "e"
+    },
+    {
+      "em": 11.98,
+      "ate": 12.42,
+      "w": "coloca"
+    },
+    {
+      "em": 12.42,
+      "ate": 12.7,
+      "w": "uma"
+    },
+    {
+      "em": 12.7,
+      "ate": 13.08,
+      "w": "batida"
+    },
+    {
+      "em": 13.08,
+      "ate": 13.6,
+      "w": "simples"
+    },
+    {
+      "em": 13.92,
+      "ate": 14.65,
+      "w": "Baixo."
+    },
+    {
+      "em": 14.85,
+      "ate": 15.57,
+      "w": "baixo"
+    },
+    {
+      "em": 15.81,
+      "ate": 16.47,
+      "w": "sim"
+    },
+    {
+      "em": 16.76,
+      "ate": 17.43,
+      "w": "cima,"
+    },
+    {
+      "em": 17.75,
+      "ate": 18.11,
+      "w": "Baixo."
+    },
+    {
+      "em": 18.35,
+      "ate": 18.41,
+      "w": "Em"
+    },
+    {
+      "em": 18.38,
+      "ate": 18.5,
+      "w": "uma"
+    },
+    {
+      "em": 18.5,
+      "ate": 18.89,
+      "w": "semana"
+    },
+    {
+      "em": 18.89,
+      "ate": 19.21,
+      "w": "você"
+    },
+    {
+      "em": 19.21,
+      "ate": 19.4,
+      "w": "já"
+    },
+    {
+      "em": 19.4,
+      "ate": 19.99,
+      "w": "acompanha"
+    },
+    {
+      "em": 19.99,
+      "ate": 20.12,
+      "w": "as"
+    },
+    {
+      "em": 20.12,
+      "ate": 20.38,
+      "w": "suas"
+    },
+    {
+      "em": 20.38,
+      "ate": 20.9,
+      "w": "músicas"
+    },
+    {
+      "em": 20.9,
+      "ate": 21.49,
+      "w": "favoritas"
+    },
+    {
+      "em": 21.55,
+      "ate": 21.61,
+      "w": "Me"
+    },
+    {
+      "em": 21.58,
+      "ate": 21.76,
+      "w": "segue"
+    },
+    {
+      "em": 21.76,
+      "ate": 21.96,
+      "w": "para"
+    },
+    {
+      "em": 21.96,
+      "ate": 22.17,
+      "w": "mais"
+    },
+    {
+      "em": 22.17,
+      "ate": 22.43,
+      "w": "aulas"
+    },
+    {
+      "em": 22.43,
+      "ate": 22.53,
+      "w": "de"
+    },
+    {
+      "em": 22.53,
+      "ate": 23.15,
+      "w": "violão."
+    }
+  ]
+}

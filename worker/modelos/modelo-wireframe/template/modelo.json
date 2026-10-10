@@ -1,0 +1,5 @@
+{
+  "recorte": { "vertical": "9:16" },
+  "blocos": { "assinatura": ["revisao", "conserto", "resultado"] },
+  "palavraPorPalavra": ["abertura", "frase", "destaque", "definicao", "numero"]
+}

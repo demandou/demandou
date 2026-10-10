@@ -1,0 +1,398 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 19.32,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.3
+  },
+  "zona": {
+    "topo": 970,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Produtividade"
+  },
+  "agenda": {
+    "inicio": "09:00",
+    "dia": "Hoje"
+  },
+  "sfx": true,
+  "cortesEm": [
+    1.33,
+    3.2,
+    6.5,
+    8.73,
+    13.22,
+    16.55
+  ],
+  "momentos": [
+    {
+      "tipo": "gancho",
+      "de": 0,
+      "ate": 3.2,
+      "pergunta": "Não consegue focar?",
+      "distracoes": [
+        {
+          "texto": "E-mail novo",
+          "icone": "email",
+          "em": 0.42
+        },
+        {
+          "texto": "12 mensagens",
+          "icone": "mensagem",
+          "em": 0.68
+        },
+        {
+          "texto": "Vídeo curto",
+          "icone": "video",
+          "em": 0.95
+        },
+        {
+          "texto": "Notícias",
+          "icone": "noticia",
+          "em": 1.18
+        }
+      ],
+      "resposta": "Técnica Pomodoro",
+      "respostaRotulo": "Testa a",
+      "varreEm": 1.43
+    },
+    {
+      "tipo": "blocos",
+      "de": 3.2,
+      "ate": 6.5,
+      "blocos": [
+        {
+          "categoria": "foco",
+          "minutos": 25,
+          "em": 3.55,
+          "titulo": "Foco total"
+        }
+      ],
+      "cronometro": {
+        "em": 4.64,
+        "ate": 6.3
+      },
+      "sem": {
+        "texto": "Celular",
+        "icone": "celular",
+        "em": 5.38,
+        "riscaEm": 5.78
+      }
+    },
+    {
+      "tipo": "blocos",
+      "de": 6.5,
+      "ate": 8.73,
+      "blocos": [
+        {
+          "categoria": "pausa",
+          "minutos": 5,
+          "em": 6.98,
+          "titulo": "Pausa"
+        }
+      ],
+      "cronometro": {
+        "em": 7.47,
+        "ate": 8.6
+      }
+    },
+    {
+      "tipo": "ciclos",
+      "de": 8.73,
+      "ate": 13.22,
+      "itens": [
+        {
+          "em": 9.06
+        },
+        {
+          "em": 9.3
+        },
+        {
+          "em": 9.52
+        },
+        {
+          "em": 9.74
+        }
+      ],
+      "rotulo": "ciclos",
+      "rotuloEm": 9.58,
+      "final": {
+        "categoria": "longa",
+        "titulo": "Pausa longa",
+        "em": 10.5,
+        "minutos": 15,
+        "minutosEm": 11.51,
+        "maxMinutos": 30,
+        "maxEm": 11.95
+      }
+    },
+    {
+      "tipo": "frase",
+      "de": 13.22,
+      "ate": 16.55,
+      "texto": "Parece simples. É exatamente por isso que funciona.",
+      "destaque": "funciona"
+    },
+    {
+      "tipo": "cta",
+      "de": 16.55,
+      "ate": 19.32,
+      "texto": "Testa hoje no seu trabalho",
+      "rotulo": "Lembrete",
+      "icone": "salvar",
+      "acaoEm": 16.7,
+      "etiquetas": [
+        {
+          "texto": "Hoje",
+          "icone": "calendario",
+          "em": 17.29
+        },
+        {
+          "texto": "No trabalho",
+          "icone": "maleta",
+          "em": 17.97
+        }
+      ]
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {},
+  "palavras": [
+    {
+      "em": 0.3,
+      "ate": 0.36,
+      "w": "Não"
+    },
+    {
+      "em": 0.32,
+      "ate": 1,
+      "w": "consegue"
+    },
+    {
+      "em": 1,
+      "ate": 1.33,
+      "w": "focar"
+    },
+    {
+      "em": 1.43,
+      "ate": 1.7,
+      "w": "Testa"
+    },
+    {
+      "em": 1.7,
+      "ate": 2.51,
+      "w": "técnica"
+    },
+    {
+      "em": 2.51,
+      "ate": 3.2,
+      "w": "Pomodoro"
+    },
+    {
+      "em": 3.29,
+      "ate": 3.66,
+      "w": "25"
+    },
+    {
+      "em": 3.66,
+      "ate": 4.32,
+      "w": "minutos"
+    },
+    {
+      "em": 4.32,
+      "ate": 4.64,
+      "w": "de"
+    },
+    {
+      "em": 4.64,
+      "ate": 5,
+      "w": "foco"
+    },
+    {
+      "em": 5,
+      "ate": 5.38,
+      "w": "total"
+    },
+    {
+      "em": 5.38,
+      "ate": 5.78,
+      "w": "sem"
+    },
+    {
+      "em": 5.78,
+      "ate": 6.34,
+      "w": "celular."
+    },
+    {
+      "em": 6.6,
+      "ate": 6.95,
+      "w": "Depois,"
+    },
+    {
+      "em": 6.95,
+      "ate": 7.47,
+      "w": "cinco"
+    },
+    {
+      "em": 7.47,
+      "ate": 7.83,
+      "w": "minutos"
+    },
+    {
+      "em": 7.83,
+      "ate": 8.01,
+      "w": "de"
+    },
+    {
+      "em": 8.01,
+      "ate": 8.56,
+      "w": "pausa."
+    },
+    {
+      "em": 8.79,
+      "ate": 8.85,
+      "w": "A"
+    },
+    {
+      "em": 8.82,
+      "ate": 9.06,
+      "w": "cada"
+    },
+    {
+      "em": 9.06,
+      "ate": 9.58,
+      "w": "quatro"
+    },
+    {
+      "em": 9.58,
+      "ate": 10.37,
+      "w": "ciclos,"
+    },
+    {
+      "em": 10.37,
+      "ate": 10.5,
+      "w": "uma"
+    },
+    {
+      "em": 10.5,
+      "ate": 10.87,
+      "w": "pausa"
+    },
+    {
+      "em": 10.87,
+      "ate": 11.45,
+      "w": "longa,"
+    },
+    {
+      "em": 11.45,
+      "ate": 11.51,
+      "w": "de"
+    },
+    {
+      "em": 11.51,
+      "ate": 11.89,
+      "w": "15"
+    },
+    {
+      "em": 11.89,
+      "ate": 11.95,
+      "w": "a"
+    },
+    {
+      "em": 11.95,
+      "ate": 12.36,
+      "w": "30"
+    },
+    {
+      "em": 12.36,
+      "ate": 12.99,
+      "w": "minutos."
+    },
+    {
+      "em": 13.31,
+      "ate": 13.6,
+      "w": "Parece"
+    },
+    {
+      "em": 13.6,
+      "ate": 14.39,
+      "w": "simples,"
+    },
+    {
+      "em": 14.39,
+      "ate": 14.45,
+      "w": "e"
+    },
+    {
+      "em": 14.41,
+      "ate": 14.53,
+      "w": "é"
+    },
+    {
+      "em": 14.53,
+      "ate": 15.25,
+      "w": "exatamente"
+    },
+    {
+      "em": 15.25,
+      "ate": 15.46,
+      "w": "por"
+    },
+    {
+      "em": 15.46,
+      "ate": 15.77,
+      "w": "isso"
+    },
+    {
+      "em": 15.77,
+      "ate": 16,
+      "w": "que"
+    },
+    {
+      "em": 16,
+      "ate": 16.55,
+      "w": "funciona."
+    },
+    {
+      "em": 16.64,
+      "ate": 16.83,
+      "w": "Salva"
+    },
+    {
+      "em": 16.83,
+      "ate": 16.9,
+      "w": "e"
+    },
+    {
+      "em": 16.9,
+      "ate": 17.29,
+      "w": "testa"
+    },
+    {
+      "em": 17.29,
+      "ate": 17.66,
+      "w": "hoje"
+    },
+    {
+      "em": 17.66,
+      "ate": 17.74,
+      "w": "no"
+    },
+    {
+      "em": 17.74,
+      "ate": 17.97,
+      "w": "seu"
+    },
+    {
+      "em": 17.97,
+      "ate": 18.65,
+      "w": "trabalho."
+    }
+  ]
+}

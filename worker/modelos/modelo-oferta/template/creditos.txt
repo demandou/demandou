@@ -1,0 +1,5 @@
+Créditos das imagens do exemplo (lançamento do "Método Reels", curso fictício)
+
+- celular, curso (notebook com aula), roteiros (pasta com folhas) e mentoria (fone com microfone) em public/img/*.jpg: fotos de produto geradas com IA no Magnific (Nano Banana 2), numa grade 2×2 recortada, sem texto, sem marca e sem pessoas. Sem obrigação de crédito.
+
+No vídeo do usuário, as imagens vêm da pasta imagens/ dele ou do scripts/imagens.mjs (o script grava aqui os créditos das que exigirem).

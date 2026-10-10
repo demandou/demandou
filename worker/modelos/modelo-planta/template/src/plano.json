@@ -1,0 +1,883 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 29.2,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.32
+  },
+  "zona": {
+    "topo": 996,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago Moura",
+    "area": "Arquitetura de interiores"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.46,
+    6.18,
+    9.4,
+    10.36,
+    14.21,
+    19.4,
+    20.06,
+    22.17,
+    26.18
+  ],
+  "caixas": {
+    "dividida": {
+      "zoom": 1.0,
+      "ancoraY": 0.54
+    },
+    "cheia": {
+      "zoom": 1.8,
+      "ancoraY": 0.47
+    },
+    "lateral": {
+      "zoom": 1.0
+    }
+  },
+  "momentos": [
+    {
+      "tipo": "titulo",
+      "de": 0,
+      "ate": 3.5,
+      "rotulo": "Layout de sala",
+      "linhas": [
+        "O erro que deixa",
+        "qualquer sala",
+        "parecendo menor"
+      ],
+      "enfase": "menor",
+      "cota": {
+        "texto": "sala",
+        "em": 3.07,
+        "efeito": "encolhe"
+      }
+    },
+    {
+      "tipo": "planta",
+      "de": 3.5,
+      "ate": 9.49,
+      "legenda": true,
+      "escala": "1:50",
+      "titulo": "Móvel encostado em todas as paredes",
+      "ambiente": {
+        "largura": 480,
+        "profundidade": 360,
+        "portas": [
+          {
+            "parede": "baixo",
+            "pos": 30,
+            "largura": 80
+          }
+        ],
+        "janelas": [
+          {
+            "parede": "cima",
+            "pos": 150,
+            "largura": 180
+          }
+        ]
+      },
+      "objetos": [
+        {
+          "tipo": "sofa",
+          "em": 3.63,
+          "x": 135,
+          "y": 0,
+          "frente": "baixo",
+          "rotulo": "sofá"
+        },
+        {
+          "tipo": "poltrona",
+          "em": 3.97,
+          "x": 0,
+          "y": 110,
+          "frente": "direita"
+        },
+        {
+          "tipo": "estante",
+          "em": 5,
+          "x": 445,
+          "y": 90,
+          "w": 35,
+          "h": 160,
+          "frente": "esquerda"
+        },
+        {
+          "tipo": "rack",
+          "em": 5.55,
+          "x": 150,
+          "y": 315,
+          "w": 180,
+          "h": 45,
+          "frente": "cima"
+        }
+      ],
+      "areas": [
+        {
+          "em": 6.75,
+          "x": 110,
+          "y": 120,
+          "w": 300,
+          "h": 170,
+          "texto": "espaço"
+        }
+      ],
+      "circulacao": {
+        "em": 8.19,
+        "pontos": [
+          [
+            70,
+            350
+          ],
+          [
+            70,
+            250
+          ],
+          [
+            240,
+            250
+          ],
+          [
+            240,
+            102
+          ]
+        ],
+        "bloqueada": true,
+        "dur": 1
+      }
+    },
+    {
+      "tipo": "medida",
+      "de": 10.4,
+      "ate": 14.28,
+      "numero": "01",
+      "rotulo": "Afaste o sofá da parede",
+      "valor": 20,
+      "unidade": "cm",
+      "em": 11.46,
+      "emFim": 12.72,
+      "desde": "parede",
+      "objeto": "sofa",
+      "mover": true
+    },
+    {
+      "tipo": "planta",
+      "de": 14.28,
+      "ate": 19.47,
+      "layout": "cheia",
+      "numero": "02",
+      "titulo": "Tapete grande",
+      "subtitulo": "pelo menos os pés da frente",
+      "escala": "1:50",
+      "ambiente": {
+        "largura": 480,
+        "profundidade": 360,
+        "portas": [
+          {
+            "parede": "baixo",
+            "pos": 30,
+            "largura": 80
+          }
+        ],
+        "janelas": [
+          {
+            "parede": "cima",
+            "pos": 150,
+            "largura": 180
+          }
+        ]
+      },
+      "paredesEm": 14.43,
+      "objetos": [
+        {
+          "tipo": "tapete",
+          "em": 15.25,
+          "x": 175,
+          "y": 130,
+          "w": 130,
+          "h": 95,
+          "muda": {
+            "em": 15.71,
+            "x": 95,
+            "y": 75,
+            "w": 290,
+            "h": 225,
+            "dur": 0.9
+          }
+        },
+        {
+          "tipo": "sofa",
+          "em": 14.68,
+          "x": 135,
+          "y": 20,
+          "frente": "baixo",
+          "rotulo": "sofá",
+          "pes": 17.89,
+          "cota": {
+            "lado": "cima",
+            "em": 14.83
+          }
+        },
+        {
+          "tipo": "mesaCentro",
+          "em": 14.83,
+          "x": 190,
+          "y": 165,
+          "w": 100,
+          "h": 55
+        },
+        {
+          "tipo": "poltrona",
+          "em": 14.93,
+          "x": 125,
+          "y": 255,
+          "frente": "cima",
+          "pes": 17.89
+        },
+        {
+          "tipo": "poltrona",
+          "em": 15.03,
+          "x": 275,
+          "y": 255,
+          "frente": "cima",
+          "pes": 17.89
+        },
+        {
+          "tipo": "estante",
+          "em": 15.13,
+          "x": 445,
+          "y": 100,
+          "w": 35,
+          "h": 160,
+          "frente": "esquerda"
+        }
+      ]
+    },
+    {
+      "tipo": "planta",
+      "de": 19.47,
+      "ate": 22.21,
+      "layout": "lateral",
+      "vista": "elevacao",
+      "numero": "03",
+      "titulo": "Cortina",
+      "subtitulo": "do teto até o chão",
+      "ambiente": {
+        "largura": 125,
+        "altura": 270
+      },
+      "objetos": [
+        {
+          "tipo": "janela",
+          "em": 19.87,
+          "x": 48,
+          "y": 90,
+          "w": 72,
+          "h": 140
+        },
+        {
+          "tipo": "cortina",
+          "em": 20.15,
+          "x": 10,
+          "y": 80,
+          "w": 50,
+          "h": 160,
+          "tetoEm": 20.51,
+          "chaoEm": 21.38,
+          "cota": {
+            "lado": "esquerda",
+            "numero": false
+          }
+        }
+      ],
+      "niveis": [
+        {
+          "em": 20.57,
+          "y": 270,
+          "texto": "teto"
+        },
+        {
+          "em": 21.41,
+          "y": 0,
+          "texto": "chão"
+        }
+      ]
+    },
+    {
+      "tipo": "antesDepois",
+      "de": 22.21,
+      "ate": 26.2,
+      "layout": "cheia",
+      "legenda": true,
+      "ambiente": {
+        "largura": 480,
+        "profundidade": 360,
+        "portas": [
+          {
+            "parede": "baixo",
+            "pos": 30,
+            "largura": 80
+          }
+        ],
+        "janelas": [
+          {
+            "parede": "cima",
+            "pos": 150,
+            "largura": 180
+          }
+        ]
+      },
+      "antes": {
+        "rotulo": "Antes",
+        "objetos": [
+          {
+            "tipo": "sofa",
+            "em": 22.26,
+            "x": 135,
+            "y": 0,
+            "frente": "baixo",
+            "rotulo": "sofá"
+          },
+          {
+            "tipo": "poltrona",
+            "em": 22.29,
+            "x": 0,
+            "y": 110,
+            "frente": "direita"
+          },
+          {
+            "tipo": "estante",
+            "em": 22.32,
+            "x": 445,
+            "y": 90,
+            "w": 35,
+            "h": 160,
+            "frente": "esquerda"
+          },
+          {
+            "tipo": "rack",
+            "em": 22.35,
+            "x": 150,
+            "y": 315,
+            "w": 180,
+            "h": 45,
+            "frente": "cima"
+          }
+        ],
+        "circulacao": {
+          "em": 22.36,
+          "pontos": [
+            [
+              70,
+              350
+            ],
+            [
+              70,
+              250
+            ],
+            [
+              240,
+              250
+            ],
+            [
+              240,
+              102
+            ]
+          ],
+          "bloqueada": true,
+          "dur": 0.5
+        }
+      },
+      "depois": {
+        "rotulo": "Depois",
+        "em": 22.54,
+        "objetos": [
+          {
+            "tipo": "tapete",
+            "em": 22.81,
+            "x": 95,
+            "y": 75,
+            "w": 290,
+            "h": 225,
+            "marca": {
+              "n": 2,
+              "em": 22.86,
+              "lado": "baixo"
+            }
+          },
+          {
+            "tipo": "sofa",
+            "em": 22.41,
+            "x": 135,
+            "y": 20,
+            "frente": "baixo",
+            "marca": {
+              "n": 1,
+              "em": 22.54
+            }
+          },
+          {
+            "tipo": "mesaCentro",
+            "em": 22.46,
+            "x": 190,
+            "y": 165,
+            "w": 100,
+            "h": 55
+          },
+          {
+            "tipo": "poltrona",
+            "em": 22.49,
+            "x": 125,
+            "y": 255,
+            "frente": "cima"
+          },
+          {
+            "tipo": "poltrona",
+            "em": 22.51,
+            "x": 275,
+            "y": 255,
+            "frente": "cima"
+          },
+          {
+            "tipo": "estante",
+            "em": 22.53,
+            "x": 445,
+            "y": 100,
+            "w": 35,
+            "h": 160,
+            "frente": "esquerda"
+          },
+          {
+            "tipo": "cortina",
+            "em": 23.16,
+            "x": 110,
+            "y": 2,
+            "w": 260,
+            "h": 14,
+            "marca": {
+              "n": 3,
+              "em": 23.21,
+              "lado": "direita"
+            }
+          }
+        ],
+        "circulacao": {
+          "em": 25.53,
+          "pontos": [
+            [
+              70,
+              350
+            ],
+            [
+              70,
+              232
+            ],
+            [
+              400,
+              232
+            ],
+            [
+              400,
+              60
+            ]
+          ],
+          "dur": 0.6
+        }
+      },
+      "resumo": [
+        {
+          "em": 22.54,
+          "texto": "3 ajustes"
+        },
+        {
+          "em": 23.76,
+          "texto": "0 reforma"
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 26.18,
+      "ate": 29.2,
+      "texto": "Siga para mais projetos",
+      "detalhe": "sem quebra-quebra",
+      "icone": "seguir"
+    }
+  ],
+  "semLegenda": [
+    {
+      "de": 3.5,
+      "ate": 6.23
+    },
+    {
+      "de": 22.21,
+      "ate": 24.95
+    }
+  ],
+  "correcoes": {},
+  "palavras": [
+    {
+      "em": 0.29,
+      "ate": 0.35,
+      "w": "o"
+    },
+    {
+      "em": 0.32,
+      "ate": 0.46,
+      "w": "erro"
+    },
+    {
+      "em": 0.46,
+      "ate": 0.74,
+      "w": "que"
+    },
+    {
+      "em": 0.74,
+      "ate": 1.21,
+      "w": "deixa"
+    },
+    {
+      "em": 1.21,
+      "ate": 1.96,
+      "w": "qualquer"
+    },
+    {
+      "em": 1.96,
+      "ate": 2.36,
+      "w": "sala"
+    },
+    {
+      "em": 2.36,
+      "ate": 3.07,
+      "w": "parecendo"
+    },
+    {
+      "em": 3.07,
+      "ate": 3.46,
+      "w": "menor."
+    },
+    {
+      "em": 3.55,
+      "ate": 3.86,
+      "w": "móvel"
+    },
+    {
+      "em": 3.86,
+      "ate": 3.97,
+      "w": "e"
+    },
+    {
+      "em": 3.97,
+      "ate": 4.7,
+      "w": "encostado"
+    },
+    {
+      "em": 4.7,
+      "ate": 5,
+      "w": "em"
+    },
+    {
+      "em": 5,
+      "ate": 5.36,
+      "w": "todas"
+    },
+    {
+      "em": 5.36,
+      "ate": 5.55,
+      "w": "as"
+    },
+    {
+      "em": 5.55,
+      "ate": 6.18,
+      "w": "paredes"
+    },
+    {
+      "em": 6.27,
+      "ate": 6.53,
+      "w": "Parece"
+    },
+    {
+      "em": 6.53,
+      "ate": 6.75,
+      "w": "que"
+    },
+    {
+      "em": 6.75,
+      "ate": 7.12,
+      "w": "ganha"
+    },
+    {
+      "em": 7.12,
+      "ate": 7.83,
+      "w": "espaço,"
+    },
+    {
+      "em": 7.83,
+      "ate": 8.19,
+      "w": "mas"
+    },
+    {
+      "em": 8.19,
+      "ate": 8.44,
+      "w": "trava"
+    },
+    {
+      "em": 8.44,
+      "ate": 8.5,
+      "w": "a"
+    },
+    {
+      "em": 8.5,
+      "ate": 9.4,
+      "w": "circulação."
+    },
+    {
+      "em": 9.51,
+      "ate": 9.57,
+      "w": "Faz"
+    },
+    {
+      "em": 9.54,
+      "ate": 9.62,
+      "w": "o"
+    },
+    {
+      "em": 9.62,
+      "ate": 10.36,
+      "w": "contrário."
+    },
+    {
+      "em": 10.45,
+      "ate": 11,
+      "w": "Primeiro,"
+    },
+    {
+      "em": 11.29,
+      "ate": 11.54,
+      "w": "Afasta"
+    },
+    {
+      "em": 11.54,
+      "ate": 11.61,
+      "w": "o"
+    },
+    {
+      "em": 11.61,
+      "ate": 11.99,
+      "w": "sofá"
+    },
+    {
+      "em": 11.99,
+      "ate": 12.22,
+      "w": "uns"
+    },
+    {
+      "em": 12.22,
+      "ate": 12.68,
+      "w": "20"
+    },
+    {
+      "em": 12.68,
+      "ate": 13.59,
+      "w": "centímetros"
+    },
+    {
+      "em": 13.59,
+      "ate": 13.74,
+      "w": "da"
+    },
+    {
+      "em": 13.74,
+      "ate": 14.21,
+      "w": "parede"
+    },
+    {
+      "em": 14.33,
+      "ate": 14.91,
+      "w": "Segundo,"
+    },
+    {
+      "em": 15.25,
+      "ate": 15.71,
+      "w": "Tapete"
+    },
+    {
+      "em": 15.71,
+      "ate": 16.56,
+      "w": "grande,"
+    },
+    {
+      "em": 16.56,
+      "ate": 16.74,
+      "w": "que"
+    },
+    {
+      "em": 16.74,
+      "ate": 17.09,
+      "w": "pegue"
+    },
+    {
+      "em": 17.09,
+      "ate": 17.37,
+      "w": "pelo"
+    },
+    {
+      "em": 17.37,
+      "ate": 17.73,
+      "w": "menos"
+    },
+    {
+      "em": 17.73,
+      "ate": 17.89,
+      "w": "os"
+    },
+    {
+      "em": 17.89,
+      "ate": 18.14,
+      "w": "pés"
+    },
+    {
+      "em": 18.14,
+      "ate": 18.34,
+      "w": "da"
+    },
+    {
+      "em": 18.34,
+      "ate": 18.7,
+      "w": "frente"
+    },
+    {
+      "em": 18.7,
+      "ate": 18.91,
+      "w": "dos"
+    },
+    {
+      "em": 18.91,
+      "ate": 19.4,
+      "w": "móveis."
+    },
+    {
+      "em": 19.5,
+      "ate": 20.06,
+      "w": "Terceiro."
+    },
+    {
+      "em": 20.15,
+      "ate": 20.51,
+      "w": "Cortina"
+    },
+    {
+      "em": 20.51,
+      "ate": 20.67,
+      "w": "do"
+    },
+    {
+      "em": 20.67,
+      "ate": 21.03,
+      "w": "teto"
+    },
+    {
+      "em": 21.03,
+      "ate": 21.31,
+      "w": "até"
+    },
+    {
+      "em": 21.31,
+      "ate": 21.38,
+      "w": "o"
+    },
+    {
+      "em": 21.38,
+      "ate": 22.04,
+      "w": "chão."
+    },
+    {
+      "em": 22.26,
+      "ate": 22.54,
+      "w": "Três"
+    },
+    {
+      "em": 22.54,
+      "ate": 23.43,
+      "w": "ajustes,"
+    },
+    {
+      "em": 23.76,
+      "ate": 24.08,
+      "w": "zero"
+    },
+    {
+      "em": 24.09,
+      "ate": 24.74,
+      "w": "reforma"
+    },
+    {
+      "em": 25.02,
+      "ate": 25.08,
+      "w": "e"
+    },
+    {
+      "em": 25.08,
+      "ate": 25.14,
+      "w": "a"
+    },
+    {
+      "em": 25.15,
+      "ate": 25.51,
+      "w": "sala"
+    },
+    {
+      "em": 25.53,
+      "ate": 25.93,
+      "w": "parece"
+    },
+    {
+      "em": 25.95,
+      "ate": 26.16,
+      "w": "outra."
+    },
+    {
+      "em": 26.25,
+      "ate": 26.31,
+      "w": "Me"
+    },
+    {
+      "em": 26.28,
+      "ate": 26.57,
+      "w": "segue"
+    },
+    {
+      "em": 26.57,
+      "ate": 26.85,
+      "w": "para"
+    },
+    {
+      "em": 26.85,
+      "ate": 27.22,
+      "w": "mais"
+    },
+    {
+      "em": 27.22,
+      "ate": 27.69,
+      "w": "projetos"
+    },
+    {
+      "em": 27.69,
+      "ate": 27.84,
+      "w": "sem"
+    },
+    {
+      "em": 27.84,
+      "ate": 28.48,
+      "w": "quebra-quebra."
+    }
+  ]
+}

@@ -1,0 +1,397 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 20.44,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.3
+  },
+  "zona": {
+    "topo": 957,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Fotografia"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.97,
+    6.94,
+    11.82,
+    12.49,
+    15.86,
+    18.45
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "texto": "3 ajustes pra fotos melhores no celular",
+      "de": 0,
+      "ate": 3.02,
+      "linhas": [
+        "3 ajustes",
+        "pra fotos melhores",
+        "no celular"
+      ],
+      "destaque": "3"
+    },
+    {
+      "tipo": "cena",
+      "de": 3.02,
+      "ate": 7.0,
+      "numero": 1,
+      "numeroEm": 3.07,
+      "titulo": "Limpa a lente",
+      "detalhe": "com a camiseta",
+      "acao": "limpar",
+      "acaoEm": 3.86,
+      "acaoAte": 5.5,
+      "nota": {
+        "texto": "vive engordurada",
+        "em": 5.83,
+        "icone": "digital"
+      }
+    },
+    {
+      "tipo": "cena",
+      "de": 7.0,
+      "ate": 11.88,
+      "numero": 2,
+      "numeroEm": 7.06,
+      "titulo": "Liga a grade",
+      "detalhe": "assunto numa das linhas",
+      "acao": "tercos",
+      "gradeEm": 8.17,
+      "acaoEm": 8.66,
+      "acaoAte": 10.32,
+      "marcaEm": 10.99,
+      "nota": {
+        "texto": "não no centro",
+        "em": 10.99
+      }
+    },
+    {
+      "tipo": "foco",
+      "de": 11.88,
+      "ate": 15.8,
+      "numero": 3,
+      "numeroEm": 11.93,
+      "titulo": "Toca pra focar",
+      "detalhe": "e arrasta pra ajustar a luz",
+      "toqueEm": 12.56,
+      "travaEm": 13.58,
+      "luzEm": 14.16,
+      "luzAte": 15.63,
+      "ev": "+0,7"
+    },
+    {
+      "tipo": "comparar",
+      "de": 15.8,
+      "ate": 18.55,
+      "disparoEm": 16.2,
+      "antesEm": 16.62,
+      "compararEm": 17.85,
+      "legenda": true
+    },
+    {
+      "tipo": "cta",
+      "de": 18.55,
+      "ate": 20.44,
+      "texto": "Me segue",
+      "detalhe": "pra mais dicas",
+      "botaoEm": 18.96,
+      "acao": "seguir",
+      "fotoEm": 19.5
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para": "pra"
+  },
+  "palavras": [
+    {
+      "em": 0.3,
+      "ate": 0.38,
+      "w": "Três"
+    },
+    {
+      "em": 0.38,
+      "ate": 1.01,
+      "w": "ajustes"
+    },
+    {
+      "em": 1.01,
+      "ate": 1.23,
+      "w": "para"
+    },
+    {
+      "em": 1.23,
+      "ate": 1.64,
+      "w": "fotos"
+    },
+    {
+      "em": 1.64,
+      "ate": 2.25,
+      "w": "melhores"
+    },
+    {
+      "em": 2.25,
+      "ate": 2.39,
+      "w": "no"
+    },
+    {
+      "em": 2.39,
+      "ate": 2.97,
+      "w": "celular."
+    },
+    {
+      "em": 3.07,
+      "ate": 3.59,
+      "w": "Primeiro."
+    },
+    {
+      "em": 3.86,
+      "ate": 4.03,
+      "w": "Limpa"
+    },
+    {
+      "em": 4.03,
+      "ate": 4.14,
+      "w": "a"
+    },
+    {
+      "em": 4.14,
+      "ate": 4.46,
+      "w": "lente"
+    },
+    {
+      "em": 4.46,
+      "ate": 4.68,
+      "w": "com"
+    },
+    {
+      "em": 4.68,
+      "ate": 4.75,
+      "w": "a"
+    },
+    {
+      "em": 4.75,
+      "ate": 5.61,
+      "w": "camiseta."
+    },
+    {
+      "em": 5.61,
+      "ate": 5.83,
+      "w": "Ela"
+    },
+    {
+      "em": 5.83,
+      "ate": 6.13,
+      "w": "vive"
+    },
+    {
+      "em": 6.13,
+      "ate": 6.94,
+      "w": "engordurada."
+    },
+    {
+      "em": 7.06,
+      "ate": 7.65,
+      "w": "Segundo,"
+    },
+    {
+      "em": 7.95,
+      "ate": 8.08,
+      "w": "Liga"
+    },
+    {
+      "em": 8.08,
+      "ate": 8.17,
+      "w": "a"
+    },
+    {
+      "em": 8.17,
+      "ate": 8.58,
+      "w": "grade"
+    },
+    {
+      "em": 8.58,
+      "ate": 8.66,
+      "w": "e"
+    },
+    {
+      "em": 8.66,
+      "ate": 9.16,
+      "w": "coloca"
+    },
+    {
+      "em": 9.16,
+      "ate": 9.24,
+      "w": "o"
+    },
+    {
+      "em": 9.24,
+      "ate": 9.88,
+      "w": "assunto"
+    },
+    {
+      "em": 9.88,
+      "ate": 10.13,
+      "w": "numa"
+    },
+    {
+      "em": 10.13,
+      "ate": 10.32,
+      "w": "das"
+    },
+    {
+      "em": 10.32,
+      "ate": 10.99,
+      "w": "linhas,"
+    },
+    {
+      "em": 10.99,
+      "ate": 11.06,
+      "w": "não"
+    },
+    {
+      "em": 11.06,
+      "ate": 11.17,
+      "w": "no"
+    },
+    {
+      "em": 11.17,
+      "ate": 11.67,
+      "w": "centro."
+    },
+    {
+      "em": 11.93,
+      "ate": 12.49,
+      "w": "Terceiro:"
+    },
+    {
+      "em": 12.56,
+      "ate": 12.8,
+      "w": "Toca"
+    },
+    {
+      "em": 12.8,
+      "ate": 12.9,
+      "w": "na"
+    },
+    {
+      "em": 12.9,
+      "ate": 13.24,
+      "w": "tela"
+    },
+    {
+      "em": 13.24,
+      "ate": 13.58,
+      "w": "para"
+    },
+    {
+      "em": 13.58,
+      "ate": 14.11,
+      "w": "focar"
+    },
+    {
+      "em": 14.13,
+      "ate": 14.19,
+      "w": "e"
+    },
+    {
+      "em": 14.16,
+      "ate": 14.73,
+      "w": "arrasta"
+    },
+    {
+      "em": 14.73,
+      "ate": 14.99,
+      "w": "para"
+    },
+    {
+      "em": 14.99,
+      "ate": 15.53,
+      "w": "ajustar"
+    },
+    {
+      "em": 15.53,
+      "ate": 15.63,
+      "w": "a"
+    },
+    {
+      "em": 15.63,
+      "ate": 15.86,
+      "w": "luz."
+    },
+    {
+      "em": 15.99,
+      "ate": 16.46,
+      "w": "Fotografa"
+    },
+    {
+      "em": 16.46,
+      "ate": 16.62,
+      "w": "de"
+    },
+    {
+      "em": 16.62,
+      "ate": 16.94,
+      "w": "novo"
+    },
+    {
+      "em": 16.94,
+      "ate": 17.02,
+      "w": "a"
+    },
+    {
+      "em": 17.02,
+      "ate": 17.4,
+      "w": "mesma"
+    },
+    {
+      "em": 17.4,
+      "ate": 17.83,
+      "w": "cena"
+    },
+    {
+      "em": 17.83,
+      "ate": 17.89,
+      "w": "e"
+    },
+    {
+      "em": 17.85,
+      "ate": 18.45,
+      "w": "compara."
+    },
+    {
+      "em": 18.55,
+      "ate": 18.61,
+      "w": "Me"
+    },
+    {
+      "em": 18.57,
+      "ate": 18.77,
+      "w": "segue"
+    },
+    {
+      "em": 18.77,
+      "ate": 18.96,
+      "w": "para"
+    },
+    {
+      "em": 18.96,
+      "ate": 19.18,
+      "w": "mais"
+    },
+    {
+      "em": 19.18,
+      "ate": 19.65,
+      "w": "dicas."
+    }
+  ]
+}

@@ -1,0 +1,469 @@
+{
+ "video": "base.mp4",
+ "fps": 25,
+ "largura": 1080,
+ "altura": 1920,
+ "duracao": 18.84,
+ "videoAltura": 1920,
+ "rosto": {
+  "x": 0.5,
+  "y": 0.329
+ },
+ "zona": {
+  "topo": 1005,
+  "altura": 465
+ },
+ "marca": {
+  "nome": "Tiago",
+  "area": "Estilo masculino"
+ },
+ "sfx": true,
+ "cortesEm": [
+  2.78,
+  6.34,
+  9.82,
+  13.46,
+  16.29
+ ],
+ "momentos": [
+  {
+   "tipo": "capa",
+   "de": 0,
+   "ate": 2.83,
+   "linhas": [
+    "3 peças",
+    "pra se vestir melhor",
+    "sem esforço"
+   ],
+   "enfase": "sem esforço"
+  },
+  {
+   "tipo": "peca",
+   "de": 2.83,
+   "ate": 6.43,
+   "numero": 1,
+   "layout": "direita",
+   "rotulo": "peça",
+   "nome": "Camisa",
+   "nomeEm": 3.53,
+   "complemento": "branca",
+   "complementoEm": 3.75,
+   "ponto": "peito",
+   "amostra": {
+    "cor": "branco",
+    "tecido": "algodao",
+    "em": 4.31
+   },
+   "atributos": [
+    {
+     "rotulo": "Tecido",
+     "valor": "algodão",
+     "em": 4.31
+    },
+    {
+     "rotulo": "Caimento",
+     "valor": "bem ajustada",
+     "em": 5.07
+    }
+   ],
+   "medida": {
+    "de": "pescoco",
+    "ate": "ombroEsq",
+    "em": 5.79,
+    "texto": "no ombro"
+   }
+  },
+  {
+   "tipo": "peca",
+   "de": 6.43,
+   "ate": 9.87,
+   "numero": 2,
+   "layout": "esquerda",
+   "rotulo": "peça",
+   "nome": "Jaqueta",
+   "nomeEm": 7.22,
+   "complemento": "tom neutro",
+   "complementoEm": 7.88,
+   "ponto": "jaquetaDir",
+   "amostra": {
+    "cor": "pedra",
+    "tecido": "sarja",
+    "em": 7.88
+   },
+   "combina": {
+    "rotulo": "Combina com",
+    "em": 8.92,
+    "ate": 9.7,
+    "cores": [
+     "branco",
+     "preto",
+     "marinho",
+     "oliva",
+     "jeans"
+    ]
+   }
+  },
+  {
+   "tipo": "peca",
+   "de": 9.87,
+   "ate": 13.5,
+   "numero": 3,
+   "layout": "topo",
+   "rotulo": "peça",
+   "nome": "Relógio",
+   "nomeEm": 10.69,
+   "ponto": "pulsoDir",
+   "detalhe": {
+    "ponto": "pulsoDir",
+    "em": 10.69,
+    "zoom": 2.1,
+    "rotulo": "detalhe · pulso"
+   },
+   "atributos": [
+    {
+     "rotulo": "Estilo",
+     "valor": "simples",
+     "em": 11.01
+    }
+   ],
+   "variantes": {
+    "rotulo": "Pulseira",
+    "em": 11.96,
+    "itens": [
+     {
+      "nome": "couro",
+      "cor": "couro",
+      "tecido": "couro",
+      "em": 12.35
+     },
+     {
+      "nome": "metal",
+      "cor": "metal",
+      "tecido": "metal",
+      "em": 12.83
+     }
+    ]
+   }
+  },
+  {
+   "tipo": "colagem",
+   "de": 13.5,
+   "ate": 16.38,
+   "itens": [
+    {
+     "peca": 1,
+     "em": 13.62
+    },
+    {
+     "peca": 2,
+     "em": 13.8
+    },
+    {
+     "peca": 3,
+     "em": 13.98
+    },
+    {
+     "nome": "calça jeans",
+     "cor": "jeans",
+     "tecido": "jeans",
+     "em": 14.91
+    }
+   ],
+   "titulo": "vira um look.",
+   "enfase": "look.",
+   "subtitulo": "Com essas três,",
+   "folio": "o look"
+  },
+  {
+   "tipo": "cta",
+   "de": 16.38,
+   "ate": 18.84,
+   "texto": "Salve e siga",
+   "textoEm": 16.43,
+   "detalhe": "mais dicas de estilo",
+   "detalheEm": 17.35,
+   "assinaturaEm": 17.83,
+   "icone": "salvar"
+  }
+ ],
+ "semLegenda": [],
+ "correcoes": {
+  "para": "pra",
+  "Jaquet tem": "Jaqueta em",
+  "tipo cera": "de pulseira",
+  "Tchau": "",
+  "3": "Três"
+ },
+ "palavras": [
+  {
+   "em": 0.29,
+   "ate": 0.35,
+   "w": "Três"
+  },
+  {
+   "em": 0.32,
+   "ate": 0.68,
+   "w": "peças"
+  },
+  {
+   "em": 0.68,
+   "ate": 0.93,
+   "w": "para"
+  },
+  {
+   "em": 0.93,
+   "ate": 1.05,
+   "w": "se"
+  },
+  {
+   "em": 1.05,
+   "ate": 1.45,
+   "w": "vestir"
+  },
+  {
+   "em": 1.45,
+   "ate": 1.86,
+   "w": "melhor"
+  },
+  {
+   "em": 1.86,
+   "ate": 2.12,
+   "w": "sem"
+  },
+  {
+   "em": 2.12,
+   "ate": 2.78,
+   "w": "esforço."
+  },
+  {
+   "em": 2.88,
+   "ate": 3.06,
+   "w": "Uma."
+  },
+  {
+   "em": 3.06,
+   "ate": 3.31,
+   "w": "Tchau."
+  },
+  {
+   "em": 3.53,
+   "ate": 3.75,
+   "w": "camisa"
+  },
+  {
+   "em": 3.75,
+   "ate": 4.17,
+   "w": "branca"
+  },
+  {
+   "em": 4.17,
+   "ate": 4.31,
+   "w": "de"
+  },
+  {
+   "em": 4.31,
+   "ate": 5.07,
+   "w": "algodão"
+  },
+  {
+   "em": 5.07,
+   "ate": 5.14,
+   "w": "bem"
+  },
+  {
+   "em": 5.14,
+   "ate": 5.79,
+   "w": "ajustada"
+  },
+  {
+   "em": 5.79,
+   "ate": 5.95,
+   "w": "no"
+  },
+  {
+   "em": 5.95,
+   "ate": 6.34,
+   "w": "ombro."
+  },
+  {
+   "em": 6.48,
+   "ate": 6.82,
+   "w": "Duas."
+  },
+  {
+   "em": 7.22,
+   "ate": 7.56,
+   "w": "Jaquet"
+  },
+  {
+   "em": 7.56,
+   "ate": 7.88,
+   "w": "tem"
+  },
+  {
+   "em": 7.88,
+   "ate": 8.06,
+   "w": "tom"
+  },
+  {
+   "em": 8.06,
+   "ate": 8.72,
+   "w": "neutro,"
+  },
+  {
+   "em": 8.72,
+   "ate": 8.92,
+   "w": "que"
+  },
+  {
+   "em": 8.92,
+   "ate": 9.45,
+   "w": "combina"
+  },
+  {
+   "em": 9.45,
+   "ate": 9.58,
+   "w": "com"
+  },
+  {
+   "em": 9.58,
+   "ate": 9.82,
+   "w": "tudo"
+  },
+  {
+   "em": 9.92,
+   "ate": 10.44,
+   "w": "3."
+  },
+  {
+   "em": 10.69,
+   "ate": 11.01,
+   "w": "Relógio"
+  },
+  {
+   "em": 11.01,
+   "ate": 11.82,
+   "w": "simples,"
+  },
+  {
+   "em": 11.82,
+   "ate": 11.96,
+   "w": "tipo"
+  },
+  {
+   "em": 11.96,
+   "ate": 12.2,
+   "w": "cera"
+  },
+  {
+   "em": 12.2,
+   "ate": 12.35,
+   "w": "de"
+  },
+  {
+   "em": 12.35,
+   "ate": 12.7,
+   "w": "couro"
+  },
+  {
+   "em": 12.7,
+   "ate": 12.83,
+   "w": "ou"
+  },
+  {
+   "em": 12.83,
+   "ate": 13.26,
+   "w": "metal"
+  },
+  {
+   "em": 13.55,
+   "ate": 13.62,
+   "w": "Com"
+  },
+  {
+   "em": 13.57,
+   "ate": 13.89,
+   "w": "essas"
+  },
+  {
+   "em": 13.89,
+   "ate": 14.59,
+   "w": "três,"
+  },
+  {
+   "em": 14.59,
+   "ate": 14.91,
+   "w": "qualquer"
+  },
+  {
+   "em": 14.91,
+   "ate": 15.3,
+   "w": "calça"
+  },
+  {
+   "em": 15.3,
+   "ate": 15.64,
+   "w": "jeans"
+  },
+  {
+   "em": 15.64,
+   "ate": 15.89,
+   "w": "vira"
+  },
+  {
+   "em": 15.89,
+   "ate": 16.02,
+   "w": "um"
+  },
+  {
+   "em": 16.02,
+   "ate": 16.29,
+   "w": "look."
+  },
+  {
+   "em": 16.43,
+   "ate": 16.55,
+   "w": "Salva"
+  },
+  {
+   "em": 16.55,
+   "ate": 16.63,
+   "w": "e"
+  },
+  {
+   "em": 16.63,
+   "ate": 16.78,
+   "w": "me"
+  },
+  {
+   "em": 16.78,
+   "ate": 17.17,
+   "w": "segue"
+  },
+  {
+   "em": 17.17,
+   "ate": 17.35,
+   "w": "para"
+  },
+  {
+   "em": 17.35,
+   "ate": 17.53,
+   "w": "mais"
+  },
+  {
+   "em": 17.53,
+   "ate": 17.77,
+   "w": "dicas"
+  },
+  {
+   "em": 17.77,
+   "ate": 17.83,
+   "w": "de"
+  },
+  {
+   "em": 17.83,
+   "ate": 18.25,
+   "w": "estilo."
+  }
+ ]
+}

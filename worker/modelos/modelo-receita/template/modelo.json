@@ -1,0 +1,17 @@
+{
+  "recorte": {
+    "vertical": "9:16"
+  },
+  "blocos": {
+    "assinatura": [
+      "ingredientes",
+      "passo"
+    ]
+  },
+  "palavraPorPalavra": [
+    "dica",
+    "passo",
+    "destaque",
+    "definicao"
+  ]
+}

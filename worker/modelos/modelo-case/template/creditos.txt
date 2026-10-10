@@ -1,0 +1,7 @@
+Créditos do exemplo (cliente de tráfego)
+
+- Nenhuma imagem externa: as mini-ilustrações (megafone, carrinho, anúncio, página, etiqueta de oferta…), o gráfico, a linha do tempo e a conversa do depoimento são desenhados em vetor no próprio template.
+- O depoimento do exemplo é fictício (texto curto escrito para a demonstração), sem logo de app.
+- Os sons (public/sfx/*.wav) foram sintetizados para este modelo (notas tonais, sem amostras de terceiros).
+
+No vídeo do usuário, um print de verdade do cliente pode entrar no depoimento (campo `arquivo`, imagem copiada para public/).

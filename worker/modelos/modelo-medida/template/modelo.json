@@ -1,0 +1,19 @@
+{
+  "gl": "angle",
+  "recorte": {
+    "vertical": "9:16"
+  },
+  "blocos": {
+    "assinatura": [
+      "medida"
+    ]
+  },
+  "palavraPorPalavra": [
+    "abertura",
+    "frase",
+    "pergunta",
+    "cta",
+    "virada",
+    "destaque"
+  ]
+}

@@ -1,0 +1,412 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 18.52,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.304
+  },
+  "zona": {
+    "topo": 970,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Corrida"
+  },
+  "sfx": true,
+  "cortesEm": [
+    1.92,
+    3.94,
+    7.7,
+    11.49,
+    13.41,
+    16.31
+  ],
+  "momentos": [
+    {
+      "tipo": "gancho",
+      "de": 0,
+      "ate": 1.92,
+      "texto": "Quer correr mais sem se machucar?",
+      "alertaEm": 1.36
+    },
+    {
+      "tipo": "zonas",
+      "de": 1.92,
+      "ate": 3.94,
+      "titulo": "Zonas de frequência cardíaca",
+      "acendeEm": 2.42,
+      "passo": 0.28,
+      "escala": [
+        "leve",
+        "máximo"
+      ]
+    },
+    {
+      "tipo": "zona",
+      "de": 3.94,
+      "ate": 7.7,
+      "zona": 2,
+      "em": 4.53,
+      "titulo": "Zona 2",
+      "balao": {
+        "texto": "dá pra conversar",
+        "em": 6.24
+      },
+      "leituras": [
+        {
+          "tipo": "bpm",
+          "valor": "132"
+        },
+        {
+          "tipo": "pace",
+          "valor": "6:20"
+        }
+      ]
+    },
+    {
+      "tipo": "divisao",
+      "de": 7.7,
+      "ate": 13.41,
+      "rotulo": "Seus treinos",
+      "zona": {
+        "numero": 2,
+        "em": 8.1
+      },
+      "casas": 10,
+      "partes": [
+        {
+          "pct": 80,
+          "texto": "maior parte",
+          "zona": 2,
+          "em": 10.63,
+          "encheEm": 8.96
+        },
+        {
+          "pct": 20,
+          "texto": "mais fortes",
+          "zona": 4,
+          "em": 12.01
+        }
+      ],
+      "unidade": "cada casa é um treino"
+    },
+    {
+      "tipo": "rota",
+      "de": 13.41,
+      "ate": 16.31,
+      "trechos": [
+        {
+          "texto": "Devagar no dia a dia",
+          "zona": 2,
+          "em": 13.7,
+          "ate": 14.9,
+          "pace": "6:20",
+          "bpm": 128
+        },
+        {
+          "texto": "Forte de vez em quando",
+          "zona": 4,
+          "em": 15.24,
+          "ate": 15.85,
+          "pace": "4:40",
+          "bpm": 165
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 16.31,
+      "ate": 18.52,
+      "rotulo": "Próximo treino",
+      "acaoEm": 16.47,
+      "texto": "Testa na próxima corrida",
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "dia-a-dia": "dia a dia"
+  },
+  "palavras": [
+    {
+      "em": 0.28,
+      "ate": 0.34,
+      "w": "Quer"
+    },
+    {
+      "em": 0.31,
+      "ate": 0.72,
+      "w": "correr"
+    },
+    {
+      "em": 0.72,
+      "ate": 1.01,
+      "w": "mais"
+    },
+    {
+      "em": 1.01,
+      "ate": 1.22,
+      "w": "sem"
+    },
+    {
+      "em": 1.22,
+      "ate": 1.36,
+      "w": "se"
+    },
+    {
+      "em": 1.36,
+      "ate": 1.92,
+      "w": "machucar?"
+    },
+    {
+      "em": 2,
+      "ate": 2.06,
+      "w": "Usa"
+    },
+    {
+      "em": 2.03,
+      "ate": 2.4,
+      "w": "zonas"
+    },
+    {
+      "em": 2.4,
+      "ate": 2.52,
+      "w": "de"
+    },
+    {
+      "em": 2.52,
+      "ate": 3.31,
+      "w": "frequência"
+    },
+    {
+      "em": 3.31,
+      "ate": 3.94,
+      "w": "cardíaca"
+    },
+    {
+      "em": 4.01,
+      "ate": 4.07,
+      "w": "A"
+    },
+    {
+      "em": 4.04,
+      "ate": 4.53,
+      "w": "zona"
+    },
+    {
+      "em": 4.53,
+      "ate": 5.08,
+      "w": "2"
+    },
+    {
+      "em": 5.1,
+      "ate": 5.16,
+      "w": "é"
+    },
+    {
+      "em": 5.13,
+      "ate": 5.44,
+      "w": "aquela"
+    },
+    {
+      "em": 5.44,
+      "ate": 5.52,
+      "w": "em"
+    },
+    {
+      "em": 5.52,
+      "ate": 5.64,
+      "w": "que"
+    },
+    {
+      "em": 5.64,
+      "ate": 5.93,
+      "w": "você"
+    },
+    {
+      "em": 5.93,
+      "ate": 6.24,
+      "w": "consegue"
+    },
+    {
+      "em": 6.24,
+      "ate": 6.88,
+      "w": "conversar"
+    },
+    {
+      "em": 6.88,
+      "ate": 7.4,
+      "w": "enquanto"
+    },
+    {
+      "em": 7.4,
+      "ate": 7.7,
+      "w": "corre"
+    },
+    {
+      "em": 7.73,
+      "ate": 7.79,
+      "w": "É"
+    },
+    {
+      "em": 7.8,
+      "ate": 7.93,
+      "w": "nela"
+    },
+    {
+      "em": 7.93,
+      "ate": 8.1,
+      "w": "que"
+    },
+    {
+      "em": 8.1,
+      "ate": 8.38,
+      "w": "você"
+    },
+    {
+      "em": 8.38,
+      "ate": 8.62,
+      "w": "deve"
+    },
+    {
+      "em": 8.62,
+      "ate": 8.91,
+      "w": "fazer"
+    },
+    {
+      "em": 8.91,
+      "ate": 8.97,
+      "w": "a"
+    },
+    {
+      "em": 8.96,
+      "ate": 9.25,
+      "w": "maior"
+    },
+    {
+      "em": 9.25,
+      "ate": 9.54,
+      "w": "parte"
+    },
+    {
+      "em": 9.54,
+      "ate": 9.71,
+      "w": "dos"
+    },
+    {
+      "em": 9.71,
+      "ate": 10.37,
+      "w": "treinos,"
+    },
+    {
+      "em": 10.37,
+      "ate": 10.63,
+      "w": "uns"
+    },
+    {
+      "em": 10.63,
+      "ate": 11.49,
+      "w": "80%."
+    },
+    {
+      "em": 11.55,
+      "ate": 11.61,
+      "w": "os"
+    },
+    {
+      "em": 11.58,
+      "ate": 12.01,
+      "w": "outros"
+    },
+    {
+      "em": 12.01,
+      "ate": 12.62,
+      "w": "20"
+    },
+    {
+      "em": 12.62,
+      "ate": 12.93,
+      "w": "mais"
+    },
+    {
+      "em": 12.93,
+      "ate": 13.41,
+      "w": "fortes."
+    },
+    {
+      "em": 13.5,
+      "ate": 13.92,
+      "w": "Devagar"
+    },
+    {
+      "em": 13.92,
+      "ate": 14.09,
+      "w": "no"
+    },
+    {
+      "em": 14.09,
+      "ate": 14.89,
+      "w": "dia-a-dia"
+    },
+    {
+      "em": 15.24,
+      "ate": 15.3,
+      "w": "Forte"
+    },
+    {
+      "em": 15.29,
+      "ate": 15.39,
+      "w": "de"
+    },
+    {
+      "em": 15.39,
+      "ate": 15.53,
+      "w": "vez"
+    },
+    {
+      "em": 15.53,
+      "ate": 15.64,
+      "w": "em"
+    },
+    {
+      "em": 15.64,
+      "ate": 16.12,
+      "w": "quando."
+    },
+    {
+      "em": 16.47,
+      "ate": 16.53,
+      "w": "Salva"
+    },
+    {
+      "em": 16.51,
+      "ate": 16.57,
+      "w": "e"
+    },
+    {
+      "em": 16.53,
+      "ate": 16.78,
+      "w": "testa"
+    },
+    {
+      "em": 16.78,
+      "ate": 16.93,
+      "w": "na"
+    },
+    {
+      "em": 16.93,
+      "ate": 17.33,
+      "w": "próxima"
+    },
+    {
+      "em": 17.33,
+      "ate": 17.91,
+      "w": "corrida."
+    }
+  ]
+}

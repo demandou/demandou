@@ -31,6 +31,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     guardaDaFala?: { conferido?: boolean; tirados?: number; sobras?: Array<{ de: number; texto: string }>; motivo?: string } | null;
     tempos?: Record<string, number>;
     retorno?: { indice?: number; desde?: string } | null;
+    /** O corte editado num modelo do curso (09/10): o mapa, as voltas da conferência e o custo do plano. */
+    curso?: { modelo?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[] } | null;
   };
   try {
     corpo = JSON.parse(corpoCru);

@@ -161,6 +161,17 @@ COPY remotion ./remotion
 # cliente). src/montagem.mjs usa remotion/build quando ele existe.
 RUN node remotion/empacotar.mjs
 
+# OS MODELOS DO CURSO (09/10): os 79 templates do curso "Máquina de Edição IA"
+# (scripts, componentes, sons e o treinamento de cada skill), importados por
+# modelos/importar.mjs. Cada corte copia o template do modelo para uma pasta
+# própria e roda os scripts do curso (src/modelo/editar-no-modelo.mjs), com os
+# pacotes do Remotion deste worker. Pasta própria, e não /app/modelos, que
+# guarda os modelos do MediaPipe.
+COPY modelos ./modelos-do-curso
+ENV PASTA_DOS_MODELOS=/app/modelos-do-curso
+# Prova em construção: o índice inteiro e um modelo de verdade, senão a imagem não sobe.
+RUN node -e "import('/app/src/modelo/editar-no-modelo.mjs').then((m) => { const i = m.indiceDosModelos(); if (i.length < 79 || !m.modeloExiste('modelo-painel')) throw new Error('modelos do curso incompletos: ' + i.length); const r = m.referenciasDoModelo('modelo-painel'); if (!r.skill || !r.tipos) throw new Error('treinamento do modelo-painel incompleto'); console.log('modelos do curso provados na construcao:', i.length); })"
+
 # Prova em construção da capa: cria os dois modelos de verdade, como a prova do
 # recorte lá em cima. Se faltar biblioteca ou modelo, a imagem não sobe.
 RUN python3 -c "from mediapipe.tasks.python import vision, BaseOptions; vision.FaceLandmarker.create_from_options(vision.FaceLandmarkerOptions(base_options=BaseOptions(model_asset_path='/app/modelos/face_landmarker.task'), output_face_blendshapes=True)).close(); vision.ImageSegmenter.create_from_options(vision.ImageSegmenterOptions(base_options=BaseOptions(model_asset_path='/app/modelos/selfie_multiclass.tflite'), output_confidence_masks=True)).close(); print('capa provada na construcao')"

@@ -1,0 +1,2093 @@
+[
+  {
+    "id": "modelo-agenda",
+    "nome": "Agenda",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Agenda: a tela vira um app de agenda limpo e sem marca, a pessoa é o compromisso de vídeo que muda de lugar a cada momento (tela cheia com cartão no peito, larga em cima, numa raia ao lado, no canto), e as ideias caem como blocos de agenda na hora em que são ditas (listas, passos numa linha do tempo, números no anel do cronômetro, comparações em dois dias, gráficos sobre a régua), com tomate, verde e ardósia e a linha do agora varrendo a página. Serve para qualquer assunto (o exemplo do modelo é produtividade, mas funciona com cripto, finanças, saúde, vendas, histórias, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Agenda\", \"estilo agenda\" ou \"estilo planner\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "blocos",
+      "ciclos"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "gancho"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-anatomia",
+    "nome": "Anatomia",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Anatomia: ilustração médica premium e fácil de ler. A tela divide: em cima, uma prancha clínica onde um rosto em traço fino 2.5D gira, a pele revela os músculos e cada estrutura dita acende na palavra (retícula, fibras de luz, rótulo, função, rugas), mais o corte da pele em camadas, a linha do tempo do efeito e blocos em traço fino com um azul clínico; embaixo, a pessoa numa moldura com o fundo natural. Abre com \"E se eu fosse…\" e uma linha de luz que troca a roupa (vídeo de figurino feito numa IA de vídeo) ou o cenário. Serve para qualquer assunto (o exemplo é um médico explicando Botox; serve para dermatologia, estética, odontologia, fisioterapia, nutrição e, no modo esquema, para finanças, rotina, carreira). Use sempre que o usuário pedir para editar \"no modelo Anatomia\", \"estilo anatomia\", \"ilustração médica\", \"músculos acendendo\" ou \"e se eu fosse médico\", para Reels, TikTok ou Shorts. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "anatomia"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "virada",
+      "mito",
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta",
+      "destaque",
+      "definicao"
+    ],
+    "three": true,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-ao-pe-da-letra",
+    "nome": "Ao Pé da Letra",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Ao Pé da Letra: painel vermelho-carimbo em cima com duas fichas lado a lado, \"AO PÉ DA LETRA\" (imagem literal, batida com um carimbo NÃO) e \"O QUE QUER DIZER\" (o sentido real), a expressão digitada no alto, legenda bilíngue (português em creme, a outra língua em azul-céu) e a pessoa numa moldura larga embaixo. O humor vem do contraste das imagens. Serve para qualquer assunto: expressões em inglês ou espanhol, gírias, traduções que dão errado, jargão contra linguagem simples, mito contra verdade, finanças, saúde. Use quando o usuário pedir \"modelo Ao Pé da Letra\", \"expressões em inglês\", \"literal contra real\", \"tradução que dá errado\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "literal"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-arquivo",
+    "nome": "Arquivo",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Arquivo: linguagem de documentário em papel off-white, tinta preta e um único vermelho de carimbo, com tudo datilografado na hora em que é dito; a pessoa fica em cores em tela cheia e vira foto de arquivo (preto e branco, grão) presa numa folha de dossiê, que muda de lugar a cada documento: fichas de registro com carimbo, fichas catalográficas, relatórios, fichas ligadas por fio vermelho, gráficos em papel quadriculado e a régua da linha do tempo. Serve para qualquer assunto (o exemplo do modelo é um documentário de história, mas funciona com cripto, IA, saúde, vendas, carreira, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Arquivo\", \"estilo documentário\", \"estilo dossiê\" ou \"com linha do tempo\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "ficha",
+      "linha",
+      "pessoas"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "linha"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-aula",
+    "nome": "Aula",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Aula, a edição de um curso gravado em 16:9: o professor em quadro cheio na abertura e nas viradas, com cartões de papel; no modo slide, o slide branco ocupa ~62% da tela e se monta na fala (título palavra por palavra, itens, fórmula termo a termo, gráfico que se desenha, número que conta) enquanto o professor fica numa janela arredondada ao lado, seguindo o rosto; cartão de capítulo, barra de progresso da aula e cartão de resumo; papel claro, tinta azul-noite e um violeta. Serve para qualquer assunto (o exemplo é juros compostos, mas funciona com finanças, saúde, vendas, idiomas, treinamentos): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Aula\", \"estilo Aula\", \"videoaula\", \"aula gravada\", \"edição de curso\" ou \"vídeo com slides\". Entrega um MP4 horizontal 1920×1080 (16:9) para curso e YouTube.",
+    "formato": "16:9",
+    "assinatura": [
+      "slide"
+    ],
+    "gl": null,
+    "recorte": null,
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "slide",
+      "capitulo"
+    ],
+    "three": false,
+    "ferramentas": [
+      "ataques.mjs",
+      "justar.mjs",
+      "timing.mjs"
+    ],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-autoridade",
+    "nome": "Autoridade",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Autoridade: sóbrio e editorial, como uma revista séria. A pessoa fica em quadro cheio, centralizada; um destaque por vez entra na altura do peito em serifada marfim que sobe de trás de uma máscara, com itálico e filetes de latão, e o cartão de papel com marca-texto (o documento que sustenta a fala). Azul-marinho, marfim e latão, quase nenhum som. Serve para qualquer assunto (o exemplo do modelo é direito do consumidor, mas funciona com finanças, cripto, saúde, receitas, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Autoridade\", \"estilo autoridade\", \"edição sóbria\", \"profissional\", \"séria\" ou \"elegante\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "citacao"
+    ],
+    "gl": null,
+    "recorte": null,
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "destaque",
+      "definicao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-balcao",
+    "nome": "Balcão",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Balcão, a fachada de uma loja de bairro: toldo listrado com letreiro no alto, uma vitrine de vidro onde os produtos entram na prateleira com adesivo de preço, o combo carimbado, o cartão de mapa ilustrado com pino no endereço, a placa de horário e o balão de pedido; a pessoa fica embaixo do balcão, numa moldura larga. Feito para comércio local (restaurante, hamburgueria, confeitaria, loja, salão, academia, pet shop), mas serve para qualquer assunto (finanças, saúde, serviços, aulas, histórias): a IA traduz a fala para os blocos do estilo, com modo ilustrativo para serviço sem produto. Use quando o usuário pedir \"modelo Balcão\", \"estilo vitrine\", \"vídeo da minha loja\", \"promoção do restaurante\", \"divulgar meu negócio\" ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "vitrine",
+      "combo",
+      "mapa"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-brilho",
+    "nome": "Brilho",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Brilho: camarim editorial em creme, blush e vinho, Quicksand, palavras que sobem no tempo da fala com uma faixa de cor passada por trás, painel creme que abre ao lado quando a pessoa desliza, amostras de cor passadas no papel, números grandes e finos, e anotações finas que acompanham o rosto. Serve para qualquer assunto (o exemplo do modelo é maquiagem, mas funciona com finanças, cripto, saúde, vendas, carros, histórias, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar 'no modelo Brilho', 'estilo Brilho', 'estilo beleza', 'com anotação no rosto', 'estilo tutorial de maquiagem' ou 'face chart', e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "truque",
+      "amostras"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [
+      "rastrear-rosto.mjs"
+    ],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-campo",
+    "nome": "Campo",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Campo, o caderno de campo do agro: a vista de cima (foto de drone ou mapa de lavoura desenhado) com os talhões contornados em amarelo de sinalização na fala, o cartão de cotação com mini-gráfico, o medidor que esvazia até a fração dita, a faixa de previsão do tempo e a planilha do fechamento, sobre palha com curvas de nível e números em mono. A pessoa fica embaixo, numa moldura larga. Serve para qualquer assunto (o exemplo é tomate em estufa, mas funciona com pecuária, máquinas, cooperativas, finanças, saúde, histórias): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Campo\", \"edição agro\", \"vídeo de lavoura, pecuária ou safra\", \"estilo caderno de campo\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "talhao"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta",
+      "talhao",
+      "previsao"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-canal",
+    "nome": "Canal",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Canal, a edição de um canal de YouTube bem feito, em 16:9: punch-ins alternados nos cortes seguindo o rosto; o reframe (a câmera aproxima e empurra a pessoa para um lado, e a informação entra na metade livre num painel de vidro escuro com um destaque cobalto); B-roll em tela cheia com movimento lento; tarja de nome, títulos de capítulo, palavras-chave e lembrete de inscrição sem sino; sem legenda por padrão. Serve para qualquer assunto (o exemplo é um teste de microfones, mas funciona com finanças, saúde, aulas, vendas, histórias): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Canal\", \"estilo Canal\", \"edição para YouTube\", \"vídeo horizontal\", \"16:9\" ou um talking head editado para o YouTube. Entrega um MP4 horizontal 1920×1080 (16:9) para YouTube.",
+    "formato": "16:9",
+    "assinatura": [
+      "reframe"
+    ],
+    "gl": null,
+    "recorte": null,
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs",
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-carrossel",
+    "nome": "Carrossel",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Carrossel: o vídeo inteiro vira um post de carrossel do Instagram. Páginas creme deslizam da direita, os pontinhos e o contador \"3/7\" ficam à vista, a pessoa é a capa (cartão no peito) e vira avatar no cabeçalho das páginas de conteúdo; o gesto da casa é o \"sai → entra\" (o item velho riscado em coral, a seta, o novo chegando num cartão petróleo), com listas, passos, gráficos, definições e enquete no mesmo traço. Serve para qualquer assunto (o exemplo do modelo é alimentação, mas funciona com finanças, cripto, saúde, carreira, ciência, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Carrossel\", \"estilo carrossel\", \"com páginas deslizando\" ou \"como um post de carrossel\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "troca",
+      "comparacao"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "capa",
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-case",
+    "nome": "Case",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Case, um relatório de consultoria que se monta enquanto ela fala: papel claro, tinta escura e um acento coral; a ficha ANTES com as métricas ditas, as mudanças marcadas com mini-ilustração, a linha do tempo do prazo, o gráfico ANTES × DEPOIS que cai ou sobe na proporção dita, o print do depoimento com estrelas e a caixa de comentário com a palavra-chave. A pessoa fica embaixo numa moldura larga e a câmera desce de página em página. Serve para qualquer assunto (o exemplo é um case de tráfego pago, mas funciona com finanças, saúde, vendas, histórias, aulas): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Case\", \"estudo de caso\", \"antes e depois do cliente\", \"prova social\", \"resultado de cliente\", \"depoimento\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "case"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-chave",
+    "nome": "Chave",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Chave: o hall de um apartamento bem cuidado. A porta se abre e revela a pessoa, o batente de madeira vira a moldura dela, e cada ideia vira um objeto na parede de cimento queimado: etiquetas de papel que balançam no gancho, um quadro de chaves, chaveiros, a prancheta, um recibo que soma, placas aparafusadas. Serve para qualquer assunto (o exemplo do modelo é imóveis, mas funciona com finanças, cripto, saúde, psicologia, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Chave\", \"estilo Chave\", \"estilo porta e chaveiro\" ou \"com etiquetas e quadro de chaves\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "item",
+      "vezes"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "porta",
+      "placa",
+      "destaque",
+      "definicao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-cifra",
+    "nome": "Cifra",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Cifra: uma aula de música desenhada no tempo da fala. A pessoa fica numa janela que muda de lugar e pulsa a cada batida, e o resto vira um palco escuro de ébano onde tudo nasce a lápis e ganha tinta marfim e azul quando é dito: cordas que vibram, bolinhas de dedo, a linha de compassos com metrônomo, as setas da batida, a folha de cifra na estante. Serve para qualquer assunto (o exemplo do modelo é uma aula de violão, mas funciona com finanças, cripto, direito, saúde, vendas, carreira, histórias, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Cifra\", \"estilo Cifra\", \"estilo aula de música\" ou \"com diagrama de acordes\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "acordes",
+      "compasso",
+      "batida",
+      "cifra"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-cinema",
+    "nome": "Cinema",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Cinema: linguagem de filme em preto quente e âmbar. A imagem vive entre barras pretas que abrem e fecham com a intensidade da fala; o texto mora nas barras e entra em foco palavra por palavra (serifada de livro, créditos em caixa alta); números rolam como contador mecânico; listas e gráficos viram cartelas de crédito com a janela da pessoa descendo para a base; cortes curtos para o preto com desenhos a traço; frases-chave grandes; créditos finais com a chamada. Serve para qualquer assunto (o exemplo é uma história, mas funciona com finanças, cripto, saúde, vendas, aulas, opinião): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Cinema\", \"estilo cinema\", \"cinematográfico\", \"com barras de cinema\" ou \"estilo storytelling\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "letreiro",
+      "cartela"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": {
+      "vao": 4.6
+    },
+    "palavraPorPalavra": [
+      "letreiro",
+      "fala",
+      "creditos"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-clinico",
+    "nome": "Clínico",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Clínico: um consultório limpo (branco, azul clínico, vermelho só no erro) em que a pessoa vira uma lupa, um círculo com aro azul que viaja pela tela, e a fala vira um exame que se desenha na hora: mostrador que gira em volta dela, prancha de atlas com rótulos (cérebro, corpo, coluna, dentes), achados com ✓ e ✗, conduta numerada, traçado em papel milimetrado. Serve para qualquer assunto (o exemplo é de dentista, mas funciona com cripto, finanças, esporte, vendas, carreira, relacionamento, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Clínico\", \"estilo lupa\", \"estilo consultório\" ou \"com desenho de atlas\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "anatomia",
+      "cronometro"
+    ],
+    "gl": null,
+    "recorte": null,
+    "conferir": null,
+    "palavraPorPalavra": [
+      "titulo",
+      "contagem"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-constelacao",
+    "nome": "Constelação",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Constelação: o vídeo vira uma carta celeste desenhada; a pessoa entra numa ocular de telescópio redonda que muda de lugar a cada ideia; cada coisa dita é uma estrela que acende e ganha nome, as ideias se ligam numa constelação e uma reta vermelha tracejada leva até o alvo, com um localizador vermelho sempre no que está sendo dito; abre e fecha em tela cheia, com o texto no peito. Anil, branco e vermelho de lanterna, Spectral e Reddit Sans. Serve para qualquer assunto (o exemplo do modelo é astronomia, mas funciona com finanças, cripto, vendas, saúde, carreira, relacionamento, aulas e histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Constelação\", \"estilo carta celeste\", \"com constelação\" ou \"céu estrelado\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "constelacao",
+      "carta"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-conversa",
+    "nome": "Conversa",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Conversa: o vídeo vira um app de mensagens noturno e sem marca, com balões tangerina chegando com \"digitando…\" no ritmo da fala, a conversa rolando como no celular, a pessoa como mensagem de vídeo redonda que cresce para o quadro cheio entre os momentos, o que dá errado esfriando para cinza e o que dá certo acendendo. Serve para qualquer assunto (o exemplo do modelo é vendas no direct, mas funciona com finanças, cripto, saúde, plantas, aulas, histórias, opinião): a IA traduz a fala em mensagens, listas, passos, números, gráficos e comparações deste estilo. Use sempre que o usuário pedir para editar \"no modelo Conversa\", \"estilo conversa\", \"com balões de mensagem\", \"como print de conversa\" ou \"estilo chat\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "conversa",
+      "contraste"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "contraste"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-convite",
+    "nome": "Convite",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Convite: papelaria fina sobre linho azul-pó. A pessoa vira a foto em arco de um convite de papel algodão, um lacre de cera azul estampa, os títulos se escrevem a pena em caligrafia e cada ideia vira um cartão que cai na pilha, com fita de cetim e um mostrador que gira. Serve para qualquer assunto (o exemplo do modelo é um cerimonialista, mas funciona com finanças, cripto, tecnologia, saúde, vendas, aulas, histórias…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Convite\", \"estilo convite\", \"papelaria\" ou \"elegante, de casamento\", ou quiser uma edição refinada pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "marco",
+      "passos"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "convite"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-criativo",
+    "nome": "Criativo",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Criativo, o anúncio de performance para Meta Ads e TikTok Ads: gancho já montado no primeiro quadro, produto herói num cartão de vidro com profundidade, cada benefício na palavra com a prova visual literal, selos de oferta, botão de chamada abaixo da legenda e legenda sempre ligada, tudo dentro da zona segura do Ads. Gera VARIANTES DE GANCHO: grave 2 ou 3 ganchos e o corpo, e sai um MP4 por gancho para testar no gerenciador de anúncios. Serve para qualquer produto ou assunto (o exemplo é uma garrafa térmica, mas funciona com cursos, serviços, apps, finanças, saúde, lojas): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Criativo\", \"criativo para anúncio\", \"anúncio para Meta, Instagram ou TikTok Ads\", \"vídeo de tráfego pago\", \"testar ganchos\" ou \"variações de gancho\". Entrega MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "heroi",
+      "prova"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "gancho"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-curriculo",
+    "nome": "Currículo",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Currículo: uma folha branca sobre uma mesa cinza é revisada a caneta vermelha enquanto a pessoa fala. As linhas nascem a lápis e ganham tinta palavra por palavra; a caneta risca, circula, abre chave, desenha gráficos e escreve notas à mão; a pessoa vira um bilhete adesivo de papel que muda de lugar a cada ideia (tela cheia, margem, embaixo, em cima). Serve para qualquer assunto (o exemplo do modelo é carreira, mas funciona com finanças, cripto, saúde, esporte, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Currículo\", \"estilo revisão\", \"caneta vermelha\" ou \"folha corrigida\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "riscar",
+      "marcar",
+      "reescrever"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "reescrever",
+      "riscar",
+      "cronometro",
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-demo",
+    "nome": "Demo",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Demo, o formato viral de demonstração: a pessoa fala corrida e a edição é só o que ela mostra, em três layouts trocados em corte seco (material em cima e ela embaixo, material em tela cheia, ou ela em tela cheia mais fechada quando fala direto com quem assiste), faixa verde de benefício só no gancho, gravações de tela reais com cursor na ordem da fala e legenda laranja-ouro em caixa-alta o tempo todo. Sem transição, sem zoom animado. Serve para qualquer assunto (ferramenta de IA, app, planilha, tutorial, produto, site): a IA captura as páginas reais e traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Demo\", \"Reel de demonstração com a tela em cima\", \"mostra a tela enquanto eu falo\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "tela",
+      "imagem",
+      "abertura"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "legenda"
+    ],
+    "three": false,
+    "ferramentas": [
+      "capturar.mjs",
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens",
+      "capturas de tela"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-devocional",
+    "nome": "Devocional",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Devocional, uma página de livro de devoção calma e viva: a fala é escrita palavra por palavra em serifada grande sobre pergaminho, a palavra-chave acende, a página vira entre os blocos e a poeira de luz fica só no fundo. No versículo ou na citação a página fica cheia (capitular e referência em versalete) e a pessoa vai para um medalhão; no resto ela fica numa moldura larga embaixo. Serve para qualquer assunto (o exemplo é Mateus 11:28, mas funciona com reflexão, autoajuda, finanças, saúde, histórias e frases de livro): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Devocional\", \"versículo do dia\", \"mensagem do dia\", \"reflexão\", \"vídeo para igreja\", \"citação com voz\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "versiculo"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta",
+      "versiculo",
+      "luz",
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-dicionario",
+    "nome": "Dicionário",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Dicionário: o vídeo vira um dicionário bem impresso (papel-bíblia, tinta e uma cor de capa, ameixa), em que cada ideia é uma página que vira, com palavra-título em sílabas, acepções numeradas, a fala em itálico na coluna, cartão de nota que risca o engano e gira para o sentido certo com carimbo, e a pessoa num quadro emoldurado que troca de lado a cada página ou grande em cima, com a folha subindo por baixo. Serve para qualquer assunto (o exemplo é um professor de espanhol, mas funciona com finanças, cripto, saúde, imóveis, carreira, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Dicionário\", \"estilo dicionário\", \"estilo verbete\" ou \"com página de dicionário\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "verbete",
+      "remissao"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "remissao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-dossie",
+    "nome": "Dossiê",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Dossiê: em cima, um quadro de investigação de cortiça escura onde cada ideia vira uma prova presa com pino (pasta manila, ficha datilografada, polaroide, print, recorte, post-it, memorando com carimbo vermelho), a câmera viaja de pino em pino quando a prova é dita e um fio vermelho liga a prova nova à anterior; embaixo, a pessoa numa moldura larga. Títulos em Sora, máquina de escrever só nos rótulos curtos. Serve para qualquer assunto (o exemplo do modelo é um golpe da falsa central, mas funciona com finanças, saúde, história, bastidores de empresas, mistérios, true crime, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Dossiê\", \"estilo dossiê\", \"quadro de investigação\", \"fio vermelho\", \"estilo caso/investigação\" ou \"desvendando um golpe\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "quadro"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "definicao",
+      "pergunta"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-espelho",
+    "nome": "Espelho",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Espelho: luxo discreto de revista (champanhe, café e dourado, Bodoni Moda e Jost), a tela dividida na horizontal por um fio dourado que sobe e desce conforme a fala, a pessoa numa moldura larga embaixo e, em cima, a informação desenhada a traço fino, cada palavra revelada pelo fio quando é dita; a assinatura é uma figura simétrica (rosto, espelho, moeda, microfone, planta…) com pontos numerados que acendem. Serve para qualquer assunto (o exemplo é harmonização facial, mas funciona com finanças, cripto, saúde, carreira, podcast, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Espelho\", \"estilo espelho\", \"edição de luxo\" ou \"estilo revista\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "mapa"
+    ],
+    "gl": null,
+    "recorte": null,
+    "conferir": null,
+    "palavraPorPalavra": [
+      "manchete"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-estudio",
+    "nome": "Estúdio",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Estúdio: um corte de podcast bem produzido, num estúdio escuro com um rosa elétrico de luz de \"no ar\". A pessoa fica num quadro de câmera que muda de lugar a cada ideia e troca de enquadramento (aberto, close); a onda da voz de verdade corre embaixo; a régua do episódio com capítulos fica no alto; e os textos acendem palavra por palavra em cartões de entrevista, pauta, números, gráficos e num player no fim. Serve para qualquer assunto (o exemplo é um podcast sobre carreira, mas funciona com cripto, saúde, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Estúdio\", \"estilo podcast\", \"corte de podcast\" ou \"corte de live\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "resposta",
+      "trilha"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "resposta",
+      "citacao",
+      "player"
+    ],
+    "three": false,
+    "ferramentas": [
+      "onda.mjs"
+    ],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-etapas",
+    "nome": "Etapas",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Etapas, o formato viral \"explicador + gravação de tela\": abre com o rosto grande e um cabeçalho fixo (logo, ícones do processo e pílula de título), passa para a tela dividida (gravação de tela real em cima, no máximo ~38% da altura, pílula com o nome de cada etapa na junção e a pessoa embaixo com cabeça e ombros e legenda abaixo do queixo), recapitula numa grade 2x2 numerada e fecha com o rosto e um CTA de palavra-chave. Só corte seco, sem mexer na cor do vídeo. Serve para qualquer processo em etapas, método, fluxo ou lista: a IA captura prints de páginas públicas ou usa os do usuário. Use quando o usuário pedir \"modelo Etapas\", \"explicador com gravação de tela\", \"tela em cima e eu embaixo com rótulo da etapa\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "etapa",
+      "grade",
+      "prova"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "pergunta",
+      "cta"
+    ],
+    "three": false,
+    "ferramentas": [
+      "capturar.mjs",
+      "justar.mjs",
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens",
+      "capturas de tela"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-etiqueta",
+    "nome": "Etiqueta",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Etiqueta, a prateleira em degraus de preço: parede verde-menta em cima com três degraus (barato, médio, caro) e a pessoa embaixo; cada preço dito faz uma etiqueta cair, balançar e contar o valor, o produto cai no degrau, a faixa mostra \"o que muda\", um medidor \"vale a pena?\" move a agulha e um selo carimba o melhor custo-benefício. Funciona sem foto, com cartões tipográficos. Serve para qualquer comparação de faixas (planos, hotéis, cursos, ferramentas, serviços, produtos): a IA traduz a fala para os blocos do estilo e busca as imagens. Use quando o usuário pedir \"modelo Etiqueta\", \"barato, médio e caro\", \"vale a pena\", \"custo-benefício\", \"faixas de preço\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "etiqueta"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-extrato",
+    "nome": "Extrato",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Extrato: o que ela diz vira um cupom de papel térmico que imprime linha a linha no ritmo da fala (itens com pontilhado, números que contam, contas com sinal magenta, total com fio duplo, carimbo de tinta, linha de corte com tesoura, frases que acendem palavra por palavra), em fonte mono de impressora, tinta preta e um só magenta, com a pessoa numa moldura larga embaixo do rolo ou em quadro cheio com uma tira de cupom no peito. Serve para qualquer assunto (o exemplo do modelo é finanças do dia a dia, mas funciona com cripto, psicologia, saúde, vendas, carreira, aulas, histórias): a IA traduz a fala para os blocos do estilo e usa a conta (itens que somam um resultado) como metáfora. Use sempre que o usuário pedir para editar \"no modelo Extrato\", \"estilo cupom\", \"estilo recibo\" ou \"estilo nota fiscal\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "conta"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-figurinha",
+    "nome": "Figurinha",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Figurinha: a edição vira um álbum de figurinhas montado na fala. Cada ideia é uma figurinha ilustrada ou uma etiqueta de papel que cola, descola e leva carimbo, sempre com esboço a lápis antes da tinta; a pessoa vira a figurinha especial do álbum (moldura índigo com brilho só na borda) e um vira-lata caramelo ilustrado reage a tudo. Papel creme, tinta índigo, framboesa e caramelo, fonte arredondada robusta. Serve para qualquer assunto (o exemplo do modelo é veterinário, mas funciona com cripto, finanças, impostos, saúde, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo e usa o álbum como a coleção de itens da fala. Use sempre que o usuário pedir para editar \"no modelo Figurinha\", \"estilo álbum de figurinhas\", \"com figurinhas\" ou \"com o cachorrinho\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "album"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "especial"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-funil",
+    "nome": "Funil",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Funil: um gráfico de jornal em papel cinza que se monta ao vivo na fala (pontos que são pessoas caem e descem por um funil, contadores, listas, passos, comparações e gráficos feitos de pontos), em grafite, com laranja só para o problema e verde só para o conserto, e a pessoa num bloco ao lado que acompanha o item da vez e volta ao quadro cheio nas frases fortes. Serve para qualquer assunto (o exemplo do modelo é marketing, mas funciona com cripto, saúde, vendas, carreira, aulas, histórias): a IA traduz a fala para os blocos do estilo e usa o funil como metáfora de muitos começam, poucos chegam. Use sempre que o usuário pedir para editar \"no modelo Funil\", \"estilo funil\", \"com o funil animado\" ou \"com gráfico de jornal\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "funil",
+      "conserto"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "gancho",
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-guia",
+    "nome": "Guia",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Guia: a pessoa vira um recorte sem fundo na metade de baixo da tela, sobre telas claras de aula que trocam com corte seco a cada 3 a 6 s: um infográfico-estrada com as etapas numeradas (com zoom na etapa citada), prints reais com seta vermelha grossa no botão, pílulas pretas de arquivo, números, diagramas e um CTA de palavra-chave numa pílula rosa. Sem legenda. Serve para qualquer assunto (tutorial, roteiro de estudo, passo a passo, produto, finanças, saúde): a IA transforma a fala em etapas, prints e rótulos. Use quando o usuário pedir \"modelo Guia\", \"guia em passos com mapa\", \"recorte da minha pessoa sobre infográfico\", \"tutorial com prints e setas\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920. Precisa de macOS para o recorte automático da pessoa.",
+    "formato": "9:16",
+    "assinatura": [
+      "mapa",
+      "print"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "pergunta",
+      "cta"
+    ],
+    "three": false,
+    "ferramentas": [
+      "capturar-tela.mjs",
+      "capturar.mjs",
+      "conferir-tempos.mjs",
+      "justar.mjs",
+      "recortar.mjs",
+      "vseg.swift"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens",
+      "capturas de tela",
+      "recorte da pessoa"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-herbario",
+    "nome": "Herbário",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Herbário: o vídeo vira uma prancha botânica de livro antigo em papel cinza-sálvia, com a pessoa numa moldura oval que muda de tamanho e de lugar, títulos que nascem a lápis e ganham tinta na fala, desenhos a pena e aquarela que agem no que é dito (ramos, folhas numeradas, estágios de crescimento, a planta no vaso em corte), etiquetas de espécime e a câmera correndo pelo papel de prancha em prancha. Serve para qualquer assunto (o exemplo do modelo é jardinagem, mas funciona com cripto, finanças, saúde, vendas, carreira, aulas, histórias): a IA traduz a fala para os blocos do estilo e usa a planta como metáfora do que se cuida e cresce. Use sempre que o usuário pedir para editar \"no modelo Herbário\", \"estilo herbário\", \"prancha botânica\" ou \"estilo livro antigo de botânica\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "figura"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "capa",
+      "nota"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-iceberg",
+    "nome": "Iceberg",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Iceberg, camadas de profundidade: um iceberg ilustrado na água, a câmera mergulha um nível por vez conforme a fala, a água escurece e um medidor de profundidade conta, cada nível ganha foto e nome, e a pessoa fica numa janela larga e flutuante que desce junto. Serve para qualquer assunto (o exemplo do modelo é o café, mas funciona com finanças, saúde, vendas, histórias, aulas, curiosidades...): a IA traduz a fala para os blocos do estilo, do mais conhecido ao mais obscuro. Use sempre que o usuário pedir para editar \"no modelo Iceberg\", \"estilo Iceberg\", \"iceberg de...\", \"camadas\", \"do mais conhecido ao mais obscuro\", \"o que ninguém sabe sobre...\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080x1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "iceberg"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-ignicao",
+    "nome": "Ignição",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Ignição: a tela inteira vira o painel de um carro à noite. A chave gira na primeira palavra, os ponteiros varrem, as luzes-espia acendem quando cada ideia é dita, a tela central mostra listas, números, comparações, gráficos e a rota do navegador, e a pessoa muda de lugar com o modo do painel (tela central, retrovisor de dentro, retrovisor da direita). Preto de painel, luz marfim, vermelho só nos alertas. Serve para qualquer assunto (o exemplo do modelo é mecânica, mas funciona com finanças, cripto, saúde, beleza, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Ignição\", \"estilo painel de carro\", \"com as luzes do painel\" ou \"estilo dashboard\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "luzes",
+      "parada",
+      "rota"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "ignicao",
+      "aviso"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-impacto",
+    "nome": "Impacto",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Impacto: edição rápida e enérgica em que a pessoa pula de um lado para o outro da tela e palavras enormes em caixa alta batem no lado livre no tempo exato da fala; números em mono contam e travam, listas viram a ficha numerada em tela cheia (a pessoa vira janela) com ✓ em cada item, e \"não é X, é Y\" ganha um risco no acento. Preto, branco-gelo e um verde-limão elétrico. Serve para qualquer assunto (o exemplo do modelo é treino, mas funciona com cripto, finanças, saúde, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Impacto\", \"estilo impacto\", \"edição dinâmica\", \"enérgica\", \"agressiva\", \"com palavras grandes\" ou \"de academia\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "circuito",
+      "virada"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "gancho",
+      "virada",
+      "destaque",
+      "definicao",
+      "comparacao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-janelas",
+    "nome": "Janelas",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Janelas: a tela vira uma área de trabalho fictícia e clara (sem marca de sistema), a pessoa é a janela de uma chamada de vídeo que o mouse arrasta, minimiza e maximiza, e cada ideia abre a janela que a mostra (nota, assistente com etapas, painel com número, gráfico, dicionário, tela dividida, caixa de diálogo, notificação), com teclas grafite que afundam em violeta no instante em que são ditas. Serve para qualquer assunto (o exemplo do modelo é tecnologia, mas funciona com finanças, cripto, saúde, casamento, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo e usa as teclas como a combinação da ideia. Use sempre que o usuário pedir para editar \"no modelo Janelas\", \"estilo desktop\", \"estilo área de trabalho\", \"com teclas de atalho\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "teclas",
+      "recorte"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "recorte"
+    ],
+    "three": false,
+    "ferramentas": [
+      "teclas.mjs"
+    ],
+    "imagens": false,
+    "pede": [
+      "gravação de tela"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-kit",
+    "nome": "Kit",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Kit, \"tudo o que você precisa\": mesa de madeira vista de cima na metade de cima e a pessoa numa moldura larga embaixo. A cada item dito, a câmera desliza até o lugar dele, o objeto cai num cartão com sombra, uma linha leva à etiqueta com nome e função e o contador anda (\"1 de 4\"); no fim a câmera se afasta e mostra o kit completo. Papel, fita crepe e azul cobalto sobre carvalho, em Rubik. Serve para qualquer assunto (bolsa de viagem, setup de trabalho, ferramentas, ingredientes, pilares de um método): a IA traduz a fala para os blocos do estilo e busca as imagens. Use quando o usuário pedir \"modelo Kit\", \"o que você precisa\", \"o que tem na minha bolsa\", \"lista de itens\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "kit"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-laboratorio",
+    "nome": "Laboratório",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Laboratório: a tela vira um caderno de laboratório em papel milimetrado, a pessoa vira uma foto redonda colada com fita que muda de lugar a cada folha, e cada ideia é desenhada a tinta no instante em que é dita (figuras de experimento, proveta que enche, amostras lado a lado, gráfico à mão, procedimento numerado, anotações com setas). Serve para qualquer assunto (o exemplo do modelo é divulgação científica, mas funciona com finanças, cripto, saúde, moda, vendas, histórias, aulas…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Laboratório\", \"estilo caderno\", \"estilo caderno de ciência\", \"papel milimetrado\" ou \"com desenhos à mão\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "espectro",
+      "particulas",
+      "ondas",
+      "observador",
+      "trajeto"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-lookbook",
+    "nome": "Lookbook",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Lookbook: uma revista folheada em papel areia, tinta preta e um só acento índigo, com serifa de revista. A pessoa vira a foto da página e muda de lugar a cada ideia (emoldurada na capa, de um lado com a coluna de papel do outro, retrato largo em cima ou embaixo, impressão girada na colagem), e a informação entra como peças de catálogo: numeral grande, cartão de produto, amostras de tecido, fita métrica, pino com linha fina, etiqueta de roupa. Serve para qualquer assunto (o exemplo do modelo é moda masculina, mas funciona com finanças, saúde, aulas, vendas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Lookbook\", \"estilo lookbook\", \"estilo revista\", \"estilo catálogo\" ou \"estilo editorial de moda\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "peca",
+      "colagem"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "capa",
+      "colagem"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-lousa",
+    "nome": "Lousa",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Lousa: a tela vira um quadro-negro e o que a pessoa diz é escrito a giz na hora em que é dito (algarismos traço a traço, letra manuscrita, um giz amarelo para o assunto), a pessoa vira uma janela riscada a giz que muda de lugar a cada página e o apagador limpa a lousa entre as ideias; a assinatura é a conta armada (parcelas, traço e resultado circulado), com números ou com palavras. Serve para qualquer assunto (o exemplo é matemática, mas funciona com finanças, cripto, saúde, moda, vendas, carreira, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Lousa\", \"estilo lousa\", \"estilo quadro-negro\", \"com giz\" ou \"como uma aula no quadro\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "coluna",
+      "resultado",
+      "virgula",
+      "fracao"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "resultado"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-manchete",
+    "nome": "Manchete",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Manchete, o jeito dos Reels de notícia comentada: tela dividida na horizontal, com a faixa de cima ocupada por B-roll (foto ou imagem do que a fala diz, trocando em corte seco a cada 6 a 14 s), uma tarja rosa com pergunta provocativa no começo, e a pessoa embaixo em plano fixo, com legenda palavra a palavra, branca e sem caixa, no peito. Sóbrio: sem transição, sem zoom, sem efeito, sem mexer na cor do vídeo. Serve para qualquer assunto (notícia, tecnologia, finanças, saúde, esporte, política): a IA busca as imagens, escreve a tarja e divide a fala em B-rolls. Use quando o usuário pedir para editar \"no modelo Manchete\", \"estilo notícia\", \"B-roll em cima e eu embaixo\", \"como aquele Reel do Cybercab\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "insercao",
+      "capitulo"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16",
+      "horizontal": "3:4"
+    },
+    "conferir": {
+      "parado": 15,
+      "segundosPorMomento": 14
+    },
+    "palavraPorPalavra": [
+      "abertura",
+      "capitulo"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs",
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-manifesto",
+    "nome": "Manifesto",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Manifesto: as ideias viram pôsteres tipográficos em tela cheia (campo sólido azul-cobalto, branco frio ou preto, fonte larga e pesada em caixa-alta, cada palavra ganhando tinta no instante em que é dita) e a pessoa continua falando DENTRO das letras de uma palavra gigante; entre os pôsteres ela volta ao quadro cheio, com legenda, e números e alertas entram numa placa no peito. Serve para qualquer assunto (o exemplo do modelo é motivacional, mas funciona com cripto, finanças, saúde, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Manifesto\", \"estilo manifesto\", \"vídeo dentro das letras\", \"texto com o vídeo dentro\" ou \"pôster tipográfico\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "cartaz",
+      "escalada"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "escalada"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-mapa",
+    "nome": "Mapa",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Mapa: a tela vira um papel pontilhado onde um mapa de ideias cresce no ritmo da fala. Cada ideia é uma estação do papel e a câmera desliza de uma para outra; a pessoa é um cartão ligado ao conteúdo por um ramo de tinta; toda palavra já está a lápis e ganha tinta quando é dita, com um único marca-texto amarelo no que importa. Serve para qualquer assunto (o exemplo do modelo é estudos, mas funciona com finanças, cripto, saúde, música, vendas, carreira, histórias): a IA traduz a fala para os blocos do estilo e usa o mapa mental como assinatura. Use sempre que o usuário pedir para editar \"no modelo Mapa\", \"estilo mapa mental\", \"estilo caderno\" ou \"com marca-texto\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "mapa",
+      "curva"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "titulo",
+      "barras",
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-medida",
+    "nome": "Medida",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Medida, um laboratório de cozinha que torna uma quantidade palpável: o objeto do assunto (lata, garrafa, pacote, frasco) nasce no peito da pessoa e voa para um papel creme, a quantidade vira unidades 3D (sachês, cubos, moedas, comprimidos) que caem num copo de vidro, a linha da recomendação ou do limite é marcada e, quando a quantidade passa dela, o alerta fica vermelho; a pessoa vai para uma moldura arredondada embaixo, e a virada com linha de luz pode trocar a roupa dela. Serve para qualquer assunto (o exemplo é um nutricionista, mas funciona com saúde, finanças, cripto, consumo, rotina, histórias): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Medida\", \"estilo Medida\", \"quanto tem de X em Y\", \"mostrar a quantidade\", \"vídeo de nutricionista\" ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "medida"
+    ],
+    "gl": "angle",
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "pergunta",
+      "cta",
+      "virada",
+      "destaque"
+    ],
+    "three": true,
+    "ferramentas": [
+      "maos.mjs"
+    ],
+    "imagens": false,
+    "pede": [
+      "3d"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-mosaico",
+    "nome": "Mosaico",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Mosaico: a tela vira uma página de revista em ladrilhos arredondados (creme, verde-folha, tomate, gema e tinta sobre fundo aveia) que se remonta a cada ideia; a pessoa é um dos ladrilhos e muda de lugar e de tamanho, enquanto os outros montam a informação na fala (frações, um disco dividido em partes, casas com ícones, listas, números que contam, comparações em dois ladrilhos). Serve para qualquer assunto (o exemplo do modelo é nutrição, mas funciona com finanças, cripto, saúde, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Mosaico\", \"estilo mosaico\", \"estilo bento\", \"em blocos\", \"estilo revista\" ou \"com grade\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "partes",
+      "prato",
+      "grupo"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "titulo",
+      "selo",
+      "destaque",
+      "definicao",
+      "abertura",
+      "frase",
+      "pergunta",
+      "cta"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-multicamera",
+    "nome": "Multicâmera",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Multicâmera, a cara de um canal de YouTube bem editado: plano aberto e fechado que se alternam a cada corte e mudança de assunto, sempre seguindo o rosto, com aproximação lenta nas ênfases; cortes para a imagem do que é citado em tela cheia com movimento lento; títulos de capítulo discretos numa tarja; legenda mínima e um único destaque vermelho. Sóbrio: não mexe na cor do vídeo. Serve para qualquer assunto (carreira, finanças, saúde, tecnologia, aulas, histórias): a IA divide a fala em capítulos, busca ou pede as imagens e traduz o resto para os blocos do estilo. Use quando o usuário pedir \"modelo Multicâmera\", \"várias câmeras\", \"edição de canal do YouTube\", \"edição profissional sem exagero\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "cena",
+      "capitulo"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16",
+      "horizontal": "9:16"
+    },
+    "conferir": {
+      "vao": 4.5
+    },
+    "palavraPorPalavra": [
+      "abertura"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-narrador",
+    "nome": "Narrador",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Narrador: a voz conta a história e imagens em tela cheia, com aproximação ou panorâmica lenta, carregam de 50% a 70% do vídeo; datas e lugares entram como letreiros em serifa, rótulos de museu nomeiam cada imagem e a pessoa volta em quadro cheio nas frases-chave. Documentário sóbrio: noite azulada, marfim e um destaque vermelhão, sem mexer na cor do vídeo. Serve para qualquer assunto (curiosidades, história de marca, biografia, ciência, finanças, viagens): a IA lista o que a fala cita, busca ou pede as imagens e traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Narrador\", \"estilo documentário\", \"narração com imagens\", \"conta a história com fotos\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "cena",
+      "letreiro"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-niveis",
+    "nome": "Níveis",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Níveis, o refrão \"ruim, bom, excelente\": a pessoa em plano único, um pouco mais baixa no quadro; acima da cabeça, por cima do fundo da própria cena, três cartões altos lado a lado entram em corte seco, cada um na palavra do nível, com rótulo branco em caixa-alta; a cada ~3 s os cartões trocam de tema; fecha com o cartão do perfil e a pílula COMENTA \"PALAVRA\". Sem legenda, sem transição. Serve para qualquer assunto (faixas de preço, planos, iniciante/intermediário/avançado, três versões de um criativo): a IA transforma a fala em ciclos de três níveis. Use quando o usuário pedir \"modelo Níveis\", \"ruim, bom, excelente\", \"três níveis\", \"barato, médio e caro\", ou quiser um Reel, TikTok ou Short de comparação nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "niveis"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": {
+      "vao": 3.2,
+      "segundosPorMomento": 4
+    },
+    "palavraPorPalavra": [
+      "abertura"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-oferta",
+    "nome": "Oferta",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Oferta, a página de uma oferta premium que se monta na fala: cada entrega cai como um cartão com o objeto e encaixa na pilha de valor, na ordem da fala, o valor âncora bate na palavra, um risco vermelho o atravessa, ele encolhe para o canto e o preço real cai e bate grande em verde, o selo de garantia carimba, a régua da semana corre até o prazo e o botão leva um toque de dedo. A pessoa fica embaixo numa moldura larga; papel marfim, tinta verde profunda, vermelho só no risco. Serve para qualquer assunto (o exemplo é o lançamento de um curso, mas funciona com serviços, lojas, finanças, saúde, eventos, aulas gratuitas): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Oferta\", \"vídeo de venda\", \"anúncio de lançamento\", \"preço riscado\", \"de/por\", \"pilha de valor\", \"oferta com garantia\" ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "oferta"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta",
+      "prazo"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-orbita",
+    "nome": "Órbita",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Órbita: quando a fala entra no assunto, o fundo vira espaço profundo em 3D, a pessoa vai para uma moldura embaixo (fundo natural) e a câmera recua pela escala até mostrar dois corpos (o Sol e a Terra, ou o que a fala pedir); a luz viaja de um ao outro com o relógio contando o tempo dito, a origem apaga, acende ou explode na palavra, e no fim a câmera sobe para o céu com cada corpo e o seu valor. Abre com a virada \"E se eu fosse…\" e a linha de luz que troca a roupa. Serve para qualquer assunto (o exemplo é um professor de ciências, mas funciona com física, curiosidades, \"você sabia\", saúde, finanças e cripto, em que moedas viram corpos em órbita): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Órbita\", \"estilo Órbita\", \"edição com espaço\", \"astronomia\", \"e se eu fosse\" ou um Reel explicativo com 3D. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "orbita",
+      "ceu"
+    ],
+    "gl": "angle",
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "virada",
+      "abertura",
+      "frase",
+      "pergunta",
+      "cta"
+    ],
+    "three": true,
+    "ferramentas": [
+      "gesto.mjs"
+    ],
+    "imagens": false,
+    "pede": [
+      "3d"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-painel",
+    "nome": "Painel",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Painel: um painel de dados calmo e preciso (grafite quase preto, menta e âmbar, números em fonte mono). Quando a fala explica algo, a pessoa encolhe para uma janela no canto e um painel abre com gráfico que se desenha na fala, barra que se divide, cartões de indicador e listas de status; entre um painel e outro ela volta à tela cheia com cartões na altura do peito. Serve para qualquer assunto (o exemplo do modelo é finanças, mas funciona com cripto, saúde, receita, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo e, sem números ditos, usa formas ilustrativas. Use sempre que o usuário pedir para editar \"no modelo Painel\", \"estilo painel\", \"estilo dashboard\", \"com gráficos e indicadores\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "grafico",
+      "divisao",
+      "painel"
+    ],
+    "gl": null,
+    "recorte": null,
+    "conferir": null,
+    "palavraPorPalavra": [
+      "gancho"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-palco",
+    "nome": "Palco",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Palco, com dois modos que se alternam: na fala normal, a pessoa em quadro cheio, com cortes justos e reenquadramento a cada corte; quando ela cita algo que dá para ver (foto, print, lista, número), o assunto ocupa a tela com anotações limpas no ponto citado (círculo, seta, marca-texto) e a pessoa vira uma janela arredondada num canto de baixo. Sóbrio, um destaque azul-cobalto, sem mexer na cor do vídeo. Serve para qualquer assunto (tutoriais, finanças, saúde, vendas, viagens, aulas): a IA lista o que a pessoa cita, busca ou pede as imagens e escolhe o ponto de cada anotação. Use quando o usuário pedir \"modelo Palco\", \"mostrar na tela com a minha janelinha no canto\", \"tutorial com anotações\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "palco"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-planilha",
+    "nome": "Planilha",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Planilha: a tela vira uma planilha fictícia, clara e precisa (grafite e um acento framboesa), a pessoa é uma célula mesclada que muda de lugar na grade, e a fala é digitada célula a célula com o cursor pulando no ritmo; listas viram tabelas com ✓/✗ e total, passos viram a série 1, 2, 3, números são digitados e formatados, comparações ganham formatação condicional, gráficos se desenham dos dados. Serve para qualquer assunto (o exemplo do modelo é imposto de renda, mas funciona com cripto, viagem, saúde, vendas, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Planilha\", \"estilo planilha\", \"estilo Excel\", \"com tabela\" ou \"em forma de planilha\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "linha",
+      "tabela",
+      "preencher"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "celula",
+      "preencher"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-planta",
+    "nome": "Planta",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Planta: a tela vira uma prancheta de arquiteto (papel com grade, grafite e um único acento terracota) e o que a pessoa explica é desenhado na hora em que é dito: planta baixa em que cada cômodo é uma ideia e a circulação tracejada percorre o caminho, cotas que medem, números que contam, notas, passos ligados por um percurso, duas vistas comparadas e gráficos em elevação; a pessoa muda de lugar (tela cheia, faixa larga em cima, janela no canto) para abrir espaço para a prancha. Serve para qualquer assunto (o exemplo é arquitetura de interiores, mas funciona com finanças, saúde, vendas, carreira, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Planta\", \"estilo planta baixa\", \"estilo prancheta\" ou \"com desenho técnico\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "planta"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "titulo",
+      "abertura",
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-plantao",
+    "nome": "Plantão",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Plantão: um explicador de telejornal. Barra vermelha EXPLICANDO com relógio, tarjas de TV na altura do peito com nome e função, letreiro correndo na base e a tela que se divide (a pessoa em cima, o painel azul do estúdio embaixo) para desenhar cada ideia na fala: etiqueta que sobe pelo trilho, nota que encolhe, linhas que se cruzam, número que conta, listas em tarjas. Azul de estúdio, branco e um único vermelho. Serve para qualquer assunto (o exemplo do modelo é economia, mas funciona com cripto, saúde, pets, vendas, carreira, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Plantão\", \"estilo telejornal\", \"estilo jornal\", \"cara de notícia\" ou \"entenda em 30 segundos\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "vinheta",
+      "manchete",
+      "etiqueta",
+      "nota"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "vinheta",
+      "manchete",
+      "destaque",
+      "definicao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-prompt",
+    "nome": "Prompt",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Prompt: uma bancada cinza-clara onde as ideias se montam com peças coloridas que encaixam como blocos com dente (o texto de cada peça é digitado no ritmo da fala), num chat fictício em que o que é vago chega cinza e borrado e o que é certo entra em foco. A pessoa muda de lugar a cada momento: tela cheia com um cartão no peito, janela larga no alto, janela no canto, janelinha ao lado. Serve para qualquer assunto (o exemplo é IA e prompts, mas funciona com finanças e cripto, saúde, odontologia, vendas, carreira, relacionamento, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Prompt\", \"estilo montagem de prompt\", \"estilo peças que encaixam\" ou \"estilo chat\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920 renderizado com Remotion.",
+    "formato": "9:16",
+    "assinatura": [
+      "montagem"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "montagem",
+      "destaque",
+      "definicao",
+      "topicos",
+      "passos",
+      "comparacao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-pronuncia",
+    "nome": "Pronúncia",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Pronúncia: uma ficha de som violeta em cima (a palavra enorme dividida em sílabas, um ponto coral que pula até a sílaba forte, a fonética, a pronúncia errada riscada, o jeito certo de ler com um traço desenhado e a foto do significado) e a pessoa numa moldura larga embaixo; o momento-assinatura repete a palavra em câmera lenta com a voz da própria pessoa, com uma lupa redonda na boca que segue o rosto e a onda da voz correndo embaixo; fecha com \"repete comigo\" em karaokê. Serve para qualquer assunto (o exemplo do modelo é pronúncia de inglês americano, mas funciona com espanhol, sotaque, fonoaudiologia, oratória, termos técnicos, finanças, saúde ou histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Pronúncia\", \"estilo pronúncia\", \"vídeo de como se fala\", \"aula de pronúncia\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "pronuncia"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "repita"
+    ],
+    "three": false,
+    "ferramentas": [
+      "camera-lenta.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-pulso",
+    "nome": "Pulso",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Pulso: a tela vira um app de treino claro com um relógio esportivo (fictícios, sem marca). A pessoa troca de lugar a cada ideia (tela cheia com cartão no peito, o visor redondo do relógio, o card de cima, o avatar de um mapa); o anel do relógio acende parte por parte, o ponteiro anda, números contam, casas enchem, uma rota se desenha e o traçado do pulso bate a cada palavra, com as cinco cores das zonas como as únicas cores fortes. Serve para qualquer assunto (o exemplo do modelo é corrida, mas funciona com cripto, finanças, saúde, arquitetura, vendas, carreira, aulas, histórias): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Pulso\", \"estilo relógio\", \"estilo app de treino\" ou \"com o anel das zonas\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "zonas",
+      "zona",
+      "divisao",
+      "rota"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "gancho",
+      "zonas",
+      "destaque"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-quiz",
+    "nome": "Quiz",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Quiz, um programa de perguntas de TV claro e refinado: a pergunta grande no alto, as alternativas numa grade acima da cabeça (cada uma entra na letra falada, com ilustração), o anel de contagem 3-2-1 sincronizado com a fala, a revelação (a certa acende em verde, as outras apagam) e o cartão do fato. A pessoa fica embaixo numa moldura larga. Funciona com 2, 3 ou 4 alternativas e com verdadeiro ou falso. Serve para qualquer assunto (o exemplo é o maior órgão do corpo, mas funciona com finanças, saúde, idiomas, concursos, vendas, histórias): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Quiz\", \"pergunta e resposta\", \"teste se você sabe\", \"verdadeiro ou falso\", \"adivinha\", \"comenta se acertou\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "quiz"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta",
+      "fato"
+    ],
+    "three": false,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-raiox",
+    "nome": "Raio-X",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Raio-X: uma sala de laudos escura, azulada, em que a pessoa vira uma chapa iluminada que muda de lado e embaixo acende um negatoscópio com o filme do momento (lista de achados, régua de passos, duas chapas lado a lado, gráfico em traço de osso, e o raio-x de uma coluna que mostra onde está a tensão em vermelho e o que corrige em ciano com ✓). Serve para qualquer assunto (o exemplo é fisioterapia e postura, mas funciona com finanças e cripto, IA, vendas, carreira, relacionamento, aulas): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir \"modelo Raio-X\", \"estilo raio-x\", \"negatoscópio\" ou \"estilo laudo\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920 feito com Remotion.",
+    "formato": "9:16",
+    "assinatura": [
+      "ajuste"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "laudo",
+      "ajuste"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-ranking",
+    "nome": "Ranking",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Ranking, a contagem regressiva: um placar azul de quadra em cima com as casas do N ao 1 e a pessoa embaixo; em cada posição o número bate num selo limão, a foto toma a tela por cerca de 1 segundo e voa para a casa dela no placar, e o 1º lugar fica escondido atrás de um \"?\" até o fim, quando um foco de luz o revela. Funciona também sem foto, com cartões tipográficos. Em Rubik larga, azul, giz e limão. Serve para qualquer assunto (o exemplo do modelo é um top 5 de lanches de rua, mas funciona com filmes, ferramentas, hábitos, erros, investimentos, cidades, dicas, o melhor e o pior de qualquer coisa): a IA traduz a fala para os blocos do estilo e busca as imagens sozinha. Use sempre que o usuário pedir para editar \"no modelo Ranking\", \"estilo ranking\", \"top 5\", \"contagem regressiva\", \"do último ao primeiro\" ou \"placar\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "ranking"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-reacao",
+    "nome": "Reação",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Reação: o conteúdo que ela comenta (um comentário de seguidor, um post, uma manchete ou um print) fica em cima, num cartão que sobe como num feed, com um marca-texto amarelo que passa na linha que ela está lendo e a câmera aproximando o trecho; a pessoa fica numa moldura larga embaixo, com a cabeça inteira, em Rubik, azul-ardósia, branco, amarelo e laranja. Serve para qualquer assunto (o exemplo do modelo é uma resposta a um seguidor sobre IA e edição, mas funciona com notícias, finanças, cripto, saúde, boatos, carreira, histórias): a IA traduz a fala para os blocos do estilo e busca as imagens sozinha. Use sempre que o usuário pedir para editar \"no modelo Reação\", \"estilo reação\", \"respondendo comentário\", \"comentando um print\", \"reagindo a um post\" ou \"comentando uma notícia\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "print",
+      "comentario"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "comentario"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-receita",
+    "nome": "Receita",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Receita: uma ficha de receita de papel creme sobe e ocupa a tela, a pessoa vai para uma janela arredondada que troca de canto, tudo se escreve a lápis e ganha tinta cacau quando é dito, com um único acento pistache, serifada DM Serif; listas viram linhas da ficha, números contam num copo medidor, e os ingredientes caem numa panela vista de cima que reage ao que é dito. Serve para qualquer assunto (o exemplo do modelo é confeitaria, mas funciona com finanças e cripto, carreira, saúde, vendas, histórias, aulas…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar 'no modelo Receita', 'estilo receita' ou 'ficha de receita', e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual, seja a receita de um doce ou a 'receita' de qualquer resultado. Entrega um MP4 vertical 1080×1920 feito com Remotion.",
+    "formato": "9:16",
+    "assinatura": [
+      "ingredientes",
+      "passo"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "dica",
+      "passo",
+      "destaque",
+      "definicao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-respiro",
+    "nome": "Respiro",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Respiro: calma de diário em papel pêssego, a pessoa numa janela em arco que respira junto e troca de lugar devagar, uma forma macia de damasco que enche, fica cheia e esvazia no ritmo da fala (com anel de contagem ou palavras marcadas), notas escritas à mão, listas com bolinhas que respiram, números que contam dentro da forma, trocas lentas e líquidas. Serve para qualquer assunto (o exemplo do modelo é uma respiração 4-7-8 de psicólogo, mas funciona com finanças e cripto, mecânica, carreira, saúde, vendas, histórias, aulas…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar 'no modelo Respiro', 'estilo calmo', 'estilo diário', e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920 feito com Remotion.",
+    "formato": "9:16",
+    "assinatura": [
+      "fase",
+      "ciclos"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "nota",
+      "lista"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-roteiro",
+    "nome": "Roteiro",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Roteiro: um roteiro de viagem ilustrado que se desenha na fala (cartão de embarque, mapa em areia e azulejo com a rota andando de pino em pino, barra do dia com o sol, cartões-postais com carimbo, a pessoa viajando num postal, fechamento em página de passaporte). Serve para qualquer assunto (o exemplo do modelo é um dia em Lisboa, mas funciona com finanças, saúde, vendas, aulas, histórias…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Roteiro\", \"estilo roteiro de viagem\", \"com mapa\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual, inclusive para viagem, passeio, roteiro ou guia local. Entrega um MP4 vertical 1080×1920 renderizado com Remotion.",
+    "formato": "9:16",
+    "assinatura": [
+      "parada"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "embarque",
+      "destaque",
+      "definicao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-rotulo",
+    "nome": "Rótulo",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Rótulo: o vídeo vira a leitura de uma ficha técnica impressa. A pessoa encolhe até virar o camafeu oval de um rótulo fictício, uma lupa de verdade lê cada campo quando ele é dito e uma ficha de papel explica com linhas-guia, números que contam, medidor, carimbo e traços que passam de lápis a tinta. Papel creme, tinta, um vinho de destaque e Libre Caslon. Serve para qualquer assunto (o exemplo é um sommelier lendo um vinho, mas funciona com cripto, finanças, saúde, rotina, vendas, aulas e histórias): a IA monta o rótulo do que a pessoa explica e traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Rótulo\", \"estilo rótulo\", \"ficha técnica\", \"anatomia do rótulo\" ou \"com lupa\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "campo",
+      "medidor",
+      "origem",
+      "variedade",
+      "ano",
+      "teor",
+      "nota"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "campo",
+      "nota"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-tatica",
+    "nome": "Tática",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Tática: um programa de análise de TV esportiva. Em quadro cheio, tarjas de TV na altura do peito; quando explica algo, a pessoa vira o comentarista numa caixa de transmissão no canto e a tela vira uma prancheta de giz sobre a grama, com fichas que andam, passes tracejados, a bola que rola e o gol com zonas que acendem, sob o placar \"DICA 1/3\". Verde de campo, giz, amarelo de placar e preto de TV, fonte larga e pesada. Serve para qualquer assunto (o exemplo do modelo é uma pelada de futebol, mas funciona com finanças, saúde, vendas, aulas, histórias…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Tática\", \"estilo prancheta\", \"estilo TV esportiva\", \"com placar\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920 renderizado com Remotion.",
+    "formato": "9:16",
+    "assinatura": [
+      "dica"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "dica",
+      "resumo",
+      "destaque",
+      "definicao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-tela-viva",
+    "nome": "Tela Viva",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Tela Viva, o formato viral de demonstração: layout dividido fixo do primeiro ao último quadro, com uma gravação de tela que nunca para (rola, aproxima, cursor clicando) flutuando sobre o próprio cenário, um rótulo branco com o nome do assunto no gancho e a pessoa em take único embaixo com legenda minúscula no peito. Sem transição, sem logo, sem texto de chamada. Serve para qualquer assunto (ferramenta de IA, site, app, planilha, tutorial, produto): a IA captura as páginas reais, escolhe onde a câmera para e traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Tela Viva\", \"tela em cima e eu embaixo\", \"gravação de tela dividida\", \"mostra a tela enquanto eu falo\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "tela",
+      "abertura"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16",
+      "horizontal": "3:4"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [],
+    "three": false,
+    "ferramentas": [
+      "capturar.mjs",
+      "conferir-tempos.mjs",
+      "justar.mjs"
+    ],
+    "imagens": false,
+    "pede": [
+      "capturas de tela"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-terco",
+    "nome": "Terço",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Terço: tela dividida na horizontal, com o terço de cima como um palco sempre ocupado (imagem do que é citado aproximando devagar, título de cada parte, listas, números e destaques entrando por cortina ou deslize) e a pessoa embaixo numa moldura larga que segue o rosto, com legenda abaixo do queixo. Sóbrio: grafite e osso com um único azul, sem mexer na cor do vídeo. Serve para qualquer assunto (finanças, saúde, culinária, vendas, viagens, aulas): a IA lista o que a pessoa cita, busca ou pede as imagens e traduz a fala para os blocos do estilo. Use quando o usuário pedir para editar \"no modelo Terço\", \"tela dividida\", \"imagem em cima e eu embaixo\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "insercao",
+      "capitulo"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16",
+      "horizontal": "3:4"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "capitulo"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-tese",
+    "nome": "Tese",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Tese, o Reel de opinião viral sem pacote gráfico: tela dividida do primeiro ao último quadro (a informação inserida na faixa de cima, 45% da altura, e a pessoa bem centralizada embaixo, sempre com o rosto à vista, inclusive no gancho), rosto fechado em tela cheia só nas viradas, fala corrida sem respiro e legenda minúscula branca com contorno abaixo do queixo. Serve para qualquer assunto (notícia, opinião, finanças, saúde, tecnologia, histórias): a IA organiza a fala em gancho, tese, prova, explicação, clímax e chamada para seguir, busca as imagens e traduz o resto para os blocos do estilo. Use sempre que o usuário pedir \"modelo Tese\", \"estilo Tese\", \"Reel de opinião\", \"edição de notícia com imagem em cima\", \"tela dividida com imagem no topo\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "cena",
+      "fechado"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16",
+      "horizontal": "9:16"
+    },
+    "conferir": {
+      "parado": 9,
+      "vao": 3.5
+    },
+    "palavraPorPalavra": [
+      "abertura"
+    ],
+    "three": false,
+    "ferramentas": [
+      "conferir-tempo.mjs",
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-torre",
+    "nome": "Torre",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Torre, um lançamento imobiliário à noite em 3D: a pessoa numa moldura com o fundo natural, a virada com uma linha de luz (troca de roupa opcional), a cidade noturna, um prédio que sobe andar por andar no número dito, o mapa que traça a rota dourada até o destino, o mergulho na planta humanizada com os cômodos ditos acesos e a etiqueta de preço dourada que bate na palavra. Feito para corretor e imobiliária (apartamento, casa, sala comercial, terreno), mas serve para qualquer assunto (finanças, cripto, saúde, aulas, histórias): a IA traduz a fala para os blocos do estilo, com modo ilustrativo em que um número vira os andares da torre. Use quando o usuário pedir \"modelo Torre\", \"estilo lançamento\", \"vídeo de imóvel\", \"apresentar um apartamento\", \"vídeo de corretor\" ou quiser uma edição 3D premium pronta para Reels, TikTok ou Shorts. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "torre",
+      "rota",
+      "planta",
+      "preco"
+    ],
+    "gl": "angle",
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta",
+      "pergunta"
+    ],
+    "three": true,
+    "ferramentas": [
+      "timing.mjs"
+    ],
+    "imagens": false,
+    "pede": [
+      "3d"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-transformacao",
+    "nome": "Transformação",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Transformação: uma foto grande com uma cortina ANTES | DEPOIS cuja alça anda com a fala, marcadores numerados que aproximam a área de cada dica, a revelação final em tela cheia e a pessoa numa moldura larga embaixo ou numa janela, em linho claro, verde-mar e Outfit redonda. Serve para qualquer assunto com um antes e um depois (o exemplo do modelo é a organização de um closet, mas funciona com reforma, decoração, limpeza, jardim, edição de foto, design, rotina, finanças, carreira…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Transformação\", \"estilo antes e depois\", \"com cortina antes e depois\" ou \"vídeo de transformação\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "antesdepois"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens",
+      "fotos de antes e depois"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-versus",
+    "nome": "Versus",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Versus, a tela de luta: em cima, as duas imagens se encaram em painéis inclinados com um VS no meio; cada rodada ganha ícone, uma barra de cada lado que enche com a fala e um ponto no placar; no fim, placar final e perfis (\"pra quem é cada um\"). A pessoa fica embaixo numa moldura larga. Funciona sem foto, com o nome gigante no painel. Kanit itálica, vermelho e azul-ciano sobre grafite. Serve para qualquer A contra B (produtos, serviços, métodos, dinheiro, carreira, treinos): a IA traduz a fala para os blocos do estilo e busca as imagens. Use quando o usuário pedir \"modelo Versus\", \"A contra B\", \"X ou Y\", \"isso ou aquilo\", \"comparação em rodadas\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "versus",
+      "rodada",
+      "veredito"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-viral",
+    "nome": "Viral",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Viral, a edição de retenção dos Reels: gancho escrito no primeiro segundo, legenda karaokê com a palavra falada numa tarja rosa, zoom de impacto seguindo o rosto nos cortes e nas palavras fortes, imagens que cortam para a tela cheia ou saltam como cartão acima da cabeça (a pessoa desce para a metade de baixo) e barra de progresso no topo, em Montserrat cheia, placas escuras e rosa. Serve para qualquer assunto (o exemplo do modelo é uma curiosidade sobre mel, mas funciona com notícias, finanças, cripto, saúde, negócios, histórias, aulas): a IA traduz a fala para os blocos do estilo e busca as imagens sozinha. Use sempre que o usuário pedir para editar \"no modelo Viral\", \"estilo viral\", \"edição de retenção\", \"com legenda karaokê\", \"com imagens que aparecem na fala\" ou \"estilo curiosidades\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "corte",
+      "pop"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "cta"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  },
+  {
+    "id": "modelo-visor",
+    "nome": "Visor",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Visor: a edição inteira vira a interface de uma câmera fictícia, sem marca (cantos de enquadramento, ISO e velocidade, seletor de modos, obturador com piscar suave, contador de fotos), em vidro fumê escuro com um acento água-marinha. A pessoa alterna entre tela cheia, um cartão ou janelinha e telas de vidro com listas, passos, comparações e gráficos; números viram leituras de exposição, alertas viram aviso de zebra, o foco trava no rosto e, no fim, a câmera tira uma foto da pessoa. Serve para qualquer assunto (o exemplo do modelo é fotografia no celular, mas funciona com finanças, direito, saúde, vendas, histórias, aulas…): a IA traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Visor\", \"estilo câmera\" ou \"interface de câmera\", ou quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920 feito com Remotion.",
+    "formato": "9:16",
+    "assinatura": [
+      "cena",
+      "foco",
+      "comparar"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "cena",
+      "foco",
+      "destaque",
+      "definicao"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-wireframe",
+    "nome": "Wireframe",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Wireframe: a tela vira um canvas de design (grafite com grade de pontos). A pessoa abre em quadro cheio com o título como camada de texto selecionada, depois encolhe e vira um comentário fixado ao lado de um celular em wireframe ou de um frame de design com painel de camadas; cada ideia ganha etiqueta vermelha numerada, contorno tracejado e medida (listas, passos, comparações, gráficos, números, alertas) e, no conserto, o wireframe vira página limpa na cor da marca. Serve para qualquer assunto (landing page, finanças, saúde, corrida, direito, vendas, aulas): a IA traduz a fala para os blocos do estilo. Use quando o usuário pedir \"modelo Wireframe\", \"estilo canvas de design\" ou \"estilo revisão de página\", ou quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "revisao",
+      "conserto",
+      "resultado"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": null,
+    "palavraPorPalavra": [
+      "abertura",
+      "frase",
+      "destaque",
+      "definicao",
+      "numero"
+    ],
+    "three": false,
+    "ferramentas": [],
+    "imagens": false,
+    "pede": [],
+    "automatico": true
+  },
+  {
+    "id": "modelo-yap",
+    "nome": "Yap",
+    "descricao": "Edita qualquer vídeo de uma pessoa falando para a câmera no estilo Yap: a pessoa em quadro cheio o vídeo inteiro, cortes justos nas pausas com reenquadramento em cada corte seguindo o rosto, legenda refinada logo abaixo do queixo com a palavra falada numa tarja suave, e inserções inteligentes (a imagem do que a pessoa cita num cartão ao lado do ombro, um chip de palavra-chave, um número que conta, de vez em quando um corte de 1 s para a imagem em tela cheia). Sóbrio e profissional: não mexe na cor do vídeo. Serve para qualquer assunto (o exemplo é economia doméstica, mas funciona com saúde, culinária, vendas, viagens, aulas): a IA lista o que a pessoa cita, busca ou pede as imagens e traduz a fala para os blocos do estilo. Use sempre que o usuário pedir para editar \"no modelo Yap\", \"estilo yap\", \"yap content\", \"só legenda e inserções\", \"corta as pausas e põe imagem quando eu falar de algo\", e quando quiser uma edição pronta para Reels, TikTok ou Shorts nesse visual. Entrega um MP4 vertical 1080×1920.",
+    "formato": "9:16",
+    "assinatura": [
+      "insercao"
+    ],
+    "gl": null,
+    "recorte": {
+      "vertical": "9:16"
+    },
+    "conferir": {
+      "vao": 4.5
+    },
+    "palavraPorPalavra": [
+      "abertura"
+    ],
+    "three": false,
+    "ferramentas": [
+      "justar.mjs"
+    ],
+    "imagens": true,
+    "pede": [
+      "imagens"
+    ],
+    "automatico": false
+  }
+]

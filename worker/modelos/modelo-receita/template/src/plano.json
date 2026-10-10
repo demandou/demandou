@@ -1,0 +1,465 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 21.36,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.294
+  },
+  "zona": {
+    "topo": 970,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Confeitaria"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.99,
+    8.08,
+    12.09,
+    15.41,
+    18.68
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 2.99,
+      "rotulo": "Receita",
+      "destaque": "cremoso",
+      "passos": {
+        "em": 2.16,
+        "total": 3
+      },
+      "texto": "Brigadeiro de colher cremoso"
+    },
+    {
+      "tipo": "ingredientes",
+      "de": 2.99,
+      "ate": 8.08,
+      "pessoa": "sup-dir",
+      "itens": [
+        {
+          "em": 3.08,
+          "quantidade": "1",
+          "unidade": "lata",
+          "nome": "leite condensado",
+          "icone": "lata"
+        },
+        {
+          "em": 4.9,
+          "quantidade": "1",
+          "unidade": "colher",
+          "nome": "manteiga",
+          "icone": "colher"
+        },
+        {
+          "em": 6.26,
+          "quantidade": "3",
+          "unidade": "colheres",
+          "nome": "chocolate em pó",
+          "icone": "pote"
+        }
+      ]
+    },
+    {
+      "tipo": "passo",
+      "de": 8.08,
+      "ate": 12.09,
+      "pessoa": "sup-esq",
+      "numero": 1,
+      "numeroEm": 8.18,
+      "titulo": [
+        "Tudo na panela"
+      ],
+      "itens": [
+        {
+          "em": 10.12,
+          "texto": "fogo baixo",
+          "acao": "fogo-baixo"
+        },
+        {
+          "em": 11.01,
+          "texto": "mexendo sem parar",
+          "acao": "mexer"
+        }
+      ]
+    },
+    {
+      "tipo": "passo",
+      "de": 12.09,
+      "ate": 15.41,
+      "pessoa": "sup-dir",
+      "numero": 2,
+      "numeroEm": 12.2,
+      "titulo": [
+        "Quando der pra ver",
+        "o fundo da panela"
+      ],
+      "destaque": "o fundo",
+      "itens": [
+        {
+          "em": 13.88,
+          "acao": "fundo"
+        },
+        {
+          "em": 14.8,
+          "texto": "desliga",
+          "acao": "desligar"
+        }
+      ]
+    },
+    {
+      "tipo": "passo",
+      "de": 15.41,
+      "ate": 18.68,
+      "pessoa": "sup-esq",
+      "numero": 3,
+      "numeroEm": 15.51,
+      "titulo": [
+        "Passa pro pote"
+      ],
+      "itens": [
+        {
+          "em": 16.38,
+          "acao": "pote"
+        },
+        {
+          "em": 16.99,
+          "texto": "ainda quente",
+          "acao": "quente"
+        },
+        {
+          "em": 17.89,
+          "texto": "deixa esfriar",
+          "acao": "esfriar"
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 18.68,
+      "ate": 21.36,
+      "icone": "salvar",
+      "em": 18.76,
+      "texto": "Salva essa receita",
+      "apoio": "e me marca quando fizer"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "der para": "der pra",
+    "para o pote": "pro pote"
+  },
+  "palavras": [
+    {
+      "em": 0.32,
+      "ate": 0.78,
+      "w": "Brigadeiro"
+    },
+    {
+      "em": 0.78,
+      "ate": 0.94,
+      "w": "de"
+    },
+    {
+      "em": 0.94,
+      "ate": 1.41,
+      "w": "colher"
+    },
+    {
+      "em": 1.41,
+      "ate": 1.96,
+      "w": "cremoso"
+    },
+    {
+      "em": 1.96,
+      "ate": 2.16,
+      "w": "em"
+    },
+    {
+      "em": 2.16,
+      "ate": 2.51,
+      "w": "três"
+    },
+    {
+      "em": 2.51,
+      "ate": 2.99,
+      "w": "passos"
+    },
+    {
+      "em": 3.08,
+      "ate": 3.14,
+      "w": "uma"
+    },
+    {
+      "em": 3.11,
+      "ate": 3.41,
+      "w": "lata"
+    },
+    {
+      "em": 3.41,
+      "ate": 3.55,
+      "w": "de"
+    },
+    {
+      "em": 3.55,
+      "ate": 3.93,
+      "w": "leite"
+    },
+    {
+      "em": 3.93,
+      "ate": 4.69,
+      "w": "condensado,"
+    },
+    {
+      "em": 4.9,
+      "ate": 4.96,
+      "w": "1"
+    },
+    {
+      "em": 4.93,
+      "ate": 5.37,
+      "w": "colher"
+    },
+    {
+      "em": 5.37,
+      "ate": 5.52,
+      "w": "de"
+    },
+    {
+      "em": 5.52,
+      "ate": 6.15,
+      "w": "manteiga"
+    },
+    {
+      "em": 6.26,
+      "ate": 6.32,
+      "w": "e"
+    },
+    {
+      "em": 6.29,
+      "ate": 6.47,
+      "w": "3"
+    },
+    {
+      "em": 6.47,
+      "ate": 6.99,
+      "w": "colheres"
+    },
+    {
+      "em": 6.99,
+      "ate": 7.13,
+      "w": "de"
+    },
+    {
+      "em": 7.13,
+      "ate": 7.82,
+      "w": "chocolate"
+    },
+    {
+      "em": 7.82,
+      "ate": 7.91,
+      "w": "em"
+    },
+    {
+      "em": 7.91,
+      "ate": 8.08,
+      "w": "pó"
+    },
+    {
+      "em": 8.18,
+      "ate": 8.69,
+      "w": "Primeiro."
+    },
+    {
+      "em": 9.05,
+      "ate": 9.19,
+      "w": "Tudo"
+    },
+    {
+      "em": 9.19,
+      "ate": 9.37,
+      "w": "na"
+    },
+    {
+      "em": 9.37,
+      "ate": 10.12,
+      "w": "panela,"
+    },
+    {
+      "em": 10.12,
+      "ate": 10.33,
+      "w": "fogo"
+    },
+    {
+      "em": 10.33,
+      "ate": 11.01,
+      "w": "baixo,"
+    },
+    {
+      "em": 11.01,
+      "ate": 11.57,
+      "w": "mexendo"
+    },
+    {
+      "em": 11.57,
+      "ate": 11.74,
+      "w": "sem"
+    },
+    {
+      "em": 11.74,
+      "ate": 12.09,
+      "w": "parar."
+    },
+    {
+      "em": 12.2,
+      "ate": 12.78,
+      "w": "Segundo,"
+    },
+    {
+      "em": 13.1,
+      "ate": 13.21,
+      "w": "Quando"
+    },
+    {
+      "em": 13.21,
+      "ate": 13.37,
+      "w": "der"
+    },
+    {
+      "em": 13.37,
+      "ate": 13.58,
+      "w": "para"
+    },
+    {
+      "em": 13.58,
+      "ate": 13.79,
+      "w": "ver"
+    },
+    {
+      "em": 13.79,
+      "ate": 13.88,
+      "w": "o"
+    },
+    {
+      "em": 13.88,
+      "ate": 14.06,
+      "w": "fundo"
+    },
+    {
+      "em": 14.06,
+      "ate": 14.21,
+      "w": "da"
+    },
+    {
+      "em": 14.21,
+      "ate": 14.8,
+      "w": "panela,"
+    },
+    {
+      "em": 14.8,
+      "ate": 15.41,
+      "w": "desliga."
+    },
+    {
+      "em": 15.51,
+      "ate": 16.15,
+      "w": "Terceiro,"
+    },
+    {
+      "em": 16.38,
+      "ate": 16.47,
+      "w": "Passa"
+    },
+    {
+      "em": 16.47,
+      "ate": 16.7,
+      "w": "para"
+    },
+    {
+      "em": 16.7,
+      "ate": 16.8,
+      "w": "o"
+    },
+    {
+      "em": 16.8,
+      "ate": 16.99,
+      "w": "pote"
+    },
+    {
+      "em": 16.99,
+      "ate": 17.26,
+      "w": "ainda"
+    },
+    {
+      "em": 17.26,
+      "ate": 17.67,
+      "w": "quente"
+    },
+    {
+      "em": 17.67,
+      "ate": 17.89,
+      "w": "e"
+    },
+    {
+      "em": 17.89,
+      "ate": 18.15,
+      "w": "deixa"
+    },
+    {
+      "em": 18.15,
+      "ate": 18.68,
+      "w": "esfriar."
+    },
+    {
+      "em": 18.76,
+      "ate": 18.88,
+      "w": "Salva"
+    },
+    {
+      "em": 18.88,
+      "ate": 19.14,
+      "w": "essa"
+    },
+    {
+      "em": 19.14,
+      "ate": 19.58,
+      "w": "receita"
+    },
+    {
+      "em": 19.58,
+      "ate": 19.64,
+      "w": "e"
+    },
+    {
+      "em": 19.6,
+      "ate": 19.75,
+      "w": "me"
+    },
+    {
+      "em": 19.75,
+      "ate": 20.02,
+      "w": "marca"
+    },
+    {
+      "em": 20.02,
+      "ate": 20.38,
+      "w": "quando"
+    },
+    {
+      "em": 20.38,
+      "ate": 20.7,
+      "w": "fizer."
+    }
+  ],
+  "cozinha": {
+    "recipiente": "panela",
+    "massa": "massa"
+  }
+}

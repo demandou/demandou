@@ -1,0 +1,13 @@
+{
+  "recorte": {
+    "vertical": "9:16",
+    "horizontal": "3:4"
+  },
+  "blocos": {
+    "assinatura": [
+      "tela",
+      "abertura"
+    ]
+  },
+  "palavraPorPalavra": []
+}

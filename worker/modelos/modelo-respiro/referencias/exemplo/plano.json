@@ -1,0 +1,335 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 25.32,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.303
+  },
+  "zona": {
+    "topo": 947,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago Moura",
+    "area": "Psicólogo"
+  },
+  "sfx": true,
+  "cortesEm": [],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 5.1,
+      "mao": "quando bater a ansiedade,",
+      "texto": "tenta a respiração",
+      "mapaEm": [
+        3.46,
+        3.7,
+        4.5
+      ]
+    },
+    {
+      "tipo": "fase",
+      "de": 5.1,
+      "ate": 8.7,
+      "fase": "inspira",
+      "contagem": 4,
+      "contaEm": 6.05,
+      "chegaEm": 7.98,
+      "nota": "inspira",
+      "detalhe": "pelo nariz"
+    },
+    {
+      "tipo": "fase",
+      "de": 8.7,
+      "ate": 11.25,
+      "fase": "segura",
+      "contagem": 7,
+      "contaEm": 9.26,
+      "chegaEm": 10.96,
+      "nota": "segura",
+      "detalhe": "o ar"
+    },
+    {
+      "tipo": "fase",
+      "de": 11.25,
+      "ate": 15.85,
+      "fase": "solta",
+      "contagem": 8,
+      "contaEm": 12.34,
+      "chegaEm": 14.95,
+      "nota": "solta",
+      "detalhe": "devagar pela boca"
+    },
+    {
+      "tipo": "ciclos",
+      "de": 15.85,
+      "ate": 18.4,
+      "vezes": 4,
+      "divideEm": 16.3,
+      "nota": "repete",
+      "detalhe": "4 vezes"
+    },
+    {
+      "tipo": "nota",
+      "de": 18.4,
+      "ate": 23.5,
+      "mao": "não substitui a terapia,",
+      "sublinhar": "a terapia",
+      "sublinharEm": 19.6,
+      "texto": "mas ajuda o corpo a desacelerar na hora",
+      "grifo": "desacelerar",
+      "grifoEm": 21.6,
+      "ondaEm": 21.6
+    },
+    {
+      "tipo": "cta",
+      "de": 23.5,
+      "ate": 25.32,
+      "texto": "salva pra quando precisar",
+      "icone": "salvar",
+      "iconeEm": 23.84,
+      "assinaturaEm": 24.4
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "478": "4-7-8"
+  },
+  "palavras": [
+    {
+      "em": 0.18,
+      "ate": 0.48,
+      "w": "Quando"
+    },
+    {
+      "em": 0.48,
+      "ate": 0.77,
+      "w": "bater"
+    },
+    {
+      "em": 0.77,
+      "ate": 0.92,
+      "w": "a"
+    },
+    {
+      "em": 0.92,
+      "ate": 1.51,
+      "w": "ansiedade,"
+    },
+    {
+      "em": 1.89,
+      "ate": 2.39,
+      "w": "tenta"
+    },
+    {
+      "em": 2.39,
+      "ate": 2.64,
+      "w": "a"
+    },
+    {
+      "em": 2.65,
+      "ate": 3.65,
+      "w": "respiração"
+    },
+    {
+      "em": 3.65,
+      "ate": 4.91,
+      "w": "478."
+    },
+    {
+      "em": 5.72,
+      "ate": 6.21,
+      "w": "inspira"
+    },
+    {
+      "em": 6.21,
+      "ate": 6.6,
+      "w": "pelo"
+    },
+    {
+      "em": 6.6,
+      "ate": 7.27,
+      "w": "nariz,"
+    },
+    {
+      "em": 7.27,
+      "ate": 8,
+      "w": "contando"
+    },
+    {
+      "em": 8,
+      "ate": 8.35,
+      "w": "até"
+    },
+    {
+      "em": 8.35,
+      "ate": 8.63,
+      "w": "4"
+    },
+    {
+      "em": 9.2,
+      "ate": 9.64,
+      "w": "segura"
+    },
+    {
+      "em": 9.64,
+      "ate": 9.74,
+      "w": "o"
+    },
+    {
+      "em": 9.74,
+      "ate": 9.95,
+      "w": "ar"
+    },
+    {
+      "em": 9.95,
+      "ate": 10.81,
+      "w": "contando"
+    },
+    {
+      "em": 10.81,
+      "ate": 11.24,
+      "w": "até"
+    },
+    {
+      "em": 11.24,
+      "ate": 11.62,
+      "w": "7"
+    },
+    {
+      "em": 12.21,
+      "ate": 12.51,
+      "w": "Solta"
+    },
+    {
+      "em": 12.51,
+      "ate": 13.22,
+      "w": "devagar"
+    },
+    {
+      "em": 13.22,
+      "ate": 13.63,
+      "w": "pela"
+    },
+    {
+      "em": 13.63,
+      "ate": 14.23,
+      "w": "boca,"
+    },
+    {
+      "em": 14.23,
+      "ate": 14.87,
+      "w": "contando"
+    },
+    {
+      "em": 14.87,
+      "ate": 15.25,
+      "w": "até"
+    },
+    {
+      "em": 15.25,
+      "ate": 15.52,
+      "w": "oito"
+    },
+    {
+      "em": 16.16,
+      "ate": 16.71,
+      "w": "repete"
+    },
+    {
+      "em": 16.71,
+      "ate": 17.24,
+      "w": "quatro"
+    },
+    {
+      "em": 17.24,
+      "ate": 17.8,
+      "w": "vezes"
+    },
+    {
+      "em": 18.5,
+      "ate": 18.64,
+      "w": "Não"
+    },
+    {
+      "em": 18.64,
+      "ate": 19.46,
+      "w": "substitui"
+    },
+    {
+      "em": 19.46,
+      "ate": 19.52,
+      "w": "a"
+    },
+    {
+      "em": 19.52,
+      "ate": 20.41,
+      "w": "terapia,"
+    },
+    {
+      "em": 20.41,
+      "ate": 20.48,
+      "w": "mas"
+    },
+    {
+      "em": 20.48,
+      "ate": 20.91,
+      "w": "ajuda"
+    },
+    {
+      "em": 20.91,
+      "ate": 21,
+      "w": "o"
+    },
+    {
+      "em": 21,
+      "ate": 21.45,
+      "w": "corpo"
+    },
+    {
+      "em": 21.45,
+      "ate": 21.54,
+      "w": "a"
+    },
+    {
+      "em": 21.54,
+      "ate": 22.48,
+      "w": "desacelerar"
+    },
+    {
+      "em": 22.48,
+      "ate": 22.66,
+      "w": "na"
+    },
+    {
+      "em": 22.66,
+      "ate": 23.07,
+      "w": "hora"
+    },
+    {
+      "em": 23.72,
+      "ate": 23.86,
+      "w": "Salva"
+    },
+    {
+      "em": 23.86,
+      "ate": 24.12,
+      "w": "para"
+    },
+    {
+      "em": 24.12,
+      "ate": 24.52,
+      "w": "quando"
+    },
+    {
+      "em": 24.52,
+      "ate": 25.06,
+      "w": "precisar."
+    }
+  ]
+}

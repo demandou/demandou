@@ -1,0 +1,6 @@
+Imagens do exemplo (public/img): geradas no Magnific (Nano Banana 2) para este modelo, sem marca e sem texto.
+- mic-lapela.jpg: microfone de lapela
+- mic-usb.jpg: microfone USB de mesa
+- mic-sem-fio.jpg: kit de microfones sem fio
+- rua.jpg: rua do centro de cidade grande brasileira, calçada de pedra portuguesa (B-roll do "teste com barulho de rua"); letreiro do ônibus desfocado
+Sons (public/sfx): tons sintetizados para o modelo (empurrao.wav, clique.wav) e corte.wav do motor de modelos.

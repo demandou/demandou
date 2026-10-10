@@ -1,0 +1,5 @@
+{
+  "recorte": { "vertical": "9:16" },
+  "blocos": { "assinatura": ["linha", "tabela", "preencher"] },
+  "palavraPorPalavra": ["celula", "preencher"]
+}

@@ -1,0 +1,5 @@
+{
+  "recorte": { "vertical": "9:16" },
+  "blocos": { "assinatura": ["cena", "foco", "comparar"] },
+  "palavraPorPalavra": ["cena", "foco", "destaque", "definicao"]
+}

@@ -1,0 +1,465 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1080,
+  "altura": 1920,
+  "duracao": 23.24,
+  "videoAltura": 1920,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.3
+  },
+  "zona": {
+    "topo": 996,
+    "altura": 465
+  },
+  "marca": {
+    "nome": "Tiago Moura",
+    "area": "Contador"
+  },
+  "sfx": true,
+  "cortesEm": [
+    4.43,
+    9.53,
+    13.88,
+    19.15
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 4.45,
+      "texto": "3 despesas que podem diminuir o seu imposto de renda",
+      "destaque": "imposto de renda",
+      "selo": {
+        "texto": "na declaração completa",
+        "confirmaEm": 4.0
+      },
+      "aba": {
+        "nome": "Completa",
+        "em": 4.0
+      }
+    },
+    {
+      "tipo": "linha",
+      "de": 4.45,
+      "ate": 9.55,
+      "item": {
+        "texto": "Saúde",
+        "em": 4.57
+      },
+      "exemplos": [
+        {
+          "texto": "Consultas",
+          "em": 5.5
+        },
+        {
+          "texto": "Exames",
+          "em": 6.4
+        },
+        {
+          "texto": "Plano de saúde",
+          "em": 7.14
+        }
+      ],
+      "marca": {
+        "em": 7.95
+      },
+      "detalhe": {
+        "texto": "sem limite",
+        "em": 8.4
+      },
+      "destaque": {
+        "tipo": "infinito",
+        "rotulo": "Saúde",
+        "icone": "saude",
+        "texto": "sem limite de valor",
+        "em": 8.5
+      }
+    },
+    {
+      "tipo": "linha",
+      "de": 9.55,
+      "ate": 13.88,
+      "item": {
+        "texto": "Educação",
+        "em": 9.63
+      },
+      "exemplos": [
+        {
+          "texto": "Escola",
+          "em": 10.66
+        },
+        {
+          "texto": "Faculdade",
+          "em": 11.09
+        }
+      ],
+      "marca": {
+        "em": 11.8
+      },
+      "detalhe": {
+        "texto": "anual por pessoa",
+        "em": 12.5
+      },
+      "destaque": {
+        "tipo": "regras",
+        "rotulo": "Educação",
+        "icone": "educacao",
+        "linhas": [
+          {
+            "texto": "limite anual",
+            "icone": "calendario",
+            "em": 12.26
+          },
+          {
+            "texto": "por pessoa",
+            "icone": "pessoa",
+            "em": 12.85
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "linha",
+      "de": 13.88,
+      "ate": 19.17,
+      "item": {
+        "texto": "Previdência",
+        "em": 13.97,
+        "etiqueta": "privada · PGBL"
+      },
+      "marca": {
+        "em": 16.5
+      },
+      "formula": {
+        "texto": "=12% × RENDA_TRIBUTÁVEL",
+        "em": 16.85,
+        "enterEm": 18.75
+      },
+      "detalhe": {
+        "texto": "até 12% da renda",
+        "em": 18.75
+      },
+      "destaque": {
+        "tipo": "pizza",
+        "rotulo": "Previdência privada",
+        "icone": "previdencia",
+        "pct": 12,
+        "em": 16.89,
+        "texto": "da renda tributável",
+        "textoEm": 17.86
+      }
+    },
+    {
+      "tipo": "preencher",
+      "de": 19.17,
+      "ate": 21.25,
+      "texto": "Guarda todos os comprovantes",
+      "icone": "comprovante",
+      "marca": "clipe",
+      "em": 19.5
+    },
+    {
+      "tipo": "cta",
+      "de": 21.25,
+      "ate": 23.24,
+      "texto": "Salva pra próxima declaração",
+      "destaque": "Salva",
+      "icone": "salvar",
+      "iconeEm": 21.45,
+      "aba": {
+        "nome": "Próxima declaração",
+        "em": 21.7
+      }
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para a": "pra"
+  },
+  "palavras": [
+    {
+      "em": 0.1,
+      "ate": 0.16,
+      "w": "3"
+    },
+    {
+      "em": 0.12,
+      "ate": 0.72,
+      "w": "despesas"
+    },
+    {
+      "em": 0.72,
+      "ate": 1.04,
+      "w": "que"
+    },
+    {
+      "em": 1.04,
+      "ate": 1.31,
+      "w": "podem"
+    },
+    {
+      "em": 1.31,
+      "ate": 1.94,
+      "w": "diminuir"
+    },
+    {
+      "em": 1.94,
+      "ate": 2,
+      "w": "o"
+    },
+    {
+      "em": 1.99,
+      "ate": 2.14,
+      "w": "seu"
+    },
+    {
+      "em": 2.14,
+      "ate": 2.58,
+      "w": "imposto"
+    },
+    {
+      "em": 2.58,
+      "ate": 2.69,
+      "w": "de"
+    },
+    {
+      "em": 2.69,
+      "ate": 3.02,
+      "w": "renda"
+    },
+    {
+      "em": 3.02,
+      "ate": 3.15,
+      "w": "na"
+    },
+    {
+      "em": 3.15,
+      "ate": 3.96,
+      "w": "declaração"
+    },
+    {
+      "em": 3.96,
+      "ate": 4.43,
+      "w": "completa"
+    },
+    {
+      "em": 4.57,
+      "ate": 5.01,
+      "w": "Saúde!"
+    },
+    {
+      "em": 5.5,
+      "ate": 6.4,
+      "w": "consultas,"
+    },
+    {
+      "em": 6.4,
+      "ate": 7.01,
+      "w": "exames"
+    },
+    {
+      "em": 7.01,
+      "ate": 7.14,
+      "w": "e"
+    },
+    {
+      "em": 7.14,
+      "ate": 7.54,
+      "w": "plano"
+    },
+    {
+      "em": 7.54,
+      "ate": 7.72,
+      "w": "de"
+    },
+    {
+      "em": 7.72,
+      "ate": 8.4,
+      "w": "saúde,"
+    },
+    {
+      "em": 8.4,
+      "ate": 8.62,
+      "w": "sem"
+    },
+    {
+      "em": 8.62,
+      "ate": 9.05,
+      "w": "limite"
+    },
+    {
+      "em": 9.05,
+      "ate": 9.19,
+      "w": "de"
+    },
+    {
+      "em": 9.19,
+      "ate": 9.53,
+      "w": "valor."
+    },
+    {
+      "em": 9.63,
+      "ate": 10.37,
+      "w": "Educação."
+    },
+    {
+      "em": 10.66,
+      "ate": 11,
+      "w": "escola"
+    },
+    {
+      "em": 11,
+      "ate": 11.09,
+      "w": "e"
+    },
+    {
+      "em": 11.09,
+      "ate": 11.91,
+      "w": "faculdade"
+    },
+    {
+      "em": 11.91,
+      "ate": 12.26,
+      "w": "com"
+    },
+    {
+      "em": 12.26,
+      "ate": 12.52,
+      "w": "limite"
+    },
+    {
+      "em": 12.52,
+      "ate": 12.85,
+      "w": "anual"
+    },
+    {
+      "em": 12.85,
+      "ate": 13.05,
+      "w": "por"
+    },
+    {
+      "em": 13.05,
+      "ate": 13.69,
+      "w": "pessoa."
+    },
+    {
+      "em": 13.97,
+      "ate": 14.9,
+      "w": "Previdência"
+    },
+    {
+      "em": 14.9,
+      "ate": 15.58,
+      "w": "Privada"
+    },
+    {
+      "em": 15.58,
+      "ate": 15.76,
+      "w": "do"
+    },
+    {
+      "em": 15.76,
+      "ate": 16.14,
+      "w": "tipo"
+    },
+    {
+      "em": 16.14,
+      "ate": 16.53,
+      "w": "PGBL"
+    },
+    {
+      "em": 16.75,
+      "ate": 16.89,
+      "w": "até"
+    },
+    {
+      "em": 16.89,
+      "ate": 17.46,
+      "w": "12%"
+    },
+    {
+      "em": 17.46,
+      "ate": 17.63,
+      "w": "da"
+    },
+    {
+      "em": 17.63,
+      "ate": 17.86,
+      "w": "sua"
+    },
+    {
+      "em": 17.86,
+      "ate": 18.27,
+      "w": "renda"
+    },
+    {
+      "em": 18.27,
+      "ate": 19.15,
+      "w": "tributável."
+    },
+    {
+      "em": 19.25,
+      "ate": 19.47,
+      "w": "Guarda"
+    },
+    {
+      "em": 19.47,
+      "ate": 19.84,
+      "w": "todos"
+    },
+    {
+      "em": 19.84,
+      "ate": 19.98,
+      "w": "os"
+    },
+    {
+      "em": 19.98,
+      "ate": 21.07,
+      "w": "comprovantes."
+    },
+    {
+      "em": 21.34,
+      "ate": 21.43,
+      "w": "Salva"
+    },
+    {
+      "em": 21.43,
+      "ate": 21.6,
+      "w": "para"
+    },
+    {
+      "em": 21.6,
+      "ate": 21.66,
+      "w": "a"
+    },
+    {
+      "em": 21.64,
+      "ate": 22.04,
+      "w": "próxima"
+    },
+    {
+      "em": 22.04,
+      "ate": 22.68,
+      "w": "declaração."
+    }
+  ],
+  "planilha": {
+    "arquivo": "Deduções do IR",
+    "abas": [
+      "Simplificada",
+      "Completa"
+    ],
+    "aba": 0
+  },
+  "tabela": {
+    "colunas": [
+      "Despesa",
+      "Dedutível?",
+      "Limite"
+    ],
+    "tipo": "marca",
+    "total": "Total"
+  }
+}

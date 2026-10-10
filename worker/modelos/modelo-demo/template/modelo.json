@@ -1,0 +1,16 @@
+{
+  "recorte": {
+    "vertical": "9:16"
+  },
+  "imagens": true,
+  "blocos": {
+    "assinatura": [
+      "tela",
+      "imagem",
+      "abertura"
+    ]
+  },
+  "palavraPorPalavra": [
+    "legenda"
+  ]
+}
