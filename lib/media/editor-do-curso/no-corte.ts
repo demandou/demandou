@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import catalogo from "./catalogo.json";
+import { editorAvancadoLigado, ID_SOB_MEDIDA } from "@/lib/media/editor-avancado/no-corte";
 
 /**
  * OS MODELOS DO CURSO NA ESTEIRA DOS CORTES (09/10/2026).
@@ -41,27 +42,56 @@ export function modeloServeNoCorte(id: string | null | undefined): ModeloDoCurso
   return m && m.automatico && m.formato === "9:16" ? m : null;
 }
 
-export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
+/**
+ * A escolha crua do projeto: o modelo escolhido (um modelo do curso ou
+ * "sob-medida", a edição sob medida do editor avançado) e a reserva gravada
+ * junto com a edição sob medida (o modelo do curso que o projeto usava antes).
+ */
+export async function escolhaDoEditorDoProjeto(projectId: string): Promise<{ escolhido: string | null; reserva: string | null }> {
   const linha = await prisma.projectMemory.findUnique({
     where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } },
     select: { value: true },
   });
-  const v = linha?.value as { modelo?: string } | null;
-  return modeloServeNoCorte(v?.modelo)?.id ?? null;
+  const v = linha?.value as { modelo?: string; reserva?: string | null } | null;
+  return { escolhido: v?.modelo ?? null, reserva: v?.reserva ?? null };
 }
 
-/** Grava (ou apaga, com `null`) o modelo do curso do projeto. */
+/**
+ * O MODELO DO CURSO cujo ESTILO vale no projeto (os cortes, as peças e as
+ * artes). Com a edição sob medida escolhida (10/10), é o modelo de reserva
+ * dela: as peças e as artes seguem nele, e os cortes vão pela edição sob
+ * medida (montagem-nos-cortes.ts decide por `escolhaDoEditorDoProjeto`).
+ */
+export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
+  const { escolhido, reserva } = await escolhaDoEditorDoProjeto(projectId);
+  return modeloServeNoCorte(escolhido === ID_SOB_MEDIDA ? reserva : escolhido)?.id ?? null;
+}
+
+/**
+ * Grava (ou apaga, com `null`) o modelo do curso do projeto. "sob-medida" (a
+ * edição sob medida, com EDITOR_AVANCADO=1) guarda junto, como reserva, o
+ * modelo do curso que estava em uso: um corte que falhar na edição sob medida
+ * vai para ele.
+ */
 export async function escolherModeloDoCurso(projectId: string, modelo: string | null): Promise<void> {
   if (!modelo) {
     await prisma.projectMemory.delete({ where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } } }).catch(() => {});
     return;
   }
-  if (!modeloServeNoCorte(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);
-  const value = { modelo, em: new Date().toISOString() };
+  let value: Record<string, unknown>;
+  if (modelo === ID_SOB_MEDIDA) {
+    if (!editorAvancadoLigado()) throw new Error("a edição sob medida ainda não está ligada");
+    const antes = await escolhaDoEditorDoProjeto(projectId);
+    const reserva = modeloServeNoCorte(antes.escolhido === ID_SOB_MEDIDA ? antes.reserva : antes.escolhido)?.id ?? null;
+    value = { modelo, reserva, em: new Date().toISOString() };
+  } else {
+    if (!modeloServeNoCorte(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);
+    value = { modelo, em: new Date().toISOString() };
+  }
   await prisma.projectMemory.upsert({
     where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } },
-    create: { projectId, type: TIPO, key: CHAVE, value },
-    update: { value },
+    create: { projectId, type: TIPO, key: CHAVE, value: value as never },
+    update: { value: value as never },
   });
 }
 

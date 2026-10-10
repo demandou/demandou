@@ -2,3 +2,8 @@
 # plataforma) e o bundle é refeito na construção.
 node_modules
 remotion/build
+# O editor avançado: o kit e os scripts vão; mídia de prova, renders e pacotes locais não.
+avancado/node_modules
+avancado/public
+avancado/out
+avancado/runpod

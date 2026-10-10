@@ -2,7 +2,8 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { prisma } from "@/lib/db/prisma";
-import { editorDoCursoLigado, escolherModeloDoCurso, modeloDoCursoDoProjeto, modeloServeNoCorte } from "@/lib/media/editor-do-curso/no-corte";
+import { editorDoCursoLigado, escolhaDoEditorDoProjeto, escolherModeloDoCurso, modeloDoCursoDoProjeto, modeloServeNoCorte } from "@/lib/media/editor-do-curso/no-corte";
+import { CARTAO_SOB_MEDIDA, editorAvancadoLigado, ID_SOB_MEDIDA } from "@/lib/media/editor-avancado/no-corte";
 import { modelosDaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
 import { recomendarModelo, situacaoDaRecomendacao } from "@/lib/media/editor-do-curso/recomendacao";
 import { levarModeloParaAsPecas, pecasDoModeloJaFeitas } from "@/lib/media/editor-do-curso/pecas-no-modelo";
@@ -21,7 +22,8 @@ import { registrarNota } from "@/lib/cerebro/captura";
  * depois do GET, para a grade aparecer sem esperar.
  *
  * PUT { modelo: string | null } grava a escolha (null volta ao editor de
- * antes). 400 quando o modelo ainda não serve no corte.
+ * antes; "sob-medida" é a edição sob medida do editor avançado, só com
+ * EDITOR_AVANCADO=1). 400 quando o modelo ainda não serve no corte.
  */
 export const dynamic = "force-dynamic";
 // O redator do estilo das peças e o confirmar (biblioteca de design) levam até ~1 min cada.
@@ -38,10 +40,16 @@ async function podeUsar(id: string): Promise<boolean> {
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!(await podeUsar(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const [modelo, s] = await Promise.all([modeloDoCursoDoProjeto(id), situacaoDaRecomendacao(id)]);
+  const [modeloDoCurso, escolha, s] = await Promise.all([modeloDoCursoDoProjeto(id), escolhaDoEditorDoProjeto(id), situacaoDaRecomendacao(id)]);
+  // A EDIÇÃO SOB MEDIDA (10/10): um cartão especial, só com EDITOR_AVANCADO=1. Escolhida,
+  // ela é o modelo em uso; o modelo do curso de antes fica de reserva (e segue nas peças).
+  const avancado = editorAvancadoLigado();
+  const sobMedida = avancado && escolha.escolhido === ID_SOB_MEDIDA;
   return NextResponse.json({
     ligado: editorDoCursoLigado(),
-    modelo,
+    modelo: sobMedida ? ID_SOB_MEDIDA : modeloDoCurso,
+    reserva: sobMedida ? modeloDoCurso : null,
+    sobMedida: avancado ? CARTAO_SOB_MEDIDA : null,
     recomendacao: s.recomendacao,
     pendente: s.pendente,
     modelos: modelosDaBiblioteca(),
@@ -96,7 +104,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Diga qual modelo usar, ou null para voltar ao editor de antes." }, { status: 400 });
   }
   const modelo = corpo.modelo as string | null;
-  if (modelo !== null && !modeloServeNoCorte(modelo)) {
+  const sobMedida = modelo === ID_SOB_MEDIDA && editorAvancadoLigado();
+  if (modelo !== null && !sobMedida && !modeloServeNoCorte(modelo)) {
     return NextResponse.json({ error: "Este modelo ainda não pode ser usado nos cortes." }, { status: 400 });
   }
   await escolherModeloDoCurso(id, modelo);

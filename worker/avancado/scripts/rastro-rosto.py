@@ -24,7 +24,7 @@ VIDEO, INICIO, DURACAO, SAIDA = sys.argv[1], float(sys.argv[2]), float(sys.argv[
 PASSO = int(sys.argv[5]) if len(sys.argv) > 5 else 3
 JANELA = float(sys.argv[6]) if len(sys.argv) > 6 else 0.8
 FPS = 30
-MODELO = os.path.join(os.environ.get("MODELOS_DO_RECORTE", "/app/modelos"), "face_landmarker.task")
+MODELO = os.environ.get("MODELO_ROSTO") or os.path.join(os.environ.get("MODELOS_DO_RECORTE", "/app/modelos"), "face_landmarker.task")
 
 sonda = json.loads(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", VIDEO], capture_output=True, text=True).stdout)
 W, H = sonda["streams"][0]["width"], sonda["streams"][0]["height"]

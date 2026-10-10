@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Check, ChevronDown, Loader2, Play, Sparkles, Undo2 } from "lucide-react";
+import { Box, Check, ChevronDown, Layers, Loader2, Play, Sparkles, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BotaoDescartar } from "@/components/ui/descartar";
 import type { ModeloNaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
@@ -28,9 +28,15 @@ import { PecasNoEstiloDoModelo } from "@/components/video/pecas-no-estilo-do-mod
  * passar o mouse ou tocar na imagem, uma por vez, cobrindo o quadro do meio.
  */
 
+type CartaoSobMedida = { id: string; nome: string; resumo: string; detalhe: string };
+
 type Dados = {
   ligado: boolean;
   modelo: string | null;
+  /** Com a edição sob medida em uso: o modelo do curso de reserva (ou null, o editor de antes). */
+  reserva?: string | null;
+  /** O cartão especial da edição sob medida (10/10), só com o editor avançado ligado. */
+  sobMedida?: CartaoSobMedida | null;
   recomendacao: Recomendacao | null;
   pendente: boolean;
   modelos: ModeloNaBiblioteca[];
@@ -131,6 +137,10 @@ export function ModelosDoCurso({
   // O resto da tela sabe qual editor vale.
   useEffect(() => {
     if (!dados) return;
+    if (dados.sobMedida && modelo === dados.sobMedida.id) {
+      aoMudarRef.current?.({ id: dados.sobMedida.id, nome: dados.sobMedida.nome });
+      return;
+    }
     const m = dados.modelos.find((x) => x.id === modelo);
     aoMudarRef.current?.(m ? { id: m.id, nome: m.nome } : null);
   }, [dados, modelo]);
@@ -166,7 +176,10 @@ export function ModelosDoCurso({
   }
 
   const porId = new Map(dados.modelos.map((m) => [m.id, m]));
-  const emUso = modelo ? porId.get(modelo) ?? null : null;
+  const sobMedida = dados.sobMedida ?? null;
+  const sobMedidaEmUso = Boolean(sobMedida && modelo === sobMedida.id);
+  const emUso = modelo && !sobMedidaEmUso ? porId.get(modelo) ?? null : null;
+  const reservaDoSobMedida = sobMedidaEmUso && dados.reserva ? porId.get(dados.reserva) ?? null : null;
   const recomendado = recomendacao ? porId.get(recomendacao.modelo) ?? null : null;
   const primeiro = [recomendacao?.modelo, modeloAoAbrir].filter((x): x is string => Boolean(x));
   const prontos = dados.modelos
@@ -320,9 +333,28 @@ export function ModelosDoCurso({
       <div
         role="status"
         className="mb-3 rounded-lg border px-3 py-2.5 text-xs"
-        style={{ borderColor: emUso ? "var(--brand)" : "var(--border)", background: "var(--bg-surface)", color: "var(--text-muted)" }}
+        style={{ borderColor: emUso || sobMedidaEmUso ? "var(--brand)" : "var(--border)", background: "var(--bg-surface)", color: "var(--text-muted)" }}
       >
-        {emUso ? (
+        {sobMedida && sobMedidaEmUso ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="min-w-0 flex-1">
+              Seus cortes verticais saem pela <b style={{ color: "var(--text-primary)" }}>{sobMedida.nome}</b>.{" "}
+              {reservaDoSobMedida
+                ? `O modelo ${reservaDoSobMedida.nome} fica de reserva e segue nas peças: entra se um corte não sair.`
+                : `${maiuscula(reserva)} fica de reserva: entra se um corte não sair.`}
+            </p>
+            <button
+              type="button"
+              onClick={() => void escolher(null)}
+              disabled={salvando !== null}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold disabled:opacity-50"
+              style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+            >
+              {salvando === "nenhum" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />}
+              Voltar ao editor de antes
+            </button>
+          </div>
+        ) : emUso ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="min-w-0 flex-1">
               Seus cortes verticais saem pelo modelo <b style={{ color: "var(--text-primary)" }}>{emUso.nome}</b>. {maiuscula(reserva)} fica de reserva: só entra se
@@ -400,6 +432,49 @@ export function ModelosDoCurso({
                 </span>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* A EDIÇÃO SOB MEDIDA (10/10): um cartão especial, uma edição escrita para cada corte (aulas 7, 8.1 e 8.2). */}
+      {sobMedida && (
+        <div
+          className={cn("mb-4 flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center", sobMedidaEmUso && "ring-2 ring-orange-500")}
+          style={{ borderColor: sobMedidaEmUso ? "var(--brand)" : "var(--border)", background: "var(--bg-surface)" }}
+        >
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center gap-1 rounded-lg bg-black/30 text-orange-400" aria-hidden="true">
+            <Box className="h-6 w-6" />
+            <Layers className="h-6 w-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              {sobMedida.nome}
+              <span className="rounded-md bg-orange-500 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">avançado</span>
+            </p>
+            <p className="mt-1 text-xs" style={{ color: "var(--text-primary)" }}>
+              {sobMedida.resumo}
+            </p>
+            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+              {sobMedida.detalhe}
+            </p>
+          </div>
+          <div className="sm:w-48 sm:shrink-0">
+            {sobMedidaEmUso ? (
+              <span className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-orange-400">
+                <Check className="h-3.5 w-3.5" aria-hidden="true" /> Em uso nos seus cortes
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void escolher(sobMedida.id)}
+                disabled={salvando !== null}
+                className="inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition hover:border-orange-500 disabled:opacity-50"
+                style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+              >
+                {salvando === sobMedida.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Usar a edição sob medida
+              </button>
+            )}
           </div>
         </div>
       )}

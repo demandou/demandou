@@ -1,0 +1,4 @@
+EXEMPLO DA AULA 8.2 (recorte com alfa e lettering em camadas), aprovado pelo Bruno em 10/10/2026, refeito no kit.
+Fala (15 s, "O essencial bem feito"): "o bem feito ele remete a você fazer o certo com o que você tem. E muita das vezes a gente acha que a excelência é o produto mais caro, é o computador mais caro, é o celular mais caro."
+Geometria deste corte (escala 1,15): base da gravação em y = 1524, topo da cabeça em y = 560.
+O que copiar: a ESTRUTURA e o NÍVEL (palavra grande atrás da cabeça com oclusão real, moldura assimétrica que sobe do pé e se desenha, cabeça por fora da borda, máscara horizontal letra a letra, espaçamento que se organiza, afastamento em profundidade, cartões à frente da borda, tudo entrando na palavra dita). Nunca o assunto nem as palavras: a sua fala é outra.

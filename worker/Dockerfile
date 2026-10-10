@@ -175,6 +175,28 @@ ENV GL_DOS_MODELOS=swangle
 # Prova em construção: o índice inteiro e um modelo de verdade, senão a imagem não sobe.
 RUN node -e "import('/app/src/modelo/editar-no-modelo.mjs').then((m) => { const i = m.indiceDosModelos(); if (i.length < 79 || !m.modeloExiste('modelo-painel')) throw new Error('modelos do curso incompletos: ' + i.length); const r = m.referenciasDoModelo('modelo-painel'); if (!r.skill || !r.tipos) throw new Error('treinamento do modelo-painel incompleto'); console.log('modelos do curso provados na construcao:', i.length); })"
 
+# O EDITOR AVANÇADO (10/10): a "Edição sob medida", as aulas 7, 8.1 e 8.2 do
+# curso feitas para cada corte (src/avancado/editar-avancado.mjs). O kit, o
+# molde e os exemplos aprovados (avancado/), e o recorte com alfa em CPU.
+#
+# O MODELO DO RECORTE é o Robust Video Matting mobilenetv3 (Peter Lin et al.,
+# github.com/PeterL1n/RobustVideoMatting), sob LICENÇA GPL-3.0. Baixado na
+# construção, nunca no repositório, e conferido pelo sha256. Rodar no nosso
+# servidor não é distribuição; o modelo NUNCA pode ir para o navegador, o app
+# ou qualquer coisa entregue ao cliente (o que vai é o vídeo pronto). O motor
+# pode ir para a GPU do RunPod Serverless (avancado/runpod, a mesma licença):
+# com RUNPOD_API_KEY e RUNPOD_ENDPOINT_RECORTE, o worker chama o endpoint.
+RUN pip3 install --no-cache-dir --break-system-packages onnxruntime==1.22.0
+ADD https://github.com/PeterL1n/RobustVideoMatting/releases/download/v1.0.0/rvm_mobilenetv3_fp32.onnx /app/modelos/rvm_mobilenetv3_fp32.onnx
+RUN chmod 644 /app/modelos/rvm_mobilenetv3_fp32.onnx \
+    && python3 -c "import hashlib; h = hashlib.sha256(open('/app/modelos/rvm_mobilenetv3_fp32.onnx', 'rb').read()).hexdigest(); assert h == '88d4531297118f595bf2fd60f6f566aec2e559393802d1f436c380f0cbbd2828', 'RVM com sha256 diferente: ' + h" \
+    && python3 -c "import onnxruntime as ort; s = ort.InferenceSession('/app/modelos/rvm_mobilenetv3_fp32.onnx', providers=['CPUExecutionProvider']); print('RVM provado na construcao:', [i.name for i in s.get_inputs()])"
+COPY avancado ./avancado
+ENV PASTA_DO_AVANCADO=/app/avancado
+ENV MODELOS_DO_RECORTE=/app/modelos
+# Prova em construção: a API do kit, os dois exemplos e o portão passando neles.
+RUN node -e "Promise.all([import('/app/src/avancado/projeto.mjs'), import('/app/src/avancado/portao.mjs')]).then(([p, g]) => { const r = p.referenciaDoKit(); if (!r.api || r.exemplos.length < 2) throw new Error('kit do editor avançado incompleto'); for (const e of r.exemplos) { const n = Object.fromEntries(e.arquivos.map((a) => [a.nome, a.conteudo])); for (const [nome, c] of Object.entries(n)) if (nome.endsWith('.tsx') && g.lintDaCena(c, nome).length) throw new Error('exemplo ' + e.nome + ' reprovado no portao: ' + nome); } console.log('editor avancado provado na construcao:', r.versao); })"
+
 # Prova em construção da capa: cria os dois modelos de verdade, como a prova do
 # recorte lá em cima. Se faltar biblioteca ou modelo, a imagem não sobe.
 RUN python3 -c "from mediapipe.tasks.python import vision, BaseOptions; vision.FaceLandmarker.create_from_options(vision.FaceLandmarkerOptions(base_options=BaseOptions(model_asset_path='/app/modelos/face_landmarker.task'), output_face_blendshapes=True)).close(); vision.ImageSegmenter.create_from_options(vision.ImageSegmenterOptions(base_options=BaseOptions(model_asset_path='/app/modelos/selfie_multiclass.tflite'), output_confidence_masks=True)).close(); print('capa provada na construcao')"

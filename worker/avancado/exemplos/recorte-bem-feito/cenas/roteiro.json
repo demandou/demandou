@@ -1,0 +1,39 @@
+{
+  "tecnica": "recorte-letreiro",
+  "fundo": "estudio",
+  "paralaxe": 1,
+  "apresentador": [
+    {
+      "em": "inicio",
+      "recorte": true,
+      "cabecaPorFora": true,
+      "borda": false,
+      "forma": "assimetrica",
+      "caixa": { "x": 70, "y": 1522, "l": 940, "a": 0 },
+      "escala": 1.15,
+      "base": 1524,
+      "rosto": { "x": 540, "y": 760 },
+      "acompanhar": 0.45
+    },
+    {
+      "em": { "palavra": "remete" },
+      "transicao": 1.55,
+      "recorte": true,
+      "cabecaPorFora": true,
+      "borda": true,
+      "forma": "assimetrica",
+      "caixa": { "x": 70, "y": 992, "l": 940, "a": 530 },
+      "escala": 1.15,
+      "base": 1524,
+      "rosto": { "x": 540, "y": 760 },
+      "acompanhar": 0.45
+    }
+  ],
+  "legenda": { "topo": 1622, "esquerda": 70, "largura": 940, "tamanho": 50, "alinhar": "center", "maxLetras": 27 },
+  "cenas": [
+    { "arquivo": "cena-01.tsx", "de": { "palavra": "bem feito" }, "ate": { "palavra": "o certo", "mais": -0.05 }, "oQue": "BEM FEITO em letreiro grande atrás da cabeça, que depois se afasta em profundidade" },
+    { "arquivo": "cena-02.tsx", "de": { "palavra": "o certo" }, "ate": { "palavra": "muita", "mais": 0.27 }, "oQue": "O CERTO por máscara horizontal com sublinhado que segue a fala, e COM O QUE VOCÊ TEM que se organiza" },
+    { "arquivo": "cena-03.tsx", "de": { "palavra": "excelência", "mais": -0.05 }, "ate": "fim", "oQue": "EXCELÊNCIA legível atrás da cabeça, que se afasta enquanto os três mais caros entram" },
+    { "arquivo": "cena-04.tsx", "de": { "palavra": "produto", "mais": -0.15 }, "ate": "fim", "oQue": "três cartões MAIS CARO à frente, o último passando na frente da borda de baixo" }
+  ]
+}

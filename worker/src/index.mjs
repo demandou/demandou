@@ -8,7 +8,7 @@ import { Readable } from "node:stream";
 import { tmpdir, availableParallelism } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { get, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 import {
   ffprobe,
   memoriaDoConteiner,
@@ -2411,6 +2411,117 @@ const servidor = createServer((req, res) => {
     } finally {
       soltar();
       emAndamento -= 1;
+      await rm(pasta, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
+  // A EDIÇÃO SOB MEDIDA (10/10, src/avancado/editar-avancado.mjs): as aulas 7, 8.1
+  // e 8.2 do curso feitas para cada corte, com o código da cena escrito pelo app
+  // (`cenaUrl`) e rodado isolado. Mesma fila, mesma guarda de pedido repetido e
+  // mesmo callback do corte num modelo do curso.
+  const ehAvancado = req.method === "POST" && req.url?.startsWith("/editar-avancado");
+  if (ehAvancado) {
+    res.on("error", () => {});
+    req.socket.on("error", () => {});
+    const pedacos = [];
+    req.on("data", (d) => pedacos.push(d));
+    req.on("end", async () => {
+      const corpoCru = Buffer.concat(pedacos).toString("utf8");
+      if (!assinaturaValida(corpoCru, req.headers["x-demandou-assinatura"])) {
+        return responder(401, { error: "Assinatura inválida" });
+      }
+      let pedido;
+      try {
+        pedido = JSON.parse(corpoCru);
+      } catch {
+        return responder(400, { error: "Corpo não é JSON" });
+      }
+      if (!pedido.chave || !pedido.sourceUrl || !pedido.cenaUrl || !Array.isArray(pedido.palavras) || !pedido.palavras.length) {
+        return responder(400, { error: "Faltam chave, sourceUrl, cenaUrl ou palavras" });
+      }
+      const recusa = motivoParaRecusarCallback(pedido.cenaUrl, AMBIENTE);
+      if (recusa) return responder(403, { error: recusa });
+      const assincrono = Boolean(pedido.callbackUrl);
+      if (chavesDoCursoAndando.has(pedido.chave)) {
+        return responder(202, { aceito: true, chave: pedido.chave, jaAndando: true });
+      }
+      chavesDoCursoAndando.add(pedido.chave);
+      if (assincrono) responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
+      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarAvancado(pedido, assincrono).finally(() => chavesDoCursoAndando.delete(pedido.chave)) });
+    });
+    return;
+  }
+  async function executarAvancado(pedido, assincrono) {
+    const pasta = await mkdtemp(join(tmpdir(), "avancado-"));
+    emAndamento += 1;
+    const inicio = Date.now();
+    const destino = { callbackUrl: pedido.callbackUrl, videoJobId: pedido.videoJobId ?? pedido.chave };
+    // o render da cena própria, o recorte em CPU e as voltas da IA no app
+    const prazoMs = prazoDaMontagem(pedido) + 120 * 60_000;
+    const soltar = assincrono
+      ? registrarTrabalho({
+          videoJobId: destino.videoJobId,
+          tipo: "montar",
+          chave: pedido.chave,
+          prazoMs,
+          destino,
+          reinicio: () => ({ ok: false, reiniciado: true, erro: "reiniciado", retorno: pedido.retorno ?? null }),
+        })
+      : () => {};
+    const publicados = [];
+    try {
+      const { montado, e } = await comPrazoDoTrabalho(prazoMs, "a edição sob medida", async () => {
+        const { editarAvancado } = await import("./avancado/editar-avancado.mjs");
+        const pedirCena = async (corpo) => {
+          const recusa = motivoParaRecusarCallback(pedido.cenaUrl, AMBIENTE);
+          if (recusa) throw new Error(recusa);
+          const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null });
+          const r = await fetch(pedido.cenaUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+            body: texto,
+            signal: AbortSignal.timeout(14 * 60_000),
+          });
+          if (!r.ok) throw new Error(`o app não respondeu a fase ${corpo.fase} (HTTP ${r.status}): ${(await r.text().catch(() => "")).slice(0, 300)}`);
+          return r.json();
+        };
+        const e = await editarAvancado(pedido, pasta, {
+          obterOriginal,
+          obterTrilha: async (url, arquivo) => {
+            await baixarQualquer(url, arquivo);
+            return arquivo;
+          },
+          // o recorte na GPU do RunPod baixa o trecho por URL (apagado no fim)
+          publicar: async (arquivo) => {
+            const { url } = await subir(arquivo, `cortes/${pedido.videoJobId ?? "avulso"}/trecho-do-recorte.mp4`, "video/mp4");
+            publicados.push(url);
+            return url;
+          },
+          pedirCena,
+          aoPasso: (passo) => console.log(`[avancado ${pedido.chave}] ${passo}`),
+        });
+        const montado = await subir(e.arquivo, pedido.chave, "video/mp4");
+        return { montado, e };
+      });
+      const resultado = {
+        ok: true,
+        montado,
+        tempos: e.tempos,
+        curso: { modelo: "sob-medida", tecnica: e.tecnica, custoUsd: e.custoUsd, historico: e.historico, avisos: e.avisos, voltas: e.revisao?.rodadas ?? 0 },
+        segundos: Math.round((Date.now() - inicio) / 1000),
+        retorno: pedido.retorno ?? null,
+      };
+      if (assincrono) await avisar(destino, resultado);
+      else responder(200, resultado);
+    } catch (err) {
+      const mensagem = err instanceof Error ? err.message : "edição sob medida falhou";
+      console.error(`[avancado ${pedido.chave}] ${mensagem}`);
+      if (assincrono) await avisar(destino, { ok: false, erro: mensagem, retorno: pedido.retorno ?? null }).catch(() => {});
+      else responder(500, { error: mensagem });
+    } finally {
+      soltar();
+      emAndamento -= 1;
+      for (const url of publicados) await del(url, { token: DESTINO_PUBLICO ?? BLOB_TOKEN }).catch(() => {});
       await rm(pasta, { recursive: true, force: true }).catch(() => {});
     }
   }
