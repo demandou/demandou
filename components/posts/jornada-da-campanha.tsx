@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Pencil, X } from "lucide-react";
+import { ChevronLeft, Music, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { EscolhaDeOrigem } from "@/components/posts/escolha-de-origem";
@@ -251,7 +251,6 @@ export function JornadaDaCampanha({
       vivo = false;
     };
   }, [aberto]);
-  const pulaParaOEnvio = jaConfigurado || semGravacao;
   if (semGravacao && passo > 0 && passo < PASSOS_DO_VIDEO.length - 1) setPasso(PASSOS_DO_VIDEO.length - 1);
   // O pulo não passa por cima do modelo de cada post (08/10): chegou ao envio
   // com dia visual sem escolha, volta para o passo dos modelos. Sem gravação
@@ -292,13 +291,12 @@ export function JornadaDaCampanha({
     // estilo ao envio e a campanha saía com a semana salva num teste antigo, sem
     // ninguém ver o que posta em cada dia e em qual rede. Agora o pulo só passa
     // por cima da trilha; a semana aparece sempre, preenchida com a última.
-    if (passo === 1 && pulaParaOEnvio) {
-      if (semGravacao) {
-        fecharASemana();
-        setPasso(total - 1);
-        return;
-      }
-      setPasso(PASSO_DOS_POSTS - 1);
+    // A TRILHA NÃO É MAIS PULADA (10/10, Bruno: "onde eu escolho a música? não dá a opção em lugar
+    // nenhum"): o pulo de quem já configurou passava por cima dela, e o resumo só voltava ao estilo.
+    // Agora a trilha aparece sempre; o pulo fica só para quem não tem gravação.
+    if (passo === 1 && semGravacao) {
+      fecharASemana();
+      setPasso(total - 1);
       return;
     }
     // Da semana, o que ficou na tela vai para o projeto (o planejador grava
@@ -318,11 +316,6 @@ export function JornadaDaCampanha({
     // pulo parte do estilo (08/10, à noite), e é para ele que a volta leva.
     if (passo === total - 1 && semGravacao) {
       setPasso(0);
-      return;
-    }
-    // Da semana, quem pulou a trilha volta ao estilo, pelo mesmo caminho (08/10, teste do Bruno).
-    if (passo === PASSO_DOS_POSTS - 1 && pulaParaOEnvio) {
-      setPasso(1);
       return;
     }
     // Do envio, sem a lista dos modelos (sem dia visual, ou todas as peças no mestre), volta direto para a semana.
@@ -558,10 +551,16 @@ export function JornadaDaCampanha({
                               </>
                             )}
                           </p>
-                          <Button variant="outline" size="sm" onClick={() => setPasso(1)}>
-                            <Pencil className="h-3.5 w-3.5" />
-                            Rever
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setPasso(2)}>
+                              <Music className="h-3.5 w-3.5" />
+                              {musica ? "Trocar a música" : "Escolher a música"}
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setPasso(1)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                              Rever o estilo
+                            </Button>
+                          </div>
                         </div>
                       )}
                       {/* O que cada post vai usar (08/10), com o mesmo "Rever" do resumo. */}
