@@ -99,7 +99,7 @@ import { CaixaDaEdicao, TETO_USD_DO_CORTE } from "@/lib/media/teto-da-edicao";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { leituraNoCorte } from "@/lib/media/editor-por-comando/leitura-no-plano";
-import { editorDoCursoLigado, modeloDoCursoDoProjeto, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd } from "@/lib/media/editor-do-curso/no-corte";
+import { editorDoCursoLigado, modeloDoCursoDoProjeto, modeloServeNoCorte, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd } from "@/lib/media/editor-do-curso/no-corte";
 
 /**
  * O EDITOR COMPLETO NA ESTEIRA (30/09/2026), com a trava MONTAGEM_NA_EDICAO=1.
@@ -736,7 +736,27 @@ async function desistirDoModeloDoCurso(id: string, indice: number, lido: Montage
 /** O corte vai pelo modelo do curso? Trava ligada, modelo escolhido no projeto, e o caminho não desistiu neste corte. */
 async function modeloDoCursoDoCorte(video: Pick<VideoDoPasso, "projectId">, m: MontagemDoCorte): Promise<string | null> {
   if (!editorDoCursoLigado() || m.curso?.desistiu) return null;
+  // O corte refeito num modelo escolhido para ele (o "refazer neste estilo"):
+  // vale por cima do modelo do projeto.
+  if (m.curso?.fixo && modeloServeNoCorte(m.curso.modelo)) return m.curso.modelo;
   return modeloDoCursoDoProjeto(video.projectId).catch(() => null);
+}
+
+/**
+ * REFAZER UM CORTE NUM MODELO DO CURSO (09/10): o corte volta à fila com o
+ * modelo fixo nele (vale por cima do modelo do projeto). Serve para comparar
+ * estilos no mesmo vídeo e para o cliente pedir "refazer neste estilo".
+ */
+export async function refazerCorteNoModelo(videoJobId: string, indice: number, modelo: string): Promise<boolean> {
+  if (!modeloServeNoCorte(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);
+  const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { clips: true } });
+  const t = ((video?.clips as unknown as TrechoComMontagem[] | null) ?? [])[indice];
+  if (!t?.midia?.vertical?.url || t.midia.erro) return false;
+  // As mesmas regras de `refazerMontagens`, numa gravação só (o cron não pega o corte sem o modelo).
+  const cru = t.montagem?.montadoUrl && t.midia.vertical.url === t.montagem.montadoUrl ? t.midia.verticalOriginal?.url : t.midia.vertical.url;
+  if (!cru) return false;
+  const noAr = t.montagem?.montadoUrl && t.midia.vertical.url === t.montagem.montadoUrl ? { montadoUrl: t.montagem.montadoUrl } : {};
+  return trocarEstado(videoJobId, indice, t.montagem ?? null, { estado: "na-fila", desde: agora(), origem: hashCurto(cru), ...noAr, curso: { modelo, fixo: true, desistiu: null } });
 }
 
 // ─────────────────────────────── 2b. o editor sob medida no corte ───────────────────────────────

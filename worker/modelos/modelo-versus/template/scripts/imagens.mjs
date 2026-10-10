@@ -528,6 +528,18 @@ const pexels = async (busca) => {
   );
 };
 
+// (Demandou, 09/10) Pixabay: licença de conteúdo do Pixabay, uso comercial livre e sem crédito.
+const pixabay = async (busca) => {
+  const chave = process.env.PIXABAY_API_KEY;
+  if (!chave) return [];
+  const d = await buscar("Pixabay", `https://pixabay.com/api/?key=${encodeURIComponent(chave)}&q=${encodeURIComponent(busca)}&image_type=photo&safesearch=true&per_page=12`);
+  return (d?.hits ?? []).flatMap((f) => {
+    if (!f.largeImageURL || !f.imageWidth || !f.imageHeight) return [];
+    const escala = Math.min(1, 1280 / Math.max(f.imageWidth, f.imageHeight));
+    return [{ fonte: "Pixabay", url: f.largeImageURL, largura: Math.round(f.imageWidth * escala), altura: Math.round(f.imageHeight * escala), titulo: f.tags || busca, autor: f.user || "Pixabay", link: f.pageURL, licenca: "Licença Pixabay", credito: false, nivel: 1, palavras: `${f.tags ?? ""} ${busca}` }];
+  });
+};
+
 // Fluent Emoji 3D (Microsoft, MIT): só objetos. Índice montado uma vez e guardado por 60 dias.
 const GRUPOS_FORA = new Set(["Smileys & Emotion", "People & Body", "Component", "Flags", "Symbols"]);
 const NOMES_FORA = /\b(face|faces|person|people|man|men|woman|women|boy|girl|baby|child|hand|hands|family|couple|kiss|ogre|goblin|ghost|alien|robot|skull|clown|pouting|smiling|grinning)\b/;
@@ -800,7 +812,7 @@ const buscarPedido = async (p, listaDoAluno) => {
   const [ov, cm, px, fl] = await Promise.all([
     openverse(p.busca, p.tipo),
     commons(p.busca),
-    pexels(p.busca),
+    Promise.all([pexels(p.busca), pixabay(p.busca)]).then(([a, b]) => [...a, ...b]),
     p.tipo === "objeto" ? fluent(p.busca) : Promise.resolve([]),
   ]);
   const fila = ordenarCandidatas(p.tipo, p.busca, { openverse: ov, commons: cm, pexels: px, fluent: fl }).filter((c) => !/\blogo\b/i.test(c.titulo));

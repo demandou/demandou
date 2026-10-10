@@ -74,10 +74,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-arquivo",
@@ -177,10 +175,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-brilho",
@@ -233,10 +229,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-canal",
@@ -258,10 +252,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-carrossel",
@@ -506,10 +498,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-curriculo",
@@ -563,7 +553,6 @@
     ],
     "imagens": true,
     "pede": [
-      "imagens",
       "capturas de tela"
     ],
     "automatico": false
@@ -646,10 +635,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-espelho",
@@ -727,7 +714,6 @@
     ],
     "imagens": true,
     "pede": [
-      "imagens",
       "capturas de tela"
     ],
     "automatico": false
@@ -749,10 +735,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-extrato",
@@ -851,7 +835,6 @@
     ],
     "imagens": true,
     "pede": [
-      "imagens",
       "capturas de tela",
       "recorte da pessoa"
     ],
@@ -897,10 +880,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-ignicao",
@@ -1002,10 +983,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-laboratorio",
@@ -1110,10 +1089,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-manifesto",
@@ -1189,10 +1166,8 @@
       "maos.mjs"
     ],
     "imagens": false,
-    "pede": [
-      "3d"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-mosaico",
@@ -1250,10 +1225,8 @@
       "justar.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-narrador",
@@ -1277,10 +1250,8 @@
       "justar.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-niveis",
@@ -1306,10 +1277,8 @@
       "justar.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-oferta",
@@ -1336,10 +1305,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-orbita",
@@ -1367,10 +1334,8 @@
       "gesto.mjs"
     ],
     "imagens": false,
-    "pede": [
-      "3d"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-painel",
@@ -1415,10 +1380,8 @@
       "justar.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-planilha",
@@ -1545,10 +1508,8 @@
       "camera-lenta.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-pulso",
@@ -1602,10 +1563,8 @@
       "timing.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-raiox",
@@ -1647,10 +1606,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-reacao",
@@ -1675,10 +1632,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-receita",
@@ -1860,10 +1815,8 @@
       "justar.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-tese",
@@ -1892,10 +1845,8 @@
       "justar.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-torre",
@@ -1924,10 +1875,8 @@
       "timing.mjs"
     ],
     "imagens": false,
-    "pede": [
-      "3d"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-transformacao",
@@ -1947,7 +1896,6 @@
     "ferramentas": [],
     "imagens": true,
     "pede": [
-      "imagens",
       "fotos de antes e depois"
     ],
     "automatico": false
@@ -1975,10 +1923,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-viral",
@@ -2002,10 +1948,8 @@
     "three": false,
     "ferramentas": [],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-visor",
@@ -2085,9 +2029,7 @@
       "justar.mjs"
     ],
     "imagens": true,
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   }
 ]

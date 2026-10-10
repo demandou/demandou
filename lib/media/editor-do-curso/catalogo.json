@@ -30,10 +30,8 @@
     "assinatura": [
       "literal"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-arquivo",
@@ -80,10 +78,8 @@
       "combo",
       "mapa"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-brilho",
@@ -105,10 +101,8 @@
     "assinatura": [
       "talhao"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-canal",
@@ -118,10 +112,8 @@
     "assinatura": [
       "reframe"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-carrossel",
@@ -241,10 +233,8 @@
       "heroi",
       "prova"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-curriculo",
@@ -270,7 +260,6 @@
       "abertura"
     ],
     "pede": [
-      "imagens",
       "capturas de tela"
     ],
     "automatico": false
@@ -306,10 +295,8 @@
     "assinatura": [
       "quadro"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-espelho",
@@ -345,7 +332,6 @@
       "prova"
     ],
     "pede": [
-      "imagens",
       "capturas de tela"
     ],
     "automatico": false
@@ -358,10 +344,8 @@
     "assinatura": [
       "etiqueta"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-extrato",
@@ -407,7 +391,6 @@
       "print"
     ],
     "pede": [
-      "imagens",
       "capturas de tela",
       "recorte da pessoa"
     ],
@@ -432,10 +415,8 @@
     "assinatura": [
       "iceberg"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-ignicao",
@@ -484,10 +465,8 @@
     "assinatura": [
       "kit"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-laboratorio",
@@ -539,10 +518,8 @@
       "insercao",
       "capitulo"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-manifesto",
@@ -576,10 +553,8 @@
     "assinatura": [
       "medida"
     ],
-    "pede": [
-      "3d"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-mosaico",
@@ -603,10 +578,8 @@
       "cena",
       "capitulo"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-narrador",
@@ -617,10 +590,8 @@
       "cena",
       "letreiro"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-niveis",
@@ -630,10 +601,8 @@
     "assinatura": [
       "niveis"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-oferta",
@@ -643,10 +612,8 @@
     "assinatura": [
       "oferta"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-orbita",
@@ -657,10 +624,8 @@
       "orbita",
       "ceu"
     ],
-    "pede": [
-      "3d"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-painel",
@@ -683,10 +648,8 @@
     "assinatura": [
       "palco"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-planilha",
@@ -745,10 +708,8 @@
     "assinatura": [
       "pronuncia"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-pulso",
@@ -772,10 +733,8 @@
     "assinatura": [
       "quiz"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-raiox",
@@ -796,10 +755,8 @@
     "assinatura": [
       "ranking"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-reacao",
@@ -810,10 +767,8 @@
       "print",
       "comentario"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-receita",
@@ -901,10 +856,8 @@
       "insercao",
       "capitulo"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-tese",
@@ -915,10 +868,8 @@
       "cena",
       "fechado"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-torre",
@@ -931,10 +882,8 @@
       "planta",
       "preco"
     ],
-    "pede": [
-      "3d"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-transformacao",
@@ -945,7 +894,6 @@
       "antesdepois"
     ],
     "pede": [
-      "imagens",
       "fotos de antes e depois"
     ],
     "automatico": false
@@ -960,10 +908,8 @@
       "rodada",
       "veredito"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-viral",
@@ -974,10 +920,8 @@
       "corte",
       "pop"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   },
   {
     "id": "modelo-visor",
@@ -1013,9 +957,7 @@
     "assinatura": [
       "insercao"
     ],
-    "pede": [
-      "imagens"
-    ],
-    "automatico": false
+    "pede": [],
+    "automatico": true
   }
 ]

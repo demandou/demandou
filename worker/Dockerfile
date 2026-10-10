@@ -169,6 +169,9 @@ RUN node remotion/empacotar.mjs
 # guarda os modelos do MediaPipe.
 COPY modelos ./modelos-do-curso
 ENV PASTA_DOS_MODELOS=/app/modelos-do-curso
+# O 3D (Órbita, Medida, Torre) sem placa de vídeo: o curso pede "gl": "angle"
+# e manda usar "swangle" no Linux sem GPU (mais lento, mesmo desenho).
+ENV GL_DOS_MODELOS=swangle
 # Prova em construção: o índice inteiro e um modelo de verdade, senão a imagem não sobe.
 RUN node -e "import('/app/src/modelo/editar-no-modelo.mjs').then((m) => { const i = m.indiceDosModelos(); if (i.length < 79 || !m.modeloExiste('modelo-painel')) throw new Error('modelos do curso incompletos: ' + i.length); const r = m.referenciasDoModelo('modelo-painel'); if (!r.skill || !r.tipos) throw new Error('treinamento do modelo-painel incompleto'); console.log('modelos do curso provados na construcao:', i.length); })"
 

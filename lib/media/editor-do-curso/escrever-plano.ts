@@ -1,4 +1,4 @@
-import { askClaude } from "@/lib/claude";
+import { askClaude, askClaudeComImagens } from "@/lib/claude";
 import { numerosDoTexto } from "@/lib/media/numeros-falados";
 
 /**
@@ -19,6 +19,8 @@ import { numerosDoTexto } from "@/lib/media/numeros-falados";
 
 export type ReferenciasDoModelo = {
   id: string;
+  /** references/exemplo/quadros.jpg em base64: um quadro de cada momento do exemplo, com o bloco e a fala. */
+  quadros?: string | null;
   skill: string | null;
   plano: string | null;
   adaptar: string | null;
@@ -58,7 +60,7 @@ export type RetornoDaConferencia = {
   numerosSemLastro?: string[];
 };
 
-const CAMPOS_DO_MOTOR = new Set(["video", "fps", "largura", "altura", "duracao", "videoAltura", "rosto", "zona", "cortesEm", "palavras", "enquadramentos"]);
+const CAMPOS_DO_MOTOR = new Set(["video", "fps", "largura", "altura", "duracao", "videoAltura", "rosto", "zona", "cortesEm", "palavras", "enquadramentos", "imagens"]);
 
 /** O prefixo estável por modelo, que vai para o cache: o treinamento inteiro. */
 export function treinamentoDoModelo(r: ReferenciasDoModelo): string {
@@ -80,6 +82,12 @@ export function treinamentoDoModelo(r: ReferenciasDoModelo): string {
 const SISTEMA = `Você é o editor de vídeo que executa uma skill do curso "Máquina de Edição IA" dentro de um sistema automático.
 
 O sistema já fez os passos 1 a 5 do fluxo da skill (criar o projeto, preparar, escolher as tomadas, medir o rosto, cortar, conferir o enquadramento). Você faz os passos 6 e 7: o mapa editorial (references/adaptar.md) e o plano (references/plano.md e src/plano.ts). Não há usuário para perguntar nada: o nome e a área já vêm prontos, e onde a skill diria "pergunte", decida pelo que ela recomenda e registre no mapa.
+
+A régua é o EXEMPLO do modelo: a folha de quadros anexada (um quadro de cada momento, com o bloco e a fala embaixo), o plano comentado e o plano.json do exemplo. Estude a folha antes do mapa, como o adaptar.md manda: é a forma mais precisa de entender o estilo. Copie o estilo, nunca o assunto. A sua edição precisa ter a MESMA densidade, a mesma variedade e o mesmo nível de riqueza do exemplo:
+- use os blocos mais ricos que a fala permite, e não os mais simples: se a fala tem números, use os blocos que contam, desenham, dividem e comparam (os próprios do modelo e a assinatura), como o exemplo faz; prefira o bloco próprio do modelo ao universal quando os dois servem;
+- todo número dito na fala aparece na tela no instante em que é dito, num bloco que o valoriza;
+- quando a fala dá parâmetros (valor, prazo, parcela, taxa) e a skill tem o recurso de simulação ou conta, use-o como ela ensina, mostrando os parâmetros ditos e a etiqueta de simulação; conta que a skill não prevê, não faça;
+- abra com o bloco de abertura mais forte que a skill oferece para a fala (no exemplo, normalmente o próprio do modelo).
 
 Regras que não se quebram (são da própria skill):
 - Tudo o que aparece na tela vem da fala. Pode resumir com as palavras dela, sem mudar o sentido.
@@ -128,6 +136,8 @@ export async function escreverPlanoDoModelo(args: {
   marca: { nome: string; area: string };
   nicho?: string | null;
   anterior?: RetornoDaConferencia | null;
+  /** O mapa já feito no passo das imagens (modelos com imagem): o plano segue ele. */
+  mapa?: string | null;
   modelo?: string;
   usage: { projectId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -142,9 +152,12 @@ export async function escreverPlanoDoModelo(args: {
     zona: resto.zona,
     cortesEm: resto.cortesEm,
   };
+  // As imagens escolhidas no passo 6b (o imagens.mjs grava em plano.imagens): o
+  // plano só pode usar estes ids; `sem: true` vira o cartão com a palavra.
+  const imagens = (resto as { imagens?: Record<string, unknown> }).imagens;
   let pedido = `# O VÍDEO A EDITAR NO MODELO ${referencias.id}
 
-Quem fala: ${marca.nome || "(sem nome)"}${marca.area ? `, ${marca.area}` : ""}. Use exatamente isto em "marca".
+Quem fala: ${marca.nome || "(sem nome)"}${marca.area ? `, ${marca.area}. Use exatamente isto em "marca".` : `. Use este nome em "marca"; a área (até 30 caracteres, como "Consultor de consórcio") você resume do assunto do perfil abaixo, sem inventar nada que ele não diga.`}
 ${args.nicho ? `Assunto do perfil (contexto para entender a fala; não é texto de tela): ${args.nicho}\n` : ""}
 O que o cortar.mjs já gravou no plano (não reescreva):
 ${JSON.stringify(contexto)}
@@ -152,6 +165,7 @@ ${JSON.stringify(contexto)}
 A fala no vídeo já cortado, uma palavra por linha (início–fim em segundos e a palavra), como em work/palavras.json:
 ${formatarPalavras(palavras)}
 
+${imagens && Object.keys(imagens).length ? `\nAs imagens já escolhidas no passo 6b (plano.imagens, gravado pelo imagens.mjs; use só estes ids em "imagem": { "id", "efeito" }, e "sem": true quer dizer cartão com a palavra):\n${JSON.stringify(imagens)}\n` : ""}${args.mapa ? `\nO mapa editorial já feito no passo 6 (siga-o; ajuste só o que a conferência pedir):\n${args.mapa}\n` : ""}
 Faça o mapa editorial e o plano deste vídeo neste modelo.`;
 
   if (args.anterior) {
@@ -168,14 +182,22 @@ ${args.anterior.numerosSemLastro?.length ? `\nNúmeros na tela que não foram di
 Conserte o que foi apontado, mantendo o que estava certo, e devolva o mapa e o plano inteiros de novo, no mesmo formato JSON.`;
   }
 
-  const resposta = await askClaude(SISTEMA, pedido, {
+  const opcoes = {
     cachedPrefix: treinamentoDoModelo(referencias),
     model: args.modelo,
     maxTokens: 48_000,
     timeoutMs: 15 * 60_000,
     usage: { projectId: args.usage.projectId ?? undefined, operation: args.usage.operation },
     onCusto: args.onCusto,
-  });
+  };
+  const resposta = referencias.quadros
+    ? await askClaudeComImagens(
+        SISTEMA,
+        pedido,
+        [{ base64: referencias.quadros, rotulo: `references/exemplo/quadros.jpg do modelo ${referencias.id}: um quadro de cada momento do exemplo (estado montado), com o tipo do bloco e a fala embaixo.` }],
+        opcoes
+      )
+    : await askClaude(SISTEMA, pedido, opcoes);
   const escrito = lerJson(resposta);
   if (!escrito.plano || !Array.isArray((escrito.plano as { momentos?: unknown }).momentos)) {
     throw new Error("o plano voltou sem momentos");

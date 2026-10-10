@@ -513,5 +513,13 @@ export async function askClaudeComImagens(
     throw await traduzirErroDaApi(e);
   }
   void recordUsage(model, message.usage, options?.usage);
+  // O custo a quem chama (09/10): o editor do curso soma cada volta no teto da edição.
+  if (options?.onCusto) {
+    try {
+      options.onCusto(computeCostUsd(model, message.usage));
+    } catch {
+      // Quem soma o custo nunca derruba a chamada.
+    }
+  }
   return extrairTexto(message.content, message.stop_reason, maxTokens);
 }

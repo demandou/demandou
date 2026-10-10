@@ -38,7 +38,7 @@ if (tempos.length === 0) {
 }
 
 // modelos com 3D (WebGL) declaram { "gl": "angle" } no modelo.json (ver render.mjs)
-const gl = existsSync("modelo.json") ? lerJson("modelo.json").gl : undefined;
+const gl = existsSync("modelo.json") && lerJson("modelo.json").gl ? process.env.GL_DOS_MODELOS || lerJson("modelo.json").gl : undefined;
 const chromiumOptions = gl ? { gl } : {};
 const serveUrl = await bundle({ entryPoint: path.resolve("src/index.ts") });
 try {

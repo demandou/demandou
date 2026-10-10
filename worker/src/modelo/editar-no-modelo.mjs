@@ -79,8 +79,13 @@ export function referenciasDoModelo(id) {
   const outros = readdirSync(r)
     .filter((n) => n.endsWith(".md") && !conhecidos.has(n))
     .map((n) => ({ nome: n, texto: readFileSync(join(r, n), "utf8") }));
+  // A folha de quadros do exemplo (um quadro de cada momento), em base64: o
+  // adaptar.md do curso manda olhar antes do mapa.
+  const arquivoDosQuadros = join(r, "exemplo", "quadros.jpg");
+  const quadros = existsSync(arquivoDosQuadros) ? readFileSync(arquivoDosQuadros).toString("base64") : null;
   return {
     id,
+    quadros,
     skill: ler(r, "SKILL.md"),
     plano: ler(r, "plano.md"),
     adaptar: ler(r, "adaptar.md"),
@@ -275,7 +280,7 @@ export function lerPlano(projeto) {
 }
 
 /** O que o curso diz para nunca editar à mão: vem do cortar e não do plano escrito. */
-const CAMPOS_DO_MOTOR = ["video", "fps", "largura", "altura", "duracao", "videoAltura", "rosto", "zona", "cortesEm", "palavras", "enquadramentos"];
+const CAMPOS_DO_MOTOR = ["video", "fps", "largura", "altura", "duracao", "videoAltura", "rosto", "zona", "cortesEm", "palavras", "enquadramentos", "imagens"];
 
 /**
  * Junta o que o app escreveu (marca, momentos, semLegenda, correções e os
@@ -369,43 +374,179 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   marcar("cortar");
 
   const referencias = referenciasDoModelo(pedido.modelo);
-  const esqueleto = esqueletoParaEscrever(corte.plano);
   const maxVoltas = Math.max(1, Math.min(4, Number(pedido.voltas) || 3));
   const teto = Number(pedido.tetoUsd) > 0 ? Number(pedido.tetoUsd) : 1;
-  let anterior = null;
   let gasto = 0;
-  let mapa = "";
+  const somar = (r) => {
+    gasto += Number(r?.custoUsd) || 0;
+    return r;
+  };
+  const comum = { modelo: pedido.modelo, referencias, nicho: pedido.nicho ?? null };
+
+  // PASSO 6b, nos modelos com imagem (references/imagens.md): mapa, pedidos,
+  // busca, folha numerada, escolha olhando a folha.
+  let mapaDasImagens = null;
+  let creditos = null;
+  if (referencias.imagens) {
+    const r = await passoDasImagens(projeto, { ...comum, esqueleto: esqueletoParaEscrever(lerPlano(projeto)) }, (c) => pedirPlano(c).then(somar));
+    mapaDasImagens = r.mapa;
+    creditos = r.creditos;
+    marcar("imagens");
+  }
+
+  // PASSO 7: o plano, até o conferir.mjs, o gate de tempo e a guarda de número aprovarem.
+  const esqueleto = esqueletoParaEscrever(lerPlano(projeto));
+  const escrever = (anterior) => pedirPlano({ ...comum, esqueleto, marca: pedido.marca, anterior, mapa: mapaDasImagens }).then(somar);
+  const conferirTudo = async (escrito) => {
+    const conf = await conferir(projeto);
+    const tempo = await gateDeTempo(projeto);
+    const semLastro = escrito.numerosSemLastro ?? [];
+    return {
+      aprovado: conf.aprovado && tempo.ok && semLastro.length === 0,
+      registro: { conferir: conf.aprovado, tempo: tempo.ok, semLastro },
+      anterior: { plano: escrito.plano, saidas: [conf.saida, ...tempo.resultados.filter((g) => !g.ok).map((g) => `${g.ferramenta}:\n${g.saida}`)], numerosSemLastro: semLastro },
+    };
+  };
+  let anterior = null;
+  let mapa = mapaDasImagens ?? "";
   let aprovado = false;
+  let planoAprovado = null;
   let volta = 0;
   const historico = [];
   for (; volta < maxVoltas && !aprovado; volta++) {
     if (gasto >= teto) throw new Error(`o teto de US$ ${teto.toFixed(2)} da edição foi atingido antes da volta ${volta + 1} do plano`);
-    const escrito = await pedirPlano({ modelo: pedido.modelo, referencias, esqueleto, marca: pedido.marca, nicho: pedido.nicho ?? null, anterior });
-    gasto += Number(escrito.custoUsd) || 0;
-    mapa = escrito.mapa ?? "";
+    const escrito = await escrever(anterior);
+    mapa = escrito.mapa || mapa;
     writeFileSync(join(projeto, "work", "mapa.md"), mapa);
     gravarPlano(projeto, escrito.plano);
-    const conf = await conferir(projeto);
-    const tempo = await gateDeTempo(projeto);
-    const semLastro = escrito.numerosSemLastro ?? [];
-    aprovado = conf.aprovado && tempo.ok && semLastro.length === 0;
-    historico.push({ volta: volta + 1, conferir: conf.aprovado, tempo: tempo.ok, semLastro });
-    if (!aprovado) {
-      anterior = {
-        plano: escrito.plano,
-        saidas: [conf.saida, ...tempo.resultados.filter((g) => !g.ok).map((g) => `${g.ferramenta}:\n${g.saida}`)],
-        numerosSemLastro: semLastro,
-      };
-    }
+    const c = await conferirTudo(escrito);
+    aprovado = c.aprovado;
+    historico.push({ volta: volta + 1, ...c.registro });
+    if (aprovado) planoAprovado = escrito.plano;
+    else anterior = c.anterior;
   }
   marcar("plano");
   if (!aprovado) {
     const ultima = anterior?.saidas?.[0]?.trim().split("\n").slice(-6).join(" ") ?? "";
     throw new Error(`o plano não passou na conferência do curso em ${maxVoltas} voltas: ${ultima.slice(0, 400)}`);
   }
+
+  // PASSO 8: olhar os quadros de cada momento (texto inteiro, número batendo
+  // com a fala, rosto livre, janela com a cabeça, a tela mudando) e corrigir
+  // SÓ o momento com defeito (skill bônus de revisão: por intervalo, sem
+  // refazer tudo). Uma rodada; conserto que não passa na conferência volta ao
+  // plano aprovado. Falha da revisão não segura o vídeo.
+  const revisao = { rodadas: 0, problemas: [], aplicada: false };
+  if (pedido.revisar !== false && gasto < teto) {
+    try {
+      const quadros = await stills(projeto);
+      const folhas = await folhasDosQuadros(projeto, quadros);
+      if (folhas.length) {
+        const rev = await pedirPlano({ ...comum, fase: "revisar", plano: planoAprovado, folhas: folhas.map((f) => f.base64), legendas: folhas.map((f) => f.legenda) }).then(somar);
+        revisao.rodadas = 1;
+        revisao.problemas = rev.problemas ?? [];
+        if (revisao.problemas.length && gasto < teto) {
+          const texto = revisao.problemas.map((p, i) => `${i + 1}. ${p.em != null ? `em ${Number(p.em).toFixed(1)} s` : ""} (${p.momento ?? "?"}): ${p.problema}${p.mudanca ? `. Mudança: ${p.mudanca}` : ""}`).join("\n");
+          const escrito = await escrever({
+            plano: planoAprovado,
+            saidas: [`REVISÃO DOS QUADROS (passo 8 do SKILL.md, olhando cada momento renderizado). Conserte SÓ estes momentos e mantenha todo o resto exatamente como está:\n${texto}`],
+            numerosSemLastro: [],
+          });
+          gravarPlano(projeto, escrito.plano);
+          const c = await conferirTudo(escrito);
+          historico.push({ volta: "revisao", ...c.registro });
+          if (c.aprovado) {
+            revisao.aplicada = true;
+            mapa = escrito.mapa || mapa;
+          } else {
+            gravarPlano(projeto, planoAprovado);
+          }
+        }
+      }
+    } catch (e) {
+      gravarPlano(projeto, planoAprovado);
+      revisao.erro = e instanceof Error ? e.message.slice(0, 300) : String(e);
+    }
+    marcar("revisao");
+  }
+
   const arquivo = await renderizar(projeto, `${pedido.modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil((analise.duracao || 60) / 60) * 25) * 60_000 });
   marcar("render");
-  return { arquivo, mapa, voltas: volta, historico, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
+  return { arquivo, mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
+}
+
+/**
+ * As folhas de conferência do passo 8: os quadros do stills.mjs --momentos,
+ * 6 por linha e 3 linhas por folha, com a lista dos instantes na ordem (a
+ * folha não tem texto: o instante de cada quadro vai na legenda). No máximo 4
+ * folhas (72 quadros); acima disso, um quadro sim, um não.
+ */
+export async function folhasDosQuadros(projeto, quadros) {
+  let lista = [...quadros].sort();
+  while (lista.length > 72) lista = lista.filter((_, i) => i % 2 === 0);
+  const folhas = [];
+  for (let i = 0; i < lista.length; i += 18) {
+    const grupo = lista.slice(i, i + 18);
+    const arquivoLista = join(projeto, "work", `folha-${folhas.length + 1}.txt`);
+    writeFileSync(arquivoLista, grupo.map((q) => `file '${q.replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n"));
+    const saida = join(projeto, "work", `folha-${folhas.length + 1}.jpg`);
+    const r = await rodarProcesso(FFMPEG, ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", arquivoLista, "-vf", "scale=270:-2,tile=6x3:padding=4:color=white", "-frames:v", "1", "-q:v", "4", saida]);
+    if (r.codigo !== 0 || !existsSync(saida)) continue;
+    const instantes = grupo.map((q) => (basename(q).match(/t(\d+\.\d+)/)?.[1] ?? "?").replace(/^0+(?=\d)/, ""));
+    folhas.push({ base64: readFileSync(saida).toString("base64"), legenda: `Folha ${folhas.length + 1}: ${grupo.length} quadros, da esquerda para a direita e de cima para baixo, nos instantes (s) ${instantes.join(", ")}` });
+  }
+  return folhas;
+}
+
+/**
+ * PASSO 6b (references/imagens.md): o app faz o mapa e os pedidos, o
+ * scripts/imagens.mjs do curso busca e monta a folha, o app escolhe olhando a
+ * folha (uma nova busca permitida por pedido) e o script grava a escolha, o
+ * foco, o crédito e o resumo em plano.imagens. Sem nenhum pedido, segue sem imagem.
+ */
+async function passoDasImagens(projeto, corpo, pedir) {
+  const r = await pedir({ ...corpo, fase: "imagens" });
+  const pedidos = Array.isArray(r.imagens) ? r.imagens : [];
+  if (!pedidos.length) return { mapa: r.mapa ?? null, creditos: null };
+  const arquivo = join(projeto, "work", "imagens.json");
+  writeFileSync(arquivo, JSON.stringify(pedidos, null, 2));
+  const rodarImagens = async (args = []) => {
+    const x = await rodarNoProjeto(projeto, ["scripts/imagens.mjs", ...args], { prazoMs: 12 * 60_000 });
+    if (x.codigo !== 0) throw falhou(`imagens.mjs ${args.join(" ")}`, x);
+    return x.saida;
+  };
+  await rodarImagens();
+  const escolhidos = new Set();
+  for (let rodada = 0; rodada < 2; rodada++) {
+    const folhas = readdirSync(join(projeto, "work"))
+      .filter((n) => /^imagens(-\d+)?\.jpg$/.test(n))
+      .sort((a, b) => (Number(a.match(/-(\d+)/)?.[1] ?? 1) - Number(b.match(/-(\d+)/)?.[1] ?? 1)))
+      .map((n) => readFileSync(join(projeto, "work", n)).toString("base64"));
+    const estado = JSON.parse(readFileSync(arquivo, "utf8")).filter((p) => !escolhidos.has(p.id));
+    if (!estado.length || !folhas.length) break;
+    const e = await pedir({ ...corpo, fase: "escolher", pedidos: estado, folhas });
+    const refazer = [];
+    for (const x of e.escolhas ?? []) {
+      if (!estado.some((p) => p.id === x.id)) continue;
+      if (x.refazer && rodada === 0) {
+        refazer.push(x);
+        continue;
+      }
+      const n = x.refazer ? 0 : Number(x.n) || 0;
+      await rodarImagens(["--escolher", x.id, String(n), ...(n && Array.isArray(x.foco) ? ["--foco", `${x.foco[0]},${x.foco[1]}`] : [])]);
+      escolhidos.add(x.id);
+    }
+    if (!refazer.length) break;
+    for (const x of refazer) await rodarImagens(["--refazer", x.id, "--busca", x.refazer]);
+    await rodarImagens();
+  }
+  // Pedido que ficou sem resposta vira o cartão com a palavra (o curso: "cartão é melhor que imagem errada").
+  for (const p of JSON.parse(readFileSync(arquivo, "utf8"))) {
+    if (!escolhidos.has(p.id) && !p.escolha) await rodarImagens(["--escolher", p.id, "0"]);
+  }
+  await rodarImagens(["--limpar"]).catch(() => {});
+  const creditos = existsSync(join(projeto, "creditos.txt")) ? readFileSync(join(projeto, "creditos.txt"), "utf8").trim() : null;
+  return { mapa: r.mapa ?? null, creditos: creditos || null };
 }
 
 /** Passo 9: o render do curso, que recusa plano reprovado e normaliza o áudio a -14 LUFS. */

@@ -10,13 +10,20 @@ import {
   type ReferenciasDoModelo,
   type RetornoDaConferencia,
 } from "@/lib/media/editor-do-curso/escrever-plano";
+import { escolherImagensDoModelo, pedirImagensDoModelo } from "@/lib/media/editor-do-curso/imagens";
+import { revisarQuadrosDoModelo } from "@/lib/media/editor-do-curso/revisao";
 
 /**
- * O worker pede o mapa e o plano de um corte num modelo do curso (09/10).
+ * O worker pede ao app a parte ESCRITA de um corte num modelo do curso (09/10).
  *
  * O fluxo do curso roda no worker (worker/src/modelo/editar-no-modelo.mjs);
- * só a escrita mora aqui, onde a conta de IA vive. Uma volta por chamada: a
- * conferência do curso roda lá, e a reprovada volta para cá em `anterior`.
+ * só o que é escrita ou escolha da IA mora aqui, onde a conta de IA vive. Uma
+ * chamada por passo, pela `fase`:
+ *   - "imagens":  o mapa (passo 6) e a lista de imagens (passo 6b), nos modelos com imagem;
+ *   - "escolher": a escolha das candidatas olhando as folhas numeradas (passo 6b);
+ *   - "revisar":  o passo 8, olhar os quadros de cada momento e apontar defeito;
+ *   - "plano" (padrão): o plano (passo 7); a conferência do curso roda no worker,
+ *     e a reprovada volta para cá em `anterior`.
  * Sem sessão, como todo pedido do worker, e autenticado pela assinatura sobre
  * o corpo inteiro.
  */
@@ -26,12 +33,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
   }
   let corpo: {
+    fase?: "imagens" | "escolher" | "revisar" | "plano";
     modelo?: string;
     referencias?: ReferenciasDoModelo;
     esqueleto?: EsqueletoDoPlano;
     marca?: { nome?: string; area?: string };
     nicho?: string | null;
     anterior?: RetornoDaConferencia | null;
+    mapa?: string | null;
+    pedidos?: unknown[];
+    folhas?: string[];
+    legendas?: string[];
+    plano?: Record<string, unknown> | null;
     projectId?: string | null;
   };
   try {
@@ -39,28 +52,47 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Corpo não é JSON" }, { status: 400 });
   }
-  if (!corpo.referencias?.skill || !corpo.esqueleto?.palavras?.length) {
-    return NextResponse.json({ error: "Faltam o treinamento do modelo ou a fala" }, { status: 400 });
+  if (!corpo.referencias?.skill) {
+    return NextResponse.json({ error: "Falta o treinamento do modelo" }, { status: 400 });
   }
   let custoUsd = 0;
+  const comum = {
+    modelo: process.env.EDITOR_DO_CURSO_IA || undefined,
+    usage: { projectId: corpo.projectId ?? null, operation: "editor-do-curso" },
+    onCusto: (usd: number) => {
+      custoUsd += usd;
+    },
+  };
   try {
+    if (corpo.fase === "revisar") {
+      const problemas = await revisarQuadrosDoModelo({ referencias: corpo.referencias, plano: corpo.plano ?? null, folhas: corpo.folhas ?? [], legendas: corpo.legendas, ...comum });
+      return NextResponse.json({ problemas, custoUsd });
+    }
+    if (corpo.fase === "escolher") {
+      const escolhas = await escolherImagensDoModelo({ referencias: corpo.referencias, pedidos: corpo.pedidos ?? [], folhas: corpo.folhas ?? [], ...comum });
+      return NextResponse.json({ escolhas, custoUsd });
+    }
+    if (!corpo.esqueleto?.palavras?.length) {
+      return NextResponse.json({ error: "Falta a fala do corte" }, { status: 400 });
+    }
+    if (corpo.fase === "imagens") {
+      const r = await pedirImagensDoModelo({ referencias: corpo.referencias, esqueleto: corpo.esqueleto, nicho: corpo.nicho ?? null, ...comum });
+      return NextResponse.json({ ...r, custoUsd });
+    }
     const escrito = await escreverPlanoDoModelo({
       referencias: corpo.referencias,
       esqueleto: corpo.esqueleto,
       marca: { nome: corpo.marca?.nome ?? "", area: corpo.marca?.area ?? "" },
       nicho: corpo.nicho ?? null,
       anterior: corpo.anterior ?? null,
-      modelo: process.env.EDITOR_DO_CURSO_IA || undefined,
-      usage: { projectId: corpo.projectId ?? null, operation: "editor-do-curso" },
-      onCusto: (usd) => {
-        custoUsd += usd;
-      },
+      mapa: corpo.mapa ?? null,
+      ...comum,
     });
     const semLastro = numerosSemLastro(escrito.plano, corpo.esqueleto.palavras, escrito.plano.correcoes as Record<string, string> | undefined);
     return NextResponse.json({ mapa: escrito.mapa, plano: escrito.plano, custoUsd, numerosSemLastro: semLastro });
   } catch (e) {
     const erro = e instanceof Error ? e.message : "falhou";
-    console.error(`[editor-do-curso] plano do ${corpo.modelo ?? "?"}: ${erro}`);
+    console.error(`[editor-do-curso] ${corpo.fase ?? "plano"} do ${corpo.modelo ?? "?"}: ${erro}`);
     return NextResponse.json({ error: erro, custoUsd }, { status: 502 });
   }
 }

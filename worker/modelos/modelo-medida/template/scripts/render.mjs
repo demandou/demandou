@@ -28,7 +28,7 @@ const { posicionais, opcoes } = argumentos();
 }
 const saida = posicionais[0] ?? "out/video-editado.mp4";
 // modelos com 3D (WebGL) declaram { "gl": "angle" } no modelo.json: sem isso o navegador do render não cria o contexto 3D
-const gl = existsSync("modelo.json") ? lerJson("modelo.json").gl : undefined;
+const gl = existsSync("modelo.json") && lerJson("modelo.json").gl ? process.env.GL_DOS_MODELOS || lerJson("modelo.json").gl : undefined;
 const chromiumOptions = gl ? { gl } : {};
 // o bruto sai com áudio sem compressão: o AAC do render chega ~43 ms atrasado em relação à imagem;
 // o AAC feito aqui no fim fica no tempo certo

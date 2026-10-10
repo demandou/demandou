@@ -128,6 +128,49 @@ for (const id of modelos) {
   // o preparar com a transcrição externa
   const preparar = path.join(t, "scripts", "preparar.mjs");
   writeFileSync(preparar, ajustarPreparar(readFileSync(preparar, "utf8"), id));
+  // O PIXABAY no motor de imagens (09/10, pedido do Bruno: "temos chaves do
+  // Pixabay"). O curso diz que o banco com chave (Pexels) é o salto de
+  // qualidade nas fotos de produto e de cotidiano; o Pixabay tem a mesma
+  // licença livre (uso comercial, sem crédito) e entra no mesmo lugar da fila.
+  const imagensMjs = path.join(t, "scripts", "imagens.mjs");
+  if (existsSync(imagensMjs)) {
+    let texto = readFileSync(imagensMjs, "utf8");
+    const antesDoFluent = "// Fluent Emoji 3D (Microsoft, MIT): só objetos.";
+    const chamada = "    pexels(p.busca),\n";
+    if (texto.includes(antesDoFluent) && texto.includes(chamada) && !texto.includes("const pixabay =")) {
+      texto = texto.replace(
+        antesDoFluent,
+        [
+          "// (Demandou, 09/10) Pixabay: licença de conteúdo do Pixabay, uso comercial livre e sem crédito.",
+          "const pixabay = async (busca) => {",
+          "  const chave = process.env.PIXABAY_API_KEY;",
+          "  if (!chave) return [];",
+          "  const d = await buscar(\"Pixabay\", `https://pixabay.com/api/?key=${encodeURIComponent(chave)}&q=${encodeURIComponent(busca)}&image_type=photo&safesearch=true&per_page=12`);",
+          "  return (d?.hits ?? []).flatMap((f) => {",
+          "    if (!f.largeImageURL || !f.imageWidth || !f.imageHeight) return [];",
+          "    const escala = Math.min(1, 1280 / Math.max(f.imageWidth, f.imageHeight));",
+          "    return [{ fonte: \"Pixabay\", url: f.largeImageURL, largura: Math.round(f.imageWidth * escala), altura: Math.round(f.imageHeight * escala), titulo: f.tags || busca, autor: f.user || \"Pixabay\", link: f.pageURL, licenca: \"Licença Pixabay\", credito: false, nivel: 1, palavras: `${f.tags ?? \"\"} ${busca}` }];",
+          "  });",
+          "};",
+          "",
+          antesDoFluent,
+        ].join("\n")
+      );
+      texto = texto.replace(chamada, "    Promise.all([pexels(p.busca), pixabay(p.busca)]).then(([a, b]) => [...a, ...b]),\n");
+      writeFileSync(imagensMjs, texto);
+    }
+  }
+  // O 3D sem placa de vídeo (09/10): o curso pede "gl": "angle" (GPU) e manda
+  // trocar por "swangle" no Linux sem GPU. GL_DOS_MODELOS (o worker define
+  // swangle) vale por cima do modelo.json, só nos modelos que pedem 3D.
+  const LINHA_GL = 'const gl = existsSync("modelo.json") ? lerJson("modelo.json").gl : undefined;';
+  for (const script of ["render.mjs", "stills.mjs"]) {
+    const arq = path.join(t, "scripts", script);
+    const texto = readFileSync(arq, "utf8");
+    if (texto.includes(LINHA_GL)) {
+      writeFileSync(arq, texto.replace(LINHA_GL, 'const gl = existsSync("modelo.json") && lerJson("modelo.json").gl ? process.env.GL_DOS_MODELOS || lerJson("modelo.json").gl : undefined;'));
+    }
+  }
 
   const r = path.join(destino, "referencias");
   mkdirSync(path.join(r, "exemplo"), { recursive: true });
@@ -138,6 +181,10 @@ for (const id of modelos) {
   }
   const comentado = path.join(raiz, "references", "exemplo", "plano-comentado.md");
   if (existsSync(comentado)) cpSync(comentado, path.join(r, "exemplo", "plano-comentado.md"));
+  // A folha de quadros do exemplo: o adaptar.md manda abrir e olhar antes do
+  // mapa ("a forma mais precisa de entender o estilo"); vai ao Claude como imagem.
+  const quadros = path.join(raiz, "references", "exemplo", "quadros.jpg");
+  if (existsSync(quadros)) cpSync(quadros, path.join(r, "exemplo", "quadros.jpg"));
   if (existsSync(path.join(template, "src", "plano.json"))) cpSync(path.join(template, "src", "plano.json"), path.join(r, "exemplo", "plano.json"));
   // outros .md das references (BLOCOS.md, IMAGENS.md etc.), quando houver
   for (const nome of readdirSync(path.join(raiz, "references"))) {
@@ -167,8 +214,6 @@ for (const id of readdirSync(AQUI).filter((n) => n.startsWith("modelo-")).sort()
   // próprio usuário. Esses modelos ficam no catálogo e entram quando o passo
   // que falta for automatizado.
   const pede = [];
-  if (imagens) pede.push("imagens");
-  if (modeloJson.gl) pede.push("3d");
   if (ferramentas.some((f) => /^capturar/.test(f))) pede.push("capturas de tela");
   if (ferramentas.includes("vseg.swift") || ferramentas.includes("recortar.mjs")) pede.push("recorte da pessoa");
   if (ferramentas.includes("teclas.mjs")) pede.push("gravação de tela");
