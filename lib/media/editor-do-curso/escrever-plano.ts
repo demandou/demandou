@@ -210,9 +210,16 @@ export async function escreverPlanoDoModelo(args: {
 }): Promise<PlanoEscrito> {
   const { referencias, esqueleto, marca } = args;
   const { palavras, ...resto } = esqueleto;
+  // O quadro deitado (a versão 16:9 de um modelo, para o vídeo completo) vai dito no contexto:
+  // o rosto e a zona são frações e px de um quadro 1920×1080, não do vertical. No vertical o
+  // contexto fica como sempre foi (o mesmo texto, o mesmo cache).
+  const largura = Number(resto.largura);
+  const altura = Number(resto.altura);
+  const deitado = largura > altura;
   const contexto = {
     duracao: resto.duracao,
     fps: resto.fps,
+    ...(deitado ? { largura, altura } : {}),
     videoAltura: resto.videoAltura,
     rosto: resto.rosto,
     zona: resto.zona,

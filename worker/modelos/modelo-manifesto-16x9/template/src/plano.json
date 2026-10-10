@@ -1,0 +1,434 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 21.6,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 700,
+    "altura": 312
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Mentalidade"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.04,
+    7.53,
+    10.42,
+    14.45,
+    18.83,
+    19.55
+  ],
+  "momentos": [
+    {
+      "tipo": "cartaz",
+      "de": 0.08,
+      "ate": 2.04,
+      "topo": [
+        {
+          "em": 0.3,
+          "texto": "NINGUÉM",
+          "tamanho": 150
+        },
+        {
+          "em": 0.68,
+          "texto": "VAI FAZER POR",
+          "tamanho": 72
+        }
+      ],
+      "janela": {
+        "em": 1.63,
+        "linhas": [
+          "VO",
+          "CÊ"
+        ]
+      }
+    },
+    {
+      "tipo": "cartaz",
+      "de": 2.04,
+      "ate": 7.62,
+      "janela": {
+        "em": 2.13,
+        "linhas": [
+          "NÃO"
+        ],
+        "batidas": [
+          4.0,
+          5.98
+        ]
+      },
+      "negacoes": [
+        {
+          "em": 2.45,
+          "antes": "O MOMENTO",
+          "palavra": "PERFEITO",
+          "riscoEm": 3.9
+        },
+        {
+          "em": 4.47,
+          "antes": "A FERRAMENTA",
+          "palavra": "CERTA",
+          "riscoEm": 5.68
+        },
+        {
+          "em": 6.36,
+          "antes": "O CURSO QUE",
+          "palavra": "FALTA",
+          "riscoEm": 7.3
+        }
+      ]
+    },
+    {
+      "tipo": "escalada",
+      "de": 10.42,
+      "ate": 14.5,
+      "degraus": [
+        {
+          "em": 10.52,
+          "texto": "COMEÇA",
+          "nota": "PEQUENO.",
+          "notaEm": 10.94
+        },
+        {
+          "em": 11.94,
+          "texto": "COMEÇA",
+          "nota": "TORTO.",
+          "notaEm": 12.51,
+          "torto": true
+        }
+      ],
+      "final": {
+        "em": 13.61,
+        "antes": "MAS",
+        "antesEm": 13.43,
+        "linhas": [
+          "CO",
+          "ME",
+          "ÇA"
+        ]
+      }
+    },
+    {
+      "tipo": "selo",
+      "de": 14.9,
+      "ate": 18.83,
+      "itens": [
+        {
+          "em": 15.04,
+          "rotulo": "DAQUI A",
+          "texto": "1 ANO"
+        },
+        {
+          "em": 18.4,
+          "texto": "AGORA.",
+          "acento": true
+        }
+      ],
+      "marcas": {
+        "de": 15.3,
+        "ate": 18.2,
+        "quantas": 12
+      }
+    },
+    {
+      "tipo": "cartaz",
+      "de": 18.83,
+      "ate": 21.6,
+      "fecho": {
+        "icone": "comentar"
+      },
+      "topo": [
+        {
+          "em": 18.93,
+          "texto": "COMENTA:",
+          "tamanho": 84
+        }
+      ],
+      "janela": {
+        "em": 19.65,
+        "linhas": [
+          "EU"
+        ]
+      },
+      "base": [
+        {
+          "em": 19.73,
+          "texto": "COMEÇO",
+          "tamanho": 170
+        },
+        {
+          "em": 20.71,
+          "texto": "HOJE.",
+          "tamanho": 230,
+          "acento": true
+        }
+      ]
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {},
+  "palavras": [
+    {
+      "em": 0.3,
+      "ate": 0.68,
+      "w": "Ninguém"
+    },
+    {
+      "em": 0.68,
+      "ate": 0.94,
+      "w": "vai"
+    },
+    {
+      "em": 0.94,
+      "ate": 1.36,
+      "w": "fazer"
+    },
+    {
+      "em": 1.36,
+      "ate": 1.63,
+      "w": "por"
+    },
+    {
+      "em": 1.63,
+      "ate": 2.04,
+      "w": "você."
+    },
+    {
+      "em": 2.13,
+      "ate": 2.28,
+      "w": "Não"
+    },
+    {
+      "em": 2.28,
+      "ate": 2.45,
+      "w": "é"
+    },
+    {
+      "em": 2.45,
+      "ate": 2.53,
+      "w": "o"
+    },
+    {
+      "em": 2.53,
+      "ate": 3.15,
+      "w": "momento"
+    },
+    {
+      "em": 3.15,
+      "ate": 4,
+      "w": "perfeito,"
+    },
+    {
+      "em": 4,
+      "ate": 4.31,
+      "w": "não"
+    },
+    {
+      "em": 4.31,
+      "ate": 4.47,
+      "w": "é"
+    },
+    {
+      "em": 4.47,
+      "ate": 4.55,
+      "w": "a"
+    },
+    {
+      "em": 4.55,
+      "ate": 5.43,
+      "w": "ferramenta"
+    },
+    {
+      "em": 5.43,
+      "ate": 5.76,
+      "w": "certa,"
+    },
+    {
+      "em": 5.98,
+      "ate": 6.13,
+      "w": "Não"
+    },
+    {
+      "em": 6.13,
+      "ate": 6.36,
+      "w": "é"
+    },
+    {
+      "em": 6.36,
+      "ate": 6.42,
+      "w": "o"
+    },
+    {
+      "em": 6.38,
+      "ate": 6.83,
+      "w": "curso"
+    },
+    {
+      "em": 6.83,
+      "ate": 7.08,
+      "w": "que"
+    },
+    {
+      "em": 7.08,
+      "ate": 7.53,
+      "w": "falta."
+    },
+    {
+      "em": 7.62,
+      "ate": 7.71,
+      "w": "é"
+    },
+    {
+      "em": 7.71,
+      "ate": 8.43,
+      "w": "você"
+    },
+    {
+      "em": 8.7,
+      "ate": 9.32,
+      "w": "hoje"
+    },
+    {
+      "em": 9.57,
+      "ate": 9.69,
+      "w": "com"
+    },
+    {
+      "em": 9.69,
+      "ate": 9.87,
+      "w": "o"
+    },
+    {
+      "em": 9.87,
+      "ate": 10.12,
+      "w": "que"
+    },
+    {
+      "em": 10.12,
+      "ate": 10.42,
+      "w": "tem"
+    },
+    {
+      "em": 10.52,
+      "ate": 10.94,
+      "w": "Começa"
+    },
+    {
+      "em": 10.94,
+      "ate": 11.58,
+      "w": "pequeno."
+    },
+    {
+      "em": 11.94,
+      "ate": 12.51,
+      "w": "Começa"
+    },
+    {
+      "em": 12.51,
+      "ate": 13.08,
+      "w": "torto."
+    },
+    {
+      "em": 13.43,
+      "ate": 13.61,
+      "w": "mas"
+    },
+    {
+      "em": 13.61,
+      "ate": 14.45,
+      "w": "começa."
+    },
+    {
+      "em": 14.54,
+      "ate": 14.93,
+      "w": "Daqui"
+    },
+    {
+      "em": 14.93,
+      "ate": 15.04,
+      "w": "a"
+    },
+    {
+      "em": 15.04,
+      "ate": 15.27,
+      "w": "um"
+    },
+    {
+      "em": 15.27,
+      "ate": 15.65,
+      "w": "ano"
+    },
+    {
+      "em": 15.88,
+      "ate": 16.07,
+      "w": "você"
+    },
+    {
+      "em": 16.07,
+      "ate": 16.3,
+      "w": "vai"
+    },
+    {
+      "em": 16.3,
+      "ate": 16.97,
+      "w": "agradecer"
+    },
+    {
+      "em": 16.97,
+      "ate": 17.04,
+      "w": "a"
+    },
+    {
+      "em": 17.04,
+      "ate": 17.53,
+      "w": "pessoa"
+    },
+    {
+      "em": 17.53,
+      "ate": 17.79,
+      "w": "que"
+    },
+    {
+      "em": 17.79,
+      "ate": 18.4,
+      "w": "decidiu"
+    },
+    {
+      "em": 18.4,
+      "ate": 18.83,
+      "w": "agora."
+    },
+    {
+      "em": 18.93,
+      "ate": 19.35,
+      "w": "Comenta."
+    },
+    {
+      "em": 19.65,
+      "ate": 19.73,
+      "w": "Eu"
+    },
+    {
+      "em": 19.73,
+      "ate": 20.71,
+      "w": "começo"
+    },
+    {
+      "em": 20.71,
+      "ate": 21.29,
+      "w": "hoje."
+    }
+  ]
+}
