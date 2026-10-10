@@ -81,9 +81,15 @@ export async function quemFalaNoProjeto(projectId: string): Promise<{ nome: stri
 }
 
 /**
- * O teto de IA do plano de um corte: o teto da casa é US$ 1 por minuto de
- * vídeo (08/10). Corte curto ganha o piso de US$ 1, que paga até três voltas.
+ * O teto de IA de um corte no editor do curso. A régua da casa é US$ 1 por
+ * minuto de vídeo (08/10); no editor do curso o Bruno liberou até US$ 2 por
+ * corte (10/10, "pode liberar o gasto que você recomendou"), porque o fluxo
+ * inteiro (imagens, plano, revisão do passo 8 e o conserto dela) custa de
+ * US$ 0,70 a 1,30 num corte de 50 s, e com US$ 1 o conserto da revisão ficava
+ * de fora nos modelos com imagem. EDITOR_DO_CURSO_TETO_USD troca o piso;
+ * corte longo segue US$ 1 por minuto quando passa dele.
  */
 export function tetoDoPlanoUsd(duracaoSeg: number): number {
-  return +Math.max(1, (duracaoSeg / 60) * 1).toFixed(2);
+  const piso = Number(process.env.EDITOR_DO_CURSO_TETO_USD) > 0 ? Number(process.env.EDITOR_DO_CURSO_TETO_USD) : 2;
+  return +Math.max(piso, (duracaoSeg / 60) * 1).toFixed(2);
 }

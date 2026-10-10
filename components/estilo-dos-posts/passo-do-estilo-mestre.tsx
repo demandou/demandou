@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { Check, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, ChevronDown, Sparkles } from "lucide-react";
 import { EstiloDoProjeto } from "@/components/video/estilo-do-projeto";
 import { CaixaDoMeuEstilo } from "@/components/estilo-proprio/caixa-do-meu-estilo";
+import { ModelosDoCurso } from "@/components/video/modelos-do-curso";
 import { ESCOLHAS_DOS_POSTS, type ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
 
 /**
@@ -112,19 +113,61 @@ export function PassoDoEstiloMestre({
   /** O que vem logo depois da escolha (a lista post a post, onde quem chama já a tem). */
   depoisDaEscolha?: ReactNode;
 }) {
+  // UMA TELA SÓ DE ESTILO (10/10, "as telas e as jornadas têm muita coisa, está confuso"): o modelo
+  // do vídeo em cima (com as peças no mesmo estilo e a prévia), "não gostei" abre a caixa do meu
+  // estilo, e o editor de antes (catálogo, comando, câmera, legenda, cenário) fica recolhido.
+  const [modeloDoCurso, setModeloDoCurso] = useState<{ id: string; nome: string } | null>(null);
+  const [criarOMeu, setCriarOMeu] = useState(false);
+  const [avancado, setAvancado] = useState<boolean | null>(null);
+  const caixa = useRef<HTMLDivElement | null>(null);
+  const abertoAvancado = avancado ?? !modeloDoCurso;
   return (
     <div className="space-y-4">
       <div>
         <h3 className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          <Sparkles className="h-4 w-4 text-orange-500" /> O estilo mestre
+          <Sparkles className="h-4 w-4 text-orange-500" /> O estilo da sua campanha
         </h3>
         <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-          É a linguagem do vídeo, nas cores e na letra da sua marca: escolha um pronto (como Autoridade high ticket ou Vox) ou crie o seu a partir de uma ideia. A edição do vídeo e as artes saem dele.
+          Escolha o modelo do vídeo: as artes, os carrosséis, os infográficos e os vídeos curtos saem no mesmo estilo, com a cor da sua marca nos destaques. Não gostou? Crie o seu, falando ou escrevendo.
         </p>
       </div>
-      {/* A CAIXA "CRIE O SEU ESTILO" (08/10, teste do Bruno): em destaque, antes da grade de estilos prontos. Confirmar grava o comando do vídeo, e a tela abaixo relê. */}
-      <CaixaDoMeuEstilo projectId={projectId} />
-      <EstiloDoProjeto projectId={projectId} inicial={estilo} musicaInicial={musica} termosIniciais={termos} mostrar="estilo" semCenario={!comCenario} />
+      <ModelosDoCurso
+        projectId={projectId}
+        aoMudar={setModeloDoCurso}
+        reserva="o editor de antes (mais abaixo)"
+        aoNaoGostar={() => {
+          setCriarOMeu(true);
+          setTimeout(() => caixa.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        }}
+      />
+      {/* A CAIXA "CRIE O SEU ESTILO" (08/10): sem modelo do curso, é o caminho de criar; com ele, abre no "não gostei". */}
+      {(!modeloDoCurso || criarOMeu) && (
+        <div ref={caixa} className="scroll-mt-4">
+          <CaixaDoMeuEstilo projectId={projectId} />
+        </div>
+      )}
+      <section className="rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--bg-surface)" }}>
+        <button
+          type="button"
+          onClick={() => setAvancado(!abertoAvancado)}
+          aria-expanded={abertoAvancado}
+          className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-semibold"
+          style={{ color: "var(--text-primary)" }}
+        >
+          <span>
+            {modeloDoCurso ? "Ajustes finos e o editor de antes (reserva)" : "Os estilos do editor de antes"}
+            <span className="block text-xs font-normal" style={{ color: "var(--text-muted)" }}>
+              {modeloDoCurso ? "Câmera, legenda, cenário e o estilo que entra se o modelo não conseguir montar um corte." : "O catálogo de estilos, a câmera, a legenda e o cenário."}
+            </span>
+          </span>
+          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${abertoAvancado ? "rotate-180" : ""}`} aria-hidden="true" />
+        </button>
+        {abertoAvancado && (
+          <div className="border-t px-4 pb-4 pt-3" style={{ borderColor: "var(--border)" }}>
+            <EstiloDoProjeto projectId={projectId} inicial={estilo} musicaInicial={musica} termosIniciais={termos} mostrar="estilo" semCenario={!comCenario} semModelosDoCurso />
+          </div>
+        )}
+      </section>
       <EscolhaDosPosts valor={modo} aoMudar={aoMudarModo} />
       {depoisDaEscolha}
       {material ? <div data-lugar="material-da-campanha">{material}</div> : null}

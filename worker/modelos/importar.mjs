@@ -242,5 +242,47 @@ const paraOApp = resumo.map(({ id, nome, descricao, formato, assinatura, pede, a
 const destinoApp = path.join(AQUI, "..", "..", "lib", "media", "editor-do-curso", "catalogo.json");
 mkdirSync(path.dirname(destinoApp), { recursive: true });
 writeFileSync(destinoApp, JSON.stringify(paraOApp, null, 2) + "\n");
+
+// O ESTILO DE CADA MODELO PARA AS PEÇAS DA CAMPANHA (10/10, pedido do Bruno:
+// imagem, carrossel, infográfico e vídeo curto herdam o estilo do vídeo). Só
+// extração, nada inventado: as cores com o papel que o próprio template dá
+// (template/src/tema.ts, o comentário em cima de cada cor), as fontes do
+// Google que ele carrega e os trechos do estilo.md que falam de ideia,
+// identidade, cor, tipografia, imagem e do que não fazer.
+const nomeDaFonte = (s) => s.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2");
+function coresDoTema(texto) {
+  const cores = [];
+  let comentario = "";
+  for (const linha of texto.split(/\r?\n/)) {
+    const c = linha.match(/^\s*\/\/\s*(.+)$/);
+    if (c) {
+      comentario = comentario ? `${comentario} ${c[1].trim()}` : c[1].trim();
+      continue;
+    }
+    const m = linha.match(/^\s*([A-Za-z_][\w]*)\s*:\s*["'](#[0-9A-Fa-f]{3,8})["']/);
+    if (m) cores.push({ nome: m[1], hex: m[2].toUpperCase(), papel: comentario.slice(0, 160) || null });
+    if (!/^\s*$/.test(linha)) comentario = "";
+  }
+  return cores.filter((c, i, a) => a.findIndex((x) => x.hex === c.hex) === i).slice(0, 12);
+}
+const SECOES_DO_ESTILO = /ideia|identidade|cor|tipograf|letra|imagen|fundo|textura|n[ãa]o fazer|evitar/i;
+function trechosDoEstilo(md) {
+  const partes = md.split(/\r?\n(?=##\s)/);
+  const escolhidas = partes.filter((p, i) => i > 0 && SECOES_DO_ESTILO.test(p.split(/\r?\n/)[0]));
+  const texto = escolhidas
+    .map((p) => p.replace(/^##\s*/, "").replace(/\*\*|`/g, "").replace(/\r?\n\s*[-*]\s+/g, "; ").replace(/\r?\n+/g, " ").replace(/\s{2,}/g, " ").trim())
+    .join("\n");
+  return texto.replace(/\s*[—–]\s*/g, ", ").slice(0, 2400);
+}
+const estilos = {};
+for (const m of paraOApp) {
+  const t = path.join(AQUI, m.id, "template", "src", "tema.ts");
+  const e = path.join(AQUI, m.id, "referencias", "estilo.md");
+  const tema = existsSync(t) ? readFileSync(t, "utf8") : "";
+  const fontes = [...new Set([...tema.matchAll(/@remotion\/google-fonts\/([A-Za-z0-9]+)/g)].map((x) => nomeDaFonte(x[1])))];
+  estilos[m.id] = { cores: coresDoTema(tema), fontes, estilo: existsSync(e) ? trechosDoEstilo(readFileSync(e, "utf8")) : "" };
+}
+writeFileSync(path.join(path.dirname(destinoApp), "estilos.json"), JSON.stringify(estilos, null, 1) + "\n");
+console.log(`estilos das peças: ${Object.keys(estilos).length} (sem cor: ${Object.values(estilos).filter((x) => !x.cores.length).length}, sem fonte: ${Object.values(estilos).filter((x) => !x.fontes.length).length})`);
 console.log(`\n${resumo.length} modelo(s) em ${AQUI}; índice em indice.json; catálogo do app em ${destinoApp}`);
 console.log(`automáticos: ${resumo.filter((m) => m.automatico).length} (9:16: ${resumo.filter((m) => m.automatico && m.formato === "9:16").length})`);

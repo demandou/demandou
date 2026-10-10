@@ -43,6 +43,7 @@ export function EstiloDoProjeto({
   termosIniciais = null,
   mostrar = "tudo",
   semCenario = false,
+  semModelosDoCurso = false,
 }: {
   projectId: string;
   inicial: string | null;
@@ -67,6 +68,8 @@ export function EstiloDoProjeto({
    * gravação, então não há fundo para manter nem trocar.
    */
   semCenario?: boolean;
+  /** Os modelos do curso já estão em cima, no passo do estilo (10/10): aqui eles não se repetem. */
+  semModelosDoCurso?: boolean;
 }) {
   const verEstilo = mostrar === "tudo" || mostrar === "estilo";
   const verResto = mostrar === "tudo" || mostrar === "trilha-e-termos";
@@ -159,7 +162,7 @@ export function EstiloDoProjeto({
           escolhida decide o perfil de legenda dos cortes, que volta por
           `aoMudarBase` para a trilha sugerir o clima certo. */}
       {/* O EDITOR POR COMANDO (05/10): com EDITOR_POR_COMANDO=1 o comando do cliente substitui o catálogo; desligado, o catálogo de sempre. */}
-      {verEstilo && <ComandoDoVideo projectId={projectId} reserva={<CatalogoDeEstilos projectId={projectId} aoMudarBase={setEscolhido} />} />}
+      {verEstilo && <ComandoDoVideo projectId={projectId} semModelosDoCurso={semModelosDoCurso} reserva={<CatalogoDeEstilos projectId={projectId} aoMudarBase={setEscolhido} semModelosDoCurso={semModelosDoCurso} />} />}
       {/* O CENÁRIO (08/10): manter o original ou trocar o fundo, junto do estilo, que é onde o cliente decide como o vídeo fica. */}
       {verEstilo && !semCenario && (
         <div className="mt-4">

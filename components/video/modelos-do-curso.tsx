@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { BotaoDescartar } from "@/components/ui/descartar";
 import type { ModeloNaBiblioteca } from "@/lib/media/editor-do-curso/biblioteca";
 import type { Recomendacao } from "@/lib/media/editor-do-curso/recomendacao";
+import { PecasNoEstiloDoModelo } from "@/components/video/pecas-no-estilo-do-modelo";
 
 /**
  * O EDITOR NOVO NA BIBLIOTECA DE ESTILOS (09/10/2026, noite).
@@ -63,6 +64,7 @@ export function RotuloDoEditorDeAntes({ modelo, oQue }: { modelo: { nome: string
 export function ModelosDoCurso({
   projectId,
   aoMudar,
+  aoNaoGostar,
   reserva = "a linguagem escolhida mais abaixo",
 }: {
   projectId: string;
@@ -70,6 +72,8 @@ export function ModelosDoCurso({
   aoMudar?: (modelo: { id: string; nome: string } | null) => void;
   /** Como a tela chama o editor de antes, que vira a reserva ("a linguagem escolhida mais abaixo", "o comando mais abaixo"). */
   reserva?: string;
+  /** "Não gostei" das peças no estilo do modelo (10/10): quem chama abre a caixa de escrever ou narrar o próprio estilo. */
+  aoNaoGostar?: () => void;
 }) {
   const [dados, setDados] = useState<Dados | null>(null);
   const [falhouCarregar, setFalhouCarregar] = useState(false);
@@ -85,6 +89,9 @@ export function ModelosDoCurso({
   const [verTodos, setVerTodos] = useState(false);
   const [verEmBreve, setVerEmBreve] = useState(false);
   const ponteiro = useRef<string>("mouse");
+  const grade = useRef<HTMLDivElement | null>(null);
+  // O modelo escolhido nesta visita: só ele leva o estilo para as peças na hora (ver PecasNoEstiloDoModelo).
+  const [escolhidoAgora, setEscolhidoAgora] = useState<string | null>(null);
   const aoMudarRef = useRef(aoMudar);
   useEffect(() => {
     aoMudarRef.current = aoMudar;
@@ -139,6 +146,7 @@ export function ModelosDoCurso({
       const d = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!r.ok || !d.ok) throw new Error(d.error);
       setModelo(id);
+      setEscolhidoAgora(id);
       setErro(null);
     } catch (e) {
       setErro(e instanceof Error && e.message ? e.message : "Não consegui guardar o modelo. Tente de novo.");
@@ -337,6 +345,20 @@ export function ModelosDoCurso({
         {!dados.ligado && <p className="mt-1.5">O editor novo está sendo ligado. A sua escolha fica guardada e passa a valer assim que ele entrar no ar.</p>}
       </div>
 
+      {/* AS PEÇAS NO ESTILO DO MODELO (10/10): escolheu o modelo, as artes, os carrosséis e os vídeos curtos seguem; a prévia sai no clique. */}
+      {emUso && dados.ligado && (
+        <PecasNoEstiloDoModelo
+          projectId={projectId}
+          modelo={{ id: emUso.id, nome: emUso.nome }}
+          acabouDeEscolher={escolhidoAgora === emUso.id}
+          aoNaoGostar={aoNaoGostar}
+          aoTrocarModelo={() => {
+            setVerTodos(true);
+            grade.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
+      )}
+
       {/* A RECOMENDAÇÃO PELO PERFIL: o JEV decide; sem confiança, não aparece nada. */}
       {recomendando && (
         <p className="mb-3 flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
@@ -386,7 +408,7 @@ export function ModelosDoCurso({
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
         Prontos para os seus cortes ({prontos.length})
       </p>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">{visiveis.map((m) => cartao(m))}</div>
+      <div ref={grade} className="grid scroll-mt-4 grid-cols-2 gap-3 md:grid-cols-3">{visiveis.map((m) => cartao(m))}</div>
       {prontos.length > VISIVEIS && (
         <button
           type="button"

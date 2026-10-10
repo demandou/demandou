@@ -58,8 +58,11 @@ type Aba = "linguagem" | "camera" | "efeitos" | "look" | "legenda";
 export function CatalogoDeEstilos({
   projectId,
   aoMudarBase,
+  semModelosDoCurso = false,
 }: {
   projectId: string;
+  /** Os modelos do curso já estão em cima, no passo do estilo (10/10): aqui eles não se repetem. */
+  semModelosDoCurso?: boolean;
   /** O perfil de legenda que a linguagem escolhida usa (para o clima da trilha). */
   aoMudarBase?: (base: NomeDoEstilo) => void;
 }) {
@@ -250,8 +253,12 @@ export function CatalogoDeEstilos({
       {aba === "linguagem" && (
         <div className="space-y-5">
           {/* O EDITOR NOVO (09/10): os modelos do curso, com a recomendação pelo perfil, antes de tudo. */}
-          <ModelosDoCurso projectId={projectId} aoMudar={setModeloDoCurso} />
-          <RotuloDoEditorDeAntes modelo={modeloDoCurso} oQue="a linguagem escolhida aqui embaixo" />
+          {!semModelosDoCurso && (
+            <>
+              <ModelosDoCurso projectId={projectId} aoMudar={setModeloDoCurso} />
+              <RotuloDoEditorDeAntes modelo={modeloDoCurso} oQue="a linguagem escolhida aqui embaixo" />
+            </>
+          )}
 
           {/* ESCREVER O PRÓPRIO ESTILO: o diretor lê, a tela mostra, o cliente confirma. */}
           <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}>

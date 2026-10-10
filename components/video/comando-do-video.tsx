@@ -36,7 +36,7 @@ type Projeto = { paleta: string[]; nicho: string | null; publico: string | null;
 /** As miniaturas visíveis antes de "ver todos" (as em destaque e as de bíblia completa vêm primeiro). */
 const MINIATURAS_INICIAIS = 8;
 
-export function ComandoDoVideo({ projectId, reserva }: { projectId: string; reserva: ReactNode }) {
+export function ComandoDoVideo({ projectId, reserva, semModelosDoCurso = false }: { projectId: string; reserva: ReactNode; semModelosDoCurso?: boolean }) {
   const [carregando, setCarregando] = useState(true);
   const [ligado, setLigado] = useState(false);
   const [marca, setMarca] = useState<Marca>({ acento: "#F97316", escuro: "#15171a", claro: "#f2efe8" });
@@ -214,8 +214,12 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
   return (
     <div className="space-y-4">
       {/* O EDITOR NOVO (09/10): os modelos do curso também aqui, porque com o comando ligado o catálogo não aparece. */}
-      <ModelosDoCurso projectId={projectId} aoMudar={setModeloDoCurso} reserva="o comando de edição mais abaixo" />
-      <RotuloDoEditorDeAntes modelo={modeloDoCurso} oQue="o comando escrito aqui embaixo" />
+      {!semModelosDoCurso && (
+        <>
+          <ModelosDoCurso projectId={projectId} aoMudar={setModeloDoCurso} reserva="o comando de edição mais abaixo" />
+          <RotuloDoEditorDeAntes modelo={modeloDoCurso} oQue="o comando escrito aqui embaixo" />
+        </>
+      )}
       <div className={cartao} style={estiloCartao}>
         <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
           Descreva o vídeo que você quer

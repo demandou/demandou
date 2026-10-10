@@ -2489,9 +2489,9 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
 
                       {/* Warning: past days will be skipped */}
                       {pastDaysCount > 0 && (
-                        <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-yellow-700/40 bg-yellow-900/10">
-                          <span className="text-yellow-400 text-[10px] mt-0.5">⚠</span>
-                          <p className="text-[10px] text-yellow-300">
+                        <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10">
+                          <span className="text-amber-600 dark:text-amber-400 text-[10px] mt-0.5">⚠</span>
+                          <p className="text-[10px] text-amber-800 dark:text-amber-300">
                             {pastDaysCount} {pastDaysCount === 1 ? "dia já passou" : "dias já passaram"} e {pastDaysCount === 1 ? "será pulado" : "serão pulados"}.
                             Apenas os dias a partir de hoje serão gerados. Prefira <strong>Próxima segunda</strong> para uma semana completa.
                           </p>
@@ -2627,8 +2627,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                         );
                       })}
                       {futureDays.length === 0 && (
-                        <div className="p-4 rounded-xl border border-yellow-700/40 bg-yellow-900/10 text-center">
-                          <p className="text-xs text-yellow-300">Todos os dias desta semana já passaram.</p>
+                        <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-center">
+                          <p className="text-xs text-amber-800 dark:text-amber-300">Todos os dias desta semana já passaram.</p>
                           <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>Escolha <strong>Próxima segunda</strong> na etapa anterior.</p>
                         </div>
                       )}
@@ -3058,8 +3058,8 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                 {/* Dica fixa (07/10): descartada de vez, por pessoa. */}
                 {videoWarning && !isSingle && (
                   <Descartavel chave={chaveDaDica("aviso-dias-de-video")}>
-                  <div className="flex items-start gap-2 p-3 rounded-xl border border-yellow-800/40 bg-yellow-900/10">
-                    <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2 p-3 rounded-xl border border-amber-500/40 bg-amber-500/10">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     {/* O AVISO ESTAVA MENTINDO DESDE 19/09.
 
                         "Mantenha a aba aberta" era verdade quando o vídeo era
@@ -3068,7 +3068,7 @@ export function CampaignSetupModal({ onConfirm, onClose, defaultWeekStart, proje
                         Bruno leu isso em 21/09 e a primeira reação foi de
                         desconfiança, com razão: um aviso que pede vigília para
                         algo que roda sozinho ensina que a plataforma é frágil. */}
-                    <p className="text-xs text-yellow-300">
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
                       {diasDeVideo > 0 ? `${diasDeVideo} dia(s) com vídeo. ` : ""}
                       Cada geração leva de 1 a 5 minutos e roda no servidor, depois do dia:
                       {" "}você pode fechar a aba. O vídeo aparece no card quando fica pronto
