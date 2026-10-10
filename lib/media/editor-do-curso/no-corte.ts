@@ -65,9 +65,10 @@ export async function modeloGravadoNoProjeto(projectId: string): Promise<string 
 /** O modelo que serve nos cortes do projeto agora; o que pede material só com o material que basta. */
 export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
   const modelo = await modeloGravadoNoProjeto(projectId);
+  if (!modelo) return null;
   if (modeloServeNoCorte(modelo)) return modelo;
   const { modeloServeNoProjeto } = await import("./material-do-modelo-servidor");
-  return modelo && (await modeloServeNoProjeto(projectId, modelo)) ? modelo : null;
+  return (await modeloServeNoProjeto(projectId, modelo)) ? modelo : null;
 }
 
 /** Grava (ou apaga, com `null`) o modelo do curso do projeto. */
