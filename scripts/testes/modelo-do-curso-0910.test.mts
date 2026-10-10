@@ -9,7 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 const { modelosDaBiblioteca, resumoDoModelo, descricaoParaDecidir, faltaDoModelo, modelosQueServem } = await import("@/lib/media/editor-do-curso/biblioteca");
-const { MODELOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/no-corte");
+const { MODELOS_DO_CURSO, VERSOES_DOS_MODELOS, modeloServeNoCorte, versaoNoFormato } = await import("@/lib/media/editor-do-curso/no-corte");
 const { chaveDaOpcao, visualSemNome, lerEscolha, hashDaRecomendacao, limparMotivo, motivoEmCodigo, perguntasDoJev, temPerfilParaRecomendar, estadoDoJev, CONFIANCA_MINIMA } = await import(
   "@/lib/media/editor-do-curso/recomendacao"
 );
@@ -18,16 +18,47 @@ const raiz = new URL("../../", import.meta.url);
 const ler = (f: string) => readFileSync(new URL(f, raiz), "utf8").replace(/\r\n/g, "\n");
 const TRAVESSAO = /[—–]/;
 
-test("os cartões são os 79 do catálogo, e serve é o que o catálogo marca como automático e vertical", () => {
+test("os cartões são os 79 do catálogo, e serve é o que o catálogo marca como automático e tem a versão vertical", () => {
   const cartoes = modelosDaBiblioteca();
   assert.equal(cartoes.length, MODELOS_DO_CURSO.length);
   for (const c of cartoes) {
     const m = MODELOS_DO_CURSO.find((x) => x.id === c.id)!;
-    assert.equal(c.serve, m.automatico && m.formato === "9:16", c.id);
+    assert.equal(c.serve, m.automatico && Boolean(versaoNoFormato(m.id, "9:16")), c.id);
+    if (m.formato === "9:16") assert.equal(c.serve, m.automatico, c.id);
     assert.equal(c.falta === null, c.serve, `${c.id}: só o que não serve diz o que falta`);
     if (c.falta) assert.match(c.falta, /^Em breve/);
   }
   assert.equal(modelosQueServem().length, cartoes.filter((c) => c.serve).length);
+});
+
+test("o Aula e o Canal (nascem 16:9) entram no corte quando a versão 9:16 está no versoes.json, e só então", () => {
+  for (const id of ["modelo-aula", "modelo-canal"]) {
+    const m = MODELOS_DO_CURSO.find((x) => x.id === id)!;
+    assert.equal(m.formato, "16:9");
+    const lista = VERSOES_DOS_MODELOS as Record<string, Record<string, string>>;
+    const antes = { ...lista[id] };
+    try {
+      delete lista[id]["9:16"];
+      assert.equal(modeloServeNoCorte(id), null, `${id} sem a versão em pé não serve no corte`);
+      assert.match(modelosDaBiblioteca().find((c) => c.id === id)!.falta ?? "", /deitado \(16:9\)/);
+      lista[id]["9:16"] = `${id}-9x16`;
+      assert.equal(modeloServeNoCorte(id)?.id, m.automatico ? id : undefined);
+      assert.equal(versaoNoFormato(id, "9:16"), `${id}-9x16`);
+      assert.equal(versaoNoFormato(id, "16:9"), id);
+      if (m.automatico) {
+        assert.equal(modelosDaBiblioteca().find((c) => c.id === id)?.serve, true);
+        assert.ok(modelosQueServem().some((x) => x.id === id), "entra nas opções da recomendação");
+      }
+    } finally {
+      lista[id] = antes;
+    }
+  }
+});
+
+test("o pedido do corte ao worker vai sempre no formato vertical", () => {
+  const src = ler("lib/media/montagem-nos-cortes.ts");
+  const envio = src.slice(src.indexOf("async function enviarAoModeloDoCurso"), src.indexOf("async function desistirDoModeloDoCurso"));
+  assert.match(envio, /formato: "9:16"/);
 });
 
 test("modelo que o catálogo passa a marcar como automático sobe para a grade sem mudar código", () => {

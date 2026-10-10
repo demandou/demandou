@@ -712,6 +712,8 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
       videoJobId: video.id,
       projectId: video.projectId,
       modelo,
+      // O corte é sempre vertical (10/10): no modelo que nasce deitado (Aula, Canal) o worker usa a versão <id>-9x16.
+      formato: "9:16",
       sourceUrl: video.blobUrl,
       inicio,
       duracao: fim - inicio,

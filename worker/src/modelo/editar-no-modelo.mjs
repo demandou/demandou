@@ -81,21 +81,60 @@ export function formatoDoModelo(id) {
 }
 
 /**
- * O MODELO NO FORMATO PEDIDO (10/10/2026, protótipo do vídeo completo no modelo).
- * Os 79 modelos do curso são verticais (só o Aula e o Canal nascem 16:9). Para
- * o vídeo completo do YouTube sair com a cara do modelo escolhido, cada modelo
- * ganha uma VERSÃO DEITADA ao lado dele, `<id>-16x9` (a primeira é a do
- * Manifesto), com o mesmo estilo e a composição da aula 9 do curso (a pessoa
- * numa moldura à direita, a explicação à esquerda). Sem `formato`, nada muda:
- * o id volta como veio. Pedido de um formato que o modelo ainda não tem falha
- * com a mensagem, em vez de entregar o vertical no lugar.
+ * O MODELO NO FORMATO PEDIDO (10/10/2026), nos dois sentidos. Os 79 modelos do
+ * curso nascem num formato só: 77 verticais e o Aula e o Canal deitados (16:9).
+ * Cada um ganha ao lado dele a versão no outro formato, com o mesmo estilo:
+ *   - `<id>-16x9`, a VERSÃO DEITADA (a primeira foi a do Manifesto), com a
+ *     composição da aula 9 do curso (a pessoa numa moldura à direita, a
+ *     explicação à esquerda), para o completo de gravação deitada;
+ *   - `<id>-9x16`, a VERSÃO EM PÉ do Aula e do Canal, para os cortes deles.
+ * Sem `formato`, ou no formato nativo, o próprio modelo. Quem chega com o id de
+ * uma versão volta ao modelo dela antes (o `variante.de` do modelo.json, ou o
+ * nome sem o sufixo). A versão vale só se existe no disco e o modelo.json dela
+ * diz o formato pedido; pedido de um formato que o modelo ainda não tem falha
+ * com a mensagem, em vez de entregar o outro formato no lugar.
  */
 export function modeloNoFormato(id, formato) {
-  if (!formato || formatoDoModelo(id) === formato) return id;
+  if (!formato) return id;
   if (formato !== "16:9" && formato !== "9:16") throw new Error(`formato desconhecido: ${formato}`);
-  const variante = `${id}-${formato.replace(":", "x")}`;
+  const base = modeloDeBase(id);
+  if (modeloExiste(base) && formatoDoModelo(base) === formato) return base;
+  const variante = `${base}-${formato.replace(":", "x")}`;
   if (modeloExiste(variante) && formatoDoModelo(variante) === formato) return variante;
-  throw new Error(`o modelo ${id} ainda não tem a versão ${formato}`);
+  if (modeloExiste(id) && formatoDoModelo(id) === formato) return id;
+  throw new Error(`o modelo ${base} ainda não tem a versão ${formato === "16:9" ? "deitada (16:9)" : "em pé (9:16)"}`);
+}
+
+/** O modelo de uma versão (`<id>-16x9`, `<id>-9x16`): o `variante.de` do modelo.json, ou o nome sem o sufixo. O id de um modelo volta como veio. */
+export function modeloDeBase(id) {
+  const sufixo = typeof id === "string" ? id.match(/-(16x9|9x16)$/) : null;
+  if (!sufixo) return id;
+  try {
+    const de = JSON.parse(readFileSync(join(PASTA_DOS_MODELOS, id, "template", "modelo.json"), "utf8")).variante?.de;
+    if (typeof de === "string" && modeloExiste(de)) return de;
+  } catch {
+    // sem modelo.json legível, o nome diz
+  }
+  return id.slice(0, -sufixo[0].length);
+}
+
+/**
+ * O quadro do arquivo, como ele aparece (largura e altura depois da rotação
+ * gravada pelo celular); null sem leitura. O trecho que o worker extrai já sai
+ * girado, mas a conta da rotação vale também para a gravação original.
+ */
+export function quadroDoArquivo(arquivo) {
+  try {
+    const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:stream_tags=rotate:stream_side_data=rotation", "-of", "json", arquivo], { encoding: "utf8" });
+    const s = JSON.parse(r.stdout).streams?.[0];
+    const largura = Number(s?.width);
+    const altura = Number(s?.height);
+    if (!(largura > 0 && altura > 0)) return null;
+    const giro = Math.abs(Number(s?.tags?.rotate ?? s?.side_data_list?.find((d) => d.rotation != null)?.rotation ?? 0)) % 180;
+    return giro === 90 ? { largura: altura, altura: largura } : { largura, altura };
+  } catch {
+    return null;
+  }
 }
 
 /**

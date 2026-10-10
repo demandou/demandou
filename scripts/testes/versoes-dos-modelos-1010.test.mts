@@ -60,6 +60,41 @@ test("versaoNoFormato: o nativo é o próprio modelo, o outro vem da lista, fora
   assert.equal(versaoNoFormato("modelo-que-nao-existe", "9:16"), null);
 });
 
+test("o worker escolhe a pasta nos dois sentidos, conferindo no disco", async () => {
+  const pasta = mkdtempSync(join(tmpdir(), "modelos-"));
+  const antes = process.env.PASTA_DOS_MODELOS;
+  try {
+    const criar = (nome: string, modeloJson: Record<string, unknown>) => {
+      mkdirSync(join(pasta, nome, "template", "src"), { recursive: true });
+      writeFileSync(join(pasta, nome, "template", "src", "plano.ts"), "//");
+      writeFileSync(join(pasta, nome, "template", "modelo.json"), JSON.stringify(modeloJson));
+    };
+    criar("modelo-a", {});
+    criar("modelo-a-16x9", { formato: "16:9", variante: { de: "modelo-a", formato: "16:9" } });
+    criar("modelo-b", { formato: "16:9" });
+    criar("modelo-b-9x16", { variante: { de: "modelo-b", formato: "9:16" } });
+    criar("modelo-c", {});
+    criar("modelo-c-16x9", {}); // diz 9:16: não vale como deitada
+    process.env.PASTA_DOS_MODELOS = pasta;
+    const W = await import(`${new URL("worker/src/modelo/editar-no-modelo.mjs", raiz).href}?pasta=${Date.now()}`);
+    assert.equal(W.modeloNoFormato("modelo-a"), "modelo-a");
+    assert.equal(W.modeloNoFormato("modelo-a", "9:16"), "modelo-a");
+    assert.equal(W.modeloNoFormato("modelo-a", "16:9"), "modelo-a-16x9");
+    assert.equal(W.modeloNoFormato("modelo-b", "9:16"), "modelo-b-9x16");
+    assert.equal(W.modeloNoFormato("modelo-b", "16:9"), "modelo-b");
+    assert.equal(W.modeloNoFormato("modelo-a-16x9", "9:16"), "modelo-a", "da versão de volta ao modelo");
+    assert.equal(W.modeloNoFormato("modelo-b-9x16", "16:9"), "modelo-b");
+    assert.throws(() => W.modeloNoFormato("modelo-c", "16:9"), /modelo-c ainda não tem a versão deitada \(16:9\)/);
+    assert.throws(() => W.modeloNoFormato("modelo-a", "4:5"), /formato desconhecido/);
+    assert.equal(W.modeloDeBase("modelo-b-9x16"), "modelo-b");
+    assert.equal(W.modeloDeBase("modelo-a"), "modelo-a");
+  } finally {
+    if (antes === undefined) delete process.env.PASTA_DOS_MODELOS;
+    else process.env.PASTA_DOS_MODELOS = antes;
+    rmSync(pasta, { recursive: true, force: true });
+  }
+});
+
 test("o gerador deixa de fora a pasta pela metade, o formato trocado e a versão de outro modelo", () => {
   const pasta = mkdtempSync(join(tmpdir(), "versoes-"));
   try {

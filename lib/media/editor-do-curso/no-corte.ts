@@ -63,10 +63,15 @@ export function editorDoCursoLigado(): boolean {
   return process.env.EDITOR_DO_CURSO === "1";
 }
 
-/** Só entra no corte o modelo vertical que roda inteiro sem ninguém de fora. */
+/**
+ * Só entra no corte o modelo que roda inteiro sem ninguém de fora e tem a
+ * versão vertical: o próprio modelo, quando nasce 9:16, ou a versão <id>-9x16
+ * do versoes.json, quando nasce deitado (o Aula e o Canal, 10/10). O pedido do
+ * corte vai sempre com `formato: "9:16"`, e o worker escolhe a pasta.
+ */
 export function modeloServeNoCorte(id: string | null | undefined): ModeloDoCurso | null {
   const m = MODELOS_DO_CURSO.find((x) => x.id === id);
-  return m && m.automatico && m.formato === "9:16" ? m : null;
+  return m && m.automatico && versaoNoFormato(m.id, "9:16") ? m : null;
 }
 
 export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
