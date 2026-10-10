@@ -9,7 +9,8 @@
       "ciclos"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-anatomia",
@@ -20,7 +21,8 @@
       "anatomia"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": true
   },
   {
     "id": "modelo-ao-pe-da-letra",
@@ -31,7 +33,8 @@
       "literal"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-arquivo",
@@ -44,7 +47,8 @@
       "pessoas"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-aula",
@@ -55,7 +59,8 @@
       "slide"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-autoridade",
@@ -66,7 +71,8 @@
       "citacao"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-balcao",
@@ -79,7 +85,8 @@
       "mapa"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-brilho",
@@ -91,7 +98,8 @@
       "amostras"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-campo",
@@ -102,7 +110,8 @@
       "talhao"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-canal",
@@ -113,7 +122,8 @@
       "reframe"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-carrossel",
@@ -125,7 +135,8 @@
       "comparacao"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-case",
@@ -136,7 +147,8 @@
       "case"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-chave",
@@ -148,7 +160,8 @@
       "vezes"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-cifra",
@@ -162,7 +175,8 @@
       "cifra"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-cinema",
@@ -174,7 +188,8 @@
       "cartela"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-clinico",
@@ -186,7 +201,8 @@
       "cronometro"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-constelacao",
@@ -198,7 +214,8 @@
       "carta"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-conversa",
@@ -210,7 +227,8 @@
       "contraste"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-convite",
@@ -222,7 +240,8 @@
       "passos"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-criativo",
@@ -234,7 +253,8 @@
       "prova"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-curriculo",
@@ -247,7 +267,8 @@
       "reescrever"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-demo",
@@ -262,7 +283,8 @@
     "pede": [
       "capturas de tela"
     ],
-    "automatico": false
+    "automatico": false,
+    "three": false
   },
   {
     "id": "modelo-devocional",
@@ -273,7 +295,8 @@
       "versiculo"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-dicionario",
@@ -285,7 +308,8 @@
       "remissao"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-dossie",
@@ -296,7 +320,8 @@
       "quadro"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-espelho",
@@ -307,7 +332,8 @@
       "mapa"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-estudio",
@@ -319,7 +345,8 @@
       "trilha"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-etapas",
@@ -334,7 +361,8 @@
     "pede": [
       "capturas de tela"
     ],
-    "automatico": false
+    "automatico": false,
+    "three": false
   },
   {
     "id": "modelo-etiqueta",
@@ -345,7 +373,8 @@
       "etiqueta"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-extrato",
@@ -356,7 +385,8 @@
       "conta"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-figurinha",
@@ -367,7 +397,8 @@
       "album"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-funil",
@@ -379,7 +410,8 @@
       "conserto"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-guia",
@@ -394,7 +426,8 @@
       "capturas de tela",
       "recorte da pessoa"
     ],
-    "automatico": false
+    "automatico": false,
+    "three": false
   },
   {
     "id": "modelo-herbario",
@@ -405,7 +438,8 @@
       "figura"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-iceberg",
@@ -416,7 +450,8 @@
       "iceberg"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-ignicao",
@@ -429,7 +464,8 @@
       "rota"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-impacto",
@@ -441,7 +477,8 @@
       "virada"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-janelas",
@@ -455,7 +492,8 @@
     "pede": [
       "gravação de tela"
     ],
-    "automatico": false
+    "automatico": false,
+    "three": false
   },
   {
     "id": "modelo-kit",
@@ -466,7 +504,8 @@
       "kit"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-laboratorio",
@@ -481,7 +520,8 @@
       "trajeto"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-lookbook",
@@ -493,7 +533,8 @@
       "colagem"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-lousa",
@@ -507,7 +548,8 @@
       "fracao"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-manchete",
@@ -519,7 +561,8 @@
       "capitulo"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-manifesto",
@@ -531,7 +574,8 @@
       "escalada"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-mapa",
@@ -543,7 +587,8 @@
       "curva"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-medida",
@@ -554,7 +599,8 @@
       "medida"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": true
   },
   {
     "id": "modelo-mosaico",
@@ -567,7 +613,8 @@
       "grupo"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-multicamera",
@@ -579,7 +626,8 @@
       "capitulo"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-narrador",
@@ -591,7 +639,8 @@
       "letreiro"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-niveis",
@@ -602,7 +651,8 @@
       "niveis"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-oferta",
@@ -613,7 +663,8 @@
       "oferta"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-orbita",
@@ -625,7 +676,8 @@
       "ceu"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": true
   },
   {
     "id": "modelo-painel",
@@ -638,7 +690,8 @@
       "painel"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-palco",
@@ -649,7 +702,8 @@
       "palco"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-planilha",
@@ -662,7 +716,8 @@
       "preencher"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-planta",
@@ -673,7 +728,8 @@
       "planta"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-plantao",
@@ -687,7 +743,8 @@
       "nota"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-prompt",
@@ -698,7 +755,8 @@
       "montagem"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-pronuncia",
@@ -709,7 +767,8 @@
       "pronuncia"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-pulso",
@@ -723,7 +782,8 @@
       "rota"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-quiz",
@@ -734,7 +794,8 @@
       "quiz"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-raiox",
@@ -745,7 +806,8 @@
       "ajuste"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-ranking",
@@ -756,7 +818,8 @@
       "ranking"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-reacao",
@@ -768,7 +831,8 @@
       "comentario"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-receita",
@@ -780,7 +844,8 @@
       "passo"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-respiro",
@@ -792,7 +857,8 @@
       "ciclos"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-roteiro",
@@ -803,7 +869,8 @@
       "parada"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-rotulo",
@@ -820,7 +887,8 @@
       "nota"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-tatica",
@@ -831,7 +899,8 @@
       "dica"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-tela-viva",
@@ -845,7 +914,8 @@
     "pede": [
       "capturas de tela"
     ],
-    "automatico": false
+    "automatico": false,
+    "three": false
   },
   {
     "id": "modelo-terco",
@@ -857,7 +927,8 @@
       "capitulo"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-tese",
@@ -869,7 +940,8 @@
       "fechado"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-torre",
@@ -883,7 +955,8 @@
       "preco"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": true
   },
   {
     "id": "modelo-transformacao",
@@ -896,7 +969,8 @@
     "pede": [
       "fotos de antes e depois"
     ],
-    "automatico": false
+    "automatico": false,
+    "three": false
   },
   {
     "id": "modelo-versus",
@@ -909,7 +983,8 @@
       "veredito"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-viral",
@@ -921,7 +996,8 @@
       "pop"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-visor",
@@ -934,7 +1010,8 @@
       "comparar"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-wireframe",
@@ -947,7 +1024,8 @@
       "resultado"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   },
   {
     "id": "modelo-yap",
@@ -958,6 +1036,7 @@
       "insercao"
     ],
     "pede": [],
-    "automatico": true
+    "automatico": true,
+    "three": false
   }
 ]

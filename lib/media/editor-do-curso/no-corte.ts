@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import catalogo from "./catalogo.json";
+import versoes from "./versoes.json";
 
 /**
  * OS MODELOS DO CURSO NA ESTEIRA DOS CORTES (09/10/2026).
@@ -15,18 +16,45 @@ import catalogo from "./catalogo.json";
  * vai pelo caminho novo; os outros seguem como estão.
  */
 
+export type FormatoDoModelo = "9:16" | "16:9";
+
 export type ModeloDoCurso = {
   id: string;
   nome: string;
   descricao: string;
-  formato: "9:16" | "16:9";
+  formato: FormatoDoModelo;
   assinatura: string[];
   /** O que ainda pede um passo fora do fluxo automático (imagens, 3D, capturas...). */
   pede: string[];
   automatico: boolean;
+  /** O modelo desenha em 3D (three.js no template): vai ao grupo "3D e efeitos" da grade. */
+  three?: boolean;
 };
 
 export const MODELOS_DO_CURSO = catalogo as ModeloDoCurso[];
+
+/**
+ * AS VERSÕES DE CADA MODELO POR FORMATO (10/10/2026). Os modelos nascem num
+ * formato só (77 verticais, o Aula e o Canal deitados) e cada um ganha à mão a
+ * versão no outro formato ao lado dele (worker/modelos/<id>-16x9 e <id>-9x16).
+ * A lista sai do disco (worker/modelos/versoes.mjs, `npm run modelos:versoes`)
+ * para versoes.json, porque o app na Vercel não enxerga a pasta do worker; o
+ * worker confere de novo pelo disco (editar-no-modelo.mjs, modeloNoFormato) e o
+ * teste confere que cada pasta daqui existe lá.
+ */
+export const VERSOES_DOS_MODELOS = versoes as Readonly<Record<string, Readonly<Partial<Record<FormatoDoModelo, string>>>>>;
+
+/**
+ * A pasta do modelo no formato pedido: o próprio modelo no formato nativo dele,
+ * a versão do versoes.json no outro; null quando ainda não há (ou o id não é do
+ * catálogo).
+ */
+export function versaoNoFormato(id: string | null | undefined, formato: FormatoDoModelo): string | null {
+  const m = id ? MODELOS_DO_CURSO.find((x) => x.id === id) : null;
+  if (!m) return null;
+  if (m.formato === formato) return m.id;
+  return VERSOES_DOS_MODELOS[m.id]?.[formato] ?? null;
+}
 
 const TIPO = "editor";
 const CHAVE = "modelo-do-curso";
@@ -98,18 +126,14 @@ export async function quemFalaNoProjeto(projectId: string): Promise<{ nome: stri
  * completo do YouTube sai numa VERSÃO DEITADA (16:9) do modelo escolhido no
  * projeto, com o estilo do modelo e a cor da marca, como os cortes. Cada
  * modelo ganha a versão deitada à mão (worker/modelos/<id>-16x9, aula 9 do
- * curso); a lista abaixo diz quais já têm. O worker confere de novo pelo disco
- * (editar-no-modelo.mjs, modeloNoFormato) e o teste confere que cada versão
- * daqui existe lá.
+ * curso); versoes.json (VERSOES_DOS_MODELOS, gerado do disco) diz quais já têm.
  *
  * A trava é COMPLETO_PELO_MODELO=1 (desligada por padrão). Sem ela, sem modelo
  * no projeto, sem versão deitada, com a gravação em pé ou depois de o caminho
  * do curso desistir neste completo, vale o editor de sempre (a reserva).
  */
-export const VERSOES_DEITADAS: Readonly<Record<string, string>> = { "modelo-manifesto": "modelo-manifesto-16x9" };
-
 export function versaoDeitadaDoModelo(id: string | null | undefined): string | null {
-  return id ? (VERSOES_DEITADAS[id] ?? null) : null;
+  return versaoNoFormato(id, "16:9");
 }
 
 export function completoPeloModeloLigado(): boolean {

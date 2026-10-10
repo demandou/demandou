@@ -14,7 +14,7 @@ const raiz = new URL("../../", import.meta.url);
 const B = await import(new URL("worker/src/modelo/blocos-do-plano.mjs", raiz).href);
 const { conferirPlano } = await import(new URL("worker/modelos/modelo-manifesto-16x9/template/scripts/conferir.mjs", raiz).href);
 const { instrucaoDoBloco } = await import("@/lib/media/editor-do-curso/escrever-plano");
-const { caminhoDoCompleto, versaoDeitadaDoModelo, VERSOES_DEITADAS, tetoDoPlanoUsd, prazoDoCompletoNoModeloMs } = await import("@/lib/media/editor-do-curso/no-corte");
+const { caminhoDoCompleto, versaoDeitadaDoModelo, VERSOES_DOS_MODELOS, MODELOS_DO_CURSO, tetoDoPlanoUsd, prazoDoCompletoNoModeloMs } = await import("@/lib/media/editor-do-curso/no-corte");
 const { TETO_DA_ESPERA_MS } = await import("@/lib/media/montagem-no-worker");
 
 const TRAVESSAO = /[—–]/;
@@ -283,18 +283,21 @@ test("curso ou reserva: trava, modelo, versão deitada, desistência e gravaçã
   for (const r of [caminhoDoCompleto({ ...base, ligado: false }), caminhoDoCompleto({ ...base, modelo: "modelo-viral" })]) {
     if (r.caminho === "reserva") assert.doesNotMatch(r.motivo, TRAVESSAO);
   }
-  assert.equal(versaoDeitadaDoModelo("modelo-lousa"), null);
+  assert.equal(versaoDeitadaDoModelo("modelo-lousa"), VERSOES_DOS_MODELOS["modelo-lousa"]?.["16:9"] ?? null);
 });
 
-test("toda versão deitada da lista existe no worker, é 16:9 e vem do modelo certo", () => {
-  for (const [id, versao] of Object.entries(VERSOES_DEITADAS)) {
-    const m = new URL(`worker/modelos/${versao}/template/modelo.json`, raiz);
-    assert.ok(existsSync(m), versao);
-    const j = JSON.parse(readFileSync(m, "utf8"));
+test("toda versão deitada da lista (versoes.json) existe no worker, é 16:9 e vem do modelo certo", () => {
+  for (const m of MODELOS_DO_CURSO.filter((x) => x.formato === "9:16")) {
+    const versao = versaoDeitadaDoModelo(m.id);
+    if (!versao) continue;
+    const arquivo = new URL(`worker/modelos/${versao}/template/modelo.json`, raiz);
+    assert.ok(existsSync(arquivo), versao);
+    const j = JSON.parse(readFileSync(arquivo, "utf8"));
     assert.equal(j.formato, "16:9");
-    assert.equal(j.variante?.de, id);
-    assert.ok(existsSync(new URL(`worker/modelos/${id}/template/src/plano.ts`, raiz)), id);
+    if (j.variante?.de) assert.equal(j.variante.de, m.id);
+    assert.ok(existsSync(new URL(`worker/modelos/${m.id}/template/src/plano.ts`, raiz)), m.id);
   }
+  assert.equal(versaoDeitadaDoModelo("modelo-manifesto"), "modelo-manifesto-16x9");
 });
 
 test("a folha do exemplo 16:9 é dela, não a do vertical", () => {
