@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 const { modelosDaBiblioteca, resumoDoModelo, descricaoParaDecidir, faltaDoModelo, modelosQueServem } = await import("@/lib/media/editor-do-curso/biblioteca");
 const { MODELOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/no-corte");
-const { lerEscolha, hashDaRecomendacao, limparMotivo, motivoEmCodigo, perguntasDoJev, temPerfilParaRecomendar, estadoDoJev, CONFIANCA_MINIMA } = await import(
+const { chaveDaOpcao, visualSemNome, lerEscolha, hashDaRecomendacao, limparMotivo, motivoEmCodigo, perguntasDoJev, temPerfilParaRecomendar, estadoDoJev, CONFIANCA_MINIMA } = await import(
   "@/lib/media/editor-do-curso/recomendacao"
 );
 
@@ -37,7 +37,9 @@ test("modelo que o catálogo passa a marcar como automático sobe para a grade s
   try {
     imagem.automatico = true;
     assert.equal(modelosDaBiblioteca().find((c) => c.id === imagem.id)?.serve, true);
-    assert.ok(Object.keys((perguntasDoJev(modelosQueServem()).modelo as { criteria: Record<string, string> }).criteria).includes(imagem.id));
+    const servem = modelosQueServem();
+    const i = servem.findIndex((m) => m.id === imagem.id);
+    assert.ok(i >= 0 && Object.keys((perguntasDoJev(servem).modelo as { criteria: Record<string, string> }).criteria).includes(chaveDaOpcao(i)));
   } finally {
     imagem.automatico = antes;
   }
@@ -73,11 +75,12 @@ test("resumo, falta e descrição para decidir: sem travessão, sem o começo fi
 
 test("a escolha do JEV só vale com confiança de 0,5 para cima e dentro das opções", () => {
   const opcoes = ["modelo-a", "modelo-b", "modelo-c", "modelo-d"];
-  const probabilities = { "modelo-a": 0.1, "modelo-b": 0.62, "modelo-c": 0.2, "modelo-d": 0.08, "fora-da-lista": 0.5 };
-  const firme = lerEscolha({ type: "choice", choice: "modelo-b", probabilities, confidence: 0.71 }, opcoes);
+  // A pergunta usa chaves neutras na ordem das opções (10/10): estilo_02 é o modelo-b.
+  const probabilities = { estilo_01: 0.1, estilo_02: 0.62, estilo_03: 0.2, estilo_04: 0.08, "fora-da-lista": 0.5 };
+  const firme = lerEscolha({ type: "choice", choice: "estilo_02", probabilities, confidence: 0.71 }, opcoes);
   assert.equal(firme.modelo, "modelo-b");
   assert.deepEqual(firme.alternativas.map((a) => a.modelo), ["modelo-b", "modelo-c", "modelo-a"]);
-  assert.equal(lerEscolha({ type: "choice", choice: "modelo-b", probabilities, confidence: CONFIANCA_MINIMA - 0.01 }, opcoes).modelo, null, "não sei");
+  assert.equal(lerEscolha({ type: "choice", choice: "estilo_02", probabilities, confidence: CONFIANCA_MINIMA - 0.01 }, opcoes).modelo, null, "não sei");
   assert.equal(lerEscolha({ type: "choice", choice: "fora-da-lista", probabilities, confidence: 0.9 }, opcoes).modelo, null);
   assert.equal(lerEscolha(undefined, opcoes).modelo, null);
   assert.equal(lerEscolha({ type: "noul", noul: 0.9 }, opcoes).modelo, null);
@@ -97,7 +100,13 @@ test("a pergunta do JEV é uma escolha entre os modelos que servem, e o estado l
   const p = perguntasDoJev(modelosQueServem()).modelo;
   assert.equal(p.type, "choice");
   const criterios = (p as { criteria: Record<string, string> }).criteria;
-  assert.deepEqual(Object.keys(criterios).sort(), modelosQueServem().map((m) => m.id).sort());
+  assert.deepEqual(Object.keys(criterios), modelosQueServem().map((_, i) => chaveDaOpcao(i)));
+  // Sem o nome do modelo na pergunta (10/10): o JEV decide pelo visual, não pela palavra repetida no perfil.
+  for (const [i, m] of modelosQueServem().entries()) {
+    const escapado = m.nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    assert.doesNotMatch(criterios[chaveDaOpcao(i)], new RegExp(`(^|[^\\p{L}])${escapado}(?=$|[^\\p{L}])`, "iu"), m.id);
+  }
+  assert.ok(!visualSemNome(MODELOS_DO_CURSO.find((m) => m.id === "modelo-autoridade")!).toLowerCase().startsWith("estilo autoridade"));
   const estado = estadoDoJev({ textos: { nicho: "clínica de estética" }, tom: "elegante", regrasDaEdicao: [] }, { setor: "Saúde", guardas: ["sem antes e depois"] });
   const cliente = estado.cliente as Record<string, unknown>;
   assert.equal(cliente.nicho, "clínica de estética");

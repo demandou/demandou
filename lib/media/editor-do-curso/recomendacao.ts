@@ -41,7 +41,7 @@ import { MODELOS_DO_CURSO, modeloServeNoCorte, type ModeloDoCurso } from "./no-c
 const TIPO = "editor";
 const CHAVE = "recomendacao-do-curso";
 /** Sobe quando a pergunta ou o estado mudam de forma: as guardadas vencem. */
-const VERSAO = 1;
+const VERSAO = 2;
 export const CONFIANCA_MINIMA = 0.5;
 export const ETAPA_DO_JEV = "modelo-do-curso";
 const MODELO_DO_MOTIVO = "claude-haiku-4-5";
@@ -118,9 +118,30 @@ export function perfilEmLinhas(p: PerfilParaRecomendar, extra?: { setor?: string
 export function estadoDoJev(p: PerfilParaRecomendar, extra?: { setor?: string; guardas?: string[] }): Record<string, unknown> {
   return {
     contexto:
-      "Uma plataforma edita os cortes verticais (Reels, TikTok, Shorts) de um cliente que grava a si mesmo falando para a câmera. Cada modelo de edição é um visual completo, do primeiro ao último quadro. Todo modelo funciona com qualquer assunto, mas cada um tem um clima (sóbrio, enérgico, calmo, luxuoso, técnico, didático, afetivo) e um universo visual que combina mais com uns clientes do que com outros. `cliente` traz o que se sabe dele: o que faz, para quem fala, o tom da marca, as regras que aprovou e as guardas do setor. Quem assiste aos vídeos é o público do cliente.",
+      "Uma plataforma edita os cortes verticais (Reels, TikTok, Shorts) de um cliente que grava a si mesmo falando para a câmera. Cada estilo de edição é um visual completo, do primeiro ao último quadro. Todo estilo funciona com qualquer assunto, mas cada um tem um clima (sóbrio, enérgico, calmo, luxuoso, técnico, didático, afetivo, ousado) e um universo visual que combina mais com uns clientes do que com outros. `cliente` traz o que se sabe dele: o que o negócio faz (descrição), o nicho e para quem fala, o tom da marca, as regras que aprovou e as guardas do setor. O nicho às vezes descreve os CLIENTES do cliente; o que define a marca é o que o negócio faz e o tom. Quem assiste aos vídeos é o público do cliente.",
     cliente: perfilEmLinhas(p, extra),
   };
+}
+
+/**
+ * A chave neutra de cada opção na pergunta ao JEV (10/10). Com o id e o nome
+ * do modelo na pergunta, o JEV ia pela coincidência de palavra: o perfil da
+ * Demandou diz "autoridade" no nicho e no tom, e o recomendado foi o modelo
+ * chamado Autoridade (0,70), quando o Bruno queria um visual mais criativo
+ * para uma marca de software. Sem o nome, ele decide pelo visual descrito.
+ */
+export function chaveDaOpcao(i: number): string {
+  return `estilo_${String(i + 1).padStart(2, "0")}`;
+}
+
+/** O visual do modelo sem o nome dele (o começo "Estilo X:" sai). Puro. */
+export function visualSemNome(m: Pick<ModeloDoCurso, "descricao" | "nome">): string {
+  const d = descricaoParaDecidir(m).replace(/^Estilo\s+[^:,.]{1,40}[:,.]\s*/i, "");
+  const nome = m.nome.trim();
+  // O nome que aparece no meio da descrição também sai ("o Impacto", "no Painel").
+  if (nome.length < 3) return d;
+  const escapado = nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return d.replace(new RegExp(`(^|[^\\p{L}])${escapado}(?=$|[^\\p{L}])`, "giu"), "$1este estilo");
 }
 
 export function perguntasDoJev(opcoes: ModeloDoCurso[]): Record<string, PerguntaDoJev> {
@@ -128,23 +149,32 @@ export function perguntasDoJev(opcoes: ModeloDoCurso[]): Record<string, Pergunta
     modelo: {
       type: "choice",
       instructions:
-        "Qual modelo de edição combina mais com `cliente`? Pese o que ele faz e o universo do negócio dele, o público para quem ele fala e o tom da marca. Um modelo cujo clima contraria o tom da marca ou as guardas do setor não serve.",
-      criteria: Object.fromEntries(opcoes.map((m) => [m.id, `${m.nome}. ${descricaoParaDecidir(m)}`])),
+        "Qual estilo de edição combina mais com `cliente`? Pese primeiro o que o negócio dele faz e o tom da marca, depois o público para quem ele fala. Escolha pelo clima e pelo universo visual descritos, não por palavras que se repetem no perfil. Um estilo cujo clima contraria o tom da marca ou as guardas do setor não serve.",
+      criteria: Object.fromEntries(opcoes.map((m, i) => [chaveDaOpcao(i), visualSemNome(m)])),
     },
   };
 }
 
-/** Lê a escolha do JEV com a margem do "não sei". */
+/**
+ * Lê a escolha do JEV com a margem do "não sei". `opcoes` são os ids na MESMA
+ * ordem da pergunta: a chave neutra volta para o id do modelo.
+ */
 export function lerEscolha(r: RespostaDoJev | undefined, opcoes: string[]): { modelo: string | null; confianca: number | null; alternativas: Array<{ modelo: string; p: number }> } {
   if (!r || r.type !== "choice") return { modelo: null, confianca: null, alternativas: [] };
+  const paraId = (k: string): string | null => {
+    const i = opcoes.findIndex((_, n) => chaveDaOpcao(n) === k);
+    return i >= 0 ? opcoes[i] : null;
+  };
   const confianca = typeof r.confidence === "number" ? r.confidence : null;
   const alternativas = Object.entries(r.probabilities ?? {})
-    .filter(([id, p]) => opcoes.includes(id) && typeof p === "number")
+    .map(([k, p]) => [paraId(k), p] as const)
+    .filter((x): x is readonly [string, number] => Boolean(x[0]) && typeof x[1] === "number")
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([modelo, p]) => ({ modelo, p: +p.toFixed(4) }));
-  const valida = opcoes.includes(r.choice) && confianca !== null && confianca >= CONFIANCA_MINIMA;
-  return { modelo: valida ? r.choice : null, confianca, alternativas };
+  const escolhido = paraId(r.choice);
+  const valida = Boolean(escolhido) && confianca !== null && confianca >= CONFIANCA_MINIMA;
+  return { modelo: valida ? escolhido : null, confianca, alternativas };
 }
 
 /** O motivo montado em código, quando o Haiku não escreve: o perfil e o resumo do modelo, sem nada inventado. */
