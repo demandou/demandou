@@ -5,6 +5,7 @@ import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
 import { resultadosDoProjeto } from "@/lib/analytics/resultados";
 import { estatisticasDoProjeto } from "@/lib/analytics/estatisticas-da-conta";
+import { impulsosDoProjeto } from "@/lib/analytics/impulso";
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +25,13 @@ export default async function AnalyticsPage({
   // TODAS as peças do projeto, arquivadas inclusas (01/10): a tela antiga
   // buscava `status: "published"` e zerou quando o Bruno arquivou dois
   // projetos. Ver lib/analytics/resultados.ts.
-  const [resultados, estatisticas, recentRuns] = await Promise.all([
+  const [resultados, estatisticas, impulsos, recentRuns] = await Promise.all([
     resultadosDoProjeto(id),
     // As estatísticas da CONTA (09/10): o painel no espírito do Painel
     // Profissional do Instagram, acima dos números post a post.
     estatisticasDoProjeto(id),
+    // O selo "vale impulsionar" no card do post (09/10, agente de tráfego).
+    impulsosDoProjeto(id),
     prisma.pipelineRun.findMany({
       where: { projectId: id },
       orderBy: { startedAt: "desc" },
@@ -50,6 +53,7 @@ export default async function AnalyticsPage({
       project={{ id: project.id, name: project.name }}
       resultados={resultados}
       estatisticas={estatisticas}
+      impulsos={impulsos.sugestoes}
       souDono={project.userId === userId}
       recentRuns={recentRuns}
     />

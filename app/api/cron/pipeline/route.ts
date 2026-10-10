@@ -12,6 +12,7 @@ import { conferirEnviosPendentes, PREFIXO_DO_ENVIO } from "@/lib/publish/via-blo
 import { medirPostsVencidos } from "@/lib/analytics/agenda-de-medicao";
 import { varrerInventarios } from "@/lib/analytics/inventario-das-redes";
 import { lerEstatisticasVencidas } from "@/lib/analytics/estatisticas-da-conta";
+import { sugerirImpulsos } from "@/lib/analytics/impulso";
 import { repescarFeedbacksSemClasse } from "@/lib/feedback/captura";
 
 /**
@@ -152,6 +153,18 @@ export async function GET(req: NextRequest) {
   });
 
   /**
+   * O AGENTE DE TRÁFEGO, fase 1 (09/10): quais posts valem ser impulsionados.
+   * Depois da medição, porque é ela que traz a leitura nova. O código mede os
+   * sinais contra a mediana da conta, o JEV decide (só quando os candidatos
+   * mudaram) e o Haiku escreve a frase; até 4 projetos e 20 s por passada
+   * (lib/analytics/impulso.ts). Desliga com SUGESTOES_DE_IMPULSO=0.
+   */
+  const impulsos = await sugerirImpulsos({ orcamentoMs: 20_000, maxProjetos: 4 }).catch((e) => {
+    console.error("[cron] sugestões de impulso falharam:", e instanceof Error ? e.message : e);
+    return null;
+  });
+
+  /**
    * A repescagem do feedback sem classe (06/10, tarde): o que o JEV não
    * classificou na captura volta para ele, até 20 por passada
    * (lib/feedback/captura.ts). Por último e sem derrubar nada.
@@ -168,6 +181,7 @@ export async function GET(req: NextRequest) {
     ...(medicao && medicao.vencidos ? { medicao } : {}),
     ...(inventario && inventario.olhados ? { inventario } : {}),
     ...(estatisticas && estatisticas.olhadas ? { estatisticas } : {}),
+    ...(impulsos && impulsos.olhados ? { impulsos } : {}),
     ...(repescagem && repescagem.tentados ? { repescagem } : {}),
     timestamp: now.toISOString(),
   });
