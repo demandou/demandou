@@ -81,21 +81,60 @@ export function formatoDoModelo(id) {
 }
 
 /**
- * O MODELO NO FORMATO PEDIDO (10/10/2026, protótipo do vídeo completo no modelo).
- * Os 79 modelos do curso são verticais (só o Aula e o Canal nascem 16:9). Para
- * o vídeo completo do YouTube sair com a cara do modelo escolhido, cada modelo
- * ganha uma VERSÃO DEITADA ao lado dele, `<id>-16x9` (a primeira é a do
- * Manifesto), com o mesmo estilo e a composição da aula 9 do curso (a pessoa
- * numa moldura à direita, a explicação à esquerda). Sem `formato`, nada muda:
- * o id volta como veio. Pedido de um formato que o modelo ainda não tem falha
- * com a mensagem, em vez de entregar o vertical no lugar.
+ * O MODELO NO FORMATO PEDIDO (10/10/2026), nos dois sentidos. Os 79 modelos do
+ * curso nascem num formato só: 77 verticais e o Aula e o Canal deitados (16:9).
+ * Cada um ganha ao lado dele a versão no outro formato, com o mesmo estilo:
+ *   - `<id>-16x9`, a VERSÃO DEITADA (a primeira foi a do Manifesto), com a
+ *     composição da aula 9 do curso (a pessoa numa moldura à direita, a
+ *     explicação à esquerda), para o completo de gravação deitada;
+ *   - `<id>-9x16`, a VERSÃO EM PÉ do Aula e do Canal, para os cortes deles.
+ * Sem `formato`, ou no formato nativo, o próprio modelo. Quem chega com o id de
+ * uma versão volta ao modelo dela antes (o `variante.de` do modelo.json, ou o
+ * nome sem o sufixo). A versão vale só se existe no disco e o modelo.json dela
+ * diz o formato pedido; pedido de um formato que o modelo ainda não tem falha
+ * com a mensagem, em vez de entregar o outro formato no lugar.
  */
 export function modeloNoFormato(id, formato) {
-  if (!formato || formatoDoModelo(id) === formato) return id;
+  if (!formato) return id;
   if (formato !== "16:9" && formato !== "9:16") throw new Error(`formato desconhecido: ${formato}`);
-  const variante = `${id}-${formato.replace(":", "x")}`;
+  const base = modeloDeBase(id);
+  if (modeloExiste(base) && formatoDoModelo(base) === formato) return base;
+  const variante = `${base}-${formato.replace(":", "x")}`;
   if (modeloExiste(variante) && formatoDoModelo(variante) === formato) return variante;
-  throw new Error(`o modelo ${id} ainda não tem a versão ${formato}`);
+  if (modeloExiste(id) && formatoDoModelo(id) === formato) return id;
+  throw new Error(`o modelo ${base} ainda não tem a versão ${formato === "16:9" ? "deitada (16:9)" : "em pé (9:16)"}`);
+}
+
+/** O modelo de uma versão (`<id>-16x9`, `<id>-9x16`): o `variante.de` do modelo.json, ou o nome sem o sufixo. O id de um modelo volta como veio. */
+export function modeloDeBase(id) {
+  const sufixo = typeof id === "string" ? id.match(/-(16x9|9x16)$/) : null;
+  if (!sufixo) return id;
+  try {
+    const de = JSON.parse(readFileSync(join(PASTA_DOS_MODELOS, id, "template", "modelo.json"), "utf8")).variante?.de;
+    if (typeof de === "string" && modeloExiste(de)) return de;
+  } catch {
+    // sem modelo.json legível, o nome diz
+  }
+  return id.slice(0, -sufixo[0].length);
+}
+
+/**
+ * O quadro do arquivo, como ele aparece (largura e altura depois da rotação
+ * gravada pelo celular); null sem leitura. O trecho que o worker extrai já sai
+ * girado, mas a conta da rotação vale também para a gravação original.
+ */
+export function quadroDoArquivo(arquivo) {
+  try {
+    const r = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:stream_tags=rotate:stream_side_data=rotation", "-of", "json", arquivo], { encoding: "utf8" });
+    const s = JSON.parse(r.stdout).streams?.[0];
+    const largura = Number(s?.width);
+    const altura = Number(s?.height);
+    if (!(largura > 0 && altura > 0)) return null;
+    const giro = Math.abs(Number(s?.tags?.rotate ?? s?.side_data_list?.find((d) => d.rotation != null)?.rotation ?? 0)) % 180;
+    return giro === 90 ? { largura: altura, altura: largura } : { largura, altura };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -445,15 +484,19 @@ export async function stills(projeto, args = ["--momentos"]) {
  *
  * `pedido`: { modelo, sourceUrl, inicio, duracao, manter, palavras ([{em, ate, w}]
  * no tempo do corte, a fala limpa), marca {nome, area}, nicho, tetoUsd, voltas,
- * formato }. `formato` ("16:9", opcional) pede a versão deitada do modelo
- * (`modeloNoFormato`); sem ele, o fluxo é o de sempre, no formato do modelo.
+ * formato, formatoPelaGravacao }. `formato` ("16:9" ou "9:16", opcional) pede a
+ * versão do modelo naquele formato (`modeloNoFormato`); sem ele, o fluxo é o de
+ * sempre, no formato do modelo. `formatoPelaGravacao` (o completo, 10/10): o
+ * trecho extraído é medido e, se a gravação for do outro formato (em pé num
+ * pedido 16:9, deitada num 9:16), vale a versão do formato dela; sem essa
+ * versão, falha e a reserva entra.
  * `pedirPlano(corpo)` chama o app (a IA mora lá) e devolve { mapa, plano,
  * custoUsd, numerosSemLastro }. Volta reprovada leva ao app a saída do
  * conferir.mjs, como o curso manda; o teto de gasto para antes de passar.
  */
 export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano, aoPasso = () => {}, obterTrilha = null }) {
   // a versão no formato pedido (sem `formato`, o próprio modelo): falha antes de baixar nada
-  const modelo = modeloNoFormato(pedido.modelo, pedido.formato);
+  let modelo = modeloNoFormato(pedido.modelo, pedido.formato);
   const tempos = {};
   let t = Date.now();
   const marcar = (nome) => {
@@ -468,6 +511,18 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   const alinhado = alinharAosQuadros(pedido.manter, pedido.palavras, fpsConstante(original), pedido.inicio ?? 0);
   await extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, alinhado.manter, { fps: alinhado.fps });
   marcar("trecho");
+  // O COMPLETO NO FORMATO DA GRAVAÇÃO (10/10): em pé sai no 9:16 do modelo, deitada no 16:9. O
+  // app escolhe pela medida do quadro que ele tem; aqui a gravação é medida de novo, e quando ela
+  // é do outro formato vale a versão dele (sem a versão, falha aqui e a reserva entra).
+  if (pedido.formatoPelaGravacao && pedido.formato) {
+    const q = quadroDoArquivo(trecho);
+    const daGravacao = q ? (q.altura > q.largura ? "9:16" : "16:9") : null;
+    if (daGravacao && daGravacao !== formatoDoModelo(modelo)) {
+      const pedida = modelo;
+      modelo = modeloNoFormato(pedido.modelo, daGravacao);
+      aoPasso(`a gravação é ${daGravacao === "9:16" ? "em pé" : "deitada"} (${q.largura}x${q.altura}): ${pedida} trocado por ${modelo}`);
+    }
+  }
   const projeto = criarProjeto(modelo, pasta);
   // AS CORES DA MARCA (10/10, regra do Bruno): o estilo é do modelo, a cor é da marca.
   if (pedido.cores?.destaque) {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import catalogo from "./catalogo.json";
+import versoes from "./versoes.json";
 
 /**
  * OS MODELOS DO CURSO NA ESTEIRA DOS CORTES (09/10/2026).
@@ -15,18 +16,45 @@ import catalogo from "./catalogo.json";
  * vai pelo caminho novo; os outros seguem como estão.
  */
 
+export type FormatoDoModelo = "9:16" | "16:9";
+
 export type ModeloDoCurso = {
   id: string;
   nome: string;
   descricao: string;
-  formato: "9:16" | "16:9";
+  formato: FormatoDoModelo;
   assinatura: string[];
   /** O que ainda pede um passo fora do fluxo automático (imagens, 3D, capturas...). */
   pede: string[];
   automatico: boolean;
+  /** O modelo desenha em 3D (three.js no template): vai ao grupo "3D e efeitos" da grade. */
+  three?: boolean;
 };
 
 export const MODELOS_DO_CURSO = catalogo as ModeloDoCurso[];
+
+/**
+ * AS VERSÕES DE CADA MODELO POR FORMATO (10/10/2026). Os modelos nascem num
+ * formato só (77 verticais, o Aula e o Canal deitados) e cada um ganha à mão a
+ * versão no outro formato ao lado dele (worker/modelos/<id>-16x9 e <id>-9x16).
+ * A lista sai do disco (worker/modelos/versoes.mjs, `npm run modelos:versoes`)
+ * para versoes.json, porque o app na Vercel não enxerga a pasta do worker; o
+ * worker confere de novo pelo disco (editar-no-modelo.mjs, modeloNoFormato) e o
+ * teste confere que cada pasta daqui existe lá.
+ */
+export const VERSOES_DOS_MODELOS = versoes as Readonly<Record<string, Readonly<Partial<Record<FormatoDoModelo, string>>>>>;
+
+/**
+ * A pasta do modelo no formato pedido: o próprio modelo no formato nativo dele,
+ * a versão do versoes.json no outro; null quando ainda não há (ou o id não é do
+ * catálogo).
+ */
+export function versaoNoFormato(id: string | null | undefined, formato: FormatoDoModelo): string | null {
+  const m = id ? MODELOS_DO_CURSO.find((x) => x.id === id) : null;
+  if (!m) return null;
+  if (m.formato === formato) return m.id;
+  return VERSOES_DOS_MODELOS[m.id]?.[formato] ?? null;
+}
 
 const TIPO = "editor";
 const CHAVE = "modelo-do-curso";
@@ -35,10 +63,15 @@ export function editorDoCursoLigado(): boolean {
   return process.env.EDITOR_DO_CURSO === "1";
 }
 
-/** Só entra no corte o modelo vertical que roda inteiro sem ninguém de fora. */
+/**
+ * Só entra no corte o modelo que roda inteiro sem ninguém de fora e tem a
+ * versão vertical: o próprio modelo, quando nasce 9:16, ou a versão <id>-9x16
+ * do versoes.json, quando nasce deitado (o Aula e o Canal, 10/10). O pedido do
+ * corte vai sempre com `formato: "9:16"`, e o worker escolhe a pasta.
+ */
 export function modeloServeNoCorte(id: string | null | undefined): ModeloDoCurso | null {
   const m = MODELOS_DO_CURSO.find((x) => x.id === id);
-  return m && m.automatico && m.formato === "9:16" ? m : null;
+  return m && m.automatico && versaoNoFormato(m.id, "9:16") ? m : null;
 }
 
 export async function modeloDoCursoDoProjeto(projectId: string): Promise<string | null> {
@@ -95,30 +128,37 @@ export async function quemFalaNoProjeto(projectId: string): Promise<{ nome: stri
 
 /**
  * O VÍDEO COMPLETO NO MODELO DO CURSO (10/10/2026). Decisão do Bruno: o
- * completo do YouTube sai numa VERSÃO DEITADA (16:9) do modelo escolhido no
- * projeto, com o estilo do modelo e a cor da marca, como os cortes. Cada
- * modelo ganha a versão deitada à mão (worker/modelos/<id>-16x9, aula 9 do
- * curso); a lista abaixo diz quais já têm. O worker confere de novo pelo disco
- * (editar-no-modelo.mjs, modeloNoFormato) e o teste confere que cada versão
- * daqui existe lá.
+ * completo sai no modelo escolhido no projeto, com o estilo do modelo e a cor
+ * da marca, como os cortes, NO FORMATO DA GRAVAÇÃO:
+ *   - gravação deitada: a VERSÃO DEITADA (16:9) do modelo (worker/modelos/
+ *     <id>-16x9, feita à mão como na aula 9 do curso; o Aula e o Canal já
+ *     nascem assim);
+ *   - gravação em pé: o próprio modelo vertical (9:16), ou a versão <id>-9x16
+ *     do Aula e do Canal, com o plano em blocos e o render em partes do completo
+ *     deitado.
+ * versoes.json (VERSOES_DOS_MODELOS, gerado do disco) diz quais versões já há.
  *
  * A trava é COMPLETO_PELO_MODELO=1 (desligada por padrão). Sem ela, sem modelo
- * no projeto, sem versão deitada, com a gravação em pé ou depois de o caminho
- * do curso desistir neste completo, vale o editor de sempre (a reserva).
+ * no projeto, sem a versão no formato da gravação ou depois de o caminho do
+ * curso desistir neste completo, vale o editor de sempre (a reserva).
  */
-export const VERSOES_DEITADAS: Readonly<Record<string, string>> = { "modelo-manifesto": "modelo-manifesto-16x9" };
-
 export function versaoDeitadaDoModelo(id: string | null | undefined): string | null {
-  return id ? (VERSOES_DEITADAS[id] ?? null) : null;
+  return versaoNoFormato(id, "16:9");
 }
 
 export function completoPeloModeloLigado(): boolean {
   return process.env.COMPLETO_PELO_MODELO === "1";
 }
 
-export type CaminhoDoCompleto = { caminho: "curso"; modelo: string; versao: string } | { caminho: "reserva"; motivo: string };
+export type CaminhoDoCompleto = { caminho: "curso"; modelo: string; versao: string; formato: FormatoDoModelo } | { caminho: "reserva"; motivo: string };
 
-/** Curso ou reserva para o completo. Puro: a trava, o modelo do projeto, a desistência anterior e o quadro da gravação (quando já se sabe). */
+/**
+ * Curso ou reserva para o completo. Puro: a trava, o modelo do projeto, a
+ * desistência anterior e o quadro da gravação (quando já se sabe). Em pé vai no
+ * 9:16 do modelo, deitada no 16:9. Sem a medida do quadro, vale a deitada
+ * quando o modelo tem (senão a em pé); o pedido vai com `formatoPelaGravacao` e
+ * o worker, que mede a gravação, troca para a versão do formato dela.
+ */
 export function caminhoDoCompleto(p: {
   ligado: boolean;
   modelo: string | null | undefined;
@@ -128,10 +168,16 @@ export function caminhoDoCompleto(p: {
   if (!p.ligado) return { caminho: "reserva", motivo: "a trava COMPLETO_PELO_MODELO está desligada" };
   if (!p.modelo) return { caminho: "reserva", motivo: "o projeto não tem modelo do curso" };
   if (p.desistiu) return { caminho: "reserva", motivo: `o modelo do curso desistiu deste completo: ${p.desistiu}` };
-  const versao = versaoDeitadaDoModelo(p.modelo);
-  if (!versao) return { caminho: "reserva", motivo: `o modelo ${p.modelo} ainda não tem a versão deitada (16:9)` };
-  if (p.quadro && p.quadro.altura > p.quadro.largura) return { caminho: "reserva", motivo: "a gravação é em pé: a versão deitada não serve" };
-  return { caminho: "curso", modelo: p.modelo, versao };
+  const emPe = p.quadro && p.quadro.largura > 0 && p.quadro.altura > 0 ? p.quadro.altura > p.quadro.largura : null;
+  const formato: FormatoDoModelo = emPe === null ? (versaoNoFormato(p.modelo, "16:9") ? "16:9" : "9:16") : emPe ? "9:16" : "16:9";
+  const versao = versaoNoFormato(p.modelo, formato);
+  if (!versao) {
+    return {
+      caminho: "reserva",
+      motivo: emPe ? `a gravação é em pé e o modelo ${p.modelo} ainda não tem a versão em pé (9:16)` : `o modelo ${p.modelo} ainda não tem a versão deitada (16:9)`,
+    };
+  }
+  return { caminho: "curso", modelo: p.modelo, versao, formato };
 }
 
 /**

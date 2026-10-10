@@ -204,8 +204,11 @@ for (const id of modelos) {
 }
 
 // O índice e o catálogo saem do que está em worker/modelos (vale também com --so-catalogo).
+// As versões em outro formato (<id>-16x9, <id>-9x16) não são modelos novos: ficam fora do
+// catálogo e entram em versoes.json (versoes.mjs, no fim).
+const { ehVersao, gravarVersoes } = await import("./versoes.mjs");
 const resumo = [];
-for (const id of readdirSync(AQUI).filter((n) => n.startsWith("modelo-")).sort()) {
+for (const id of readdirSync(AQUI).filter((n) => n.startsWith("modelo-") && !ehVersao(n)).sort()) {
   const destino = path.join(AQUI, id);
   const t = path.join(destino, "template");
   const r = path.join(destino, "referencias");
@@ -247,7 +250,8 @@ for (const id of readdirSync(AQUI).filter((n) => n.startsWith("modelo-")).sort()
 writeFileSync(path.join(AQUI, "indice.json"), JSON.stringify(resumo, null, 2) + "\n");
 // O catálogo que o app lê (a tela de estilo e a recomendação pelo perfil): o
 // app na Vercel não enxerga a pasta do worker.
-const paraOApp = resumo.map(({ id, nome, descricao, formato, assinatura, pede, automatico }) => ({ id, nome, descricao, formato, assinatura, pede, automatico }));
+// `three` (10/10): o grupo "3D e efeitos" da grade de escolha sai daqui, sem lista fixa de 3D no app.
+const paraOApp = resumo.map(({ id, nome, descricao, formato, assinatura, pede, automatico, three }) => ({ id, nome, descricao, formato, assinatura, pede, automatico, three }));
 const destinoApp = path.join(AQUI, "..", "..", "lib", "media", "editor-do-curso", "catalogo.json");
 mkdirSync(path.dirname(destinoApp), { recursive: true });
 writeFileSync(destinoApp, JSON.stringify(paraOApp, null, 2) + "\n");
@@ -334,3 +338,10 @@ writeFileSync(path.join(path.dirname(destinoApp), "estilos.json"), JSON.stringif
 console.log(`estilos das peças: ${Object.keys(estilos).length} (sem cor: ${Object.values(estilos).filter((x) => !x.cores.length).length}, sem fonte: ${Object.values(estilos).filter((x) => !x.fontes.length).length})`);
 console.log(`\n${resumo.length} modelo(s) em ${AQUI}; índice em indice.json; catálogo do app em ${destinoApp}`);
 console.log(`automáticos: ${resumo.filter((m) => m.automatico).length} (9:16: ${resumo.filter((m) => m.automatico && m.formato === "9:16").length})`);
+
+// AS VERSÕES POR FORMATO (10/10, versoes.mjs): o app lê lib/media/editor-do-curso/versoes.json.
+{
+  const v = gravarVersoes();
+  for (const a of v.avisos) console.warn(`aviso: ${a}`);
+  console.log(`versões: ${v.modelos} modelo(s), ${v.nosDois} nos dois formatos (${v.deitados} com 16:9, ${v.emPe} com 9:16) em ${v.destino}`);
+}

@@ -452,3 +452,75 @@ test("agregarMotivos: por categoria (mais frequente primeiro) e por semana (a ú
   assert.match(a.porSemana[1].dica, /^semana de 02\/10 a 08\/10$/);
   for (const s of a.porSemana) assert.ok(!TRAVESSAO.test(s.dica));
 });
+
+// ─── a peça de vídeo (10/10): o corte e o completo, do editor de antes ou do modelo do curso ───
+
+test("a conta da peça de vídeo: a parte da edição, com teto na peça (todas as redes) e no vídeo", async () => {
+  const { contaDaPecaDeVideo, alvoDaPecaDeVideo } = await import("@/lib/credits/reprovacao-servidor");
+  const { creditosDaParteNaoEntregue } = await import("@/lib/credits/estorno-da-edicao");
+  // a parte do corte é a montagem dele, a mesma da edição não entregue
+  const parteDoCorte = creditosDaParteNaoEntregue({ alvo: 0, duracaoSeg: 600, precoAntigo: false, comAbertura: false });
+  assert.equal(parteDoCorte, 200);
+  const nada = { estornadoNoVideo: 0, estornadoNaPeca: 0, devolvidoNoVideo: 0, devolvidoNaPeca: 0 };
+  const devolver = (c: { custo: number; cobrado: number; jaDevolvido: number }) => creditosADevolver({ custoDaPeca: c.custo, cobradoNaCampanha: c.cobrado, jaDevolvidoNaCampanha: c.jaDevolvido });
+  assert.equal(devolver(contaDaPecaDeVideo({ parte: parteDoCorte, cobradoNoVideo: 1000, ...nada })), 200);
+  // o mesmo corte reprovado em outra rede: o que já voltou dele zera a peça
+  assert.equal(devolver(contaDaPecaDeVideo({ parte: parteDoCorte, cobradoNoVideo: 1000, ...nada, devolvidoNoVideo: 200, devolvidoNaPeca: 200 })), 0);
+  // a montagem que já voltou por não ter sido entregue não volta de novo
+  assert.equal(contaDaPecaDeVideo({ parte: parteDoCorte, cobradoNoVideo: 1000, ...nada, estornadoNoVideo: 200, estornadoNaPeca: 200 }).custo, 0);
+  // o teto do vídeo: nunca mais do que a aprovação cobrou menos o que já voltou dele
+  assert.equal(devolver(contaDaPecaDeVideo({ parte: parteDoCorte, cobradoNoVideo: 500, ...nada, estornadoNoVideo: 200, devolvidoNoVideo: 220 })), 80);
+  // vídeo não cobrado (conta interna): nada volta
+  assert.equal(devolver(contaDaPecaDeVideo({ parte: parteDoCorte, cobradoNoVideo: 0, ...nada })), 0);
+  // de quem é a peça
+  assert.deepEqual(alvoDaPecaDeVideo({ videoJobId: "v1", trechoIndice: 2 }), { videoId: "v1", alvo: 2, chave: "corte:v1:2" });
+  assert.deepEqual(alvoDaPecaDeVideo({ videoJobId: "v1", gravacaoCompleta: true }), { videoId: "v1", alvo: "completo", chave: "completo:v1" });
+  assert.equal(alvoDaPecaDeVideo({ frase: "texto do dia" }), null);
+});
+
+test("corte com texto cortado: confirmado pelo código devolve a montagem; sem prova vai ao admin, que devolve", async () => {
+  const pecaDoCorte = { mediaType: "video", imageUrl: "https://blob/cortes/v1/curso-0.mp4", metadata: { videoJobId: "v1", trechoIndice: 0 } };
+  const comConta = (b: ReturnType<typeof depositoEmMemoria>) => {
+    b.dep.contaDoVideo = async (p) => {
+      if (!(p.metadata as { videoJobId?: string } | null)?.videoJobId) return null;
+      const devolvido = b.extrato.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
+      return { custo: Math.max(0, 200 - devolvido), cobrado: 1000, jaDevolvido: devolvido };
+    };
+    // a conta da campanha não vale para a peça de vídeo
+    b.dep.cobradoDaPeca = async () => {
+      throw new Error("a peça de vídeo não usa a conta da campanha");
+    };
+  };
+  // 1. a margem medida acusa o texto cortado: devolve na hora
+  const a = depositoEmMemoria({ saldo: 0, peca: pecaDoCorte, provas: provasLimpas({ tipoDePeca: "video", arte: { ...provasLimpas().arte!, margem: { cortado: true, resumo: "legenda cortada na borda" } } }) });
+  comConta(a);
+  const r = await reprovarPeca({ postId: "post1", userId: "dono", categoria: "texto_ilegivel", texto: "a palavra saiu cortada" }, a.dep);
+  assert.ok(r.ok);
+  assert.equal(r.estado.situacao, "devolvido");
+  assert.equal(r.estado.creditos, 200);
+  assert.equal(a.saldo(), 200);
+  assert.equal([...a.motivos.values()][0].custoDaPeca, 200, "o custo da peça é a montagem do corte, não o texto do post");
+  // a mesma peça de novo (outra rede, outra ocorrência): já voltou, não volta de novo
+  const r2 = await reprovarPeca({ postId: "post1", userId: "dono", categoria: "texto_ilegivel", texto: "de novo" }, a.dep);
+  assert.ok(r2.ok);
+  assert.equal(r2.estado.creditos, 0);
+  assert.equal(a.saldo(), 200);
+  // 2. sem medida no vídeo: vai ao admin; o admin vê o erro e devolve a montagem
+  const b = depositoEmMemoria({ saldo: 0, peca: pecaDoCorte, provas: provasLimpas({ tipoDePeca: "video", arte: { existe: true, formato: null, margem: null, olho: null, textoEsperado: [] } }) });
+  comConta(b);
+  const e = await reprovarPeca({ postId: "post1", userId: "dono", categoria: "texto_ilegivel", texto: "a palavra saiu cortada" }, b.dep);
+  assert.ok(e.ok);
+  assert.equal(e.estado.situacao, "em_analise");
+  assert.equal(b.saldo(), 0);
+  const d = await decidirReprovacaoPeloAdmin({ admin: { id: "adm", email: "bruno@demandou.com" }, id: e.estado.id, decisao: "devolver", motivo: "a legenda saiu cortada" }, b.dep);
+  assert.ok(d.ok);
+  assert.equal(d.estado.situacao, "devolvido");
+  assert.equal(d.estado.creditos, 200);
+  assert.equal(b.saldo(), 200);
+});
+
+test("a fila do admin mostra o vídeo da peça de vídeo", async () => {
+  const { readFileSync } = await import("node:fs");
+  const pagina = readFileSync(new URL("../../app/(app)/admin/reprovacoes/page.tsx", import.meta.url), "utf8");
+  assert.match(pagina, /m\.peca\.mediaType === "video" \?[\s\S]{0,200}<video src=\{m\.peca\.imageUrl\} controls/);
+});

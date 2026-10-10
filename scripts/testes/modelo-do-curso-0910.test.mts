@@ -8,8 +8,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-const { modelosDaBiblioteca, resumoDoModelo, descricaoParaDecidir, faltaDoModelo, modelosQueServem } = await import("@/lib/media/editor-do-curso/biblioteca");
-const { MODELOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/no-corte");
+const { modelosDaBiblioteca, resumoDoModelo, descricaoParaDecidir, faltaDoModelo, modelosQueServem, ordemDaGrade, AVANCADOS_DO_CURSO, EM_DESTAQUE } = await import("@/lib/media/editor-do-curso/biblioteca");
+const { MODELOS_DO_CURSO, VERSOES_DOS_MODELOS, modeloServeNoCorte, versaoNoFormato } = await import("@/lib/media/editor-do-curso/no-corte");
 const { chaveDaOpcao, visualSemNome, lerEscolha, hashDaRecomendacao, limparMotivo, motivoEmCodigo, perguntasDoJev, temPerfilParaRecomendar, estadoDoJev, CONFIANCA_MINIMA } = await import(
   "@/lib/media/editor-do-curso/recomendacao"
 );
@@ -18,16 +18,119 @@ const raiz = new URL("../../", import.meta.url);
 const ler = (f: string) => readFileSync(new URL(f, raiz), "utf8").replace(/\r\n/g, "\n");
 const TRAVESSAO = /[—–]/;
 
-test("os cartões são os 79 do catálogo, e serve é o que o catálogo marca como automático e vertical", () => {
+test("os cartões são os 79 do catálogo, e serve é o que o catálogo marca como automático e tem a versão vertical", () => {
   const cartoes = modelosDaBiblioteca();
   assert.equal(cartoes.length, MODELOS_DO_CURSO.length);
   for (const c of cartoes) {
     const m = MODELOS_DO_CURSO.find((x) => x.id === c.id)!;
-    assert.equal(c.serve, m.automatico && m.formato === "9:16", c.id);
+    assert.equal(c.serve, m.automatico && Boolean(versaoNoFormato(m.id, "9:16")), c.id);
+    if (m.formato === "9:16") assert.equal(c.serve, m.automatico, c.id);
     assert.equal(c.falta === null, c.serve, `${c.id}: só o que não serve diz o que falta`);
     if (c.falta) assert.match(c.falta, /^Em breve/);
   }
   assert.equal(modelosQueServem().length, cartoes.filter((c) => c.serve).length);
+});
+
+test("o Aula e o Canal (nascem 16:9) entram no corte quando a versão 9:16 está no versoes.json, e só então", () => {
+  for (const id of ["modelo-aula", "modelo-canal"]) {
+    const m = MODELOS_DO_CURSO.find((x) => x.id === id)!;
+    assert.equal(m.formato, "16:9");
+    const lista = VERSOES_DOS_MODELOS as Record<string, Record<string, string>>;
+    const antes = { ...lista[id] };
+    try {
+      delete lista[id]["9:16"];
+      assert.equal(modeloServeNoCorte(id), null, `${id} sem a versão em pé não serve no corte`);
+      assert.match(modelosDaBiblioteca().find((c) => c.id === id)!.falta ?? "", /deitado \(16:9\)/);
+      lista[id]["9:16"] = `${id}-9x16`;
+      assert.equal(modeloServeNoCorte(id)?.id, m.automatico ? id : undefined);
+      assert.equal(versaoNoFormato(id, "9:16"), `${id}-9x16`);
+      assert.equal(versaoNoFormato(id, "16:9"), id);
+      if (m.automatico) {
+        assert.equal(modelosDaBiblioteca().find((c) => c.id === id)?.serve, true);
+        assert.ok(modelosQueServem().some((x) => x.id === id), "entra nas opções da recomendação");
+      }
+    } finally {
+      lista[id] = antes;
+    }
+  }
+});
+
+test("a grade: 3D e efeitos primeiro, depois em destaque, depois todos os outros, cada modelo uma vez", () => {
+  const indice = JSON.parse(ler("worker/modelos/indice.json")) as Array<{ id: string; three: boolean }>;
+  const tresD = indice.filter((m) => m.three).map((m) => m.id);
+  assert.deepEqual(tresD, ["modelo-anatomia", "modelo-medida", "modelo-orbita", "modelo-torre"]);
+  for (const m of MODELOS_DO_CURSO) assert.equal(Boolean(m.three), tresD.includes(m.id), `${m.id}: o three do catálogo é o do índice`);
+  const ordem = ordemDaGrade();
+  assert.equal(ordem.length, MODELOS_DO_CURSO.length);
+  assert.equal(new Set(ordem.map((o) => o.id)).size, ordem.length, "cada modelo uma vez");
+  const grupos = ordem.map((o) => o.grupo);
+  assert.deepEqual([...new Set(grupos)], ["3d-e-efeitos", "destaque", "todos"], "os grupos em ordem, sem voltar");
+  assert.deepEqual(ordem.filter((o) => o.grupo === "3d-e-efeitos").map((o) => o.id), tresD);
+  assert.deepEqual(
+    ordem.filter((o) => o.grupo === "destaque").map((o) => o.id),
+    EM_DESTAQUE.filter((id) => !tresD.includes(id))
+  );
+  assert.deepEqual(ordem.filter((o) => o.grupo === "destaque").map((o) => o.id), ["modelo-manifesto", "modelo-viral", "modelo-lousa", "modelo-painel"]);
+  const todos = ordem.filter((o) => o.grupo === "todos").map((o) => o.id);
+  assert.deepEqual(todos, MODELOS_DO_CURSO.map((m) => m.id).filter((id) => !tresD.includes(id) && !EM_DESTAQUE.includes(id)), "os outros na ordem do catálogo");
+  // os cartões saem na ordem da grade, com o grupo; a recomendação segue na ordem do catálogo
+  assert.deepEqual(modelosDaBiblioteca().map((c) => [c.id, c.grupo]), ordem.map((o) => [o.id, o.grupo]));
+  assert.deepEqual(modelosQueServem().map((m) => m.id), MODELOS_DO_CURSO.filter((m) => modeloServeNoCorte(m.id)).map((m) => m.id));
+  // os já provados e os 3D servem no corte (liberados, sem "em breve")
+  for (const id of [...tresD, ...EM_DESTAQUE]) assert.ok(modeloServeNoCorte(id), id);
+});
+
+test("as três opções avançadas entram no grupo 3D e efeitos pelo id, depois dos 3D, só quando existem", () => {
+  assert.deepEqual(AVANCADOS_DO_CURSO.map((a) => a.aula), ["8.1", "8.2", "6"]);
+  for (const a of AVANCADOS_DO_CURSO) assert.doesNotMatch(a.oQue, /[—–]/);
+  const catalogo = [
+    { id: "modelo-a" },
+    { id: "modelo-3d", three: true },
+    { id: "modelo-viral" },
+    { id: "modelo-maquete" },
+    { id: "modelo-lettering" },
+    { id: "modelo-graficos" },
+  ];
+  const vagas = AVANCADOS_DO_CURSO as unknown as Array<{ id: string | null }>;
+  const antes = vagas.map((v) => v.id);
+  try {
+    // sem id preenchido, nenhuma entra
+    vagas.forEach((v) => (v.id = null));
+    assert.deepEqual(ordemDaGrade(catalogo).filter((o) => o.grupo === "3d-e-efeitos").map((o) => o.id), ["modelo-3d"]);
+    vagas[0].id = "modelo-maquete";
+    vagas[1].id = "modelo-lettering";
+    vagas[2].id = "modelo-graficos";
+    assert.deepEqual(ordemDaGrade(catalogo).map((o) => [o.id, o.grupo]), [
+      ["modelo-3d", "3d-e-efeitos"],
+      ["modelo-maquete", "3d-e-efeitos"],
+      ["modelo-lettering", "3d-e-efeitos"],
+      ["modelo-graficos", "3d-e-efeitos"],
+      ["modelo-viral", "destaque"],
+      ["modelo-a", "todos"],
+    ]);
+    // id que ainda não está no catálogo não aparece
+    vagas[1].id = "modelo-que-ainda-nao-existe";
+    assert.ok(!ordemDaGrade(catalogo).some((o) => o.id === "modelo-que-ainda-nao-existe"));
+  } finally {
+    vagas.forEach((v, i) => (v.id = antes[i]));
+  }
+});
+
+test("a tela desenha os grupos na ordem e só importa tipos da biblioteca (nada do servidor no navegador)", () => {
+  const tela = ler("components/video/modelos-do-curso.tsx");
+  assert.match(tela, /const GRUPOS: GrupoNaGrade\[\] = \["3d-e-efeitos", "destaque", "todos"\]/);
+  assert.match(tela, /"3d-e-efeitos": "3D e efeitos"/);
+  assert.match(tela, /destaque: "Em destaque"/);
+  assert.match(tela, /Prontos para os seus cortes/);
+  for (const linha of tela.split("\n").filter((l) => /from "@\/lib\//.test(l))) {
+    if (/editor-do-curso/.test(linha)) assert.match(linha, /^import type /, linha);
+  }
+});
+
+test("o pedido do corte ao worker vai sempre no formato vertical", () => {
+  const src = ler("lib/media/montagem-nos-cortes.ts");
+  const envio = src.slice(src.indexOf("async function enviarAoModeloDoCurso"), src.indexOf("async function desistirDoModeloDoCurso"));
+  assert.match(envio, /formato: "9:16"/);
 });
 
 test("modelo que o catálogo passa a marcar como automático sobe para a grade sem mudar código", () => {

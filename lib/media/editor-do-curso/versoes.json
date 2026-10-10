@@ -1,0 +1,240 @@
+{
+  "modelo-agenda": {
+    "9:16": "modelo-agenda"
+  },
+  "modelo-anatomia": {
+    "9:16": "modelo-anatomia"
+  },
+  "modelo-ao-pe-da-letra": {
+    "9:16": "modelo-ao-pe-da-letra"
+  },
+  "modelo-arquivo": {
+    "9:16": "modelo-arquivo"
+  },
+  "modelo-aula": {
+    "16:9": "modelo-aula"
+  },
+  "modelo-autoridade": {
+    "9:16": "modelo-autoridade"
+  },
+  "modelo-balcao": {
+    "9:16": "modelo-balcao"
+  },
+  "modelo-brilho": {
+    "9:16": "modelo-brilho"
+  },
+  "modelo-campo": {
+    "9:16": "modelo-campo"
+  },
+  "modelo-canal": {
+    "16:9": "modelo-canal"
+  },
+  "modelo-carrossel": {
+    "9:16": "modelo-carrossel"
+  },
+  "modelo-case": {
+    "9:16": "modelo-case"
+  },
+  "modelo-chave": {
+    "9:16": "modelo-chave"
+  },
+  "modelo-cifra": {
+    "9:16": "modelo-cifra"
+  },
+  "modelo-cinema": {
+    "9:16": "modelo-cinema"
+  },
+  "modelo-clinico": {
+    "9:16": "modelo-clinico"
+  },
+  "modelo-constelacao": {
+    "9:16": "modelo-constelacao"
+  },
+  "modelo-conversa": {
+    "9:16": "modelo-conversa"
+  },
+  "modelo-convite": {
+    "9:16": "modelo-convite"
+  },
+  "modelo-criativo": {
+    "9:16": "modelo-criativo"
+  },
+  "modelo-curriculo": {
+    "9:16": "modelo-curriculo"
+  },
+  "modelo-demo": {
+    "9:16": "modelo-demo"
+  },
+  "modelo-devocional": {
+    "9:16": "modelo-devocional"
+  },
+  "modelo-dicionario": {
+    "9:16": "modelo-dicionario"
+  },
+  "modelo-dossie": {
+    "9:16": "modelo-dossie"
+  },
+  "modelo-espelho": {
+    "9:16": "modelo-espelho"
+  },
+  "modelo-estudio": {
+    "9:16": "modelo-estudio"
+  },
+  "modelo-etapas": {
+    "9:16": "modelo-etapas"
+  },
+  "modelo-etiqueta": {
+    "9:16": "modelo-etiqueta"
+  },
+  "modelo-extrato": {
+    "9:16": "modelo-extrato"
+  },
+  "modelo-figurinha": {
+    "9:16": "modelo-figurinha"
+  },
+  "modelo-funil": {
+    "9:16": "modelo-funil"
+  },
+  "modelo-guia": {
+    "9:16": "modelo-guia"
+  },
+  "modelo-herbario": {
+    "9:16": "modelo-herbario"
+  },
+  "modelo-iceberg": {
+    "9:16": "modelo-iceberg"
+  },
+  "modelo-ignicao": {
+    "9:16": "modelo-ignicao"
+  },
+  "modelo-impacto": {
+    "9:16": "modelo-impacto"
+  },
+  "modelo-janelas": {
+    "9:16": "modelo-janelas"
+  },
+  "modelo-kit": {
+    "9:16": "modelo-kit"
+  },
+  "modelo-laboratorio": {
+    "9:16": "modelo-laboratorio"
+  },
+  "modelo-lookbook": {
+    "9:16": "modelo-lookbook"
+  },
+  "modelo-lousa": {
+    "9:16": "modelo-lousa"
+  },
+  "modelo-manchete": {
+    "9:16": "modelo-manchete"
+  },
+  "modelo-manifesto": {
+    "9:16": "modelo-manifesto",
+    "16:9": "modelo-manifesto-16x9"
+  },
+  "modelo-mapa": {
+    "9:16": "modelo-mapa"
+  },
+  "modelo-medida": {
+    "9:16": "modelo-medida"
+  },
+  "modelo-mosaico": {
+    "9:16": "modelo-mosaico"
+  },
+  "modelo-multicamera": {
+    "9:16": "modelo-multicamera"
+  },
+  "modelo-narrador": {
+    "9:16": "modelo-narrador"
+  },
+  "modelo-niveis": {
+    "9:16": "modelo-niveis"
+  },
+  "modelo-oferta": {
+    "9:16": "modelo-oferta"
+  },
+  "modelo-orbita": {
+    "9:16": "modelo-orbita"
+  },
+  "modelo-painel": {
+    "9:16": "modelo-painel"
+  },
+  "modelo-palco": {
+    "9:16": "modelo-palco"
+  },
+  "modelo-planilha": {
+    "9:16": "modelo-planilha"
+  },
+  "modelo-planta": {
+    "9:16": "modelo-planta"
+  },
+  "modelo-plantao": {
+    "9:16": "modelo-plantao"
+  },
+  "modelo-prompt": {
+    "9:16": "modelo-prompt"
+  },
+  "modelo-pronuncia": {
+    "9:16": "modelo-pronuncia"
+  },
+  "modelo-pulso": {
+    "9:16": "modelo-pulso"
+  },
+  "modelo-quiz": {
+    "9:16": "modelo-quiz"
+  },
+  "modelo-raiox": {
+    "9:16": "modelo-raiox"
+  },
+  "modelo-ranking": {
+    "9:16": "modelo-ranking"
+  },
+  "modelo-reacao": {
+    "9:16": "modelo-reacao"
+  },
+  "modelo-receita": {
+    "9:16": "modelo-receita"
+  },
+  "modelo-respiro": {
+    "9:16": "modelo-respiro"
+  },
+  "modelo-roteiro": {
+    "9:16": "modelo-roteiro"
+  },
+  "modelo-rotulo": {
+    "9:16": "modelo-rotulo"
+  },
+  "modelo-tatica": {
+    "9:16": "modelo-tatica"
+  },
+  "modelo-tela-viva": {
+    "9:16": "modelo-tela-viva"
+  },
+  "modelo-terco": {
+    "9:16": "modelo-terco"
+  },
+  "modelo-tese": {
+    "9:16": "modelo-tese"
+  },
+  "modelo-torre": {
+    "9:16": "modelo-torre"
+  },
+  "modelo-transformacao": {
+    "9:16": "modelo-transformacao"
+  },
+  "modelo-versus": {
+    "9:16": "modelo-versus"
+  },
+  "modelo-viral": {
+    "9:16": "modelo-viral"
+  },
+  "modelo-visor": {
+    "9:16": "modelo-visor"
+  },
+  "modelo-wireframe": {
+    "9:16": "modelo-wireframe"
+  },
+  "modelo-yap": {
+    "9:16": "modelo-yap"
+  }
+}
