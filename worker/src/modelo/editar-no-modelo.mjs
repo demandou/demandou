@@ -21,6 +21,15 @@ import {
   regraGeral,
   textoDaConferencia,
 } from "./blocos-do-plano.mjs";
+import {
+  baixarMaterial,
+  conferirMaterialNoPlano,
+  imagensSoDoCliente,
+  materialNoTemplate,
+  materialParaORedator,
+  pedidosFixosDoMaterial,
+  registrarMaterial,
+} from "./material-do-modelo.mjs";
 
 /**
  * O EDITOR DOS MODELOS DO CURSO (09/10/2026).
@@ -450,8 +459,10 @@ export async function stills(projeto, args = ["--momentos"]) {
  * `pedirPlano(corpo)` chama o app (a IA mora lá) e devolve { mapa, plano,
  * custoUsd, numerosSemLastro }. Volta reprovada leva ao app a saída do
  * conferir.mjs, como o curso manda; o teto de gasto para antes de passar.
+ * `pedido.material` (10/10, material-do-modelo.mjs): as fotos do cliente nos
+ * modelos que pedem material; `obterMaterial(url, destino)` baixa cada uma.
  */
-export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano, aoPasso = () => {}, obterTrilha = null }) {
+export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano, aoPasso = () => {}, obterTrilha = null, obterMaterial = null }) {
   // a versão no formato pedido (sem `formato`, o próprio modelo): falha antes de baixar nada
   const modelo = modeloNoFormato(pedido.modelo, pedido.formato);
   const tempos = {};
@@ -474,6 +485,15 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     const { aplicarCoresDaMarca } = await import("./cores-da-marca.mjs");
     const c = aplicarCoresDaMarca(projeto, pedido.cores);
     if (c.erro) console.warn(`[modelo] as cores da marca não entraram: ${c.erro}`);
+  }
+  // O MATERIAL DO CLIENTE (10/10, material-do-modelo.mjs): cada foto na pasta onde o template
+  // espera, em JPG e medida, antes do preparar (falha cedo, antes do que é caro). Modelo que pede
+  // material e veio sem ele falha aqui: nunca se inventa tela do produto do cliente.
+  const regraDoMaterial = materialNoTemplate(pedido.modelo);
+  let material = null;
+  if (regraDoMaterial?.pasta) {
+    material = await baixarMaterial(projeto, pedido.modelo, pedido.material, { baixar: obterMaterial });
+    marcar("material");
   }
   await preparar(projeto, trecho, alinhado.palavras);
   const tomadas = escolherTomadas(projeto);
@@ -499,6 +519,10 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     return r;
   };
   const comum = { modelo, referencias, nicho: pedido.nicho ?? null };
+  // O material como vai ao redator do mapa e do plano (só os pedidos de escrita o levam; a escolha
+  // das imagens e a revisão dos quadros não precisam dele).
+  let paraORedator = materialParaORedator(pedido.modelo, material);
+  const comMaterial = () => (paraORedator ? { material: paraORedator } : {});
 
   // O VÍDEO LONGO (10/10, o completo no modelo): o plano em blocos de ~150 s,
   // a conferência do plano inteiro com o conserto só dos blocos reprovados e a
@@ -508,7 +532,7 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   const emBlocos = pedido.blocos === true || (pedido.blocos !== false && duracaoCortada > LIMIAR_DOS_BLOCOS_SEG);
   if (emBlocos) {
     if (referencias.imagens) throw new Error(`o plano em blocos ainda não faz o passo das imagens (${modelo})`);
-    const r = await planoEmBlocos(projeto, { comum, pedido, pedir: (c) => pedirPlano(c).then(somar), gasto: () => gasto, teto, aoPasso });
+    const r = await planoEmBlocos(projeto, { comum: { ...comum, ...comMaterial() }, pedido, pedir: (c) => pedirPlano(c).then(somar), gasto: () => gasto, teto, aoPasso });
     marcar("plano");
     const render = await renderizarEmPartes(projeto, `${modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil(duracaoCortada / 60) * 25) * 60_000 });
     marcar("render");
@@ -536,23 +560,39 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   let mapaDasImagens = null;
   let creditos = null;
   if (referencias.imagens) {
-    const r = await passoDasImagens(projeto, { ...comum, esqueleto: esqueletoParaEscrever(lerPlano(projeto)) }, (c) => pedirPlano(c).then(somar));
+    // A Transformação entra aqui com as fotos do cliente (os dois pedidos e o --offline do passo 6b dela).
+    const r = await passoDasImagens(projeto, { ...comum, ...comMaterial(), esqueleto: esqueletoParaEscrever(lerPlano(projeto)) }, (c) => pedirPlano(c).then(somar), {
+      fixos: pedidosFixosDoMaterial(pedido.modelo, material),
+      offline: imagensSoDoCliente(pedido.modelo),
+    });
     mapaDasImagens = r.mapa;
     creditos = r.creditos;
     marcar("imagens");
   }
+  // Os prints do cliente no Etapas e no Guia: o capturar.mjs do curso registra em plano.imagens,
+  // DEPOIS do passo das imagens (o imagens.mjs refaz plano.imagens inteiro a cada escolha).
+  if (material && regraDoMaterial?.registro === "capturar") {
+    material = await registrarMaterial(projeto, pedido.modelo, material, rodarNoProjeto);
+    paraORedator = materialParaORedator(pedido.modelo, material);
+  }
 
   // PASSO 7: o plano, até o conferir.mjs, o gate de tempo e a guarda de número aprovarem.
   const esqueleto = esqueletoParaEscrever(lerPlano(projeto));
-  const escrever = (anterior) => pedirPlano({ ...comum, esqueleto, marca: pedido.marca, anterior, mapa: mapaDasImagens }).then(somar);
+  const escrever = (anterior) => pedirPlano({ ...comum, ...comMaterial(), esqueleto, marca: pedido.marca, anterior, mapa: mapaDasImagens }).then(somar);
   const conferirTudo = async (escrito) => {
     const conf = await conferir(projeto);
     const tempo = await gateDeTempo(projeto);
     const semLastro = escrito.numerosSemLastro ?? [];
+    // O plano só cita o material que existe e usa o do cliente (a regra "usar só esses", 10/10).
+    const doMaterial = material ? conferirMaterialNoPlano(pedido.modelo, escrito.plano, material, lerPlano(projeto).imagens) : [];
     return {
-      aprovado: conf.aprovado && tempo.ok && semLastro.length === 0,
-      registro: { conferir: conf.aprovado, tempo: tempo.ok, semLastro },
-      anterior: { plano: escrito.plano, saidas: [conf.saida, ...tempo.resultados.filter((g) => !g.ok).map((g) => `${g.ferramenta}:\n${g.saida}`)], numerosSemLastro: semLastro },
+      aprovado: conf.aprovado && tempo.ok && semLastro.length === 0 && doMaterial.length === 0,
+      registro: { conferir: conf.aprovado, tempo: tempo.ok, semLastro, ...(material ? { material: doMaterial } : {}) },
+      anterior: {
+        plano: escrito.plano,
+        saidas: [conf.saida, ...tempo.resultados.filter((g) => !g.ok).map((g) => `${g.ferramenta}:\n${g.saida}`), ...(doMaterial.length ? [doMaterial.join("\n")] : [])],
+        numerosSemLastro: semLastro,
+      },
     };
   };
   let anterior = null;
@@ -935,15 +975,23 @@ export async function folhasDosQuadros(projeto, quadros, { deslocamento = 0, pre
  * folha (uma nova busca permitida por pedido) e o script grava a escolha, o
  * foco, o crédito e o resumo em plano.imagens. Sem nenhum pedido, segue sem imagem.
  * Exportado para as peças paradas (arte-no-modelo.mjs), que passam pelo mesmo passo.
+ *
+ * O MATERIAL DO CLIENTE (10/10, material-do-modelo.mjs): `fixos` são pedidos da
+ * pasta imagens/ do cliente (com `arquivo`), que o imagens.mjs acha e já marca
+ * como escolhidos ("do aluno"): eles não passam pela escolha na folha.
+ * `offline` é o passo 6b da Transformação: só os pedidos fixos (as duas fotos)
+ * e o imagens.mjs sem internet.
  */
-export async function passoDasImagens(projeto, corpo, pedir) {
+export async function passoDasImagens(projeto, corpo, pedir, { fixos = [], offline = false } = {}) {
   const r = await pedir({ ...corpo, fase: "imagens" });
-  const pedidos = Array.isArray(r.imagens) ? r.imagens : [];
+  const doRedator = Array.isArray(r.imagens) ? r.imagens : [];
+  const idsFixos = new Set(fixos.map((p) => p.id));
+  const pedidos = offline ? [...fixos] : [...doRedator.filter((p) => !idsFixos.has(p.id)), ...fixos];
   if (!pedidos.length) return { mapa: r.mapa ?? null, creditos: null };
   const arquivo = join(projeto, "work", "imagens.json");
   writeFileSync(arquivo, JSON.stringify(pedidos, null, 2));
   const rodarImagens = async (args = []) => {
-    const x = await rodarNoProjeto(projeto, ["scripts/imagens.mjs", ...args], { prazoMs: 12 * 60_000 });
+    const x = await rodarNoProjeto(projeto, ["scripts/imagens.mjs", ...args, ...(offline ? ["--offline"] : [])], { prazoMs: 12 * 60_000 });
     if (x.codigo !== 0) throw falhou(`imagens.mjs ${args.join(" ")}`, x);
     return x.saida;
   };
@@ -954,7 +1002,8 @@ export async function passoDasImagens(projeto, corpo, pedir) {
       .filter((n) => /^imagens(-\d+)?\.jpg$/.test(n))
       .sort((a, b) => (Number(a.match(/-(\d+)/)?.[1] ?? 1) - Number(b.match(/-(\d+)/)?.[1] ?? 1)))
       .map((n) => readFileSync(join(projeto, "work", n)).toString("base64"));
-    const estado = JSON.parse(readFileSync(arquivo, "utf8")).filter((p) => !escolhidos.has(p.id));
+    // O arquivo do cliente (pasta imagens/) já entra escolhido pelo imagens.mjs: não volta à escolha.
+    const estado = JSON.parse(readFileSync(arquivo, "utf8")).filter((p) => !escolhidos.has(p.id) && p.escolha?.licenca !== "do aluno");
     if (!estado.length || !folhas.length) break;
     const e = await pedir({ ...corpo, fase: "escolher", pedidos: estado, folhas });
     const refazer = [];

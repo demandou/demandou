@@ -2531,6 +2531,11 @@ const servidor = createServer((req, res) => {
             await baixarQualquer(url, destino);
             return destino;
           },
+          // O material do cliente (10/10): as fotos da Biblioteca, no store privado.
+          obterMaterial: async (url, destino) => {
+            await baixarQualquer(url, destino);
+            return destino;
+          },
           pedirPlano,
           aoPasso: (passo) => console.log(`[modelo ${pedido.chave}] ${passo}`),
         });

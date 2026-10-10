@@ -1,5 +1,6 @@
 import { askClaude, askClaudeComImagens } from "@/lib/claude";
 import { instrucaoDasPecasParadas, treinamentoDoModelo, type EsqueletoDoPlano, type PecasParadas, type ReferenciasDoModelo } from "@/lib/media/editor-do-curso/escrever-plano";
+import { imagensDoMaterial, instrucaoDoMaterial, type MaterialParaORedator } from "@/lib/media/editor-do-curso/material-do-modelo";
 
 /**
  * O PASSO 6b DOS MODELOS COM IMAGEM (09/10/2026): references/imagens.md do
@@ -67,6 +68,8 @@ export async function pedirImagensDoModelo(args: {
   nicho?: string | null;
   /** Os posts da campanha no estilo do modelo: no máximo uma imagem por peça, junto do texto dela. */
   pecasParadas?: PecasParadas | null;
+  /** O material do cliente (10/10, material-do-modelo.ts): entra por conta própria; o mapa diz onde, e não se pede imagem para o lugar dele. */
+  material?: MaterialParaORedator | null;
   modelo?: string;
   usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -76,7 +79,7 @@ export async function pedirImagensDoModelo(args: {
 ${args.nicho ? `Assunto do perfil (contexto, não é texto de tela): ${args.nicho}\n` : ""}
 Duração: ${esqueleto.duracao} s. A fala no vídeo já cortado (início–fim em segundos e a palavra):
 ${esqueleto.palavras.map((p) => `${p.em.toFixed(2)}–${p.ate.toFixed(2)} ${p.w}`).join("\n")}
-
+${args.material?.arquivos?.length ? `\n${instrucaoDoMaterial(args.material, "mapa")}\n- Estes arquivos entram no projeto por conta própria: não liste pedido de imagem para eles.\n` : ""}
 ${
     args.pecasParadas
       ? `${instrucaoDasPecasParadas(args.pecasParadas)}
@@ -92,9 +95,11 @@ Imagens no modo peças paradas: no máximo UMA imagem por peça, de uma coisa co
     usage: { projectId: args.usage.projectId ?? undefined, runId: args.usage.runId ?? undefined, operation: args.usage.operation },
     onCusto: args.onCusto,
   };
-  const resposta = referencias.quadros
-    ? await askClaudeComImagens(SISTEMA_DOS_PEDIDOS, pedido, [{ base64: referencias.quadros, rotulo: `references/exemplo/quadros.jpg do modelo ${referencias.id}: um quadro de cada momento do exemplo, com o bloco e a fala.` }], opcoes)
-    : await askClaude(SISTEMA_DOS_PEDIDOS, pedido, opcoes);
+  const anexos = [
+    ...(referencias.quadros ? [{ base64: referencias.quadros, rotulo: `references/exemplo/quadros.jpg do modelo ${referencias.id}: um quadro de cada momento do exemplo, com o bloco e a fala.` }] : []),
+    ...imagensDoMaterial(args.material),
+  ];
+  const resposta = anexos.length ? await askClaudeComImagens(SISTEMA_DOS_PEDIDOS, pedido, anexos, opcoes) : await askClaude(SISTEMA_DOS_PEDIDOS, pedido, opcoes);
   const r = lerJson<{ mapa?: string; imagens?: Array<Partial<PedidoDeImagem>> }>(resposta);
   const vistos = new Set<string>();
   const imagens: PedidoDeImagem[] = [];
