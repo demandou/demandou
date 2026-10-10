@@ -2372,6 +2372,10 @@ const servidor = createServer((req, res) => {
         };
         const e = await editarNoModelo(pedido, pasta, {
           obterOriginal,
+          obterTrilha: async (url, destino) => {
+            await baixarQualquer(url, destino);
+            return destino;
+          },
           pedirPlano,
           aoPasso: (passo) => console.log(`[modelo ${pedido.chave}] ${passo}`),
         });

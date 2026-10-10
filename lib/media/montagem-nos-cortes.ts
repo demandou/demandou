@@ -719,6 +719,8 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
       palavras: palavrasDoCurso(fala.palavras),
       marca: await quemFalaNoProjeto(video.projectId),
       nicho: video.project.niche,
+      // A trilha escolhida na jornada também no editor do curso (10/10): o worker mistura depois do render.
+      trilha: video.project.videoMusicUrl ? { url: video.project.videoMusicUrl, ...somDaTrilha(video) } : null,
       tetoUsd: tetoDoPlanoUsd(fala.duracao),
       voltas: 3,
       planoUrl: `${base}/api/editor-do-curso/plano`,

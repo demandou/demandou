@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
@@ -350,7 +350,7 @@ export async function stills(projeto, args = ["--momentos"]) {
  * custoUsd, numerosSemLastro }. Volta reprovada leva ao app a saída do
  * conferir.mjs, como o curso manda; o teto de gasto para antes de passar.
  */
-export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano, aoPasso = () => {} }) {
+export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano, aoPasso = () => {}, obterTrilha = null }) {
   const tempos = {};
   let t = Date.now();
   const marcar = (nome) => {
@@ -479,8 +479,28 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     marcar("revisao");
   }
 
-  const arquivo = await renderizar(projeto, `${pedido.modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil((analise.duracao || 60) / 60) * 25) * 60_000 });
+  let arquivo = await renderizar(projeto, `${pedido.modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil((analise.duracao || 60) / 60) * 25) * 60_000 });
   marcar("render");
+
+  // A TRILHA DO PROJETO (10/10, Bruno: "sumiu a parte de escolher a música"): o
+  // modelo renderiza a voz e os sons dele; a música escolhida entra por baixo,
+  // do mesmo jeito do editor de antes (sons.mjs, misturarAudio: no volume do
+  // estilo, abaixando sob a voz, com fade, em laço). Falhou, o vídeo sai sem
+  // ela, nunca deixa de sair.
+  if (pedido.trilha?.url && obterTrilha) {
+    try {
+      const ext = String(pedido.trilha.url).match(/\.[a-z0-9]{2,4}(?=\?|$)/i)?.[0] ?? ".mp3";
+      const trilha = await obterTrilha(pedido.trilha.url, join(pasta, `trilha${ext}`));
+      const { misturarAudio } = await import("../sons.mjs");
+      const duracao = Number(spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", arquivo], { encoding: "utf8" }).stdout.trim());
+      if (duracao > 0) {
+        arquivo = await misturarAudio(arquivo, { trilha: { arquivo: trilha, volume: pedido.trilha.volume, abaixar: pedido.trilha.abaixar } }, duracao, pasta, join(pasta, `${pedido.modelo}-com-trilha.mp4`));
+      }
+    } catch (e) {
+      avisos.push(`a trilha não entrou: ${e instanceof Error ? e.message.slice(0, 160) : e}`);
+    }
+    marcar("trilha");
+  }
   return { arquivo, mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
 }
 

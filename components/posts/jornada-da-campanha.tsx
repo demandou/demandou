@@ -536,14 +536,21 @@ export function JornadaDaCampanha({
                         >
                           <p className="text-[13px]" style={{ color: "var(--text-primary)" }}>
                             {modeloDoCurso ? (
+                              // UMA CAIXA SÓ (10/10, Bruno: "tem duas partes falando do estilo"): o modelo, a trilha e as peças juntos.
                               <>
-                                Editando no modelo <b className="font-semibold">{modeloDoCurso}</b>, o editor novo.
+                                Editando no modelo <b className="font-semibold">{modeloDoCurso}</b>, o editor novo
+                                {musica ? (
+                                  <>, com a trilha <b className="font-semibold">{nomeDaTrilha(musica)}</b></>
+                                ) : (
+                                  <>, sem trilha</>
+                                )}
+                                .{temPostsVisuais && modoDosPosts === "mestre" ? " As artes, os carrosséis e os vídeos curtos saem no mesmo estilo." : ""}
                               </>
                             ) : (
                               <>
                                 Editando no estilo <b className="font-semibold">{rotuloDoEstilo}</b>
                                 {musica ? (
-                                  <>, com a trilha <b className="font-semibold">{musica}</b></>
+                                  <>, com a trilha <b className="font-semibold">{nomeDaTrilha(musica)}</b></>
                                 ) : (
                                   <>, sem trilha</>
                                 )}
@@ -558,7 +565,7 @@ export function JornadaDaCampanha({
                         </div>
                       )}
                       {/* O que cada post vai usar (08/10), com o mesmo "Rever" do resumo. */}
-                      {temPostsVisuais && !semGravacao && modoDosPosts === "mestre" && (
+                      {temPostsVisuais && !semGravacao && modoDosPosts === "mestre" && !(modeloDoCurso && jaConfigurado) && (
                         <div
                           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3"
                           style={{ background: "var(--bg-input)", borderColor: "var(--border)" }}
@@ -640,4 +647,14 @@ export function JornadaDaCampanha({
       )}
     </AnimatePresence>
   );
+}
+
+/** O nome da trilha como gente lê: sem a extensão, sem o sufixo aleatório do armazenamento e sem sublinhado. */
+function nomeDaTrilha(arquivo: string): string {
+  const limpo = arquivo
+    .replace(/\.[a-z0-9]{2,4}$/i, "")
+    .replace(/-[A-Za-z0-9]{20,}$/, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  return limpo || arquivo;
 }
