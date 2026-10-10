@@ -24,6 +24,7 @@ import { ESTILOS, type NomeDoEstilo } from "@/lib/media/estilos";
 import { nomeDoEstiloDeLegenda, type EscolhaDaLegenda, type EstiloDeLegenda } from "@/lib/media/legenda-escolhida";
 import { EscolhaDaLegenda as EscolhaDaLegendaNaTela } from "@/components/video/escolha-da-legenda";
 import { PreviaDoEstiloDeVideo, temPreviaDeVideo } from "@/components/video/previa-do-estilo-de-video";
+import { ModelosDoCurso, RotuloDoEditorDeAntes } from "@/components/video/modelos-do-curso";
 
 /**
  * O MENU DE ESTILO EM CAMADAS (29/09/2026), no lugar dos quatro cartões.
@@ -76,6 +77,8 @@ export function CatalogoDeEstilos({
   const [legenda, setLegenda] = useState<{ escolha: EscolhaDaLegenda; automatica: EstiloDeLegenda | null } | null>(null);
   const [legendaAutomatica, setLegendaAutomatica] = useState<EstiloDeLegenda | null>(null);
   const aoMudarLegenda = useCallback((escolha: EscolhaDaLegenda, automatica: EstiloDeLegenda | null) => setLegenda({ escolha, automatica }), []);
+  // O editor novo (09/10): com um modelo do curso em uso, a linguagem daqui vira a reserva dos cortes.
+  const [modeloDoCurso, setModeloDoCurso] = useState<{ id: string; nome: string } | null>(null);
 
   useEffect(() => {
     let vivo = true;
@@ -246,6 +249,10 @@ export function CatalogoDeEstilos({
 
       {aba === "linguagem" && (
         <div className="space-y-5">
+          {/* O EDITOR NOVO (09/10): os modelos do curso, com a recomendação pelo perfil, antes de tudo. */}
+          <ModelosDoCurso projectId={projectId} aoMudar={setModeloDoCurso} />
+          <RotuloDoEditorDeAntes modelo={modeloDoCurso} oQue="a linguagem escolhida aqui embaixo" />
+
           {/* ESCREVER O PRÓPRIO ESTILO: o diretor lê, a tela mostra, o cliente confirma. */}
           <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}>
             <div className="mb-2 flex items-center gap-2">
@@ -436,6 +443,11 @@ export function CatalogoDeEstilos({
 
       {/* O RESUMO do que vale, e o que os cortes usam hoje. */}
       <div className="rounded-lg border px-3 py-2 text-xs" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
+        {modeloDoCurso && (
+          <>
+            Cortes verticais pelo editor novo, modelo <b style={{ color: "var(--text-primary)" }}>{modeloDoCurso.nome}</b>. De reserva:{" "}
+          </>
+        )}
         <b style={{ color: "var(--text-primary)" }}>{estilo?.nome}</b>
         {estilo?.referencia ? ` (${estilo.referencia})` : ""}
         {escolha.camera.length ? ` · Câmera: ${nomes(escolha.camera, MOVIMENTOS_DE_CAMERA)}` : ""}

@@ -17,6 +17,7 @@ import { comandoDoEstilo, miniaturasDosEstilos } from "@/lib/media/editor-por-co
 import { estiloDoCatalogo } from "@/lib/media/catalogo-de-estilos";
 import { EVENTO_DO_ESTILO_CONFIRMADO, type DetalheDoEstiloConfirmado } from "@/lib/estilo-proprio/tipos";
 import { PreviaDoEstiloDeVideo, temPreviaDeVideo } from "@/components/video/previa-do-estilo-de-video";
+import { ModelosDoCurso, RotuloDoEditorDeAntes } from "@/components/video/modelos-do-curso";
 
 /**
  * O COMANDO DO VÍDEO (05/10/2026): com o editor por comando ligado
@@ -52,6 +53,7 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
   const [escolhas, setEscolhas] = useState<EscolhasDoAjudante>({});
   const [gravando, setGravando] = useState(false);
   const [transcrevendo, setTranscrevendo] = useState(false);
+  const [modeloDoCurso, setModeloDoCurso] = useState<{ id: string; nome: string } | null>(null);
   const gravador = useRef<MediaRecorder | null>(null);
   const pedacos = useRef<Blob[]>([]);
 
@@ -211,6 +213,9 @@ export function ComandoDoVideo({ projectId, reserva }: { projectId: string; rese
 
   return (
     <div className="space-y-4">
+      {/* O EDITOR NOVO (09/10): os modelos do curso também aqui, porque com o comando ligado o catálogo não aparece. */}
+      <ModelosDoCurso projectId={projectId} aoMudar={setModeloDoCurso} reserva="o comando de edição mais abaixo" />
+      <RotuloDoEditorDeAntes modelo={modeloDoCurso} oQue="o comando escrito aqui embaixo" />
       <div className={cartao} style={estiloCartao}>
         <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
           Descreva o vídeo que você quer
