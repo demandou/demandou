@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { resolveSocialAccountAccessToken } from "@/lib/publish/oauth-post";
 import { chaveDoAvisoDeEstatisticas } from "@/lib/avisos/chaves";
 import { leituraLocalDeEstatisticas } from "@/lib/analytics/estatisticas-locais";
+import { ESCOPO_DE_ESTATISTICAS, escoposDoInstagram } from "@/lib/oauth/instagram";
 import {
   METRICAS_DA_MIDIA,
   METRICAS_DO_FACEBOOK,
@@ -382,12 +383,12 @@ async function lerGuardado(projectId: string, rede: string, platformUserId: stri
  * Registra as permissões que a Meta concedeu na conexão (o callback do
  * Instagram chama). Nunca lança: a conexão vale mais que este registro.
  */
-export async function registrarPermissoesDaConexao(conta: ContaParaLer, permissoes: string[] | null): Promise<void> {
+export async function registrarPermissoesDaConexao(conta: ContaParaLer, permissoes: string[] | null, pedidas?: string[]): Promise<void> {
   try {
     if (conta.platform !== "instagram" && conta.platform !== "facebook") return;
     const anterior = await lerGuardado(conta.projectId, conta.platform, conta.platformUserId);
     const registro: GuardadoDaConta = anterior
-      ? { ...anterior, permissoes: permissoes ? { lista: permissoes, em: new Date().toISOString() } : null }
+      ? { ...anterior, permissoes: permissoes ? { lista: permissoes, em: new Date().toISOString(), ...(pedidas ? { pedidas } : {}) } : null }
       : {
           versao: 1,
           rede: conta.platform as RedeDaConta,
@@ -395,7 +396,7 @@ export async function registrarPermissoesDaConexao(conta: ContaParaLer, permisso
           perfil: conta.username ? `@${conta.username.replace(/^@/, "")}` : null,
           conectadaEm: conta.createdAt.toISOString(),
           tentativa: null,
-          permissoes: permissoes ? { lista: permissoes, em: new Date().toISOString() } : null,
+          permissoes: permissoes ? { lista: permissoes, em: new Date().toISOString(), ...(pedidas ? { pedidas } : {}) } : null,
           ultima: null,
           antes: null,
           antesMotivo: null,
@@ -482,6 +483,8 @@ export async function estatisticasDoProjeto(projectId: string): Promise<Estatist
     prisma.projectMemory.findMany({ where: { projectId, type: TIPO_DA_MEMORIA }, select: { key: true, value: true } }).catch(() => []),
   ]);
   const porChave = new Map(memorias.map((m) => [m.key, m.value as unknown as GuardadoDaConta]));
+  // O login do Instagram pede hoje a leitura das estatísticas? Sem ela, reconectar não resolve (10/10).
+  const pedimosNoInstagram = escoposDoInstagram().split(",").includes(ESCOPO_DE_ESTATISTICAS);
   let simulacao = false;
   const lista: ContaNaTela[] = [];
   for (const c of contas) {
@@ -491,8 +494,8 @@ export async function estatisticasDoProjeto(projectId: string): Promise<Estatist
     const local = leituraLocalDeEstatisticas(projectId, chave);
     const g = local !== undefined ? local : porChave.get(chave) ?? null;
     if (g?.simulado) simulacao = true;
-    const estado = estadoNaTela(g);
-    const problema = problemaDaTentativa(g);
+    const estado = estadoNaTela(g, { pedimosNoInstagram });
+    const problema = problemaDaTentativa(g, { pedimosNoInstagram });
     const avisa = estado === "reconectar" || estado === "aguardando_meta" || estado === "erro" ? estado : problema;
     lista.push({
       contaId: c.id,

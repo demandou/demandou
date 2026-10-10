@@ -1,7 +1,7 @@
 import { lerVoltaDoOAuth, destinoDeSucesso, destinoDeErro } from "@/lib/oauth/volta-do-oauth";
 import { NextRequest, NextResponse } from "next/server";
 import { fotoPermanente } from "@/lib/social/foto-permanente";
-import { exchangeInstagramCode, getInstagramProfile } from "@/lib/oauth/instagram";
+import { exchangeInstagramCode, getInstagramProfile, INSTAGRAM_SCOPES } from "@/lib/oauth/instagram";
 import { prisma } from "@/lib/db/prisma";
 import { readotarPostsOrfaos } from "@/lib/publish/contas-orfas";
 import { registrarPermissoesDaConexao } from "@/lib/analytics/estatisticas-da-conta";
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     // AS PERMISSÕES CONCEDIDAS (09/10): é o que separa "reconecte para liberar
     // as estatísticas" de "a Meta ainda não liberou para o app". A primeira
     // leitura sai no cron seguinte (o token mudou). Nunca derruba a conexão.
-    await registrarPermissoesDaConexao(conta, tokens.permissoes);
+    await registrarPermissoesDaConexao(conta, tokens.permissoes, INSTAGRAM_SCOPES.split(","));
 
     const res = NextResponse.redirect(settingsUrl);
     res.cookies.delete("oauth_state");

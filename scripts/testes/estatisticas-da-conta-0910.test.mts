@@ -204,6 +204,19 @@ test("reconectou depois da recusa: espera a leitura com o token novo, sem convit
   assert.equal(estadoNaTela(g), "aguardando_leitura");
 });
 
+test("o login ainda não pede a leitura (10/10): aguardando a Meta, nunca reconectar, mesmo sem registro da conexão", () => {
+  assert.equal(estadoNaTela(guardado(), { pedimosNoInstagram: false }), "aguardando_meta");
+  // O token morto continua pedindo reconexão: aí reconectar resolve.
+  assert.equal(estadoNaTela(guardado({ tentativa: tentativa("token_invalido") }), { pedimosNoInstagram: false }), "reconectar");
+});
+
+test("a conexão é de quando a Demandou não pedia a leitura e agora pede: reconectar resolve", () => {
+  const g = guardado({ permissoes: { lista: ["instagram_business_basic"], em: "2026-10-09T15:00:00.000Z", pedidas: ["instagram_business_basic", "instagram_business_content_publish"] } });
+  assert.equal(estadoNaTela(g, { pedimosNoInstagram: true }), "reconectar");
+  const pediu = guardado({ permissoes: { lista: ["instagram_business_basic"], em: "2026-10-09T15:00:00.000Z", pedidas: ["instagram_business_basic", ESCOPO_DE_ESTATISTICAS] } });
+  assert.equal(estadoNaTela(pediu, { pedimosNoInstagram: true }), "aguardando_meta");
+});
+
 test("com leitura, a tela mostra número, e o problema da tentativa mais nova vem junto", () => {
   const g = guardado({ ultima: leitura(3759) });
   assert.equal(estadoNaTela(g), "numeros");

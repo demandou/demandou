@@ -134,7 +134,12 @@ export type GuardadoDaConta = {
    * a resposta trouxe a lista. É o que separa "reconecte" de "a Meta ainda
    * não liberou para o app": reconectar de novo não muda o segundo caso.
    */
-  permissoes?: { lista: string[]; em: string } | null;
+  /**
+   * As permissões que a Meta concedeu na conexão e, desde 10/10, as que a
+   * Demandou PEDIU nela (`pedidas`): separa "a conexão é de quando não
+   * pedíamos a leitura" de "pedimos e a Meta não concedeu".
+   */
+  permissoes?: { lista: string[]; em: string; pedidas?: string[] } | null;
   /** A última leitura que deu certo. Sobrevive às tentativas que falham depois. */
   ultima: LeituraDaConta | null;
   /** Os 30 dias antes da conexão, lidos uma vez. */
@@ -341,20 +346,32 @@ export const PERMISSAO_DO_INSTAGRAM = "instagram_business_manage_insights";
  */
 export type EstadoNaTela = "numeros" | "reconectar" | "aguardando_meta" | "aguardando_leitura" | "erro";
 
-export function estadoNaTela(g: Pick<GuardadoDaConta, "rede" | "tentativa" | "ultima" | "permissoes"> | null): EstadoNaTela {
+/**
+ * `pedimosNoInstagram`: o login do Instagram pede hoje a permissão das
+ * estatísticas? Desligada (INSTAGRAM_ESTATISTICAS_NO_LOGIN=0, enquanto a
+ * permissão não entra no caso de uso do app na Meta), reconectar não resolve
+ * nada, e a tela não pode mandar reconectar (o Bruno reconectou várias vezes
+ * em 10/10 e o aviso não mudava). Sem o valor, vale a regra de antes.
+ */
+export function estadoNaTela(g: Pick<GuardadoDaConta, "rede" | "tentativa" | "ultima" | "permissoes"> | null, o: { pedimosNoInstagram?: boolean } = {}): EstadoNaTela {
   if (!g) return "aguardando_leitura";
   if (g.ultima) return "numeros";
   if (!g.tentativa) return "aguardando_leitura";
   const e = g.tentativa.estado;
   if (e === "token_invalido") return "reconectar";
+  if (e === "sem_permissao" && g.rede === "instagram" && o.pedimosNoInstagram === false) return "aguardando_meta";
   if (e === "sem_permissao") {
     // A conexão mais nova que a tentativa já pediu a permissão: a leitura com o
     // token novo ainda vai sair. Até lá, nem convite nem número.
     if (g.permissoes && new Date(g.permissoes.em).getTime() > new Date(g.tentativa.em).getTime()) return "aguardando_leitura";
-    const pediu = g.rede === "instagram" && g.permissoes?.lista.includes(PERMISSAO_DO_INSTAGRAM);
-    // A conexão devolveu a lista e ela NÃO tem a permissão: a Meta não a
-    // concedeu ao app. Reconectar de novo dá no mesmo.
-    if (g.rede === "instagram" && g.permissoes && !pediu) return "aguardando_meta";
+    const concedida = g.rede === "instagram" && g.permissoes?.lista.includes(PERMISSAO_DO_INSTAGRAM);
+    // A conexão foi feita quando a Demandou ainda não pedia a leitura: agora
+    // que pede, uma reconexão resolve.
+    const pedidaNaConexao = !g.permissoes?.pedidas || g.permissoes.pedidas.includes(PERMISSAO_DO_INSTAGRAM);
+    if (g.rede === "instagram" && g.permissoes && !pedidaNaConexao) return "reconectar";
+    // A conexão pediu e a lista NÃO tem a permissão: a Meta não a concedeu ao
+    // app. Reconectar de novo dá no mesmo.
+    if (g.rede === "instagram" && g.permissoes && !concedida) return "aguardando_meta";
     return "reconectar";
   }
   if (e === "ok") return "aguardando_leitura";
@@ -467,9 +484,9 @@ export type EstatisticasDoProjeto = {
 };
 
 /** O problema da tentativa mais nova quando a tela já tem número (ou null). */
-export function problemaDaTentativa(g: Pick<GuardadoDaConta, "rede" | "tentativa" | "ultima" | "permissoes"> | null): ContaNaTela["problema"] {
+export function problemaDaTentativa(g: Pick<GuardadoDaConta, "rede" | "tentativa" | "ultima" | "permissoes"> | null, o: { pedimosNoInstagram?: boolean } = {}): ContaNaTela["problema"] {
   if (!g?.ultima || !g.tentativa || g.tentativa.estado === "ok" || g.tentativa.estado === "limite") return null;
-  const e = estadoNaTela({ ...g, ultima: null });
+  const e = estadoNaTela({ ...g, ultima: null }, o);
   return e === "numeros" ? null : e;
 }
 
@@ -488,11 +505,13 @@ export function fraseDoEstado(c: Pick<ContaNaTela, "rede" | "perfil" | "motivo">
       if (c.causa === "conexao") {
         return `A conexão com ${quem} caiu: a Meta invalidou o acesso (acontece depois de uma troca de senha). Reconecte o ${rede} para voltar a ler as estatísticas e a publicar.`;
       }
+      // O Instagram conecta a conta que está aberta no navegador (10/10: o Bruno reconectou
+      // @demandoupostou várias vezes e quem foi reconectada era a @prdonaire).
       return c.rede === "instagram"
-        ? `Ainda não temos permissão para ler as estatísticas de ${quem}. Reconecte o Instagram e autorize a leitura das estatísticas.`
+        ? `Ainda não temos permissão para ler as estatísticas de ${quem}. Reconecte o Instagram e autorize a leitura das estatísticas. Antes, entre no Instagram com ${quem} neste navegador: ele conecta a conta que estiver aberta.`
         : `Ainda não temos permissão para ler as estatísticas de ${quem}. Reconecte o Facebook e autorize a leitura das estatísticas da página.`;
     case "aguardando_meta":
-      return `A Meta ainda não liberou a leitura das estatísticas para a Demandou. Você já autorizou o que podia; quando a Meta liberar, os números de ${quem} aparecem aqui sem você fazer nada.`;
+      return `A Meta ainda não liberou a leitura das estatísticas do Instagram para a Demandou. Não precisa reconectar ${quem} agora: quando liberar, avisamos aqui se for preciso.`;
     case "aguardando_leitura":
       return `A primeira leitura das estatísticas de ${quem} sai em alguns minutos.`;
     case "erro":
