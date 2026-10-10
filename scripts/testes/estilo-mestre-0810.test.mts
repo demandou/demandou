@@ -343,7 +343,8 @@ test("B: o post no estilo mestre usa o design mestre, o design que sai do estilo
   // A marca da arte segue o mestre.
   const arte = fonte("lib/media/arte-com-frase.tsx");
   assert.ok(arte.includes('if (como === "mestre") {') && arte.includes("await garantirDesignMestre(projectId);"));
-  assert.ok(arte.includes("const modelos = doPost?.semModelo ? undefined : modelosDaPeca("), "sem o design mestre, nem o book: a direção do vídeo");
+  // 10/10: o modelo do curso tipográfico chega como lista (doPost.ids); sem ela, a regra de sempre.
+  assert.ok(arte.includes("const modelos = doPost?.ids ?? (doPost?.semModelo ? undefined : modelosDaPeca("), "sem o design mestre, nem o book: a direção do vídeo");
   // Os outros formatos de vídeo não pedem modelo de imagem.
   assert.equal(comoOPostDesenha({ estiloId: "vox" }), "estilo-de-video");
   assert.equal(comoOPostDesenha({ marca: true }), "marca");
