@@ -53,6 +53,35 @@ export function modeloExiste(id) {
   return typeof id === "string" && /^modelo-[a-z0-9-]+$/.test(id) && existsSync(join(PASTA_DOS_MODELOS, id, "template", "src", "plano.ts"));
 }
 
+/** O formato que o modelo entrega: "16:9" quando o modelo.json diz, senão o vertical ("9:16"). */
+export function formatoDoModelo(id) {
+  const arquivo = join(PASTA_DOS_MODELOS, id, "template", "modelo.json");
+  if (!existsSync(arquivo)) return "9:16";
+  try {
+    return JSON.parse(readFileSync(arquivo, "utf8")).formato === "16:9" ? "16:9" : "9:16";
+  } catch {
+    return "9:16";
+  }
+}
+
+/**
+ * O MODELO NO FORMATO PEDIDO (10/10/2026, protótipo do vídeo completo no modelo).
+ * Os 79 modelos do curso são verticais (só o Aula e o Canal nascem 16:9). Para
+ * o vídeo completo do YouTube sair com a cara do modelo escolhido, cada modelo
+ * ganha uma VERSÃO DEITADA ao lado dele, `<id>-16x9` (a primeira é a do
+ * Manifesto), com o mesmo estilo e a composição da aula 9 do curso (a pessoa
+ * numa moldura à direita, a explicação à esquerda). Sem `formato`, nada muda:
+ * o id volta como veio. Pedido de um formato que o modelo ainda não tem falha
+ * com a mensagem, em vez de entregar o vertical no lugar.
+ */
+export function modeloNoFormato(id, formato) {
+  if (!formato || formatoDoModelo(id) === formato) return id;
+  if (formato !== "16:9" && formato !== "9:16") throw new Error(`formato desconhecido: ${formato}`);
+  const variante = `${id}-${formato.replace(":", "x")}`;
+  if (modeloExiste(variante) && formatoDoModelo(variante) === formato) return variante;
+  throw new Error(`o modelo ${id} ainda não tem a versão ${formato}`);
+}
+
 /**
  * O treinamento do modelo, como o app precisa para escrever o plano: a skill,
  * o formato (plano.md e os tipos de src/plano.ts), como adaptar, o estilo e o
@@ -346,12 +375,16 @@ export async function stills(projeto, args = ["--momentos"]) {
  * O FLUXO INTEIRO de um corte num modelo do curso, na ordem do SKILL.md.
  *
  * `pedido`: { modelo, sourceUrl, inicio, duracao, manter, palavras ([{em, ate, w}]
- * no tempo do corte, a fala limpa), marca {nome, area}, nicho, tetoUsd, voltas }.
+ * no tempo do corte, a fala limpa), marca {nome, area}, nicho, tetoUsd, voltas,
+ * formato }. `formato` ("16:9", opcional) pede a versão deitada do modelo
+ * (`modeloNoFormato`); sem ele, o fluxo é o de sempre, no formato do modelo.
  * `pedirPlano(corpo)` chama o app (a IA mora lá) e devolve { mapa, plano,
  * custoUsd, numerosSemLastro }. Volta reprovada leva ao app a saída do
  * conferir.mjs, como o curso manda; o teto de gasto para antes de passar.
  */
 export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano, aoPasso = () => {}, obterTrilha = null }) {
+  // a versão no formato pedido (sem `formato`, o próprio modelo): falha antes de baixar nada
+  const modelo = modeloNoFormato(pedido.modelo, pedido.formato);
   const tempos = {};
   let t = Date.now();
   const marcar = (nome) => {
@@ -363,7 +396,7 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   const trecho = join(pasta, "trecho.mp4");
   await extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, pedido.manter);
   marcar("trecho");
-  const projeto = criarProjeto(pedido.modelo, pasta);
+  const projeto = criarProjeto(modelo, pasta);
   // AS CORES DA MARCA (10/10, regra do Bruno): o estilo é do modelo, a cor é da marca.
   if (pedido.cores?.destaque) {
     const { aplicarCoresDaMarca } = await import("./cores-da-marca.mjs");
@@ -380,7 +413,7 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   const avisos = corte.saida.split("\n").filter((l) => /^Aviso/.test(l));
   marcar("cortar");
 
-  const referencias = referenciasDoModelo(pedido.modelo);
+  const referencias = referenciasDoModelo(modelo);
   const maxVoltas = Math.max(1, Math.min(4, Number(pedido.voltas) || 3));
   const teto = Number(pedido.tetoUsd) > 0 ? Number(pedido.tetoUsd) : 1;
   let gasto = 0;
@@ -388,7 +421,7 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     gasto += Number(r?.custoUsd) || 0;
     return r;
   };
-  const comum = { modelo: pedido.modelo, referencias, nicho: pedido.nicho ?? null };
+  const comum = { modelo, referencias, nicho: pedido.nicho ?? null };
 
   // PASSO 6b, nos modelos com imagem (references/imagens.md): mapa, pedidos,
   // busca, folha numerada, escolha olhando a folha.
@@ -486,7 +519,7 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     marcar("revisao");
   }
 
-  let arquivo = await renderizar(projeto, `${pedido.modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil((analise.duracao || 60) / 60) * 25) * 60_000 });
+  let arquivo = await renderizar(projeto, `${modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil((analise.duracao || 60) / 60) * 25) * 60_000 });
   marcar("render");
 
   // A TRILHA DO PROJETO (10/10, Bruno: "sumiu a parte de escolher a música"): o
@@ -501,32 +534,42 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
       const { misturarAudio } = await import("../sons.mjs");
       const duracao = Number(spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", arquivo], { encoding: "utf8" }).stdout.trim());
       if (duracao > 0) {
-        arquivo = await misturarAudio(arquivo, { trilha: { arquivo: trilha, volume: pedido.trilha.volume, abaixar: pedido.trilha.abaixar } }, duracao, pasta, join(pasta, `${pedido.modelo}-com-trilha.mp4`));
+        arquivo = await misturarAudio(arquivo, { trilha: { arquivo: trilha, volume: pedido.trilha.volume, abaixar: pedido.trilha.abaixar } }, duracao, pasta, join(pasta, `${modelo}-com-trilha.mp4`));
       }
     } catch (e) {
       avisos.push(`a trilha não entrou: ${e instanceof Error ? e.message.slice(0, 160) : e}`);
     }
     marcar("trilha");
   }
-  return { arquivo, mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
+  return { arquivo, modelo, formato: formatoDoModelo(modelo), mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
 }
 
 /**
  * As folhas de conferência do passo 8: os quadros do stills.mjs --momentos,
  * 6 por linha e 3 linhas por folha, com a lista dos instantes na ordem (a
  * folha não tem texto: o instante de cada quadro vai na legenda). No máximo 4
- * folhas (72 quadros); acima disso, um quadro sim, um não.
+ * folhas (72 quadros); acima disso, um quadro sim, um não. Num modelo deitado
+ * (16:9) o quadro reduzido a 270 px não deixa ler o texto: 4 por linha, 480 px.
  */
 export async function folhasDosQuadros(projeto, quadros) {
+  let deitado = false;
+  try {
+    const p = lerPlano(projeto);
+    deitado = Number(p.largura) > Number(p.altura);
+  } catch {
+    // sem plano legível, a folha do vertical
+  }
+  const porFolha = deitado ? 16 : 18;
+  const filtro = deitado ? "scale=480:-2,tile=4x4:padding=4:color=white" : "scale=270:-2,tile=6x3:padding=4:color=white";
   let lista = [...quadros].sort();
-  while (lista.length > 72) lista = lista.filter((_, i) => i % 2 === 0);
+  while (lista.length > porFolha * 4) lista = lista.filter((_, i) => i % 2 === 0);
   const folhas = [];
-  for (let i = 0; i < lista.length; i += 18) {
-    const grupo = lista.slice(i, i + 18);
+  for (let i = 0; i < lista.length; i += porFolha) {
+    const grupo = lista.slice(i, i + porFolha);
     const arquivoLista = join(projeto, "work", `folha-${folhas.length + 1}.txt`);
     writeFileSync(arquivoLista, grupo.map((q) => `file '${q.replace(/\\/g, "/").replace(/'/g, "'\\''")}'`).join("\n"));
     const saida = join(projeto, "work", `folha-${folhas.length + 1}.jpg`);
-    const r = await rodarProcesso(FFMPEG, ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", arquivoLista, "-vf", "scale=270:-2,tile=6x3:padding=4:color=white", "-frames:v", "1", "-q:v", "4", saida]);
+    const r = await rodarProcesso(FFMPEG, ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", arquivoLista, "-vf", filtro, "-frames:v", "1", "-q:v", "4", saida]);
     if (r.codigo !== 0 || !existsSync(saida)) continue;
     const instantes = grupo.map((q) => (basename(q).match(/t(\d+\.\d+)/)?.[1] ?? "?").replace(/^0+(?=\d)/, ""));
     folhas.push({ base64: readFileSync(saida).toString("base64"), legenda: `Folha ${folhas.length + 1}: ${grupo.length} quadros, da esquerda para a direita e de cima para baixo, nos instantes (s) ${instantes.join(", ")}` });
