@@ -86,10 +86,19 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   const teto = Number(pedido.tetoUsd) > 0 ? Number(pedido.tetoUsd) : tetoPadraoUsd(pedido.duracao);
   const pedir = async (fase, corpo) => {
     if (!cabeNoTeto(gasto, teto, fase)) throw new SemTeto(`o teto de US$ ${teto.toFixed(2)} não cabe mais a fase ${fase} (gasto US$ ${gasto.toFixed(3)})`);
-    const r = await pedirCena({ fase, ...corpo, tetoRestanteUsd: +(teto - gasto).toFixed(4) });
-    const c = Number(r?.custoUsd) || 0;
-    gasto += c;
-    gastoPorFase[fase] = +((gastoPorFase[fase] ?? 0) + c).toFixed(4);
+    const somar = (c) => {
+      gasto += c;
+      gastoPorFase[fase] = +((gastoPorFase[fase] ?? 0) + c).toFixed(4);
+    };
+    let r;
+    try {
+      r = await pedirCena({ fase, ...corpo, tetoRestanteUsd: +(teto - gasto).toFixed(4) });
+    } catch (e) {
+      // a chamada que falhou depois de gerar também conta no teto (o app manda o custo junto)
+      somar(Number(e?.custoUsd) || 0);
+      throw e;
+    }
+    somar(Number(r?.custoUsd) || 0);
     return r;
   };
 

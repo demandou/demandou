@@ -2482,7 +2482,17 @@ const servidor = createServer((req, res) => {
             body: texto,
             signal: AbortSignal.timeout(14 * 60_000),
           });
-          if (!r.ok) throw new Error(`o app não respondeu a fase ${corpo.fase} (HTTP ${r.status}): ${(await r.text().catch(() => "")).slice(0, 300)}`);
+          if (!r.ok) {
+            const texto = await r.text().catch(() => "");
+            let custoUsd = 0;
+            try {
+              custoUsd = Number(JSON.parse(texto).custoUsd) || 0;
+            } catch {
+              // corpo que não é JSON: sem custo a somar
+            }
+            // a chamada que falhou depois de gerar também conta no teto do corte
+            throw Object.assign(new Error(`o app não respondeu a fase ${corpo.fase} (HTTP ${r.status}): ${texto.slice(0, 300)}`), { custoUsd });
+          }
           return r.json();
         };
         const e = await editarAvancado(pedido, pasta, {

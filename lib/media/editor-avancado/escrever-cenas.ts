@@ -79,17 +79,35 @@ function tetoDeSaida(base: number, tetoRestanteUsd?: number | null): number {
   return Math.max(8000, Math.min(base, Math.floor((Number(tetoRestanteUsd) * 0.8 * 1_000_000) / 10)));
 }
 
-async function chamar(kit: KitDoWorker, pedido: string, maxTokens: number, effort: "medium" | "high" | undefined, o: Opcoes): Promise<{ arquivos: Record<string, string>; bruto: string }> {
-  const resposta = await askClaude(SISTEMA, pedido, {
-    cachedPrefix: prefixoDaCena(kit),
-    cacheTtl: "1h",
-    model: modeloDasCenas(),
-    maxTokens: tetoDeSaida(maxTokens, o.tetoRestanteUsd),
-    timeoutMs: 12 * 60_000,
-    ...(effort ? { effort } : {}),
-    usage: { projectId: o.usage.projectId ?? undefined, operation: o.usage.operation },
-    onCusto: o.onCusto,
-  });
+/** A chamada acabou toda em pensamento (stop_reason max_tokens sem texto): vale tentar de novo com menos esforço. */
+export const acabouPensando = (e: unknown) => e instanceof Error && /tokens pensando/.test(e.message);
+
+async function chamar(kit: KitDoWorker, pedido: string, maxTokens: number, effort: "low" | "medium" | "high" | undefined, o: Opcoes): Promise<{ arquivos: Record<string, string>; bruto: string }> {
+  let gasto = 0;
+  const pedir = (esforco: typeof effort, teto: number) =>
+    askClaude(SISTEMA, pedido, {
+      cachedPrefix: prefixoDaCena(kit),
+      cacheTtl: "1h",
+      model: modeloDasCenas(),
+      maxTokens: teto,
+      timeoutMs: 14 * 60_000,
+      ...(esforco ? { effort: esforco } : {}),
+      usage: { projectId: o.usage.projectId ?? undefined, operation: o.usage.operation },
+      onCusto: (usd) => {
+        gasto += usd;
+        o.onCusto?.(usd);
+      },
+    });
+  let resposta: string;
+  try {
+    resposta = await pedir(effort, tetoDeSaida(maxTokens, o.tetoRestanteUsd));
+  } catch (e) {
+    // A prova da maquete (10/10) gastou 40 mil tokens pensando e não escreveu nada.
+    // Uma segunda vez com menos esforço, se ainda couber no teto do corte.
+    const sobra = o.tetoRestanteUsd == null ? null : Number(o.tetoRestanteUsd) - gasto;
+    if (!acabouPensando(e) || effort === "low" || (sobra !== null && sobra < 0.25)) throw e;
+    resposta = await pedir(effort === "medium" ? "low" : "medium", tetoDeSaida(maxTokens, sobra));
+  }
   return { arquivos: lerArquivosDaResposta(resposta), bruto: resposta };
 }
 
@@ -98,15 +116,9 @@ export async function escreverCenas(a: { kit: KitDoWorker; contexto: ContextoDaC
   const pedido = `${blocoDoCorte(a.contexto, a.fala)}
 
 Escreva o roteiro.json e as cenas deste corte na técnica "${a.contexto.tecnica}", no nível dos exemplos aprovados: cada ideia da fala explicada na hora em que é dita, as cores e a letra da marca, nada inventado.`;
-  let r: { arquivos: Record<string, string>; bruto: string };
-  try {
-    r = await chamar(a.kit, pedido, 64_000, undefined, a);
-  } catch (e) {
-    // A maquete 3D fez o Sonnet 5 gastar 40 mil tokens só pensando na prova de 10/10: uma
-    // segunda tentativa com esforço médio (pensa menos e escreve), dentro do mesmo teto.
-    if (!(e instanceof Error) || !/pensando e não chegou a responder/.test(e.message)) throw e;
-    r = await chamar(a.kit, pedido, 48_000, "medium", a);
-  }
+  // 64 mil de teto: a maquete 3D fez o Sonnet 5 gastar 40 mil só pensando na prova de 10/10
+  // (a segunda tentativa, com esforço médio, fica em `chamar`)
+  const r = await chamar(a.kit, pedido, 64_000, undefined, a);
   if (!r.arquivos["roteiro.json"]) throw new Error(`a escrita da cena voltou sem roteiro.json (${r.bruto.slice(0, 200)})`);
   return r.arquivos;
 }

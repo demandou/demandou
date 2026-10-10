@@ -3,7 +3,7 @@ export const maxDuration = 800;
 
 import { NextRequest, NextResponse } from "next/server";
 import { corpoAssinadoConfere, CABECALHO_ASSINATURA } from "@/lib/media/worker-token";
-import { atenderPedidoDaCena, PedidoInvalido, type PedidoDaCena } from "@/lib/media/editor-avancado/atender";
+import { atenderPedidoDaCena, FalhaComCusto, PedidoInvalido, type PedidoDaCena } from "@/lib/media/editor-avancado/atender";
 
 /**
  * O worker pede ao app a parte de IA de um corte no EDITOR AVANÇADO (10/10):
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     if (e instanceof PedidoInvalido) return NextResponse.json({ error: e.message }, { status: 400 });
     const erro = e instanceof Error ? e.message : "falhou";
     console.error(`[editor-avancado] ${corpo.fase ?? "?"} do corte ${corpo.videoJobId ?? "?"}: ${erro}`);
-    return NextResponse.json({ error: erro }, { status: 502 });
+    // o que a chamada perdida custou vai junto: o teto do corte no worker conta
+    return NextResponse.json({ error: erro, custoUsd: e instanceof FalhaComCusto ? e.custoUsd : 0 }, { status: 502 });
   }
 }
