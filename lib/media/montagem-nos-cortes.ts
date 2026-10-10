@@ -99,7 +99,8 @@ import { CaixaDaEdicao, TETO_USD_DO_CORTE } from "@/lib/media/teto-da-edicao";
 import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import type { LeituraDoVideo } from "@/lib/media/leitura-do-video";
 import { leituraNoCorte } from "@/lib/media/editor-por-comando/leitura-no-plano";
-import { editorDoCursoLigado, modeloDoCursoDoProjeto, modeloServeNoCorte, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd, coresDaMarcaParaOModelo } from "@/lib/media/editor-do-curso/no-corte";
+import { editorDoCursoLigado, modeloDoCursoDoProjeto, modeloPodeSerEscolhido, palavrasDoCurso, quemFalaNoProjeto, tetoDoPlanoUsd, coresDaMarcaParaOModelo } from "@/lib/media/editor-do-curso/no-corte";
+import { faltaDoMaterialNoCorte, materialParaOWorker, modeloServeNoProjeto } from "@/lib/media/editor-do-curso/material-do-modelo-servidor";
 
 /**
  * O EDITOR COMPLETO NA ESTEIRA (30/09/2026), com a trava MONTAGEM_NA_EDICAO=1.
@@ -677,7 +678,7 @@ export async function pedidoDoCorte(video: VideoDoPasso, indice: number, t: Trec
  * para "na-fila" com `curso.desistiu`, e o editor de sempre monta (a reserva).
  */
 async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: TrechoComMontagem, lido: MontagemDoCorte, modelo: string): Promise<void> {
-  const tomado: MontagemDoCorte = { ...lido, estado: "dirigindo", desde: agora(), curso: { ...(lido.curso ?? {}), modelo, desistiu: null } };
+  const tomado: MontagemDoCorte = { ...lido, estado: "dirigindo", desde: agora(), esperandoMaterial: null, curso: { ...(lido.curso ?? {}), modelo, desistiu: null } };
   if (!(await trocarEstado(video.id, indice, lido, tomado))) return;
   try {
     const { inicio, fim } = bordas(t, video);
@@ -723,6 +724,8 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
       nicho: video.project.niche,
       // A trilha escolhida na jornada também no editor do curso (10/10): o worker mistura depois do render.
       trilha: video.project.videoMusicUrl ? { url: video.project.videoMusicUrl, ...somDaTrilha(video) } : null,
+      // O MATERIAL DO CLIENTE (10/10, editor-do-curso/material-do-modelo.ts): as fotos marcadas para o modelo; o worker baixa onde o template espera.
+      material: await materialParaOWorker(video.projectId, modelo),
       tetoUsd: tetoDoPlanoUsd(fala.duracao),
       voltas: 3,
       planoUrl: `${base}/api/editor-do-curso/plano`,
@@ -747,6 +750,25 @@ async function enviarAoModeloDoCurso(video: VideoDoPasso, indice: number, t: Tre
   }
 }
 
+/** De quanto em quanto tempo o corte que espera o material do cliente olha de novo. */
+const ESPERA_DO_MATERIAL_MS = 10 * 60_000;
+
+/**
+ * O corte espera o material do modelo (10/10, editor-do-curso/material-do-modelo.ts):
+ * fica na fila, com o que falta para a tela dizer, e olha de novo em 10 min. O
+ * `desde` anda a cada volta, para a tela não ler trabalho parado.
+ */
+async function esperarOMaterial(id: string, indice: number, lido: MontagemDoCorte, espera: { modelo: string; falta: string }): Promise<void> {
+  await trocarEstado(id, indice, lido, {
+    ...lido,
+    estado: "na-fila",
+    desde: agora(),
+    esperarAte: depois(ESPERA_DO_MATERIAL_MS),
+    motivo: null,
+    esperandoMaterial: { modelo: espera.modelo, falta: espera.falta.slice(0, 300) },
+  });
+}
+
 /** O caminho do curso desiste e o corte volta à fila, para o editor de sempre (a reserva). */
 async function desistirDoModeloDoCurso(id: string, indice: number, lido: MontagemDoCorte, motivo: string): Promise<void> {
   console.warn(`[montagem][${id}] corte ${indice}: modelo do curso desistiu: ${motivo}`);
@@ -766,8 +788,8 @@ async function desistirDoModeloDoCurso(id: string, indice: number, lido: Montage
 async function modeloDoCursoDoCorte(video: Pick<VideoDoPasso, "projectId">, m: MontagemDoCorte): Promise<string | null> {
   if (!editorDoCursoLigado() || m.curso?.desistiu) return null;
   // O corte refeito num modelo escolhido para ele (o "refazer neste estilo"):
-  // vale por cima do modelo do projeto.
-  if (m.curso?.fixo && modeloServeNoCorte(m.curso.modelo)) return m.curso.modelo;
+  // vale por cima do modelo do projeto (o que pede material, com o material que basta).
+  if (m.curso?.fixo && (await modeloServeNoProjeto(video.projectId, m.curso.modelo))) return m.curso.modelo;
   return modeloDoCursoDoProjeto(video.projectId).catch(() => null);
 }
 
@@ -777,7 +799,8 @@ async function modeloDoCursoDoCorte(video: Pick<VideoDoPasso, "projectId">, m: M
  * estilos no mesmo vídeo e para o cliente pedir "refazer neste estilo".
  */
 export async function refazerCorteNoModelo(videoJobId: string, indice: number, modelo: string): Promise<boolean> {
-  if (!modeloServeNoCorte(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);
+  // O que pede material também (10/10): sem o material, o corte espera por ele na fila.
+  if (!modeloPodeSerEscolhido(modelo)) throw new Error(`modelo do curso indisponível no corte: ${modelo}`);
   const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { clips: true } });
   const t = ((video?.clips as unknown as TrechoComMontagem[] | null) ?? [])[indice];
   if (!t?.midia?.vertical?.url || t.midia.erro) return false;
@@ -1558,6 +1581,15 @@ export async function avancarMontagens(opcoes: { orcamentoMs?: number } = {}): P
         const sobMedidaVivo = Boolean(sm && !sm.desistiu);
         if ((m.estado === "na-fila" && !esperando) || (m.estado === "dirigindo" && idade > PASSO_MORTO_MS)) {
           r.olhados++;
+          // O MODELO QUE PEDE MATERIAL (10/10): sem o material mínimo do cliente, a edição não começa
+          // (nem pela reserva): o corte espera na fila e a tela diz o que falta.
+          if (m.estado === "na-fila" && editorDoCursoLigado() && !m.curso?.desistiu) {
+            const espera = await faltaDoMaterialNoCorte(video.projectId, m.curso?.fixo ? m.curso.modelo : null).catch(() => null);
+            if (espera) {
+              await esperarOMaterial(video.id, i, m, espera);
+              continue;
+            }
+          }
           r.dirigidos++;
           // O MODELO DO CURSO (09/10) vem antes de todos; os editores de antes são a reserva.
           // No "dirigindo" morto, só volta ao curso quem estava nele.

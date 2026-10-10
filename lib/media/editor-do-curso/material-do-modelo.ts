@@ -220,7 +220,8 @@ export function situacaoDoMaterial(modelo: string, itens: ItemDoMaterial[]): Sit
   }
   if (!p.papeis?.length) {
     if (itens.length < p.minimo) {
-      faltas.push(itens.length ? `faltam ${contar(p.minimo - itens.length, p.unidade)} (a edição começa com ${p.minimo})` : `envie pelo menos ${contar(p.minimo, p.unidade)}`);
+      const resto = p.minimo - itens.length;
+      faltas.push(itens.length ? `${resto === 1 ? "falta" : "faltam"} ${contar(resto, p.unidade)} (a edição começa com ${p.minimo})` : `envie pelo menos ${contar(p.minimo, p.unidade)}`);
     }
     if (itens.length > p.maximo) faltas.push(`são ${itens.length}; este modelo usa no máximo ${p.maximo}, tire ${itens.length - p.maximo}`);
   }
