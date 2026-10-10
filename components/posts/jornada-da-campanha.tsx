@@ -336,6 +336,9 @@ export function JornadaDaCampanha({
   // O MODELO DO CURSO EM USO (10/10): o Bruno escolheu o Manifesto e o resumo dizia "Lousa de negócios
   // (estilo Dan Martell)", o estilo de antes, que só entra de reserva. Com um modelo em uso, é ele.
   const [modeloDoCurso, setModeloDoCurso] = useState<string | null>(null);
+  // A EDIÇÃO SOB MEDIDA EM USO (10/10): a opção escolhida (Maquete 3D, Recorte com letreiro, Gráficos), e não a
+  // reserva; as artes seguem o modelo de reserva, quando há um.
+  const [sobMedida, setSobMedida] = useState<{ nome: string; reserva: string | null } | null>(null);
   const noEnvio = aberto && passo === total - 1;
   useEffect(() => {
     if (!noEnvio) return;
@@ -344,12 +347,19 @@ export function JornadaDaCampanha({
     Promise.all([
       fetch(`/api/projects/${projectId}/estilo-de-edicao`).then(json).catch(() => null),
       fetch(`/api/projects/${projectId}/modelo-do-curso`).then(json).catch(() => null),
-    ]).then(([d, m]: [{ escolha?: { estiloId?: string } } | null, { modelo?: string | null; modelos?: Array<{ id: string; nome: string }> } | null]) => {
+    ]).then(
+      ([d, m]: [
+        { escolha?: { estiloId?: string } } | null,
+        { modelo?: string | null; reserva?: string | null; modelos?: Array<{ id: string; nome: string }>; sobMedida?: { opcoes?: Array<{ id: string; nome: string }> } | null } | null,
+      ]) => {
       if (!vivo) return;
-      const curso = m?.modelo ? m.modelos?.find((x) => x.id === m.modelo) ?? null : null;
+      const opcao = m?.modelo ? m.sobMedida?.opcoes?.find((x) => x.id === m.modelo) ?? null : null;
+      const reserva = opcao && m?.reserva ? m.modelos?.find((x) => x.id === m.reserva)?.nome ?? null : null;
+      setSobMedida(opcao ? { nome: opcao.nome, reserva } : null);
+      const curso = !opcao && m?.modelo ? m.modelos?.find((x) => x.id === m.modelo) ?? null : null;
       setModeloDoCurso(curso?.nome ?? null);
       const c = estiloDoCatalogo(d?.escolha?.estiloId);
-      setNomeDoMestre(curso ? curso.nome : c ? `${c.nome}${c.referencia ? ` (${c.referencia})` : ""}, Beta` : null);
+      setNomeDoMestre(opcao ? `${opcao.nome}, edição sob medida` : curso ? curso.nome : c ? `${c.nome}${c.referencia ? ` (${c.referencia})` : ""}, Beta` : null);
     });
     return () => {
       vivo = false;
@@ -528,7 +538,20 @@ export function JornadaDaCampanha({
                           style={{ background: "var(--bg-input)", borderColor: "var(--border)" }}
                         >
                           <p className="text-[13px]" style={{ color: "var(--text-primary)" }}>
-                            {modeloDoCurso ? (
+                            {sobMedida ? (
+                              <>
+                                Editando na edição sob medida <b className="font-semibold">{sobMedida.nome}</b>, nas cores da sua marca
+                                {musica ? (
+                                  <>, com a trilha <b className="font-semibold">{nomeDaTrilha(musica)}</b></>
+                                ) : (
+                                  <>, sem trilha</>
+                                )}
+                                .
+                                {temPostsVisuais && modoDosPosts === "mestre" && sobMedida.reserva
+                                  ? ` As artes, os carrosséis e os vídeos curtos seguem o modelo ${sobMedida.reserva}.`
+                                  : ""}
+                              </>
+                            ) : modeloDoCurso ? (
                               // UMA CAIXA SÓ (10/10, Bruno: "tem duas partes falando do estilo"): o modelo, a trilha e as peças juntos.
                               <>
                                 Editando no modelo <b className="font-semibold">{modeloDoCurso}</b>, o editor novo
@@ -564,13 +587,15 @@ export function JornadaDaCampanha({
                         </div>
                       )}
                       {/* O que cada post vai usar (08/10), com o mesmo "Rever" do resumo. */}
-                      {temPostsVisuais && !semGravacao && modoDosPosts === "mestre" && !(modeloDoCurso && jaConfigurado) && (
+                      {temPostsVisuais && !semGravacao && modoDosPosts === "mestre" && !((modeloDoCurso || sobMedida) && jaConfigurado) && (
                         <div
                           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3"
                           style={{ background: "var(--bg-input)", borderColor: "var(--border)" }}
                         >
                           <p className="min-w-0 flex-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
-                            {modeloDoCurso
+                            {sobMedida
+                              ? `Os cortes saem na edição sob medida ${sobMedida.nome}; as artes, os carrosséis e os vídeos curtos seguem ${sobMedida.reserva ? `o modelo ${sobMedida.reserva}` : "o estilo mestre"}.`
+                              : modeloDoCurso
                               ? `Todas as peças seguem o modelo ${modeloDoCurso}: os cortes, as artes, os carrosséis e os vídeos curtos saem no mesmo estilo.`
                               : "Todas as peças seguem o estilo mestre: o vídeo, as artes e os cortes saem com o mesmo design."}
                           </p>
