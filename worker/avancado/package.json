@@ -1,0 +1,25 @@
+{
+  "name": "demandou-avancado",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Prova das aulas 8.1 (maquete 3D) e 8.2 (recorte com alfa e lettering em camadas) do curso Máquina de Edição IA, na marca da Demandou. Usa os pacotes do worker (mesma versão do Remotion).",
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "preparar": "node scripts/preparar.mjs",
+    "render": "node scripts/render.mjs"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.8.1",
+    "@remotion/bundler": "4.0.530",
+    "@remotion/cli": "4.0.530",
+    "@remotion/google-fonts": "4.0.530",
+    "@remotion/media": "4.0.530",
+    "@remotion/renderer": "4.0.530",
+    "@remotion/three": "4.0.530",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.530",
+    "three": "0.186.1"
+  }
+}

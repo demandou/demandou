@@ -1,0 +1,8 @@
+# Mídia gerada a partir da gravação (alfa, voz, trecho) e renders: nunca no repositório.
+public/*.webm
+public/*.mp4
+public/*.wav
+public/*-rastro.json
+out/
+# o Chrome do render e o cache do webpack que o Remotion baixa aqui
+node_modules/
