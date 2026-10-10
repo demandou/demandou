@@ -260,6 +260,12 @@ export function CatalogoDeEstilos({
             </>
           )}
 
+          {/* OS ESTILOS DE ANTES EM BETA (10/10, Bruno): o editor novo são os modelos completos; estes seguem em aperfeiçoamento. */}
+          <p className="flex flex-wrap items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
+            <SeloBeta />
+            Os estilos abaixo são do editor de antes e estão em aperfeiçoamento. Para o melhor resultado, use um dos modelos completos de edição.
+          </p>
+
           {/* ESCREVER O PRÓPRIO ESTILO: o diretor lê, a tela mostra, o cliente confirma. */}
           <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)" }}>
             <div className="mb-2 flex items-center gap-2">
@@ -480,5 +486,14 @@ export function CatalogoDeEstilos({
         )}
       </div>
     </div>
+  );
+}
+
+/** O selo dos estilos do editor de antes (10/10): em aperfeiçoamento, abaixo dos modelos completos. */
+export function SeloBeta() {
+  return (
+    <span className="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+      Beta, em aperfeiçoamento
+    </span>
   );
 }

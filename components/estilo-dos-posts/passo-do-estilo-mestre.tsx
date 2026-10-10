@@ -5,6 +5,7 @@ import { Check, ChevronDown, Sparkles } from "lucide-react";
 import { EstiloDoProjeto } from "@/components/video/estilo-do-projeto";
 import { CaixaDoMeuEstilo } from "@/components/estilo-proprio/caixa-do-meu-estilo";
 import { ModelosDoCurso } from "@/components/video/modelos-do-curso";
+import { SeloBeta } from "@/components/video/catalogo-de-estilos";
 import { ESCOLHAS_DOS_POSTS, type ModoDosPosts } from "@/lib/estilo-dos-posts/estilo-mestre";
 
 /**
@@ -155,7 +156,10 @@ export function PassoDoEstiloMestre({
           style={{ color: "var(--text-primary)" }}
         >
           <span>
-            {modeloDoCurso ? "Ajustes finos e o editor de antes (reserva)" : "Os estilos do editor de antes"}
+            <span className="flex flex-wrap items-center gap-2">
+              {modeloDoCurso ? "Ajustes finos e o editor de antes (reserva)" : "Os estilos do editor de antes"}
+              <SeloBeta />
+            </span>
             <span className="block text-xs font-normal" style={{ color: "var(--text-muted)" }}>
               {modeloDoCurso ? "Câmera, legenda, cenário e o estilo que entra se o modelo não conseguir montar um corte." : "O catálogo de estilos, a câmera, a legenda e o cenário."}
             </span>

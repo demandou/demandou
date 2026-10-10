@@ -340,17 +340,24 @@ export function JornadaDaCampanha({
   // O RESUMO DIZ O ESTILO MESTRE (08/10): o nome do catálogo que a pessoa escolheu no passo 1
   // ("Explicativo editorial (estilo Vox)"), e não o perfil de legenda por trás dele ("Sério e técnico").
   const [nomeDoMestre, setNomeDoMestre] = useState<string | null>(null);
+  // O MODELO DO CURSO EM USO (10/10): o Bruno escolheu o Manifesto e o resumo dizia "Lousa de negócios
+  // (estilo Dan Martell)", o estilo de antes, que só entra de reserva. Com um modelo em uso, é ele.
+  const [modeloDoCurso, setModeloDoCurso] = useState<string | null>(null);
   const noEnvio = aberto && passo === total - 1;
   useEffect(() => {
     if (!noEnvio) return;
     let vivo = true;
-    fetch(`/api/projects/${projectId}/estilo-de-edicao`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { escolha?: { estiloId?: string } } | null) => {
-        const c = estiloDoCatalogo(d?.escolha?.estiloId);
-        if (vivo) setNomeDoMestre(c ? `${c.nome}${c.referencia ? ` (${c.referencia})` : ""}` : null);
-      })
-      .catch(() => null);
+    const json = (r: Response) => (r.ok ? r.json() : null);
+    Promise.all([
+      fetch(`/api/projects/${projectId}/estilo-de-edicao`).then(json).catch(() => null),
+      fetch(`/api/projects/${projectId}/modelo-do-curso`).then(json).catch(() => null),
+    ]).then(([d, m]: [{ escolha?: { estiloId?: string } } | null, { modelo?: string | null; modelos?: Array<{ id: string; nome: string }> } | null]) => {
+      if (!vivo) return;
+      const curso = m?.modelo ? m.modelos?.find((x) => x.id === m.modelo) ?? null : null;
+      setModeloDoCurso(curso?.nome ?? null);
+      const c = estiloDoCatalogo(d?.escolha?.estiloId);
+      setNomeDoMestre(curso ? curso.nome : c ? `${c.nome}${c.referencia ? ` (${c.referencia})` : ""}, Beta` : null);
+    });
     return () => {
       vivo = false;
     };
@@ -528,13 +535,21 @@ export function JornadaDaCampanha({
                           style={{ background: "var(--bg-input)", borderColor: "var(--border)" }}
                         >
                           <p className="text-[13px]" style={{ color: "var(--text-primary)" }}>
-                            Editando no estilo <b className="font-semibold">{rotuloDoEstilo}</b>
-                            {musica ? (
-                              <>, com a trilha <b className="font-semibold">{musica}</b></>
+                            {modeloDoCurso ? (
+                              <>
+                                Editando no modelo <b className="font-semibold">{modeloDoCurso}</b>, o editor novo.
+                              </>
                             ) : (
-                              <>, sem trilha</>
+                              <>
+                                Editando no estilo <b className="font-semibold">{rotuloDoEstilo}</b>
+                                {musica ? (
+                                  <>, com a trilha <b className="font-semibold">{musica}</b></>
+                                ) : (
+                                  <>, sem trilha</>
+                                )}
+                                .
+                              </>
                             )}
-                            .
                           </p>
                           <Button variant="outline" size="sm" onClick={() => setPasso(1)}>
                             <Pencil className="h-3.5 w-3.5" />
@@ -549,7 +564,9 @@ export function JornadaDaCampanha({
                           style={{ background: "var(--bg-input)", borderColor: "var(--border)" }}
                         >
                           <p className="min-w-0 flex-1 text-[13px]" style={{ color: "var(--text-primary)" }}>
-                            Todas as peças seguem o estilo mestre: o vídeo, as artes e os cortes saem com o mesmo design.
+                            {modeloDoCurso
+                              ? `Todas as peças seguem o modelo ${modeloDoCurso}: os cortes, as artes, os carrosséis e os vídeos curtos saem no mesmo estilo.`
+                              : "Todas as peças seguem o estilo mestre: o vídeo, as artes e os cortes saem com o mesmo design."}
                           </p>
                           <Button variant="outline" size="sm" onClick={() => setPasso(1)}>
                             <Pencil className="h-3.5 w-3.5" />
