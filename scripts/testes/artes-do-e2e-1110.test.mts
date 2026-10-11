@@ -278,3 +278,11 @@ test("conferência: numeração de etapa 01 a 09 não é número inventado; porc
   assert.deepEqual(palavrasForaDoPermitido(["40% Excelência"], permitido), ["40%"]);
   assert.deepEqual(palavrasForaDoPermitido(["Excelência 12"], permitido), ["12"]);
 });
+
+test("conferência: palavra dobrada que o texto pedido não tem reprova", async () => {
+  const { decidirPelaDescricao, palavrasDobradas } = await import("@/lib/media/conferencia-da-arte");
+  assert.deepEqual(palavrasDobradas("PRODUTIVIDADE PRODUTIVIDADE BÍBLICA: fazer o essencial"), ["produtividade"]);
+  assert.deepEqual(palavrasDobradas("Produtividade bíblica: fazer o essencial"), []);
+  const d = decidirPelaDescricao({ textos: [{ texto: "PRODUTIVIDADE PRODUTIVIDADE BÍBLICA: FAZER O ESSENCIAL COM EXCELÊNCIA" }], pessoas: "nenhuma", cortado: "nada" } as never, { textoEsperado: ["Produtividade bíblica: fazer o essencial com excelência"] });
+  assert.match(String(d.reprovou), /duplicada/);
+});

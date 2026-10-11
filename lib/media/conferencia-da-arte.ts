@@ -186,6 +186,14 @@ export function ehNumeroDeEtapa(w: string): boolean {
   return /^0[1-9]$/.test(w);
 }
 
+/** As palavras (3 letras ou mais) escritas duas vezes seguidas, sem acento e em minúscula. Puro. */
+export function palavrasDobradas(t: string): string[] {
+  const ws = palavras(t).map(semAcento).filter((w) => w.length >= 3);
+  const r: string[] = [];
+  for (let i = 1; i < ws.length; i++) if (ws[i] === ws[i - 1] && !r.includes(ws[i])) r.push(ws[i]);
+  return r;
+}
+
 export type DecisaoDaDescricao = { reprovou: string | null; porCodigo: boolean };
 
 /** Números de um texto, como escritos ("7,6", "2.500", "70"). */
@@ -253,6 +261,12 @@ export function decidirPelaDescricao(
     }
     const cortado = textos.filter((t) => t.borda === "cortado");
     if (cortado.length) motivos.push(`texto cortado pela borda: ${cortado.map((t) => `"${String(t.texto).slice(0, 40)}"`).join(", ")}`);
+  }
+  // PALAVRA DOBRADA (11/10, teste da Maquete 3D): o modelo escreveu "PRODUTIVIDADE PRODUTIVIDADE
+  // BÍBLICA" com a frase pedida certa; toda palavra permitida passava. Dobra que o texto pedido não tem reprova.
+  if (opcoes.textoEsperado?.length) {
+    const dobradas = palavrasDobradas(textos.map((t) => String(t.texto)).join(" ")).filter((w) => !palavrasDobradas(opcoes.textoEsperado!.join(" ")).includes(w));
+    if (dobradas.length) motivos.push(`palavra duplicada na arte: "${dobradas.slice(0, 3).join(", ")}"`);
   }
   if (opcoes.textoEsperado) {
     const fora = palavrasForaDoPermitido(
