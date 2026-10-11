@@ -324,3 +324,8 @@ test("a revisão manda o defeito da legenda e da janela da pessoa para o roteiro
   });
   assert.deepEqual(r.reprovadas.map((x) => x.arquivo), ["roteiro.json"]);
 });
+
+test("resposta cortada no meio (sem o fim): o último arquivo, pela metade, não entra", () => {
+  const r = lerArquivosDaResposta("=== arquivo: roteiro.json ===\n{}\n=== arquivo: cena-01.tsx ===\nexport const Atras = () => null;\n=== arquivo: comum.tsx ===\nexport const X = /** pela met");
+  assert.deepEqual(Object.keys(r), ["roteiro.json", "cena-01.tsx"]);
+});

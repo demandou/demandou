@@ -19,6 +19,10 @@ export function lerArquivosDaResposta(texto: string): Record<string, string> {
   const saida: Record<string, string> = {};
   const re = /^===\s*arquivo:\s*([^\s=]+)\s*===\s*$/gm;
   const marcas = [...texto.matchAll(re)];
+  // Resposta cortada no meio (sem o "=== fim ==="): o último arquivo está pela metade e não entra;
+  // o portão aponta o que faltou e o conserto escreve só ele (prova da maquete, 10/10).
+  const terminou = /^===\s*fim\s*===\s*$/m.test(texto);
+  if (!terminou && marcas.length) marcas.pop();
   marcas.forEach((m, i) => {
     const nome = m[1].trim();
     const inicio = (m.index ?? 0) + m[0].length;
