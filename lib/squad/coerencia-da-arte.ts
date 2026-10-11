@@ -274,6 +274,64 @@ export async function estiloPedeFigurasPeloJev(p: { projectId?: string | null; l
   }
 }
 
+/** A partir disto o JEV diz que o dado complementa o tema (na dúvida, o número fica de fora). */
+export const NO_TEMA_A_PARTIR_DE = 0.6;
+
+/** Quem pergunta ao JEV. Parâmetro para o teste trocar por um falso (nada de rede no teste). */
+export type PerguntadorDoJev = typeof perguntarAoJev;
+
+/**
+ * O DADO DE PESQUISA COMPLEMENTA O TEMA DO VÍDEO? (11/10/2026, decisão do
+ * Bruno: "o mais importante é ter relação com o tema do vídeo, complementar o
+ * que o vídeo trouxe"). Antes de um número de pesquisa ir à arte, o JEV olha o
+ * tema e as teses da fala e diz, dado por dado, se ele complementa o que o
+ * vídeo defende. No teste de ponta a ponta de 11/10, "40% de redução de
+ * amarguras nos relacionamentos" foi desenhado num vídeo sobre produtividade
+ * bíblica e excelência: com fonte, mas fora do tema. Sem JEV ou com erro,
+ * NENHUM dado de pesquisa entra (a fala continua valendo): número sem decisão
+ * não vai à arte. O JEV decide; nenhum modelo de texto decide.
+ */
+export async function dadosNoTemaPeloJev<D extends { valor: string; oQueMede: string; fonte: string }>(p: {
+  projectId?: string | null;
+  tema: string;
+  dados: D[];
+  uso?: UsoDoJev;
+  perguntar?: PerguntadorDoJev;
+  ligado?: boolean;
+}): Promise<D[]> {
+  const dados = p.dados.slice(0, 12);
+  if (!dados.length || !p.tema.trim() || !(p.ligado ?? jevLigado())) return [];
+  try {
+    const ids = dados.map((_, i) => `d${i + 1}`);
+    const r = await (p.perguntar ?? perguntarAoJev)(
+      {
+        projectId: p.projectId,
+        etapa: "dado-no-tema",
+        state: {
+          contexto:
+            "Um vídeo defende algumas ideias (o TEMA e as teses abaixo). A pesquisa trouxe DADOS com fonte. Um dado só pode virar número numa arte do vídeo quando COMPLEMENTA o que o vídeo trouxe: mede o mesmo assunto, reforça ou dá escala a uma tese. Dado de outro assunto, mesmo verdadeiro e com fonte, não entra.",
+          tema_do_video: p.tema.slice(0, 2500),
+          dados: dados.map((d, i) => ({ id: ids[i], valor: d.valor.slice(0, 60), o_que_mede: d.oQueMede.slice(0, 300), fonte: d.fonte.slice(0, 120) })),
+        },
+        uso: p.uso,
+      },
+      Object.fromEntries(
+        dados.map((d, i) => [
+          ids[i],
+          {
+            type: "noul" as const,
+            instructions: `O dado ${ids[i]} (${d.valor}: ${d.oQueMede.slice(0, 200)}) complementa o tema do vídeo em \`tema_do_video\`, isto é, mede o mesmo assunto ou reforça diretamente uma das teses? Responda não quando o dado é de outro assunto, mesmo que vizinho.`,
+          },
+        ])
+      )
+    );
+    return dados.filter((_, i) => (probabilidadeDeSim(r[ids[i]]) ?? 0) >= NO_TEMA_A_PARTIR_DE);
+  } catch (e) {
+    console.warn("[coerencia-da-arte] JEV do dado no tema falhou (nenhum dado de pesquisa vai à arte):", e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
 /** A leitura das palavras, para quando o JEV está fora: a linguagem fala de gente sem proibir gente. Pura. */
 export function estiloPedeFigurasPelaRegra(linguagem: string | null | undefined): boolean {
   const t = (linguagem ?? "").toLowerCase();

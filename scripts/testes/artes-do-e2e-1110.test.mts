@@ -128,7 +128,7 @@ test("título que só se sustenta num número de fora pede outra extração", ()
 
 test("a extração recebe a regra: só os números da fala, ou nenhum", () => {
   assert.equal(regraDosNumerosDaFala(undefined), "");
-  assert.match(regraDosNumerosDaFala(FALA_SEM_NUMERO), /NÃO disse número nenhum/);
+  assert.match(regraDosNumerosDaFala(FALA_SEM_NUMERO), /Não há número permitido/);
   assert.match(regraDosNumerosDaFala("são três passos e quarenta por cento"), /permitidos .*3.*40|permitidos .*40.*3/);
 });
 

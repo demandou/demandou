@@ -4,7 +4,8 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
 import type { ContextoMidia } from "@/lib/media/usage";
 import type { GeradorDoInfografico, ModeloDoInfografico } from "@/lib/media/infografico-pelo-modelo";
-import { infograficoSoComAFala, lastroDaArte } from "@/lib/media/lastro-do-video";
+import { infograficoSoComAFala, lastroComAsFontesDoPost } from "@/lib/media/lastro-do-video";
+import type { FonteDoNumero, LastroDaArte } from "@/lib/media/dados-da-arte";
 import { composicaoDaPeca, estiloComoLinguagem, linguagemDoInfografico, promptDaArteNoModelo,promptDaCenaNoModelo, promptDeEstiloDoModelo, tipografiaDoEstilo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
 
 /**
@@ -69,6 +70,8 @@ export type PecaPelaIa = {
   fala?: string | null;
   /** A foto da pessoa (data URI de um quadro nítido da gravação), para o estilo que pede a pessoa. */
   fotoDaPessoa?: string | null;
+  /** Os números de pesquisa aprovados para esta peça, com a fonte (o `fontesDosNumeros` do post, 11/10). */
+  fontesDosNumeros?: FonteDoNumero[] | null;
 };
 
 /** Quem desenha COM a foto da pessoa de referência. Parâmetro para a prova e o teste trocarem. */
@@ -312,15 +315,17 @@ export async function comLogoDaMarca(jpeg: Buffer, logo: { src: string } | null 
 }
 
 /**
- * O conteúdo do infográfico só com número da fala (lib/media/lastro-do-video.ts,
- * infograficoSoComAFala). Quando nem o título se salva, lança: quem chama tenta
- * de novo no mesmo estilo e, sem sair, para a peça como falha técnica. Nunca
- * desenha número que a pessoa não disse.
+ * O conteúdo do infográfico só com número que tem lastro de arte
+ * (lib/media/lastro-do-video.ts, infograficoSoComAFala): a fala, o material, ou
+ * a pesquisa com fonte que o post guardou. O número de pesquisa que fica leva o
+ * rodapé da fonte. Quando nem o título se salva, lança: quem chama tenta de
+ * novo no mesmo estilo e, sem sair, para a peça como falha técnica. Nunca
+ * desenha número inventado.
  */
-export function infograficoDaFala(c: ConteudoDoInfografico, fala: string, nicho?: string | null): ConteudoDoInfografico {
-  const r = infograficoSoComAFala(c, lastroDaArte({ transcricao: fala, material: [nicho] }));
-  if (r.tirados.length) console.warn(`[vera][lastro] número fora da fala tirado do infográfico: ${r.tirados.join("; ")}`);
-  if (r.refazer) throw new Error(`o título do infográfico tem número que a pessoa não disse (${c.title}); a extração precisa sair de novo`);
+export function infograficoDaFala(c: ConteudoDoInfografico, lastro: LastroDaArte): ConteudoDoInfografico {
+  const r = infograficoSoComAFala(c, lastro);
+  if (r.tirados.length) console.warn(`[vera][lastro] número sem lastro tirado do infográfico: ${r.tirados.join("; ")}`);
+  if (r.refazer) throw new Error(`o título do infográfico tem número sem lastro (${c.title}); a extração precisa sair de novo`);
   return r.conteudo;
 }
 
@@ -340,7 +345,7 @@ export async function desenharPelaIa(p: PecaPelaIa, inj: InjecoesDaArte = {}): P
     // TODO NÚMERO DESENHADO SAI DA FALA (11/10): a última trava antes de pagar a
     // imagem, em todo caminho (semana, refazer, Tentar de novo). Sem a fala à mão,
     // vale a trava da semana (pecas-da-semana.ts), que já gravou o conteúdo limpo.
-    const conteudo = p.fala ? infograficoDaFala(p.infografico, p.fala, p.nicho) : p.infografico;
+    const conteudo = p.fala ? infograficoDaFala(p.infografico, lastroComAsFontesDoPost({ transcricao: p.fala, material: [p.nicho], fontes: p.fontesDosNumeros })) : p.infografico;
     const arte = await produzirArtePorRede({
       redes: p.redes,
       textoDoPost: p.textoDoPost ?? undefined,

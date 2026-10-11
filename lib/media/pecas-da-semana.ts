@@ -28,6 +28,7 @@ import { lerInventario } from "@/lib/analytics/inventario-das-redes";
 import { listaDoInventarioParaRedator } from "@/lib/analytics/tipos-do-inventario";
 import { limparTextoGerado } from "@/lib/media/elo-na-publicacao";
 import { infograficoSoComAFala, lastroDaArte, lastroDoVideo } from "@/lib/media/lastro-do-video";
+import { dadosDaArteNoTema, legendaComAsFontes, type LastroDaArte } from "@/lib/media/dados-da-arte";
 import { AberturasDaSemana, aberturaDe } from "@/lib/media/aberturas-da-semana";
 import { escreverLegendaDoCarrossel } from "@/lib/media/carrossel-do-video";
 import { textoDoRadar, type Radar } from "@/lib/media/radar-do-video";
@@ -223,8 +224,12 @@ type EloDoVideo = {
   limpar: (texto: string, rede: string, dia: number) => Promise<string>;
   /** A fala, o briefing e o material do cliente: o que um número precisa para entrar. */
   lastro: string;
-  /** Só a fala e o material do cliente (11/10): o que um número DESENHADO na arte precisa. */
-  lastroDaArte: string;
+  /**
+   * O lastro de um número DESENHADO na arte (11/10): a fala, o material do
+   * cliente e os dados da pesquisa com fonte que o JEV disse que complementam o
+   * tema. Calculado uma vez por semana, só quando um dia precisa.
+   */
+  lastroDaArte: () => Promise<LastroDaArte>;
 };
 
 async function eloDoVideo(video: VideoParaEscrever, semana: SemanaDoVideo, runId: string): Promise<EloDoVideo> {
@@ -241,12 +246,16 @@ async function eloDoVideo(video: VideoParaEscrever, semana: SemanaDoVideo, runId
   const material = [video.project.name, video.project.niche, video.project.targetAudience, video.project.voice];
   const transcricao = (video.transcript as { text?: string } | null)?.text ?? "";
   const lastro = lastroDoVideo({ transcricao, radar: radar ? textoDoRadar(radar) : "", material });
+  let lastroDaArteMemo: Promise<LastroDaArte> | null = null;
   return {
     pedido: () => eloDaCampanha({ inventario: lista }),
     doDia: (dia) => eloDaPeca({ videoJobId: video.id, runId, dia, pecas }),
     limpar: (texto, rede, dia) => limparTextoGerado({ texto, rede, dia, projectId: video.projectId, runId, inventario, permitidos, lastro }),
     lastro,
-    lastroDaArte: lastroDaArte({ transcricao, material }),
+    lastroDaArte: () =>
+      (lastroDaArteMemo ??= dadosDaArteNoTema({ projectId: video.projectId, radar })
+        .catch(() => [])
+        .then((dados) => lastroDaArte({ transcricao, material, dados }))),
   };
 }
 
@@ -701,7 +710,9 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
     const levarParaAsOutras = async (
       postPrincipal: string,
       texto: string,
-      midia: (rede: RedeDoPlano) => { mediaType: string; imageUrl?: string | null; extra?: Record<string, unknown> }
+      midia: (rede: RedeDoPlano) => { mediaType: string; imageUrl?: string | null; extra?: Record<string, unknown> },
+      /** O ajuste final do texto adaptado (11/10: a fonte do número de pesquisa que ele usa). */
+      ajustar: (texto: string) => string = (t) => t
     ) => {
       await Promise.all(
         outras.map(async (rede) => {
@@ -713,7 +724,7 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
               socialAccountId: contaDe(rede),
               // A adaptação passa pela mesma guarda (08/10): ela pode trazer
               // de volta uma chamada que a principal não tinha.
-              content: await elo.limpar(adaptado.content, rede, dia),
+              content: ajustar(await elo.limpar(adaptado.content, rede, dia)),
               // Texto que virou thread no X sai como thread; com mídia, o
               // publicador do X põe a arte no primeiro tweet.
               mediaType: m.mediaType === "text" && adaptado.tweets > 1 ? "thread" : m.mediaType,
@@ -1050,7 +1061,7 @@ Esta legenda acompanha um INFOGRÁFICO com os dados do briefing (se o briefing n
 Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", mediaUrl: null, postId, extra: { rede: principal, aguardandoIdentidade: true } });
         await levarParaAsOutras(postId, legenda, () => ({ mediaType: "infographic", imageUrl: null, extra: { aguardandoIdentidade: true } }));
       } else if (formato === "infographic") {
-        const legenda = await limpar(
+        const legendaEscrita = await limpar(
           await aberturas.escrever(
             DIAS[dia],
             (proibidas) =>
@@ -1061,38 +1072,44 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
         );
         const geminiKey = process.env.GEMINI_API_KEY;
         if (!geminiKey) throw new Error("GEMINI_API_KEY não configurada para o infográfico");
-        const fonte = [radar ? textoDoRadar(radar) : "", "\n\nTEXTO DO POST:\n", legenda].join("");
+        const fonte = [radar ? textoDoRadar(radar) : "", "\n\nTEXTO DO POST:\n", legendaEscrita].join("");
         // UMA extração para todas as proporções (06/10): extrair por proporção
         // pagava duas chamadas e dava dois infográficos com textos diferentes
         // no mesmo dia (o do Instagram e o do LinkedIn não batiam).
-        const extrair = (regras: { numerosSoDaFala: string; evitarNumeros?: string }) =>
+        const lastroDaPeca = await elo.lastroDaArte();
+        const extrair = (regras: { numerosSoDaFala: LastroDaArte; evitarNumeros?: string }) =>
           Promise.race([
             extrairConteudoDoInfografico(fonte, video.project.niche ?? "negocios", geminiKey, { projectId: video.projectId, ...regras }),
             new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Infografico passou de 120s")), 120_000)),
           ]);
-        // NÚMERO DESENHADO SÓ DA FALA (11/10, antes 08/10 com a pesquisa): o
-        // infográfico é arte, e na arte todo número sai da fala ou do material do
-        // cliente (lib/media/lastro-do-video.ts, infograficoSoComAFala). O que não
-        // está lá sai antes do desenho; o título que só se sustentava num número
-        // de fora faz a extração sair de novo uma vez, e na segunda o dia para
-        // (o aviso do dia e a nova tentativa), nunca com número inventado.
-        let lido = infograficoSoComAFala(await extrair({ numerosSoDaFala: elo.lastroDaArte }), elo.lastroDaArte);
+        // NÚMERO DESENHADO SÓ COM LASTRO DE ARTE (11/10, decisão do Bruno): a
+        // fala, o material do cliente, ou a pesquisa com fonte rastreável e no
+        // tema do vídeo (o JEV decide; lib/media/dados-da-arte.ts). O que não
+        // está lá sai antes do desenho; o número de pesquisa que fica leva a
+        // fonte (rodapé da arte, `fontesDosNumeros` no post e a legenda citando).
+        // O título que só se sustentava num número sem lastro faz a extração sair
+        // de novo uma vez, e na segunda o dia para, nunca com número inventado.
+        let lido = infograficoSoComAFala(await extrair({ numerosSoDaFala: lastroDaPeca }), lastroDaPeca);
         if (lido.refazer) {
-          console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: o título do infográfico tinha número fora da fala; extração de novo`);
-          lido = infograficoSoComAFala(await extrair({ numerosSoDaFala: elo.lastroDaArte, evitarNumeros: lido.tirados.join("; ") }), elo.lastroDaArte);
-          if (lido.refazer) throw new Error("o infográfico insistiu em número que a pessoa não disse no vídeo");
+          console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: o título do infográfico tinha número sem lastro; extração de novo`);
+          lido = infograficoSoComAFala(await extrair({ numerosSoDaFala: lastroDaPeca, evitarNumeros: lido.tirados.join("; ") }), lastroDaPeca);
+          if (lido.refazer) throw new Error("o infográfico insistiu em número sem lastro (nem na fala, nem na pesquisa com fonte no tema)");
         }
-        const { conteudo, tirados: semLastro } = lido;
-        if (semLastro.length) console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: número fora da fala tirado do infográfico: ${semLastro.join("; ")}`);
+        const { conteudo, tirados: semLastro, fontes: fontesDosNumeros } = lido;
+        if (semLastro.length) console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: número sem lastro tirado do infográfico: ${semLastro.join("; ")}`);
+        // A legenda cita a fonte do número de pesquisa que ela usa (11/10).
+        const comFonte = (t: string) => legendaComAsFontes(t, fontesDosNumeros);
+        const legenda = comFonte(legendaEscrita);
+        const daFonte = fontesDosNumeros.length ? { fontesDosNumeros } : {};
         // O INFOGRÁFICO PELO MODELO DO CURSO (10/10): o título, o destaque e os
         // cartões vão ao template do modelo no lote da semana; o conteúdo
         // extraído fica no post, como hoje (a reserva desenha a partir dele).
         const noModelo = pecasNoModelo({ formato: "infographic", redes: [principal, ...outras], infografico: conteudo });
         if (noModelo) {
-          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: null, extra: { infografico: conteudo, ...noModelo.doPost(principal) } });
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: null, extra: { infografico: conteudo, ...daFonte, ...noModelo.doPost(principal) } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
           await gravarCard(AGENTES.diana, { content: "Infográfico com os dados do briefing do Roberto.", mediaType: "infographic", mediaUrl: null, postId, extra: { rede: principal, ...noModelo.doCard() } });
-          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: null, extra: { infografico: conteudo, ...noModelo.doPost(rede) } }));
+          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: null, extra: { infografico: conteudo, ...daFonte, ...noModelo.doPost(rede) } }), comFonte);
         } else {
           // Direcao de arte por peca: `escritos` conta as pecas da semana, e e o
           // que faz o estilo alternar de uma para a outra dentro do mesmo video.
@@ -1128,7 +1145,7 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
           // O CONTEÚDO EXTRAÍDO FICA NO POST (06/10): refazer o infográfico (a
           // identidade aprovada depois, o pedido pelo chat) parte dele sem
           // extrair de novo (scripts/tmp/infografico-volta-a-espera-0610.mts).
-          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: url, extra: { infografico: conteudo } });
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: url, extra: { infografico: conteudo, ...daFonte } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
           // O CARD MOSTRA A 4:5 DO INSTAGRAM quando o dia tem Instagram (08/10):
           // o post de cada rede leva a arte dele, e o quadro mostra a que o
@@ -1140,7 +1157,7 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
             postId,
             extra: { rede: principal, ...(arte.algumaReprovada ? { conferenciaDaArte: arte.avisos.join(" ").slice(0, 600) } : {}) },
           });
-          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: arte.porRede[rede] ?? url, extra: { infografico: conteudo } }));
+          await levarParaAsOutras(postId, legenda, (rede) => ({ mediaType: "infographic", imageUrl: arte.porRede[rede] ?? url, extra: { infografico: conteudo, ...daFonte } }), comFonte);
         }
       }
       escritos++;

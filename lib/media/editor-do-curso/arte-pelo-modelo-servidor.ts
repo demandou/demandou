@@ -25,7 +25,8 @@ import {
 } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
 import { ehEstiloSobMedida, estiloDasArtesDoProjeto, estiloVaiPelaIa, promptDeEstiloDoModelo } from "@/lib/media/editor-do-curso/arte-pela-ia";
 import { TENTATIVAS_NO_ESTILO } from "@/lib/media/editor-do-curso/arte-pela-ia-servidor";
-import { lastroDaArte } from "@/lib/media/lastro-do-video";
+import { fontesDoPost, infograficoSoComAFala, lastroDaArte } from "@/lib/media/lastro-do-video";
+import type { FonteDoNumero, LastroDaArte } from "@/lib/media/dados-da-arte";
 
 /**
  * O LADO DO SERVIDOR DAS ARTES PELO MODELO DO CURSO (10/10/2026). As decisões
@@ -541,6 +542,23 @@ export async function falaEFotoDoVideo(videoJobId: string | null | undefined, qu
 }
 
 /**
+ * O LASTRO DE UM NÚMERO DESENHADO numa arte do vídeo (11/10, decisão do Bruno):
+ * a fala, o material do cliente e os dados da pesquisa com fonte rastreável que
+ * o JEV disse que complementam o tema (lib/media/dados-da-arte.ts). Null sem
+ * vídeo ou sem fala: aí vale o que a semana já gravou no post.
+ */
+export async function lastroDaArteDoVideo(videoJobId: string | null | undefined, projectId: string, nicho: string | null): Promise<LastroDaArte | null> {
+  if (!videoJobId) return null;
+  const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { transcript: true, radar: true } }).catch(() => null);
+  const t = video?.transcript as { text?: unknown } | string | null | undefined;
+  const fala = typeof t === "string" ? t : typeof t?.text === "string" ? t.text : null;
+  if (!fala) return null;
+  const { dadosDaArteNoTema } = await import("@/lib/media/dados-da-arte");
+  const dados = await dadosDaArteNoTema({ projectId, radar: video?.radar as Parameters<typeof dadosDaArteNoTema>[0]["radar"] }).catch(() => []);
+  return lastroDaArte({ transcricao: fala, material: [nicho], dados });
+}
+
+/**
  * O GRUPO NO ESTILO PELA IA DE IMAGEM (11/10, arte-pela-ia.ts): o post sai do
  * Nano Banana Pro no estilo gravado nele (o modelo do curso ou a opção sob
  * medida), com o texto exato e as cores da marca, `tentativas` vezes. Devolve
@@ -572,10 +590,15 @@ async function desenharGrupoNoEstilo(projectId: string, posts: PostDaReserva[], 
     const chave = process.env.GEMINI_API_KEY;
     if (!chave) throw new Error("GEMINI_API_KEY não configurada");
     const { extrairConteudoDoInfografico } = await import("@/lib/media/infographic");
-    // Número só da fala (11/10): a extração já sabe quais a pessoa disse.
-    infografico = await extrairConteudoDoInfografico(base.content, nicho ?? "negocios", chave, { projectId, ...(doVideo.fala ? { numerosSoDaFala: lastroDaArte({ transcricao: doVideo.fala, material: [nicho] }) } : {}) });
+    // Número só com lastro de arte (11/10): a fala, o material, ou a pesquisa com fonte e no tema.
+    const lastro = await lastroDaArteDoVideo(meta.videoJobId, projectId, nicho);
+    const extraido = await extrairConteudoDoInfografico(base.content, nicho ?? "negocios", chave, { projectId, ...(lastro ? { numerosSoDaFala: lastro } : {}) });
+    const limpo = lastro ? infograficoSoComAFala(extraido, lastro) : null;
+    infografico = limpo?.conteudo ?? extraido;
     novo.infografico = infografico;
+    novo.fontesDosNumeros = limpo?.fontes ?? [];
   }
+  const fontesDosNumeros = (novo.fontesDosNumeros as FonteDoNumero[] | undefined) ?? fontesDoPost(base.metadata);
   const porRede = await noMesmoEstilo(
     () =>
       desenharPelaIa({
@@ -587,6 +610,7 @@ async function desenharGrupoNoEstilo(projectId: string, posts: PostDaReserva[], 
         frase,
         slides: Array.isArray(meta.slides) ? meta.slides.filter((s): s is string => typeof s === "string") : null,
         infografico,
+        fontesDosNumeros,
         textoDoPost: base.content,
         dia: base.dayOfWeek,
         nicho,
@@ -757,10 +781,13 @@ export async function refazerArteNoModelo(o: {
       const chave = process.env.GEMINI_API_KEY;
       if (!chave) throw new Error("GEMINI_API_KEY não configurada");
       const { extrairConteudoDoInfografico } = await import("@/lib/media/infographic");
-      const { fala } = await falaEFotoDoVideo(typeof meta.videoJobId === "string" ? meta.videoJobId : null, false);
-      const conteudo = await extrairConteudoDoInfografico(o.texto, o.nicho ?? "negocios", chave, { projectId: o.post.projectId, ...(fala ? { numerosSoDaFala: lastroDaArte({ transcricao: fala, material: [o.nicho] }) } : {}) });
+      const lastro = await lastroDaArteDoVideo(typeof meta.videoJobId === "string" ? meta.videoJobId : null, o.post.projectId, o.nicho);
+      const extraido = await extrairConteudoDoInfografico(o.texto, o.nicho ?? "negocios", chave, { projectId: o.post.projectId, ...(lastro ? { numerosSoDaFala: lastro } : {}) });
+      const limpo = lastro ? infograficoSoComAFala(extraido, lastro) : null;
+      if (limpo?.refazer) throw new Error("o título do infográfico só tinha número sem lastro");
+      const conteudo = limpo?.conteudo ?? extraido;
       peca = { tipo: "infografico", texto: textoDoInfograficoNoModelo(conteudo), formatos: [formatoDoPost] };
-      extra = { infografico: conteudo };
+      extra = { infografico: conteudo, fontesDosNumeros: limpo?.fontes ?? [] };
     } else {
       const { mancheteDaPeca } = await import("@/lib/media/peca-de-feed");
       const m = await mancheteDaPeca({ textoDoPost: o.texto, estiloVisual: o.post.imagePrompt ?? "", nicho: o.nicho, projectId: o.post.projectId, runId: o.post.runId ?? undefined });
@@ -787,6 +814,7 @@ export async function refazerArteNoModelo(o: {
           redes: [o.post.platform],
           frase: typeof extra.frase === "string" ? extra.frase : null,
           infografico: (extra.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null,
+          fontesDosNumeros: (extra.fontesDosNumeros as FonteDoNumero[] | undefined) ?? [],
           textoDoPost: o.texto,
           dia: (o.post as { dayOfWeek?: number | null }).dayOfWeek ?? null,
           nicho: o.nicho,

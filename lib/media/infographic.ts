@@ -19,6 +19,7 @@ import type { ProporcaoPedida } from "./formatos-das-redes";
 import { exigirIdentidadeAprovada, type MarcaDaArte } from "@/lib/media/arte-com-frase";
 import { semNumerosRepetidos } from "@/lib/media/infografico-sem-repeticao";
 import { numerosDoTexto } from "@/lib/media/numeros-falados";
+import type { LastroDaArte } from "@/lib/media/dados-da-arte";
 import { infograficoRepeteDado } from "@/lib/squad/coerencia-da-arte";
 import type { PedidoDeArte } from "@/lib/media/arte-por-rede";
 import {
@@ -73,24 +74,29 @@ export interface RegrasDoInfografico {
   /** O projeto, para o JEV conferir o conjunto (06/10) e o uso cair na conta certa. */
   projectId?: string | null;
   /**
-   * O lastro da arte (11/10): a fala e o material do cliente. Com ele, o
-   * infográfico só leva número que está aqui (a pesquisa do briefing não
-   * entra na arte); sem número nele, nenhum número.
+   * O lastro da arte (11/10): a fala e o material do cliente, e os dados da
+   * pesquisa com fonte e no tema (lib/media/dados-da-arte.ts). Com ele, o
+   * infográfico só leva número que está aqui; sem nenhum, nenhum número.
    */
-  numerosSoDaFala?: string;
-  /** A extração anterior trouxe estes números de fora da fala: não repetir. */
+  numerosSoDaFala?: LastroDaArte | string;
+  /** A extração anterior trouxe estes números sem lastro: não repetir. */
   evitarNumeros?: string;
 }
 
-/** A regra dos números da extração, quando o lastro da fala vem (11/10). Pura. */
-export function regraDosNumerosDaFala(lastro: string | undefined, evitar?: string): string {
+/** A regra dos números da extração, quando o lastro da arte vem (11/10). Pura. */
+export function regraDosNumerosDaFala(lastro: LastroDaArte | string | undefined, evitar?: string): string {
   if (lastro === undefined) return "";
-  const ns = [...new Set(numerosDoTexto(lastro))].slice(0, 40);
-  const lista = ns.length
-    ? `Os ÚNICOS números permitidos são os que a pessoa disse no vídeo: ${ns.join(", ")}. Dado de pesquisa, estatística ou porcentagem do contexto que não esteja nessa lista NÃO entra, nem com fonte.`
-    : "A pessoa NÃO disse número nenhum no vídeo: o infográfico não tem número, porcentagem nem estatística (deixe \"highlight\" e \"keyNumbers\" de fora e o \"stat\" vazio). Organize as ideias em etapas, comparação ou lista.";
+  const l: LastroDaArte = typeof lastro === "string" ? { texto: lastro, dados: [] } : lastro;
+  const daFala = [...new Set(numerosDoTexto(l.texto))].slice(0, 40);
+  const dados = l.dados.slice(0, 8);
+  const partes: string[] = [];
+  if (daFala.length) partes.push(`os que a pessoa disse no vídeo (${daFala.join(", ")})`);
+  if (dados.length) partes.push(`os destes dados de pesquisa, sempre com o sentido exato do dado: ${dados.map((d) => `${d.valor} = ${d.oQueMede} (fonte: ${d.fonte})`).join("; ")}`);
+  const lista = partes.length
+    ? `Os ÚNICOS números permitidos são ${partes.join(", e ")}. Qualquer outro número, estatística ou porcentagem NÃO entra.`
+    : "Não há número permitido (a pessoa não disse número e não há dado de pesquisa no tema): o infográfico não tem número, porcentagem nem estatística (deixe \"highlight\" e \"keyNumbers\" de fora e o \"stat\" vazio). Organize as ideias em etapas, comparação ou lista.";
   return `
-12. NÚMEROS SÓ DA FALA: ${lista}${evitar ? ` A versão anterior trouxe número de fora da fala (${evitar}); não repita.` : ""}`;
+12. NÚMEROS COM LASTRO: ${lista}${evitar ? ` A versão anterior trouxe número sem lastro (${evitar}); não repita.` : ""}`;
 }
 
 export interface ConteudoDoInfografico {
@@ -103,6 +109,11 @@ export interface ConteudoDoInfografico {
   }>;
   highlight?: { value: string; label: string };
   keyNumbers?: Array<{ value: string; label: string }>;
+  /**
+   * O rodapé da fonte dos números de pesquisa (11/10): "Fonte: Robert Half,
+   * 2026". Escrito pela arte, discreto, e conferido como texto pedido.
+   */
+  fonte?: string;
 }
 
 /** Step 1: Extract structured content from post in Portuguese */
