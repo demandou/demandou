@@ -1,7 +1,6 @@
 // A maquete é a coisa que a fala nomeia (11/10, crítica do Bruno: "o que a casa tem a ver com o que está sendo dito?").
 import { test } from "node:test";
 import assert from "node:assert/strict";
-// @ts-expect-error módulo do worker em JavaScript
 import { conferirRoteiro } from "../../worker/src/avancado/portao.mjs";
 
 const fala = "Marta queria fazer monte de coisa e Maria ficou aos pés de Jesus com a melhor parte".split(" ").map((w, i) => ({ w, s: i * 0.4, e: i * 0.4 + 0.35 }));
