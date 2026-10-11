@@ -1,5 +1,13 @@
 import { askClaude, askClaudeComImagens } from "@/lib/claude";
-import { instrucaoDasPecasParadas, treinamentoDoModelo, type EsqueletoDoPlano, type PecasParadas, type ReferenciasDoModelo } from "@/lib/media/editor-do-curso/escrever-plano";
+import {
+  instrucaoDasPecasParadas,
+  instrucaoDoBloco,
+  treinamentoDoModelo,
+  type BlocoDoPlano,
+  type EsqueletoDoPlano,
+  type PecasParadas,
+  type ReferenciasDoModelo,
+} from "@/lib/media/editor-do-curso/escrever-plano";
 import { imagensDoMaterial, instrucaoDoMaterial, type MaterialParaORedator } from "@/lib/media/editor-do-curso/material-do-modelo";
 
 /**
@@ -61,6 +69,25 @@ function lerJson<T>(texto: string): T {
 
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
+/**
+ * Os pedidos de imagem de um TRECHO do vídeo longo (10/10, o completo no modelo,
+ * worker/src/modelo/editar-no-modelo.mjs, imagensEmBlocos): o mesmo número de um
+ * corte inteiro (12), por trecho de ~150 s. É o que segura o custo da escolha
+ * na folha (4 pedidos por folha) e as buscas grátis do imagens.mjs (o Openverse
+ * dá 200 por dia). EDITOR_DO_CURSO_IMAGENS_POR_TRECHO troca.
+ */
+export const IMAGENS_POR_TRECHO = Number(process.env.EDITOR_DO_CURSO_IMAGENS_POR_TRECHO) > 0 ? Math.round(Number(process.env.EDITOR_DO_CURSO_IMAGENS_POR_TRECHO)) : 12;
+
+/** Acima do máximo, ficam pedidos espalhados pelo trecho inteiro (em ordem de tempo), e não só os do começo. */
+export function espalharPedidos<T extends { em: number }>(pedidos: T[], maximo: number): T[] {
+  const ordem = [...pedidos].sort((a, b) => a.em - b.em);
+  if (ordem.length <= maximo) return ordem;
+  if (maximo <= 1) return ordem.slice(0, Math.max(0, maximo));
+  const escolhidos = new Set<number>();
+  for (let i = 0; i < maximo; i++) escolhidos.add(Math.round((i * (ordem.length - 1)) / (maximo - 1)));
+  return ordem.filter((_, i) => escolhidos.has(i));
+}
+
 /** Passo 6 e 6b: o mapa e a lista de imagens. */
 export async function pedirImagensDoModelo(args: {
   referencias: ReferenciasDoModelo;
@@ -70,6 +97,8 @@ export async function pedirImagensDoModelo(args: {
   pecasParadas?: PecasParadas | null;
   /** O material do cliente (10/10, material-do-modelo.ts): entra por conta própria; o mapa diz onde, e não se pede imagem para o lugar dele. */
   material?: MaterialParaORedator | null;
+  /** Um trecho do vídeo longo (10/10, o completo no modelo): o mapa e os pedidos são deste trecho, no tempo dele. */
+  bloco?: BlocoDoPlano | null;
   modelo?: string;
   usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -85,7 +114,11 @@ ${
       ? `${instrucaoDasPecasParadas(args.pecasParadas)}
 
 Imagens no modo peças paradas: no máximo UMA imagem por peça, de uma coisa concreta que o texto da peça nomeia, e só para a peça cujo bloco vai mostrar o texto inteiro junto da imagem (do jeito que este modelo põe imagem). Peça sem coisa concreta fica sem imagem. Faça o mapa editorial (uma linha por peça) e a lista de imagens destas peças neste modelo.`
-      : "Faça o mapa editorial e a lista de imagens deste vídeo neste modelo."
+      : args.bloco
+        ? `${instrucaoDoBloco(args.bloco, Number(esqueleto.duracao) || 0)}
+
+Faça o mapa editorial e a lista de imagens deste trecho neste modelo. Neste trecho, no máximo ${IMAGENS_POR_TRECHO} pedidos de imagem: os mais fortes, espalhados pelo trecho inteiro, cada um no "em" da palavra dele (tempo do trecho).`
+        : "Faça o mapa editorial e a lista de imagens deste vídeo neste modelo."
   }`;
   const opcoes = {
     cachedPrefix: treinamentoDoModelo(referencias),
@@ -110,7 +143,7 @@ Imagens no modo peças paradas: no máximo UMA imagem por peça, de uma coisa co
     vistos.add(id);
     imagens.push({ id, em: +p.em.toFixed(2), palavra: String(p.palavra).slice(0, 60), busca: String(p.busca).slice(0, 80), tipo: p.tipo === "objeto" ? "objeto" : "foto" });
   }
-  return { mapa: String(r.mapa ?? ""), imagens: imagens.slice(0, 12) };
+  return { mapa: String(r.mapa ?? ""), imagens: args.bloco ? espalharPedidos(imagens, IMAGENS_POR_TRECHO) : imagens.slice(0, 12) };
 }
 
 /** Passo 6b, a escolha: o Claude olha as folhas numeradas e escolhe. */
@@ -120,6 +153,8 @@ export async function escolherImagensDoModelo(args: {
   pedidos: unknown[];
   /** As folhas (work/imagens.jpg, imagens-2.jpg...) em base64. */
   folhas: string[];
+  /** O nome de cada folha (10/10, o completo: um trecho olha só as folhas dele, que nem sempre começam na primeira). */
+  rotulos?: string[] | null;
   modelo?: string;
   usage: { projectId?: string | null; runId?: string | null; operation: string };
   onCusto?: (usd: number) => void;
@@ -132,7 +167,7 @@ ${JSON.stringify(args.pedidos).slice(0, 30_000)}
 
 ${args.referencias.imagens ? `O que a skill diz sobre como a imagem entra neste modelo (trecho de references/imagens.md e do SKILL.md):\n${(args.referencias.skill ?? "").split("\n").filter((l) => /imagem|foto|recorte|adesivo/i.test(l)).slice(0, 40).join("\n")}\n` : ""}
 Escolha uma resposta para cada pedido.`,
-    args.folhas.map((base64, i) => ({ base64, rotulo: `Folha ${i + 1} (work/imagens${i ? `-${i + 1}` : ""}.jpg)` })),
+    args.folhas.map((base64, i) => ({ base64, rotulo: args.rotulos?.[i] ?? `Folha ${i + 1} (work/imagens${i ? `-${i + 1}` : ""}.jpg)` })),
     {
       model: args.modelo,
       maxTokens: 16_000,

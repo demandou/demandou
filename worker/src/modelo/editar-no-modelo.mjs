@@ -14,7 +14,10 @@ import {
   caudaDoBloco,
   conferirEmBlocos,
   esqueletoDoBloco,
+  folhasDosPedidos,
+  imagensForaDoBloco,
   instantesDaRevisao,
+  juntarPedidosDasImagens,
   juntarPlanos,
   paralelismoDoRender,
   partesDoRender,
@@ -588,8 +591,33 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   const duracaoCortada = Number(lerPlano(projeto).duracao) || analise.duracao || 0;
   const emBlocos = pedido.blocos === true || (pedido.blocos !== false && duracaoCortada > LIMIAR_DOS_BLOCOS_SEG);
   if (emBlocos) {
-    if (referencias.imagens) throw new Error(`o plano em blocos ainda não faz o passo das imagens (${modelo})`);
-    const r = await planoEmBlocos(projeto, { comum: { ...comum, ...comMaterial() }, pedido, pedir: (c) => pedirPlano(c).then(somar), gasto: () => gasto, teto, aoPasso });
+    // Nos modelos com imagem (references/imagens.md), o passo 6b entra por trecho antes da escrita
+    // (imagensEmBlocos), com os mesmos pedidos fixos e o --offline do material que o corte usa; as
+    // chamadas de imagem passam pelo mesmo `pedir` e contam no teto.
+    const r = await planoEmBlocos(projeto, {
+      comum: { ...comum, ...comMaterial() },
+      pedido,
+      pedir: (c) => pedirPlano(c).then(somar),
+      gasto: () => gasto,
+      teto,
+      aoPasso,
+      marcar,
+      imagens: referencias.imagens
+        ? {
+            fixos: pedidosFixosDoMaterial(pedido.modelo, material),
+            offline: imagensSoDoCliente(pedido.modelo),
+            // Os prints do cliente no Etapas e no Guia, depois das imagens, como no corte.
+            depois:
+              material && regraDoMaterial?.registro === "capturar"
+                ? async () => {
+                    material = await printsDoCliente(projeto, pedido.modelo, material);
+                    paraORedator = materialParaORedator(pedido.modelo, material);
+                    return { ...comMaterial(), ids: material.map((a) => a.id) };
+                  }
+                : null,
+          }
+        : null,
+    });
     marcar("plano");
     const render = await renderizarEmPartes(projeto, `${modelo}.mp4`, { prazoMs: Math.max(30, Math.ceil(duracaoCortada / 60) * 25) * 60_000 });
     marcar("render");
@@ -604,7 +632,7 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
       revisao: r.revisao,
       blocos: r.blocos,
       render: render.resumo,
-      creditos: null,
+      creditos: r.creditos,
       custoUsd: +gasto.toFixed(4),
       tomadas,
       avisos,
@@ -786,6 +814,11 @@ export function aliviarConferenciaDoLongo(projeto) {
   return m.conferir;
 }
 
+/** Os prints do cliente no Etapas e no Guia (capturar.mjs do curso), no completo em blocos: depois do passo das imagens. */
+function printsDoCliente(projeto, modelo, material) {
+  return registrarMaterial(projeto, modelo, material, rodarNoProjeto);
+}
+
 /** Os tipos de momento do modelo, lidos do src/plano.ts do projeto (a mesma conta do conferir.mjs). */
 function tiposDoProjeto(projeto) {
   const arquivo = join(projeto, "src", "plano.ts");
@@ -828,26 +861,51 @@ const BLOCOS_JUNTOS = Number(process.env.EDITOR_DO_CURSO_BLOCOS_JUNTOS) || 3;
  *     do plano inteiro; se reprovar, vale o plano aprovado.
  * Teto de gasto: a escrita que passa do teto falha (a reserva entra); conserto
  * e revisão só acontecem dentro dele.
+ *
+ * Nos modelos com imagem (`imagens`, 10/10), antes da escrita vem o passo 6b
+ * por trecho (imagensEmBlocos): cada bloco recebe o mapa do passo 6 dele e só
+ * as imagens dele (mais as do cliente), e a conferência reprova o bloco que
+ * cita imagem fora delas. `imagens.depois` roda logo depois do passo (os
+ * prints do cliente do Etapas e do Guia) e devolve o material atualizado e os
+ * ids que valem em todos os trechos.
  */
-async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPasso }) {
-  const esqueleto = esqueletoParaEscrever(lerPlano(projeto));
+export async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPasso = () => {}, marcar = () => {}, imagens = null }) {
+  let esqueleto = esqueletoParaEscrever(lerPlano(projeto));
   const blocos = blocosDoPlano(esqueleto.palavras, esqueleto.duracao, Number(pedido.blocoSeg) || BLOCO_ALVO_SEG);
   const total = blocos.length;
   const modeloJson = existsSync(join(projeto, "modelo.json")) ? JSON.parse(readFileSync(join(projeto, "modelo.json"), "utf8")) : {};
   const tipos = tiposDoProjeto(projeto);
   const { conferirPlano } = await import(pathToFileURL(join(projeto, "scripts", "conferir.mjs")).href);
+
+  // 0. O passo 6b nos modelos com imagem, trecho a trecho, antes da escrita.
+  let doPasso = null;
+  if (imagens) {
+    doPasso = await imagensEmBlocos(projeto, blocos, { comum, esqueleto, pedir, gasto, teto, aoPasso, fixos: imagens.fixos ?? [], offline: imagens.offline === true });
+    if (typeof imagens.depois === "function") {
+      const { ids = [], ...doMaterial } = (await imagens.depois()) ?? {};
+      comum = { ...comum, ...doMaterial };
+      doPasso.comuns.push(...ids);
+    }
+    esqueleto = esqueletoParaEscrever(lerPlano(projeto));
+    marcar("imagens");
+  }
+  // As imagens que o plano de cada trecho pode usar: as dele e as do cliente (null: modelo sem o passo 6b).
+  const permitidas = (b) => (doPasso ? [...doPasso.porBloco[b.indice], ...doPasso.comuns] : null);
+
   const escritos = new Array(total).fill(null);
   const escreverBloco = async (b, anterior) => {
     const ant = b.indice > 0 ? escritos[b.indice - 1] : null;
+    const ids = permitidas(b);
     const r = await pedir({
       ...comum,
-      esqueleto: esqueletoDoBloco(esqueleto, b),
+      esqueleto: esqueletoDoBloco(esqueleto, b, ids),
       marca: pedido.marca,
       anterior,
+      ...(doPasso?.mapas[b.indice] ? { mapa: doPasso.mapas[b.indice] } : {}),
       bloco: { indice: b.indice, total, inicio: b.inicio, fim: b.fim, cauda: ant ? caudaDoBloco(ant.plano, ant.mapa) : null },
     });
     if (!r?.plano || !Array.isArray(r.plano.momentos)) throw new Error(`o bloco ${b.indice + 1} voltou sem plano`);
-    return { plano: r.plano, mapa: String(r.mapa ?? ""), semLastro: r.numerosSemLastro ?? [] };
+    return { plano: r.plano, mapa: String(r.mapa ?? ""), semLastro: r.numerosSemLastro ?? [], imagensFora: ids ? imagensForaDoBloco(r.plano, ids) : [] };
   };
   const conferirOBloco = (planoDoBloco, b) => {
     const sub = { ...esqueletoDoBloco(lerPlano(projeto), b), momentos: planoDoBloco?.momentos ?? [] };
@@ -877,12 +935,13 @@ async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPas
     const tempo = await gateDeTempo(projeto);
     const cb = conferirEmBlocos({ plano: lerPlano(projeto), blocos, conferirPlano, modelo: modeloJson, tipos });
     const semLastro = escritos.flatMap((e) => e.semLastro);
+    const imagensFora = escritos.flatMap((e) => e.imagensFora);
     const falhos = blocos
       .map((b) => b.indice)
-      .filter((i) => (!conf.aprovado && cb.porBloco[i].erros.length) || escritos[i].semLastro.length || !tempo.ok);
-    historico.push({ volta: rodada, conferir: conf.aprovado, tempo: tempo.ok, semLastro, blocos: falhos.map((i) => i + 1) });
-    ultimaSaida = conf.saida;
-    if (conf.aprovado && tempo.ok && !semLastro.length) {
+      .filter((i) => (!conf.aprovado && cb.porBloco[i].erros.length) || escritos[i].semLastro.length || escritos[i].imagensFora.length || !tempo.ok);
+    historico.push({ volta: rodada, conferir: conf.aprovado, tempo: tempo.ok, semLastro, ...(doPasso ? { imagensFora } : {}), blocos: falhos.map((i) => i + 1) });
+    ultimaSaida = imagensFora.length && conf.aprovado ? textoDaConferencia(imagensFora) : conf.saida;
+    if (conf.aprovado && tempo.ok && !semLastro.length && !imagensFora.length) {
       aprovado = true;
       break;
     }
@@ -893,7 +952,8 @@ async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPas
       consertos[i]++;
       const pb = cb.porBloco[i];
       const saidas = [];
-      if (!conf.aprovado && pb.erros.length) saidas.push(textoDaConferencia(pb.erros, pb.avisos));
+      const erros = [...(!conf.aprovado ? pb.erros : []), ...escritos[i].imagensFora];
+      if (erros.length) saidas.push(textoDaConferencia(erros, pb.avisos));
       if (!tempo.ok) saidas.push(...tempo.resultados.filter((g) => !g.ok).map((g) => `${g.ferramenta}:\n${g.saida}`));
       escritos[i] = await escreverBloco(blocos[i], { plano: escritos[i].plano, saidas, numerosSemLastro: escritos[i].semLastro });
     });
@@ -948,14 +1008,15 @@ async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPas
             const g = regraGeral(e);
             return !g || !regrasAntes.has(g);
           });
-          if (!novos.length && !novo.semLastro.length) {
+          if (!novos.length && !novo.semLastro.length && !novo.imagensFora.length) {
             escritos[i] = novo;
             aplicados.push(i + 1);
             return;
           }
+          const apontados = [...novos, ...novo.imagensFora];
           paraConsertar = {
             plano: novo.plano,
-            saidas: [pedidoDaRevisao, "O CONSERTO ACIMA FOI CONFERIDO E REPROVOU. Mantenha os consertos da revisão e corrija só o que a conferência apontou:", textoDaConferencia(novos.length ? novos : depois.erros, depois.avisos)],
+            saidas: [pedidoDaRevisao, "O CONSERTO ACIMA FOI CONFERIDO E REPROVOU. Mantenha os consertos da revisão e corrija só o que a conferência apontou:", textoDaConferencia(apontados.length ? apontados : depois.erros, depois.avisos)],
             numerosSemLastro: novo.semLastro,
           };
         }
@@ -987,8 +1048,144 @@ async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPas
     voltas: historico.length,
     historico,
     revisao,
-    blocos: blocos.map((b) => ({ indice: b.indice + 1, inicio: b.inicio, fim: b.fim, momentos: escritos[b.indice].plano.momentos.length, consertos: consertos[b.indice] })),
+    creditos: doPasso?.creditos ?? null,
+    blocos: blocos.map((b) => ({
+      indice: b.indice + 1,
+      inicio: b.inicio,
+      fim: b.fim,
+      momentos: escritos[b.indice].plano.momentos.length,
+      consertos: consertos[b.indice],
+      ...(doPasso ? { imagens: doPasso.porBloco[b.indice].length } : {}),
+    })),
   };
+}
+
+/** A parte do teto que o passo das imagens do completo pode gastar: o resto fica para a escrita, o conserto e a revisão. */
+export const PARTE_DO_TETO_DAS_IMAGENS = 0.3;
+
+/** Quantos pedidos cabem numa folha numerada (o POR_FOLHA do imagens.mjs do projeto; 4 no curso). */
+function pedidosPorFolha(projeto) {
+  try {
+    const n = Number(readFileSync(join(projeto, "scripts", "imagens.mjs"), "utf8").match(/const POR_FOLHA = (\d+)/)?.[1]);
+    return n > 0 ? n : 4;
+  } catch {
+    return 4;
+  }
+}
+
+/**
+ * O PASSO 6b NO COMPLETO (10/10/2026), o mesmo do corte (passoDasImagens, references/imagens.md)
+ * feito por trecho do plano em blocos (blocos-do-plano.mjs, juntarPedidosDasImagens):
+ *
+ *  1. cada trecho pede ao app o mapa (passo 6) e a lista de imagens dele, no tempo dele, como um
+ *     corte (fase "imagens" com `bloco`); os trechos são independentes e vão em paralelo;
+ *  2. os pedidos de todos os trechos vão para um work/imagens.json só (o `em` no tempo do vídeo,
+ *     id repetido com o número do trecho) e o scripts/imagens.mjs do curso roda UMA vez: busca,
+ *     baixa, normaliza e monta as folhas numeradas;
+ *  3. a escolha de cada trecho (fase "escolher") olha só as folhas dos pedidos dele; as escolhas
+ *     são gravadas pelo mesmo script (--escolher, uma de cada vez: o script reescreve o
+ *     work/imagens.json e o plano.imagens). Nenhuma serve: uma nova busca por pedido (o termo
+ *     novo no work/imagens.json e uma rodada do script, que só refaz o pedido que mudou) e uma
+ *     segunda escolha; pedido sem resposta vira o cartão com a palavra; no fim, --limpar.
+ *
+ * O material do cliente (os pedidos fixos da Transformação e o --offline dela) entra como no
+ * corte e vale em todos os trechos. As chamadas passam pelo `pedir` do plano e contam no teto;
+ * o passo para quando o gasto chega a PARTE_DO_TETO_DAS_IMAGENS do teto (o trecho que ficou de
+ * fora segue sem imagem, como o corte sem pedido). Devolve { mapas (por trecho), porBloco (os
+ * ids de cada trecho), comuns (os ids do cliente), pedidos, creditos }.
+ */
+export async function imagensEmBlocos(projeto, blocos, { comum, esqueleto, pedir, gasto, teto, aoPasso = () => {}, fixos = [], offline = false }) {
+  const total = blocos.length;
+  const limite = teto * PARTE_DO_TETO_DAS_IMAGENS;
+  const cabe = () => gasto() < limite;
+  const doBloco = (b) => ({ indice: b.indice, total, inicio: b.inicio, fim: b.fim });
+
+  // 1. O mapa e os pedidos de cada trecho.
+  const mapas = new Array(total).fill(null);
+  const listas = blocos.map(() => []);
+  await emPiscina(blocos, BLOCOS_JUNTOS, async (b) => {
+    if (!cabe()) return;
+    const r = await pedir({ ...comum, fase: "imagens", esqueleto: esqueletoDoBloco(esqueleto, b, []), bloco: doBloco(b) });
+    mapas[b.indice] = r?.mapa ? String(r.mapa) : null;
+    // A Transformação (offline) usa só as duas fotos do cliente, como no corte.
+    if (!offline && Array.isArray(r?.imagens)) listas[b.indice] = r.imagens;
+  });
+  const junto = juntarPedidosDasImagens(blocos, listas, fixos);
+  const semPedido = { mapas, porBloco: junto.porBloco, comuns: junto.comuns, pedidos: 0, creditos: null };
+  if (!junto.pedidos.length) return semPedido;
+
+  // 2. Um work/imagens.json com os pedidos de todos os trechos e uma rodada do script do curso.
+  const arquivo = join(projeto, "work", "imagens.json");
+  writeFileSync(arquivo, JSON.stringify(junto.pedidos, null, 2));
+  const prazoMs = Math.max(12, Math.ceil(junto.pedidos.length * 0.3)) * 60_000;
+  const rodarImagens = async (args = []) => {
+    const x = await rodarNoProjeto(projeto, ["scripts/imagens.mjs", ...args, ...(offline ? ["--offline"] : [])], { prazoMs });
+    if (x.codigo !== 0) throw falhou(`imagens.mjs ${args.join(" ")}`, x);
+    return x.saida;
+  };
+  const lerPedidos = () => JSON.parse(readFileSync(arquivo, "utf8"));
+  await rodarImagens();
+  aoPasso(`imagens: ${junto.pedidos.length} pedido(s) de ${total} trecho(s) buscados (US$ ${gasto().toFixed(3)})`);
+
+  // 3. A escolha de cada trecho, olhando só as folhas dele.
+  const porFolha = pedidosPorFolha(projeto);
+  const escolhidos = new Set();
+  for (let rodada = 0; rodada < 2; rodada++) {
+    const todos = lerPedidos();
+    const posicao = new Map(todos.map((p, i) => [p.id, i]));
+    const respostas = new Array(total).fill(null);
+    await emPiscina(blocos, BLOCOS_JUNTOS, async (b) => {
+      const meus = new Set(junto.porBloco[b.indice]);
+      // O arquivo do cliente (pasta imagens/) já entra escolhido pelo imagens.mjs: não volta à escolha.
+      const estado = todos.filter((p) => meus.has(p.id) && !escolhidos.has(p.id) && p.escolha?.licenca !== "do aluno");
+      if (!estado.length || !cabe()) return;
+      const folhas = folhasDosPedidos(
+        estado.map((p) => posicao.get(p.id)),
+        porFolha
+      ).filter((f) => existsSync(join(projeto, "work", f.arquivo)));
+      if (!folhas.length) return;
+      const e = await pedir({
+        ...comum,
+        fase: "escolher",
+        pedidos: estado,
+        folhas: folhas.map((f) => readFileSync(join(projeto, "work", f.arquivo)).toString("base64")),
+        rotulos: folhas.map((f) => `Folha ${f.numero} (work/${f.arquivo})`),
+        bloco: doBloco(b),
+      });
+      respostas[b.indice] = { estado, escolhas: Array.isArray(e?.escolhas) ? e.escolhas : [] };
+    });
+    const refazer = [];
+    for (const r of respostas) {
+      if (!r) continue;
+      for (const x of r.escolhas) {
+        if (!r.estado.some((p) => p.id === x.id) || escolhidos.has(x.id)) continue;
+        if (x.refazer && rodada === 0) {
+          refazer.push(x);
+          continue;
+        }
+        const n = x.refazer ? 0 : Number(x.n) || 0;
+        await rodarImagens(["--escolher", x.id, String(n), ...(n && Array.isArray(x.foco) ? ["--foco", `${x.foco[0]},${x.foco[1]}`] : [])]);
+        escolhidos.add(x.id);
+      }
+    }
+    if (!refazer.length) break;
+    const atual = lerPedidos();
+    for (const x of refazer) {
+      const p = atual.find((q) => q.id === x.id);
+      if (p) p.busca = String(x.refazer).slice(0, 80);
+    }
+    writeFileSync(arquivo, JSON.stringify(atual, null, 2));
+    await rodarImagens();
+    aoPasso(`imagens: nova busca de ${refazer.length} pedido(s) (US$ ${gasto().toFixed(3)})`);
+  }
+  // Pedido que ficou sem resposta vira o cartão com a palavra (o curso: "cartão é melhor que imagem errada").
+  for (const p of lerPedidos()) {
+    if (!escolhidos.has(p.id) && !p.escolha) await rodarImagens(["--escolher", p.id, "0"]);
+  }
+  await rodarImagens(["--limpar"]).catch(() => {});
+  const creditos = existsSync(join(projeto, "creditos.txt")) ? readFileSync(join(projeto, "creditos.txt"), "utf8").trim() : null;
+  aoPasso(`imagens: ${escolhidos.size} de ${junto.pedidos.length} pedido(s) escolhidos na folha (US$ ${gasto().toFixed(3)})`);
+  return { mapas, porBloco: junto.porBloco, comuns: junto.comuns, pedidos: junto.pedidos.length, creditos: creditos || null };
 }
 
 /**
