@@ -95,9 +95,11 @@ def handler(trabalho):
                 cmd += [str(e["de"]), str(e["ate"] if e.get("ate") is not None else 10**9)]
                 if e.get("concorrencia"):
                     cmd.append(str(e["concorrencia"]))
-            r = subprocess.run(cmd, capture_output=True, text=True, cwd=projeto)
+            r = subprocess.run(cmd, capture_output=True, text=True, cwd=projeto, env={**os.environ, **({"RENDER_LOG": e["log"]} if e.get("log") else {})})
             linhas = [l for l in r.stdout.strip().splitlines() if l.startswith("{")]
             medida = json.loads(linhas[-1]) if linhas else {"ok": False, "gl": gl, "erro": (r.stderr or r.stdout)[-1500:]}
+            if not medida.get("ok"):
+                medida["log"] = (r.stderr or "")[-6000:] + "\n---\n" + (r.stdout or "")[-3000:]
             medidas.append(medida)
             if medida.get("ok") and enviado is None and (e.get("saida") or {}).get("put_url"):
                 enviado = enviar(saida, e["saida"])
@@ -117,6 +119,8 @@ def diagnostico():
         "bibliotecas": sorted(achados)[:60],
         "egl_vendor": os.listdir("/usr/share/glvnd/egl_vendor.d") if os.path.isdir("/usr/share/glvnd/egl_vendor.d") else [],
         "nucleos": os.cpu_count(),
+        "nproc": subprocess.run(["nproc"], capture_output=True, text=True).stdout.strip(),
+        "compositor": [n for n in os.listdir("/app/node_modules/@remotion") if n.startswith("compositor")],
     }
 
 

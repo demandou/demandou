@@ -38,7 +38,10 @@ try {
     chromiumOptions,
     chromeMode,
     timeoutInMilliseconds: 120_000,
-    logLevel: "error",
+    // os mesmos limites do worker (limitesDoRender): cache e threads do extrator de quadros
+    offthreadVideoCacheSizeInBytes: 512 * 1024 * 1024,
+    offthreadVideoThreads: 2,
+    logLevel: process.env.RENDER_LOG || "error",
   });
   const s = (Date.now() - t1) / 1000;
   const segundosDeVideo = (ate - de + 1) / composition.fps;
