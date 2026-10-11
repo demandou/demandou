@@ -42,7 +42,7 @@ export async function decidirTecnica(p: {
       {
         tecnica: {
           type: "choice",
-          instructions: "Qual técnica de edição avançada explica melhor ESTA fala num vídeo curto vertical? Escolha pelo conteúdo da fala, não pelo assunto do perfil.",
+          instructions: "Qual técnica de edição avançada explica melhor ESTA fala num vídeo? Escolha pelo conteúdo da fala, não pelo assunto do perfil.",
           criteria: { ...CRITERIOS_DA_TECNICA },
         },
       }

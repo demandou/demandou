@@ -65,7 +65,7 @@ export const OPCOES_SOB_MEDIDA: readonly OpcaoSobMedida[] = [
 
 /** O que vale para as três: dito no cartão e no resumo do envio. */
 export const DETALHE_DO_SOB_MEDIDA =
-  "Cada corte ganha uma edição própria, escrita para a sua fala, sempre nas cores e na letra da sua marca. Leva mais tempo que um modelo pronto; se um corte não sair, ele é montado pelo modelo que você usava antes.";
+  "Cada corte e o vídeo completo ganham uma edição própria, escrita para a sua fala, sempre nas cores e na letra da sua marca. Leva mais tempo que um modelo pronto; se uma edição não sair, ela é feita de novo no mesmo estilo, e se ainda assim não sair você vê o botão Tentar de novo, sem cobrança.";
 
 export function editorAvancadoLigado(): boolean {
   return process.env.EDITOR_AVANCADO?.trim() === "1";

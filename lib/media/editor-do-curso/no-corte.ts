@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import catalogo from "./catalogo.json";
 import versoes from "./versoes.json";
 import { materialBasta, materialDisponivel, type SituacaoDoMaterial } from "./material-do-modelo";
-import { editorAvancadoLigado, ehSobMedida } from "@/lib/media/editor-avancado/no-corte";
+import { editorAvancadoLigado, ehSobMedida, tecnicaDaOpcao, type TecnicaDaOpcao } from "@/lib/media/editor-avancado/no-corte";
 
 /**
  * OS MODELOS DO CURSO NA ESTEIRA DOS CORTES (09/10/2026).
@@ -252,6 +252,38 @@ export function caminhoDoCompleto(p: {
     };
   }
   return { caminho: "curso", modelo: p.modelo, versao, formato };
+}
+
+/**
+ * O COMPLETO DO PROJETO SOB MEDIDA (11/10/2026, pedido do Bruno): a Maquete 3D,
+ * o Recorte com letreiro e os Gráficos valem também para o vídeo completo, pelo
+ * editor avançado do worker em blocos de ~60 s (worker/src/avancado/
+ * completo-avancado.mjs), no formato da gravação. Nunca vai para a reserva (o
+ * modelo do curso de antes ou o editor de antes): com a trava EDITOR_AVANCADO
+ * desligada ou depois das duas tentativas na mesma opção, o completo PARA como
+ * falha técnica, com "Tentar de novo". Null quando o projeto não escolheu uma
+ * edição sob medida (aí vale o caminho do modelo do curso). Puro (testado).
+ */
+export type CaminhoDoCompletoSobMedida =
+  | { caminho: "sob-medida"; modelo: string; tecnica: TecnicaDaOpcao | null }
+  | { caminho: "parado"; modelo: string; motivo: string };
+
+export function caminhoDoCompletoSobMedida(p: { escolhido: string | null | undefined; avancadoLigado: boolean; desistiu?: string | null }): CaminhoDoCompletoSobMedida | null {
+  if (!p.escolhido || !ehSobMedida(p.escolhido)) return null;
+  if (!p.avancadoLigado) return { caminho: "parado", modelo: p.escolhido, motivo: "a trava EDITOR_AVANCADO está desligada" };
+  if (p.desistiu) return { caminho: "parado", modelo: p.escolhido, motivo: `a edição sob medida desistiu deste completo: ${p.desistiu}` };
+  return { caminho: "sob-medida", modelo: p.escolhido, tecnica: tecnicaDaOpcao(p.escolhido) };
+}
+
+/**
+ * O prazo do app para o callback do completo sob medida: o do worker
+ * (prazoDoCompletoAvancadoMs em worker/src/avancado/blocos-do-completo.mjs:
+ * 30 min, 10 min por bloco de 60 s e 15 s de portões e render por segundo de
+ * vídeo) mais 45 min de fila.
+ */
+export function prazoDoCompletoSobMedidaMs(duracaoSeg: number | null | undefined): number {
+  const dur = Number(duracaoSeg) > 0 ? Number(duracaoSeg) : 1200;
+  return Math.round((30 * 60 + Math.ceil(dur / 60) * 10 * 60 + dur * 15) * 1000) + 45 * 60_000;
 }
 
 /**

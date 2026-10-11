@@ -56,7 +56,7 @@ function resolver(q: QuadroDoApresentador): Estado {
     cabecaPorFora: q.cabecaPorFora ? 1 : 0,
     escala: q.escala ?? (recorte ? 1.15 : cheia ? cobrir(caixa) : cobrir(caixa) * 1.08),
     rosto: q.rosto ?? { x: caixa.x + caixa.l / 2, y: caixa.y + caixa.a * 0.38 },
-    base: q.base ?? (borda && !cheia && caixa.a > 0 ? caixa.y + caixa.a : 1800),
+    base: q.base ?? (borda && !cheia && caixa.a > 0 ? caixa.y + caixa.a : Math.round(ALTURA * 0.9375)),
     acompanhar: Math.min(1, Math.max(0, q.acompanhar ?? 0.6)),
     inclinacao: q.inclinacao ?? 0,
   };

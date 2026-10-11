@@ -263,8 +263,14 @@ const descreverAncora = (a) => (a && typeof a === "object" ? `"${a.palavra}"${a.
  * O roteiro (src/cenas/roteiro.json) contra a fala e o quadro. Devolve os
  * problemas; vazio passa. `arquivos` são os nomes escritos nesta volta.
  */
-export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos }) {
+export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos, quadro = null }) {
   const problemas = [];
+  // o quadro do corte: 1080 × 1920 em pé (os cortes) ou 1920 × 1080 deitado (o completo, 11/10)
+  const QW = Number(quadro?.largura) > 0 ? Number(quadro.largura) : 1080;
+  const QH = Number(quadro?.altura) > 0 ? Number(quadro.altura) : 1920;
+  // a borda de baixo da legenda: 1840 em 1920 (o mesmo respiro proporcional no deitado, 1035 em 1080)
+  const fimDaLegenda = Math.round(QH * (1840 / 1920));
+  const topoDaLegenda = Math.round(QH * (120 / 1920));
   const p = (motivo) => problemas.push({ arquivo: "roteiro.json", linha: 1, motivo });
   if (!roteiro || typeof roteiro !== "object") return [{ arquivo: "roteiro.json", linha: 1, motivo: "o roteiro não é um objeto JSON" }];
   if (!TECNICAS.includes(roteiro.tecnica)) p(`tecnica inválida: ${roteiro.tecnica} (use ${TECNICAS.join(", ")})`);
@@ -284,7 +290,7 @@ export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquiv
     if (c === undefined) return;
     const ok = c && ["x", "y", "l", "a"].every((k) => Number.isFinite(Number(c[k])));
     if (!ok) return p(`${onde}: caixa precisa de x, y, l e a numéricos`);
-    if (c.l < 0 || c.a < 0 || c.x < -200 || c.y < -200 || c.x + c.l > 1280 || c.y + c.a > 2120) p(`${onde}: caixa fora do quadro 1080 × 1920`);
+    if (c.l < 0 || c.a < 0 || c.x < -200 || c.y < -200 || c.x + c.l > QW + 200 || c.y + c.a > QH + 200) p(`${onde}: caixa fora do quadro ${QW} × ${QH}`);
   };
   if (!Array.isArray(roteiro.apresentador) || !roteiro.apresentador.length) p("apresentador precisa de pelo menos um quadro");
   else {
@@ -304,10 +310,10 @@ export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquiv
   else {
     const tamanho = L.tamanho ?? 48;
     if (!(tamanho >= 34 && tamanho <= 64)) p("legenda: tamanho fora de 34 a 64 (legível no celular)");
-    if (!(L.esquerda >= 24) || !(L.esquerda + L.largura <= 1056)) p("legenda: precisa de 24 px de margem dos lados");
+    if (!(L.esquerda >= 24) || !(L.esquerda + L.largura <= QW - 24)) p("legenda: precisa de 24 px de margem dos lados");
     if (!(L.largura >= 360)) p("legenda: largura pequena demais (mínimo 360)");
-    // duas linhas cabem acima de 1840: longe da borda de baixo (aulas 7 a 8.2)
-    if (!(L.topo >= 120) || !(L.topo + tamanho * 1.2 * 2 <= 1840)) p("legenda: as duas linhas precisam terminar acima de y = 1840 (longe da borda de baixo)");
+    // duas linhas cabem acima de 1840 (em pé) ou 1035 (deitado): longe da borda de baixo (aulas 7 a 8.2)
+    if (!(L.topo >= topoDaLegenda) || !(L.topo + tamanho * 1.2 * 2 <= fimDaLegenda)) p(`legenda: as duas linhas precisam terminar acima de y = ${fimDaLegenda} (longe da borda de baixo) e começar abaixo de y = ${topoDaLegenda}`);
   }
   if (!Array.isArray(roteiro.cenas) || !roteiro.cenas.length) p("cenas precisa de pelo menos uma cena");
   else {
@@ -337,7 +343,7 @@ export function conferirDitos(codigo, arquivo, palavras) {
  * O portão inteiro sobre os arquivos de uma volta: nomes, lint, roteiro e
  * tempo. `arquivos` é { nome: conteúdo }; o roteiro vem como texto JSON.
  */
-export function conferirArquivos(arquivos, { palavras, duracao, temRecorte }) {
+export function conferirArquivos(arquivos, { palavras, duracao, temRecorte, quadro = null }) {
   const problemas = [];
   const nomes = Object.keys(arquivos);
   for (const n of nomes) if (!nomeDeArquivoValido(n)) problemas.push({ arquivo: n, linha: 1, motivo: "nome de arquivo fora do permitido (roteiro.json, comum.tsx, cena-NN.tsx)" });
@@ -351,7 +357,7 @@ export function conferirArquivos(arquivos, { palavras, duracao, temRecorte }) {
       problemas.push({ arquivo: "roteiro.json", linha: 1, motivo: `roteiro.json não é JSON válido: ${e instanceof Error ? e.message : e}` });
     }
   }
-  if (roteiro) problemas.push(...conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos: nomes }));
+  if (roteiro) problemas.push(...conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos: nomes, quadro }));
   for (const n of nomes.filter((x) => x.endsWith(".tsx") && nomeDeArquivoValido(x))) {
     problemas.push(...lintDaCena(arquivos[n], n));
     problemas.push(...conferirDitos(arquivos[n], n, palavras));

@@ -17,7 +17,7 @@ export type QuadroDoApresentador = {
   em: Ancora;
   /** Segundos da transição (padrão 0,9). */
   transicao?: number;
-  /** A janela onde o apresentador aparece, em px do quadro 1080 × 1920. Sem ela: a tela inteira. */
+  /** A janela onde o apresentador aparece, em px do quadro (1080 × 1920 em pé, 1920 × 1080 deitado). Sem ela: a tela inteira. */
   caixa?: Caixa;
   /** O desenho dos cantos da janela (padrão: "reta" na tela inteira, "arredondada" nas outras). */
   forma?: Forma;
@@ -31,7 +31,7 @@ export type QuadroDoApresentador = {
   escala?: number;
   /** Onde fica o centro do rosto, em px do quadro. Padrão: no meio da janela, a 38% da altura dela. */
   rosto?: { x: number; y: number };
-  /** Com recorte: o y (px do quadro) da BASE da gravação, onde o corpo termina. Padrão: a base da janela com moldura, senão 1800. */
+  /** Com recorte: o y (px do quadro) da BASE da gravação, onde o corpo termina. Padrão: a base da janela com moldura, senão 93,75% da altura do quadro (1800 em pé). */
   base?: number;
   /** 0 a 1: quanto a janela acompanha o movimento do rosto (padrão 0,6; 1 mantém o rosto sempre no mesmo lugar). */
   acompanhar?: number;

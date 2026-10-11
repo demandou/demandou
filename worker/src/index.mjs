@@ -2589,15 +2589,21 @@ const servidor = createServer((req, res) => {
         const pedirPlano = async (corpo) => {
           const recusa = motivoParaRecusarCallback(pedido.planoUrl, AMBIENTE);
           if (recusa) throw new Error(recusa);
-          const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null });
-          const r = await fetch(pedido.planoUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
-            body: texto,
-            signal: AbortSignal.timeout(14 * 60_000),
-          });
-          if (!r.ok) throw new Error(`o app não escreveu o plano (HTTP ${r.status}): ${(await r.text().catch(() => "")).slice(0, 300)}`);
-          return r.json();
+          // assíncrono desde 11/10 (avancado/pedir-cena.mjs): 202 com id na hora e consulta até o fim
+          const { pedirCenaAssincrona } = await import("./avancado/pedir-cena.mjs");
+          return pedirCenaAssincrona(
+            { ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null },
+            {
+              enviar: (texto) =>
+                fetch(pedido.cenaUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+                  body: texto,
+                  signal: AbortSignal.timeout(2 * 60_000),
+                }),
+              aoLog: (l) => console.log(),
+            }
+          );
         };
         const e = await editarNoModelo(pedido, pasta, {
           obterOriginal,
@@ -2672,7 +2678,9 @@ const servidor = createServer((req, res) => {
       chavesDoCursoAndando.add(pedido.chave);
       pedidosDoCursoAndando.set(pedido.chave, pedido);
       if (assincrono) responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
-      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarAvancado(pedido, assincrono).finally(() => { chavesDoCursoAndando.delete(pedido.chave); pedidosDoCursoAndando.delete(pedido.chave); }) });
+      // O COMPLETO SOB MEDIDA (11/10, `completo: true`): entra na fila como o completo de sempre
+      // (prioridade 1; os cortes passam na frente dele enquanto ele espera).
+      enfileirarMontagem({ pedido, prioridade: pedido.completo === true ? 1 : 0, executar: () => executarAvancado(pedido, assincrono).finally(() => { chavesDoCursoAndando.delete(pedido.chave); pedidosDoCursoAndando.delete(pedido.chave); }) });
     });
     return;
   }
@@ -2681,8 +2689,10 @@ const servidor = createServer((req, res) => {
     emAndamento += 1;
     const inicio = Date.now();
     const destino = { callbackUrl: pedido.callbackUrl, videoJobId: pedido.videoJobId ?? pedido.chave };
-    // o render da cena própria, o recorte em CPU e as voltas da IA no app
-    const prazoMs = prazoDaMontagem(pedido) + 120 * 60_000;
+    // o render da cena própria, o recorte em CPU e as voltas da IA no app; no completo, por bloco
+    const completo = pedido.completo === true;
+    const { prazoDoCompletoAvancadoMs } = await import("./avancado/blocos-do-completo.mjs");
+    const prazoMs = completo ? prazoDoCompletoAvancadoMs(pedido.duracao) : prazoDaMontagem(pedido) + 120 * 60_000;
     const soltar = assincrono
       ? registrarTrabalho({
           videoJobId: destino.videoJobId,
@@ -2695,48 +2705,47 @@ const servidor = createServer((req, res) => {
       : () => {};
     const publicados = [];
     try {
-      const { montado, e } = await comPrazoDoTrabalho(prazoMs, "a edição sob medida", async () => {
+      const { montado, e } = await comPrazoDoTrabalho(prazoMs, completo ? "o completo sob medida" : "a edição sob medida", async () => {
         const { editarAvancado } = await import("./avancado/editar-avancado.mjs");
+        const { completoAvancado } = await import("./avancado/completo-avancado.mjs");
         const pedirCena = async (corpo) => {
           const recusa = motivoParaRecusarCallback(pedido.cenaUrl, AMBIENTE);
           if (recusa) throw new Error(recusa);
-          const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null });
-          const r = await fetch(pedido.cenaUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
-            body: texto,
-            signal: AbortSignal.timeout(14 * 60_000),
-          });
-          if (!r.ok) {
-            const texto = await r.text().catch(() => "");
-            let custoUsd = 0;
-            try {
-              custoUsd = Number(JSON.parse(texto).custoUsd) || 0;
-            } catch {
-              // corpo que não é JSON: sem custo a somar
+          // assíncrono desde 11/10 (avancado/pedir-cena.mjs): 202 com id na hora e consulta até o fim;
+          // a chamada que falhou depois de gerar volta com o custo, que conta no teto do corte
+          const { pedirCenaAssincrona } = await import("./avancado/pedir-cena.mjs");
+          return pedirCenaAssincrona(
+            { ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null },
+            {
+              enviar: (texto) =>
+                fetch(pedido.cenaUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+                  body: texto,
+                  signal: AbortSignal.timeout(2 * 60_000),
+                }),
+              aoLog: (l) => console.log(`[avancado ${pedido.chave}] ${l}`),
             }
-            // a chamada que falhou depois de gerar também conta no teto do corte
-            throw Object.assign(new Error(`o app não respondeu a fase ${corpo.fase} (HTTP ${r.status}): ${texto.slice(0, 300)}`), { custoUsd });
-          }
-          return r.json();
+          );
         };
-        const e = await editarAvancado(pedido, pasta, {
+        const editar = completo ? completoAvancado : editarAvancado;
+        const e = await editar(pedido, pasta, {
           obterOriginal,
           obterTrilha: async (url, arquivo) => {
             await baixarQualquer(url, arquivo);
             return arquivo;
           },
-          // o recorte na GPU do RunPod baixa o trecho por URL (apagado no fim)
-          publicar: async (arquivo) => {
-            const { url } = await subir(arquivo, `cortes/${pedido.videoJobId ?? "avulso"}/trecho-do-recorte.mp4`, "video/mp4");
+          // o recorte na GPU do RunPod baixa o trecho por URL (apagado no fim); no completo, um por bloco
+          publicar: async (arquivo, bloco = null) => {
+            const { url } = await subir(arquivo, `cortes/${pedido.videoJobId ?? "avulso"}/trecho-do-recorte${bloco ? `-b${bloco}` : ""}.mp4`, "video/mp4");
             publicados.push(url);
             return url;
           },
           // o WebM com alfa volta pelo Blob público, com token de cliente só para ele (apagado no fim)
           destinoDoRecorte: DESTINO_PUBLICO
-            ? async () => {
+            ? async (bloco = null) => {
                 const { saidaNoBlob } = await import("./avancado/recorte.mjs");
-                return saidaNoBlob({ token: DESTINO_PUBLICO, pathname: `cortes/${pedido.videoJobId ?? "avulso"}/alfa-do-recorte.webm` });
+                return saidaNoBlob({ token: DESTINO_PUBLICO, pathname: `cortes/${pedido.videoJobId ?? "avulso"}/alfa-do-recorte${bloco ? `-b${bloco}` : ""}.webm` });
               }
             : null,
           aoPublicar: (url) => publicados.push(url),
@@ -2750,7 +2759,19 @@ const servidor = createServer((req, res) => {
         ok: true,
         montado,
         tempos: e.tempos,
-        curso: { modelo: pedido.modelo ?? "sob-medida", tecnica: e.tecnica, custoUsd: e.custoUsd, historico: e.historico, avisos: e.avisos, voltas: e.revisao?.rodadas ?? 0 },
+        curso: completo
+          ? {
+              modelo: pedido.modelo ?? "sob-medida",
+              versao: pedido.modelo ?? "sob-medida",
+              formato: e.formato,
+              tecnica: e.tecnica,
+              custoUsd: e.custoUsd,
+              avisos: e.avisos.slice(0, 40),
+              voltas: e.blocos.reduce((s, b) => s + (b.revisao?.rodadas ?? 0), 0),
+              blocos: e.blocos.map((b) => ({ indice: b.indice, de: b.de, ate: b.ate, tentativas: b.tentativas, custoUsd: b.custoUsd, tempos: b.tempos, revisao: b.revisao, cenas: b.cenas })),
+              render: { emenda: e.emenda, tempos: e.tempos },
+            }
+          : { modelo: pedido.modelo ?? "sob-medida", tecnica: e.tecnica, custoUsd: e.custoUsd, historico: e.historico, avisos: e.avisos, voltas: e.revisao?.rodadas ?? 0 },
         segundos: Math.round((Date.now() - inicio) / 1000),
         retorno: pedido.retorno ?? null,
       };

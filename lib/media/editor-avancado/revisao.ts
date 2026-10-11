@@ -52,7 +52,7 @@ const ESQUEMA = {
   required: ["quadros"],
 };
 
-const SISTEMA = `Você descreve, de forma objetiva, defeitos VISUAIS em quadros de um vídeo vertical já editado (motion graphics sobre uma pessoa falando). Você NÃO decide nada: só descreve o que vê. Cada quadro vem com um rótulo (k, o instante, as cenas no ar e a fala daquele momento).
+const SISTEMA = `Você descreve, de forma objetiva, defeitos VISUAIS em quadros de um vídeo já editado, em pé ou deitado (motion graphics sobre uma pessoa falando). Você NÃO decide nada: só descreve o que vê. Cada quadro vem com um rótulo (k, o instante, as cenas no ar e a fala daquele momento).
 Liste para cada quadro só os defeitos que se veem:
 - "texto-cortado": palavra ou número saindo da borda do quadro, cortado no meio, ou letra faltando;
 - "texto-sobreposto": um texto em cima de outro texto, ou cartão em cima de cartão escondendo o conteúdo;

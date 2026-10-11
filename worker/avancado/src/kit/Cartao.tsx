@@ -1,4 +1,5 @@
 import React from "react";
+import { ALTURA, LARGURA } from "./dados";
 import { Icone, type NomeDoIcone } from "./Icone";
 import { LETRA } from "./letra";
 import { comAlfa, MARCA } from "./marca";
@@ -81,8 +82,8 @@ export const Traco: React.FC<{ d: string; progresso: number; cor?: string; espes
   progresso,
   cor = MARCA.destaque,
   espessura = 6,
-  largura = 1080,
-  altura = 1920,
+  largura = LARGURA,
+  altura = ALTURA,
   style,
 }) => (
   <svg width={largura} height={altura} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none", ...style }}>
@@ -107,7 +108,7 @@ export const LinhaEntre: React.FC<{ de: { x: number; y: number }; ate: { x: numb
   const ponta = 18;
   const p2 = k(progresso, 0.85, 1);
   return (
-    <svg width={1080} height={1920} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
+    <svg width={LARGURA} height={ALTURA} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
       <path d={d} fill="none" stroke={cor} strokeWidth={espessura} strokeLinecap="round" pathLength={1} strokeDasharray="1 1" strokeDashoffset={1 - Math.min(1, Math.max(0, progresso))} />
       {seta && p2 > 0 ? (
         <path

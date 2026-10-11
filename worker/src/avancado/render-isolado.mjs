@@ -17,7 +17,7 @@
 import { bundle } from "@remotion/bundler";
 import { openBrowser, renderMedia, renderStill, selectComposition } from "@remotion/renderer";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 const [projeto, arquivoDoPedido] = process.argv.slice(2);
@@ -129,6 +129,13 @@ try {
       },
     });
     const tRender = (Date.now() - t1) / 1000;
+    if (pedido.bruto) {
+      // um bloco do completo (11/10): sai com o áudio sem compressão, para a emenda sem
+      // recodificar e o -14 LUFS uma vez só no vídeo inteiro (como o render em partes do curso)
+      renameSync(bruto, pedido.saida);
+      const duracao = composition.durationInFrames / composition.fps;
+      console.log(JSON.stringify({ ok: true, bundle_s: +tBundle.toFixed(1), render_s: +tRender.toFixed(1), render_por_s: +(tRender / duracao).toFixed(2), duracao_s: duracao, arquivo: pedido.saida }));
+    } else {
     // -14 LUFS em duas passadas (o mesmo filtro do render.mjs do curso)
     const medida = ffmpeg(["-i", bruto, "-af", "loudnorm=I=-14:TP=-2:LRA=11:print_format=json", "-f", "null", "-"]);
     const m = JSON.parse(medida.slice(medida.lastIndexOf("{"), medida.lastIndexOf("}") + 1));
@@ -137,6 +144,7 @@ try {
     rmSync(bruto, { force: true });
     const duracao = composition.durationInFrames / composition.fps;
     console.log(JSON.stringify({ ok: true, bundle_s: +tBundle.toFixed(1), render_s: +tRender.toFixed(1), render_por_s: +(tRender / duracao).toFixed(2), duracao_s: duracao, audio: `${m.input_i} LUFS -> -14 LUFS`, arquivo: pedido.saida }));
+    }
   }
 } catch (e) {
   console.log(JSON.stringify({ ok: false, erro: resumir(e) }));

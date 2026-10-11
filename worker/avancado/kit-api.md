@@ -1,6 +1,6 @@
 # O KIT DO EDITOR AVANÇADO (a API que a cena usa)
 
-O corte é um projeto Remotion 4.0.530, vertical 1080 × 1920, 30 fps. O kit (src/kit) já faz: o fundo da marca, o apresentador (tela cheia, moldura, recorte com alfa, máscaras complementares, rastro do rosto), a legenda, a voz, a paralaxe e as letras da marca. Você escreve SÓ a pasta src/cenas:
+O corte é um projeto Remotion 4.0.530, a 30 fps, vertical 1080 × 1920 (os cortes) ou deitado 1920 × 1080 (o vídeo completo de gravação deitada: veja a seção 9). `LARGURA` e `ALTURA` do kit dizem qual é. O kit (src/kit) já faz: o fundo da marca, o apresentador (tela cheia, moldura, recorte com alfa, máscaras complementares, rastro do rosto), a legenda, a voz, a paralaxe e as letras da marca. Você escreve SÓ a pasta src/cenas:
 
 - `roteiro.json`: onde o apresentador está, onde fica a legenda e quando cada cena entra;
 - `cena-01.tsx`, `cena-02.tsx`, ...: cada cena exporta `Atras` (desenhado ATRÁS da pessoa) e/ou `Frente` (À FRENTE dela);
@@ -156,3 +156,18 @@ import { PainelDeDado, GraficoDeLinha, GraficoDeBarras, Contador, Etiqueta, form
 ## 8. O que o portão recusa (a cena volta para você corrigir)
 
 `useFrame`, `@keyframes`, `animation` e `transition` de CSS, `Math.random`, `Date`, `setTimeout`/`setInterval`/`requestAnimationFrame`, `fetch` e qualquer rede, `import()` e `require`, `window`/`document`/`globalThis`/`navigator`/`process`, `eval`/`Function`/`constructor`/`Proxy`, `useState`/`useEffect`/`useRef`/`useLayoutEffect` (a cena é função do quadro; use `useMemo` para o que é caro), `async`/`await`/`Promise`, `staticFile` e qualquer mídia (`Video`, `Audio`, `Img`, `OffthreadVideo`: a pessoa e a voz já estão no palco), `delayRender`, `dangerouslySetInnerHTML`, `<style>`, `<img>`, endereço de rede em texto, travessão (— ou –) em qualquer texto, `dito()` com frase que não está na fala, número na tela que não foi dito, e import fora da lista. Depois do portão vêm o `tsc` (TypeScript estrito), o bundle e um render de conferência.
+
+## 9. O quadro deitado (16:9, o vídeo completo)
+
+Quando o pedido diz "O QUADRO: DEITADO, 1920 × 1080", tudo vale igual, mas a composição é a do vídeo para o YouTube:
+
+- Todo px é do quadro 1920 × 1080. Use `LARGURA` e `ALTURA` do kit para o que ocupa a largura toda; nunca copie os números dos exemplos (eles são do quadro em pé).
+- A pessoa fica num LADO e a explicação no outro, nunca uma por cima da outra. Tela cheia: a gravação já é deitada e cobre o quadro sem corte (escala 1); o rosto fica no terço da gravação. O espaço livre de cada lado da cabeça é onde o motion entra.
+- Maquete 3D (8.1): a moldura chanfrada vai para a esquerda, cerca de 40% da largura e 80% da altura (ex.: `{"x": 70, "y": 110, "l": 760, "a": 860}`), e o `Cena3D` ocupa a direita (ex.: `x 860, y 60, largura 1000, altura 900`).
+- Gráficos (aula 6): o apresentador numa janela à esquerda ou à direita (ex.: `{"x": 1060, "y": 140, "l": 800, "a": 800}`), e o `PainelDeDado` do outro lado (ex.: `x 70, y 120, largura 920, altura 760`). Uma inserção por vez, como no vertical.
+- Recorte com letreiro (8.2): a pessoa recortada no meio ou num terço, escala 1 (os números vêm prontos em `geometria.recorte.comEscala100`); a palavra grande atrás da cabeça cabe na largura toda (`TituloQueCabe` com `largura` até 1700); moldura assimétrica larga e baixa, cabeça por fora.
+- Moldura explicativa (aula 7): a moldura arredondada num canto, cerca de 45% da largura; os cartões em coluna do outro lado.
+- Legenda: a faixa embaixo, centralizada sob a pessoa ou no lado livre, até duas linhas, terminando acima de y = 1035 e sem cobrir a maquete, o painel nem o rosto (ex.: `{"topo": 900, "esquerda": 360, "largura": 1200, "tamanho": 44}`).
+- Tamanhos: título de 90 px ou mais continua valendo; texto de apoio de 36 px ou mais. A margem das bordas é de 40 px.
+
+O completo é editado em blocos de cerca de um minuto, emendados um atrás do outro. Cada bloco é um corte como os outros, com a fala no tempo do bloco; o pedido diz como o bloco anterior terminou (CONTINUIDADE). O primeiro quadro do apresentador repete o último do bloco anterior, a legenda segue na mesma faixa, e nenhuma cena termina pela metade no fim do bloco.

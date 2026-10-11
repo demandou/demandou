@@ -32,6 +32,8 @@ export type PedidoDaCena = {
   quadros?: QuadroParaRevisar[];
   roteiro?: { cenas: CenaDoRoteiroResumida[] };
   tetoRestanteUsd?: number;
+  /** O worker pede esforço baixo na segunda vez, depois de uma chamada que acabou só pensando (11/10). */
+  esforco?: "low" | "medium" | "high" | null;
   projectId?: string | null;
   videoJobId?: string | null;
 };
@@ -70,7 +72,7 @@ export async function atenderPedidoDaCena(p: PedidoDaCena): Promise<Record<strin
   }
 
   if (!p.kit?.api || !p.contexto || !p.fala?.length) throw new PedidoInvalido("faltam o kit, o contexto ou a fala do corte");
-  const base = { kit: p.kit, contexto: p.contexto, fala: p.fala, usage, onCusto, tetoRestanteUsd: p.tetoRestanteUsd ?? null };
+  const base = { kit: p.kit, contexto: p.contexto, fala: p.fala, usage, onCusto, tetoRestanteUsd: p.tetoRestanteUsd ?? null, esforco: ["low", "medium", "high"].includes(String(p.esforco)) ? p.esforco : null };
   let novos: Record<string, string>;
   try {
     if (p.fase === "escrever") {
