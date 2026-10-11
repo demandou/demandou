@@ -2589,15 +2589,21 @@ const servidor = createServer((req, res) => {
         const pedirPlano = async (corpo) => {
           const recusa = motivoParaRecusarCallback(pedido.planoUrl, AMBIENTE);
           if (recusa) throw new Error(recusa);
-          const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null });
-          const r = await fetch(pedido.planoUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
-            body: texto,
-            signal: AbortSignal.timeout(14 * 60_000),
-          });
-          if (!r.ok) throw new Error(`o app não escreveu o plano (HTTP ${r.status}): ${(await r.text().catch(() => "")).slice(0, 300)}`);
-          return r.json();
+          // assíncrono desde 11/10 (avancado/pedir-cena.mjs): 202 com id na hora e consulta até o fim
+          const { pedirCenaAssincrona } = await import("./avancado/pedir-cena.mjs");
+          return pedirCenaAssincrona(
+            { ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null },
+            {
+              enviar: (texto) =>
+                fetch(pedido.cenaUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+                  body: texto,
+                  signal: AbortSignal.timeout(2 * 60_000),
+                }),
+              aoLog: (l) => console.log(),
+            }
+          );
         };
         const e = await editarNoModelo(pedido, pasta, {
           obterOriginal,
@@ -2700,25 +2706,22 @@ const servidor = createServer((req, res) => {
         const pedirCena = async (corpo) => {
           const recusa = motivoParaRecusarCallback(pedido.cenaUrl, AMBIENTE);
           if (recusa) throw new Error(recusa);
-          const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null });
-          const r = await fetch(pedido.cenaUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
-            body: texto,
-            signal: AbortSignal.timeout(14 * 60_000),
-          });
-          if (!r.ok) {
-            const texto = await r.text().catch(() => "");
-            let custoUsd = 0;
-            try {
-              custoUsd = Number(JSON.parse(texto).custoUsd) || 0;
-            } catch {
-              // corpo que não é JSON: sem custo a somar
+          // assíncrono desde 11/10 (avancado/pedir-cena.mjs): 202 com id na hora e consulta até o fim;
+          // a chamada que falhou depois de gerar volta com o custo, que conta no teto do corte
+          const { pedirCenaAssincrona } = await import("./avancado/pedir-cena.mjs");
+          return pedirCenaAssincrona(
+            { ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null },
+            {
+              enviar: (texto) =>
+                fetch(pedido.cenaUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+                  body: texto,
+                  signal: AbortSignal.timeout(2 * 60_000),
+                }),
+              aoLog: (l) => console.log(`[avancado ${pedido.chave}] ${l}`),
             }
-            // a chamada que falhou depois de gerar também conta no teto do corte
-            throw Object.assign(new Error(`o app não respondeu a fase ${corpo.fase} (HTTP ${r.status}): ${texto.slice(0, 300)}`), { custoUsd });
-          }
-          return r.json();
+          );
         };
         const e = await editarAvancado(pedido, pasta, {
           obterOriginal,

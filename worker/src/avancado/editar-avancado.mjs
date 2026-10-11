@@ -83,6 +83,8 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   const historico = [];
   let gasto = 0;
   const gastoPorFase = {};
+  // quanto cada pedido ao app levou, na ordem (11/10: a escrita da maquete passou de 13 min sem ninguém ver)
+  const temposDaIa = [];
   const teto = Number(pedido.tetoUsd) > 0 ? Number(pedido.tetoUsd) : tetoPadraoUsd(pedido.duracao);
   const pedir = async (fase, corpo) => {
     if (!cabeNoTeto(gasto, teto, fase)) throw new SemTeto(`o teto de US$ ${teto.toFixed(2)} não cabe mais a fase ${fase} (gasto US$ ${gasto.toFixed(3)})`);
@@ -91,14 +93,22 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
       gastoPorFase[fase] = +((gastoPorFase[fase] ?? 0) + c).toFixed(4);
     };
     let r;
+    const t0 = Date.now();
+    const anotar = (custo, ok) => {
+      const s = +((Date.now() - t0) / 1000).toFixed(1);
+      temposDaIa.push({ fase, s, usd: +custo.toFixed(4), ok });
+      aoPasso(`ia ${fase}: ${s} s, US$ ${custo.toFixed(4)}${ok ? "" : " (falhou)"}`);
+    };
     try {
       r = await pedirCena({ fase, ...corpo, tetoRestanteUsd: +(teto - gasto).toFixed(4) });
     } catch (e) {
       // a chamada que falhou depois de gerar também conta no teto (o app manda o custo junto)
       somar(Number(e?.custoUsd) || 0);
+      anotar(Number(e?.custoUsd) || 0, false);
       throw e;
     }
     somar(Number(r?.custoUsd) || 0);
+    anotar(Number(r?.custoUsd) || 0, true);
     return r;
   };
 
@@ -343,6 +353,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
     duracao,
     custoUsd: +gasto.toFixed(4),
     gastoPorFase,
+    temposDaIa,
     tetoUsd: teto,
     tempos,
     historico,

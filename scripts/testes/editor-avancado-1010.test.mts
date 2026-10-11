@@ -362,3 +362,67 @@ test("render 3D na GPU: a leitura do status (andando, pronto, falhou, sem MP4)",
   assert.equal(gpu.lerRespostaDoRender3d({ status: "COMPLETED", output: {} }).estado, "falhou");
   assert.equal(gpu.lerRespostaDoRender3d({ status: "FAILED", error: "oom" }).erro, "oom");
 });
+
+test("trabalho da cena: o id carrega a hora; sem fim é andando até o prazo da função, depois perdido", async () => {
+  const t = await import("@/lib/media/editor-avancado/trabalho");
+  const id = t.novoIdDeTrabalho(1_760_000_000_000);
+  assert.equal(t.inicioDoTrabalho(id), 1_760_000_000_000);
+  assert.equal(t.inicioDoTrabalho("../../segredo"), null);
+  assert.equal(t.estadoDoTrabalho(id, null, 1_760_000_000_000 + 300_000).estado, "andando");
+  assert.equal(t.estadoDoTrabalho(id, null, 1_760_000_000_000 + 900_000).estado, "perdido");
+  const fim = { estado: "pronto" as const, resultado: { custoUsd: 0.3 }, segundos: 200 };
+  assert.deepEqual(t.estadoDoTrabalho(id, fim, 1_760_000_000_000 + 900_000), fim);
+});
+
+test("a escrita cabe no prazo: esforço médio, teto de 32 mil e uma chamada de no máximo 9 min", async () => {
+  const { ESFORCO_E_TETO, LIMITE_DA_CHAMADA_MS } = await import("@/lib/media/editor-avancado/escrever-cenas");
+  assert.equal(ESFORCO_E_TETO.escrever.esforco, "medium");
+  assert.ok(ESFORCO_E_TETO.escrever.maxTokens <= 32_000);
+  assert.ok(LIMITE_DA_CHAMADA_MS < 800_000 - 60_000);
+});
+
+test("pedido assíncrono: 202, consulta andando, pronto; o resultado chega com o custo", async () => {
+  const pc = await imp("worker/src/avancado/pedir-cena.mjs");
+  const respostas = [
+    new Response(JSON.stringify({ id: "x" }), { status: 202 }),
+    new Response(JSON.stringify({ estado: "andando", segundos: 8 })),
+    new Response(JSON.stringify({ estado: "pronto", resultado: { arquivos: { "roteiro.json": "{}" }, custoUsd: 0.4 }, segundos: 16 })),
+  ];
+  const enviados: string[] = [];
+  const r = await pc.pedirCenaAssincrona({ fase: "escrever" }, { enviar: async (t: string) => (enviados.push(t), respostas.shift()!), dormir: async () => {} });
+  assert.equal(r.custoUsd, 0.4);
+  assert.deepEqual(Object.keys(r.arquivos), ["roteiro.json"]);
+  assert.deepEqual(JSON.parse(enviados[1]), { consultar: "x" });
+});
+
+test("pedido assíncrono: a escrita que só pensou vai de novo com esforço baixo e soma os dois custos", async () => {
+  const pc = await imp("worker/src/avancado/pedir-cena.mjs");
+  const enviados: Array<Record<string, unknown>> = [];
+  const respostas = [
+    new Response(JSON.stringify({ id: "a" }), { status: 202 }),
+    new Response(JSON.stringify({ estado: "falhou", erro: "gastou o limite de 32000 tokens pensando", custoUsd: 0.3, pensou: true, segundos: 400 })),
+    new Response(JSON.stringify({ id: "b" }), { status: 202 }),
+    new Response(JSON.stringify({ estado: "pronto", resultado: { arquivos: {}, custoUsd: 0.1 }, segundos: 120 })),
+  ];
+  const r = await pc.pedirCenaAssincrona({ fase: "escrever", tetoRestanteUsd: 1 }, { enviar: async (t: string) => (enviados.push(JSON.parse(t)), respostas.shift()!), dormir: async () => {} });
+  assert.equal(enviados[2].esforco, "low");
+  assert.equal(enviados[2].tetoRestanteUsd, 0.7);
+  assert.ok(Math.abs(r.custoUsd - 0.4) < 1e-9);
+  assert.equal(pc.deveTentarComMenosEsforco({ fase: "escrever", esforco: "low" }, { estado: "falhou", pensou: true }), false);
+  assert.equal(pc.deveTentarComMenosEsforco({ fase: "revisar" }, { estado: "falhou", pensou: true }), false);
+});
+
+test("pedido assíncrono: falha com custo, função perdida e o app antigo que responde 200", async () => {
+  const pc = await imp("worker/src/avancado/pedir-cena.mjs");
+  const seq = (...rs: Response[]) => async () => rs.shift()!;
+  await assert.rejects(
+    pc.pedirCenaAssincrona({ fase: "consertar" }, { enviar: seq(new Response(JSON.stringify({ id: "a" }), { status: 202 }), new Response(JSON.stringify({ estado: "falhou", erro: "x", custoUsd: 0.2 }))), dormir: async () => {} }),
+    (e: { custoUsd: number }) => e.custoUsd === 0.2
+  );
+  await assert.rejects(
+    pc.pedirCenaAssincrona({ fase: "escrever" }, { enviar: seq(new Response(JSON.stringify({ id: "a" }), { status: 202 }), new Response(JSON.stringify({ estado: "perdido", erro: "morreu" }))), dormir: async () => {} }),
+    /perdeu a fase/
+  );
+  const antigo = await pc.pedirCenaAssincrona({ fase: "tecnica" }, { enviar: seq(new Response(JSON.stringify({ tecnica: "graficos", custoUsd: 0.01 }))), dormir: async () => {} });
+  assert.equal(antigo.tecnica, "graficos");
+});

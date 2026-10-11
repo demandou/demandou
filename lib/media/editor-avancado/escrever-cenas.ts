@@ -72,7 +72,22 @@ A fala do corte, uma palavra por linha (início–fim em segundos e a palavra, j
 ${formatarFala(fala)}`;
 }
 
-type Opcoes = { usage: { projectId?: string | null; operation: string }; onCusto?: (usd: number) => void; tetoRestanteUsd?: number | null };
+type Esforco = "low" | "medium" | "high";
+type Opcoes = { usage: { projectId?: string | null; operation: string }; onCusto?: (usd: number) => void; tetoRestanteUsd?: number | null; esforco?: Esforco | null };
+
+/**
+ * O TEMPO DE UMA FASE (11/10/2026): cada fase roda numa invocação da Vercel com
+ * 800 s de prazo. A escrita da Maquete 3D com o esforço padrão (alto) e 64 mil
+ * de teto pensou até a função morrer. Agora cada chamada tem esforço e teto que
+ * cabem em poucos minutos (perto de 90 tokens por segundo no Sonnet 5) e um
+ * prazo de 9 minutos; a chamada que acabar só pensando volta como falha com
+ * custo, e quem tenta de novo, com esforço baixo, é o worker, numa invocação nova.
+ */
+export const LIMITE_DA_CHAMADA_MS = 9 * 60_000;
+export const ESFORCO_E_TETO = {
+  escrever: { esforco: "medium" as Esforco, maxTokens: 32_000 },
+  consertar: { esforco: "medium" as Esforco, maxTokens: 20_000 },
+};
 
 function tetoDeSaida(base: number, tetoRestanteUsd?: number | null): number {
   // US$ 10 por milhão de saída no Sonnet 5: o que sobra do teto vira o teto de tokens (com folga para a entrada)
@@ -83,32 +98,19 @@ function tetoDeSaida(base: number, tetoRestanteUsd?: number | null): number {
 /** A chamada acabou toda em pensamento (stop_reason max_tokens sem texto): vale tentar de novo com menos esforço. */
 export const acabouPensando = (e: unknown) => e instanceof Error && /tokens pensando/.test(e.message);
 
-async function chamar(kit: KitDoWorker, pedido: string, maxTokens: number, effort: "low" | "medium" | "high" | undefined, o: Opcoes): Promise<{ arquivos: Record<string, string>; bruto: string }> {
-  let gasto = 0;
-  const pedir = (esforco: typeof effort, teto: number) =>
-    askClaude(SISTEMA, pedido, {
-      cachedPrefix: prefixoDaCena(kit),
-      cacheTtl: "1h",
-      model: modeloDasCenas(),
-      maxTokens: teto,
-      timeoutMs: 14 * 60_000,
-      ...(esforco ? { effort: esforco } : {}),
-      usage: { projectId: o.usage.projectId ?? undefined, operation: o.usage.operation },
-      onCusto: (usd) => {
-        gasto += usd;
-        o.onCusto?.(usd);
-      },
-    });
-  let resposta: string;
-  try {
-    resposta = await pedir(effort, tetoDeSaida(maxTokens, o.tetoRestanteUsd));
-  } catch (e) {
-    // A prova da maquete (10/10) gastou 40 mil tokens pensando e não escreveu nada.
-    // Uma segunda vez com menos esforço, se ainda couber no teto do corte.
-    const sobra = o.tetoRestanteUsd == null ? null : Number(o.tetoRestanteUsd) - gasto;
-    if (!acabouPensando(e) || effort === "low" || (sobra !== null && sobra < 0.25)) throw e;
-    resposta = await pedir(effort === "medium" ? "low" : "medium", tetoDeSaida(maxTokens, sobra));
-  }
+/** Uma chamada só (sem segunda tentativa aqui dentro: a fase inteira precisa caber no prazo da função). */
+async function chamar(kit: KitDoWorker, pedido: string, padrao: { esforco: Esforco; maxTokens: number }, o: Opcoes): Promise<{ arquivos: Record<string, string>; bruto: string }> {
+  const esforco = o.esforco ?? padrao.esforco;
+  const resposta = await askClaude(SISTEMA, pedido, {
+    cachedPrefix: prefixoDaCena(kit),
+    cacheTtl: "1h",
+    model: modeloDasCenas(),
+    maxTokens: tetoDeSaida(esforco === "low" ? Math.min(padrao.maxTokens, 24_000) : padrao.maxTokens, o.tetoRestanteUsd),
+    timeoutMs: LIMITE_DA_CHAMADA_MS,
+    effort: esforco,
+    usage: { projectId: o.usage.projectId ?? undefined, operation: o.usage.operation },
+    onCusto: (usd) => o.onCusto?.(usd),
+  });
   return { arquivos: lerArquivosDaResposta(resposta), bruto: resposta };
 }
 
@@ -117,9 +119,7 @@ export async function escreverCenas(a: { kit: KitDoWorker; contexto: ContextoDaC
   const pedido = `${blocoDoCorte(a.contexto, a.fala)}
 
 Escreva o roteiro.json e as cenas deste corte na técnica "${a.contexto.tecnica}", no nível dos exemplos aprovados: cada ideia da fala explicada na hora em que é dita, as cores e a letra da marca, nada inventado.`;
-  // 64 mil de teto: a maquete 3D fez o Sonnet 5 gastar 40 mil só pensando na prova de 10/10
-  // (a segunda tentativa, com esforço médio, fica em `chamar`)
-  const r = await chamar(a.kit, pedido, 64_000, undefined, a);
+  const r = await chamar(a.kit, pedido, ESFORCO_E_TETO.escrever, a);
   if (!r.arquivos["roteiro.json"]) throw new Error(`a escrita da cena voltou sem roteiro.json (${r.bruto.slice(0, 200)})`);
   return r.arquivos;
 }
@@ -137,7 +137,7 @@ ${blocos(a.arquivos)}
 ${lista}
 
 Conserte SÓ o que foi apontado, mantendo todo o resto como está. Devolva só os arquivos que mudaram, cada um inteiro.`;
-  return (await chamar(a.kit, pedido, 24_000, "medium", a)).arquivos;
+  return (await chamar(a.kit, pedido, ESFORCO_E_TETO.consertar, a)).arquivos;
 }
 
 /** O conserto das cenas que a revisão reprovou: reescreve SÓ os arquivos com defeito. */
@@ -155,6 +155,6 @@ ${blocos(a.arquivos)}
 ${lista}
 
 Reescreva SÓ estes arquivos: ${a.alvo.join(", ")}. Corrija o defeito apontado (mover, encolher, trocar o momento, tirar o que cobre o rosto ou a legenda) e mantenha a ideia, a sincronia com a fala e tudo o que estava certo. Defeito do recorte da pessoa (halo, mão sumindo) não se conserta no código: não mexa por causa dele. Devolva só esses arquivos, cada um inteiro.`;
-  const r = await chamar(a.kit, pedido, 24_000, "medium", a);
+  const r = await chamar(a.kit, pedido, ESFORCO_E_TETO.consertar, a);
   return Object.fromEntries(Object.entries(r.arquivos).filter(([n]) => a.alvo.includes(n)));
 }
