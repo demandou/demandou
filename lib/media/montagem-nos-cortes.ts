@@ -1736,7 +1736,7 @@ export async function concluirMontagem(
     tempos?: Record<string, number>;
     erro?: string;
     reiniciado?: boolean;
-    curso?: { modelo?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[]; tecnica?: string } | null;
+    curso?: { modelo?: string; mapa?: string; voltas?: number; custoUsd?: number; historico?: unknown[]; avisos?: string[]; tecnica?: string; tipos?: Array<{ tipo: string; vezes: number; exemplo?: string }> } | null;
   }
 ): Promise<"trocado" | "ignorado" | "falhou"> {
   const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { clips: true } });
@@ -1763,7 +1763,7 @@ export async function concluirMontagem(
       t,
       {
         ...lido,
-        curso: { ...lido.curso, mapa: c.mapa?.slice(0, 8000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico, avisos: c.avisos, ...(c.tecnica ? { tecnica: c.tecnica } : {}) },
+        curso: { ...lido.curso, mapa: c.mapa?.slice(0, 8000), voltas: c.voltas, custoUsd: c.custoUsd, historico: c.historico, avisos: c.avisos, ...(c.tecnica ? { tecnica: c.tecnica } : {}), ...(Array.isArray(c.tipos) && c.tipos.length ? { tipos: c.tipos.slice(0, 30) } : {}) },
         custoUsd: c.custoUsd ?? lido.custoUsd,
       },
       resultado.montado,

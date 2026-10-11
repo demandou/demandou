@@ -2588,7 +2588,7 @@ const servidor = createServer((req, res) => {
         ok: true,
         montado,
         tempos: e.tempos,
-        curso: { modelo: pedido.modelo, versao: e.modelo, formato: e.formato, mapa: e.mapa, voltas: e.voltas, historico: e.historico, custoUsd: e.custoUsd, avisos: e.avisos, ...(e.blocos ? { blocos: e.blocos } : {}), ...(e.render ? { render: e.render } : {}) },
+        curso: { modelo: pedido.modelo, versao: e.modelo, formato: e.formato, mapa: e.mapa, ...(e.tipos?.length ? { tipos: e.tipos } : {}), voltas: e.voltas, historico: e.historico, custoUsd: e.custoUsd, avisos: e.avisos, ...(e.blocos ? { blocos: e.blocos } : {}), ...(e.render ? { render: e.render } : {}) },
         segundos: Math.round((Date.now() - inicio) / 1000),
         retorno: pedido.retorno ?? null,
       };
