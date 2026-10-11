@@ -136,6 +136,32 @@ export function useApresentador(): Apresentador {
   return a;
 }
 
+/**
+ * A ÁREA LIVRE AO LADO DA JANELA (11/10, teste da Maquete 3D em 16:9: o título do topo,
+ * centrado no quadro, passava por cima da moldura da pessoa). O maior retângulo do quadro
+ * que não cruza a janela: o lado (esquerdo ou direito) mais largo; se a janela ocupa a
+ * largura toda, a faixa de cima ou de baixo mais alta. `margem` afasta da janela e da borda. Puro.
+ */
+export function areaLivreDe(caixa: Caixa, largura: number, altura: number, margem = 40): Caixa {
+  const esquerda = caixa.x - 2 * margem;
+  const direita = largura - (caixa.x + caixa.l) - 2 * margem;
+  if (Math.max(esquerda, direita) >= largura * 0.25) {
+    return direita >= esquerda
+      ? { x: caixa.x + caixa.l + margem, y: margem, l: direita, a: altura - 2 * margem }
+      : { x: margem, y: margem, l: esquerda, a: altura - 2 * margem };
+  }
+  const cima = caixa.y - 2 * margem;
+  const baixo = altura - (caixa.y + caixa.a) - 2 * margem;
+  return cima >= baixo
+    ? { x: margem, y: margem, l: largura - 2 * margem, a: Math.max(0, cima) }
+    : { x: margem, y: caixa.y + caixa.a + margem, l: largura - 2 * margem, a: Math.max(0, baixo) };
+}
+
+/** A área livre no quadro atual (dentro de uma cena): título e cartão vão nela e nunca cruzam a janela. */
+export function useAreaLivre(margem = 40): Caixa {
+  return areaLivreDe(useApresentador().caixa, LARGURA, ALTURA, margem);
+}
+
 type Desenho = { estado: Estado; plano: { x: number; y: number; escala: number }; alfa: { x: number; y: number; escala: number }; apresentador: Apresentador };
 
 /** A conta do quadro atual: onde fica cada camada e o que a cena precisa saber. */

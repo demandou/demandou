@@ -10,7 +10,7 @@ export type { Palavra, PontoDoRosto, Tecnica, DadosDoCorte } from "./dados";
 export { useTempo, k, mix, janela, suavizar, dito, ditoAte, falaEntre, normalizar, SAIDA, ENTRADA, MEIO, MOLA } from "./tempo";
 export { MARCA, misturar, comAlfa } from "./marca";
 export { LETRA, comoTitulo } from "./letra";
-export { useApresentador } from "./apresentador";
+export { useApresentador, useAreaLivre, areaLivreDe } from "./apresentador";
 export type { Apresentador } from "./apresentador";
 export { caminhoDaMoldura, cantosDaForma, recuarMoldura, cruzam } from "./moldura";
 export type { Caixa, Forma, Cantos } from "./moldura";

@@ -55,7 +55,7 @@ const ESQUEMA = {
 const SISTEMA = `Você descreve, de forma objetiva, defeitos VISUAIS em quadros de um vídeo já editado, em pé ou deitado (motion graphics sobre uma pessoa falando). Você NÃO decide nada: só descreve o que vê. Cada quadro vem com um rótulo (k, o instante, as cenas no ar e a fala daquele momento).
 Liste para cada quadro só os defeitos que se veem:
 - "texto-cortado": palavra ou número saindo da borda do quadro, cortado no meio, ou letra faltando;
-- "texto-sobreposto": um texto em cima de outro texto, ou cartão em cima de cartão escondendo o conteúdo;
+- "texto-sobreposto": um texto em cima de outro texto, cartão em cima de cartão escondendo o conteúdo, ou título/letreiro atravessando a moldura da janela da pessoa (parte da letra por trás ou por cima da borda dela);
 - "texto-no-rosto": texto, cartão ou objeto cobrindo o rosto ou a boca da pessoa (texto ATRÁS da cabeça, com a cabeça na frente das letras, é proposital e NÃO é defeito);
 - "legenda-coberta": a legenda (as duas linhas de baixo) coberta por cartão, título ou objeto;
 - "ilegivel": texto pequeno demais, apagado ou sem contraste para ler no celular;

@@ -93,6 +93,7 @@ export const Atras: React.FC<CenaProps> = ({ de, ate }) => {
 - `cabeca: { x, topo }` (só com recorte): para pôr a palavra grande ATRÁS da cabeça. A regra que funcionou na aula 8.2: a base das letras uns 60 px abaixo de `cabeca.topo`, para a cabeça cobrir o pé das letras do meio e a palavra continuar legível.
 - `caixa`: a janela agora (para os elementos à frente da borda, aula 8.2: "pequenos destaques à frente da moldura").
 - `cruzam(a, b)` diz se duas caixas se cruzam.
+- `useAreaLivre(margem?)` → `{ x, y, l, a }`: o maior retângulo do quadro que NÃO cruza a janela (o lado mais largo; com a janela na largura toda, a faixa de cima ou de baixo). Com a janela fora da tela cheia (sobretudo no 16:9 do completo), TODO título, letreiro e cartão vai dentro da área livre: centrado nela, nunca centrado no quadro. Texto que cruza a moldura da pessoa reprova a revisão.
 
 ## 6. Peças de texto e traço
 
