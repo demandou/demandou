@@ -237,7 +237,20 @@ export function frasePedeEquipamento(frase: string): boolean {
   return EQUIPAMENTO.test(frase);
 }
 
-export type CoresDaPeca = { fundo: string; titulo: string; destaque: string };
+/**
+ * `destaqueNoTexto` (11/10): a cor da LETRA em destaque, o mesmo matiz da marca
+ * com contraste de leitura sobre o fundo (lib/media/papeis-da-paleta.ts,
+ * destaqueLegivel). Ausente, a letra usa o próprio destaque.
+ */
+export type CoresDaPeca = { fundo: string; titulo: string; destaque: string; destaqueNoTexto?: string };
+
+/** A frase das palavras em destaque: cor legível, e nunca a palavra repetida. Puro. */
+function linhaDoDestaqueNaLetra(c: CoresDaPeca): string {
+  const letra = c.destaqueNoTexto && c.destaqueNoTexto.toLowerCase() !== c.destaque.toLowerCase() ? c.destaqueNoTexto : null;
+  return letra
+    ? ` Key words written in the accent use ${letra} (the same hue of the accent, lighter or darker so they read clearly on the background); lines and shapes keep ${c.destaque}.`
+    : "";
+}
 
 /** O que a arte é: o post, a capa e a lâmina do carrossel, e as capas do vídeo (11/10): a thumb 16:9 do completo e a capa 9:16 do corte. */
 export type TipoDaArte = "post" | "capa" | "lamina" | "thumb" | "capa-vertical";
@@ -328,7 +341,7 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     `No other word, letter or number anywhere: no label, page number, logo, watermark, signature, date, place name, fake interface or English word. Font names, the style name, the subject and every instruction in this prompt are NEVER written on the image. Leave out anything that would normally carry writing (price tags, signs, plaques, screens, documents, buttons).`,
     `LABELS: any label, arrow, callout, leader line, tag, caption or annotation that the style uses may ONLY contain words copied from the sentence above (for example pointing to one of its key words); otherwise draw it as lines and dots with NO text at all. Never invent a label word.`,
     "",
-    `COLORS (the client's brand, use exactly; ignore any color the style might suggest): background and dominant field ${e.cores.fundo}; hero text ${e.cores.titulo}; accent ${e.cores.destaque} ONLY in details (thin lines, highlights, one or two key words, small shapes, lights). ${s.papeisDasCores} Rendered materials and light keep their natural look; the brand color is never a tint over the whole image.`,
+    `COLORS (the client's brand, use exactly; ignore any color the style might suggest): background and dominant field ${e.cores.fundo}; hero text ${e.cores.titulo}; accent ${e.cores.destaque} ONLY in details (thin lines, highlights, one or two key words, small shapes, lights). ${s.papeisDasCores}${linhaDoDestaqueNaLetra(e.cores)} The key words in the accent are words that appear only ONCE in the sentence; never highlight a repeated word. Rendered materials and light keep their natural look; the brand color is never a tint over the whole image.`,
     "",
     `AVOID: ${s.evitar} ${linhaDaPessoa(s, e.comFotoDaPessoa)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No real brand logos or app icons (Instagram, TikTok, YouTube, Facebook, WhatsApp and the like), even when the speaker names them: use plain generic shapes. No long dash.`,
   ];
@@ -385,4 +398,22 @@ export function tipografiaDoEstilo(s: Pick<PromptDeEstilo, "tipografia">): "cond
 /** O estilo como LINGUAGEM, para o infográfico (o layout dele manda; aqui só como desenhar). Puro. */
 export function estiloComoLinguagem(s: PromptDeEstilo): string {
   return semTravessao(`${s.nomeDoEstilo}: ${s.atmosfera} ${s.textura} ${s.luz} Typography: ${s.tipografia}`);
+}
+
+/**
+ * O INFOGRÁFICO NO ESTILO ESCOLHIDO (11/10): a Maquete 3D saiu como infográfico
+ * escuro genérico com ícones, porque só a atmosfera do estilo ia ao prompt (e
+ * ele mandava ignorar os objetos que o estilo nomeia). Agora o ELEMENTO VISUAL
+ * do estilo (a maquete, o recorte, o card com gráfico) desenha o visual
+ * principal e os módulos, e o que o estilo evita vale no infográfico. Puro.
+ */
+export function linguagemDoInfografico(s: PromptDeEstilo): { nome: string; desenho: string; elemento: string; tipografia: string; evitar: string } {
+  return {
+    nome: s.nomeDoEstilo,
+    desenho: semTravessao(`${s.atmosfera} ${s.textura} ${s.luz}`),
+    elemento: semTravessao(s.elementoVisual),
+    tipografia: semTravessao(s.tipografia),
+    // A pessoa só entra no estilo que a pede e com a foto; o infográfico não leva foto.
+    evitar: semTravessao(`${s.evitar}${s.pessoa ? " No people in the infographic." : ""}`),
+  };
 }

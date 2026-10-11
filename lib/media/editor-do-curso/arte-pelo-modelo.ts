@@ -212,6 +212,17 @@ export function tetoDoLoteUsd(pecas: number, env: Record<string, string | undefi
  */
 export const PRAZO_DA_ARTE_NO_MODELO_MS = 2 * 60 * 60 * 1000;
 
+/**
+ * Quanto o "fazendo" vale quando a arte sai pela IA de imagem (11/10): a rota
+ * das artes tem 800 s de função e não espera fila do worker. Passado isto, o
+ * vigia refaz no mesmo estilo; duas voltas sem sair, falha técnica com "Tentar
+ * de novo". Duas horas de "fazendo" (o prazo do template) era esperar à toa.
+ */
+export const PRAZO_DA_ARTE_PELA_IA_MS = 25 * 60 * 1000;
+
+/** Quantas vezes o vigia refaz o lote pela IA que morreu no meio antes de parar como falha técnica. */
+export const VOLTAS_DO_VIGIA = 2;
+
 export type ArteNoModeloDoPost = {
   lote: string;
   /** As peças do lote que fazem a arte deste post (o carrossel, todas as lâminas na ordem). */
@@ -235,11 +246,41 @@ export type ArteNoModeloDoPost = {
  */
 export function marcasDoModelo(
   meta: unknown,
-  m: { lote: string; indices: number[]; formato: FormatoNoModelo; modelo: string; origem?: "semana" | "refazer" },
+  m: { lote: string; indices: number[]; formato: FormatoNoModelo; modelo: string; origem?: "semana" | "refazer"; pelaIa?: boolean },
   agora: Date = new Date()
 ): Record<string, unknown> {
   const arte: ArteNoModeloDoPost = { lote: m.lote, indices: m.indices, formato: m.formato, modelo: m.modelo, pendente: true, origem: m.origem ?? "semana", desde: agora.toISOString() };
-  return { ...marcarGerando(meta, agora, { prazoMs: PRAZO_DA_ARTE_NO_MODELO_MS }), arteNoModelo: arte };
+  return { ...marcarGerando(meta, agora, { prazoMs: prazoDaArte(m.pelaIa) }), arteNoModelo: arte };
+}
+
+/** O prazo do "fazendo": o da IA (minutos) ou o do template na fila do worker (horas). Puro. */
+export function prazoDaArte(pelaIa: boolean | undefined): number {
+  return pelaIa ? PRAZO_DA_ARTE_PELA_IA_MS : PRAZO_DA_ARTE_NO_MODELO_MS;
+}
+
+/**
+ * A ESCRITA QUE NÃO DESFAZ A ARTE (11/10). No teste de ponta a ponta, três
+ * posts ficaram com a arte na tela e `arteNoModelo.pendente: true` para sempre:
+ * a correção da Vera (lib/media/correcao-do-dia-do-video.ts) leu o metadata
+ * ANTES de a arte pela IA sair, reescreveu a legenda por um minuto e gravou o
+ * metadata velho por cima, devolvendo o "fazendo" e o pendente que a arte já
+ * tinha fechado. Quem grava depois de um trabalho longo parte do metadata ATUAL
+ * (lido na hora) e põe só o que mudou. Com arte nova no estilo do post, o
+ * `arteNoModelo` fecha e a espera sai. Puro.
+ */
+export function metadataComMudancas(atual: unknown, mudancas: Record<string, unknown>, o: { arteNovaNoEstilo?: boolean; agora?: Date } = {}): Record<string, unknown> {
+  const m = { ...(atual && typeof atual === "object" && !Array.isArray(atual) ? (atual as Record<string, unknown>) : {}), ...mudancas };
+  if (!o.arteNovaNoEstilo) return m;
+  delete m.aguardandoIdentidade;
+  delete m.gerandoArte;
+  delete m.arteFalhou;
+  const arte = m.arteNoModelo && typeof m.arteNoModelo === "object" ? { ...(m.arteNoModelo as Record<string, unknown>) } : null;
+  if (arte) {
+    delete arte.reserva;
+    delete arte.reservaFalhou;
+    m.arteNoModelo = { ...arte, pendente: false, feitoEm: (o.agora ?? new Date()).toISOString(), pelaIa: true };
+  }
+  return m;
 }
 
 /** O `arteNoModelo` de um metadata, quando é válido. Puro. */

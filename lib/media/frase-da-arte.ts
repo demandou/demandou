@@ -80,12 +80,83 @@ export function pareceTruncada(frase: string): boolean {
   if (/[,;:]\.?$/.test(t)) return true;
   // "(relações, valores." : ponto pregado depois de uma lista que não fechou.
   if (/\([^)]*\.$/.test(t)) return true;
+  // Termina numa palavra que nunca fecha frase (artigo, preposição, conjunção,
+  // "o que"): "é fazer certo com o que você" (11/10) é pedaço, não frase.
+  const semPonto = t.replace(/[.!?…"”')\]]+$/, "").trim();
+  const ultimas = semPonto.toLowerCase().split(/\s+/);
+  if (NUNCA_FECHA.has(ultimas[ultimas.length - 1] ?? "")) return true;
+  if (/\bo que (voc[eê]|a gente|n[oó]s|eles?|elas?)$/i.test(semPonto)) return true;
   return false;
+}
+
+/** Palavras que nunca terminam uma frase em português. */
+const NUNCA_FECHA = new Set(
+  "o a os as um uma uns umas de do da dos das em no na nos nas com sem para pra por pelo pela pelos pelas ao aos e ou mas que se seu sua seus suas meu minha nosso nossa cujo cuja entre sobre até porque quando como".split(" ")
+);
+
+const VAZIAS = new Set("o a os as um uma de do da dos das em no na nos nas com e ou que se é não para pra por".split(" "));
+const normal = (w: string) => w.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+
+/**
+ * A FRASE QUE REPETE A SI MESMA (11/10): "Marta se ocupava fazendo tarefa boa
+ * atrás de tarefa boa" saiu na lâmina, e o destaque da arte caiu no "tarefa
+ * boa" repetido; lida na arte, parece erro. Devolve o trecho repetido (duas ou
+ * mais palavras seguidas que voltam na mesma frase, com pelo menos uma palavra
+ * de conteúdo), ou null. Puro.
+ */
+export function trechoRepetido(frase: string): string | null {
+  const ws = limpar(frase).split(" ").map(normal).filter(Boolean);
+  for (let n = Math.min(4, Math.floor(ws.length / 2)); n >= 2; n--) {
+    const vistos = new Map<string, number>();
+    for (let i = 0; i + n <= ws.length; i++) {
+      const pedaco = ws.slice(i, i + n);
+      if (pedaco.every((w) => VAZIAS.has(w))) continue;
+      const k = pedaco.join(" ");
+      const antes = vistos.get(k);
+      // Sobreposto ("a a a") não conta como volta; tem de reaparecer depois de terminar.
+      if (antes !== undefined && i >= antes + n) return k;
+      if (antes === undefined) vistos.set(k, i);
+    }
+  }
+  return null;
+}
+
+/** O que impede a frase de ir para a arte: truncada ou repetindo um trecho. Null quando serve. Puro. */
+export function problemaDaFrase(frase: string): string | null {
+  if (pareceTruncada(frase)) return "a frase não fecha (termina no meio de uma ideia)";
+  const rep = trechoRepetido(frase);
+  if (rep) return `a frase repete "${rep}"`;
+  return null;
 }
 
 /**
  * A MANCHETE CURTA pelo redator: quando nenhuma frase completa cabe no teto.
  * É escrita (texto), então é do Claude; a decisão de pedir é do código.
+ */
+/** Quem escreve a manchete (o Claude, só texto). Parâmetro para o teste trocar por um falso. */
+export type RedatorDaManchete = (sistema: string, pedido: string) => Promise<string>;
+
+const redatorPadrao = (usage?: { projectId?: string; runId?: string }): RedatorDaManchete => async (sistema, pedido) => {
+  const { askClaude } = await import("@/lib/claude");
+  return askClaude(sistema, pedido, { maxTokens: 400, effort: "low", usage: { operation: "manchete_curta", ...usage } });
+};
+
+/** Quantas vezes o redator é chamado antes de desistir da manchete. */
+export const TENTATIVAS_DA_MANCHETE = 3;
+
+/**
+ * A MANCHETE CURTA pelo redator: quando nenhuma frase completa cabe no teto,
+ * ou quando a frase não serve (`porque`: repete um trecho, não fecha). É
+ * escrita (texto), então é do Claude; a decisão de pedir é do código.
+ *
+ * NUNCA CORTA POR PALAVRA (11/10): o corte na última palavra inteira que cabia
+ * pôs na arte "Excelência não é ter o mais caro, é fazer certo com o que você"
+ * (a manchete tinha uma palavra a mais que o teto, e o "tem" ficou de fora).
+ * Agora a manchete que não cabe ou não fecha volta ao redator dizendo o que
+ * errou, até três vezes; sem nenhuma que sirva, fica a manchete INTEIRA mais
+ * curta que fecha e cabe nos caracteres (passar umas palavras do teto não
+ * quebra a arte; frase cortada quebra), e sem nenhuma, lança: quem chama não
+ * põe frase pela metade na arte.
  */
 export async function mancheteCurta(o: {
   fraseLonga: string;
@@ -93,30 +164,46 @@ export async function mancheteCurta(o: {
   maxCaracteres?: number;
   contexto?: string;
   usage?: { projectId?: string; runId?: string };
+  /** O motivo de reescrever quando não é o tamanho (a frase repete um trecho, não fecha). */
+  porque?: string;
+  redator?: RedatorDaManchete;
 }): Promise<string> {
-  const { askClaude } = await import("@/lib/claude");
+  const redator = o.redator ?? redatorPadrao(o.usage);
   const maxCaracteres = o.maxCaracteres ?? TETO_DA_FRASE;
-  const bruto = await askClaude(
-    "Você escreve a manchete de uma arte de rede social em português do Brasil. Devolva SÓ a manchete, sem aspas, sem comentário. Nunca use travessão. Nunca invente número, nome ou dado que não esteja no texto.",
-    `A frase abaixo é longa demais para caber na arte. Reescreva-a como UMA manchete completa, com sentido fechado, de no máximo ${o.maxPalavras} palavras e ${maxCaracteres} caracteres, mantendo a ideia e as palavras fortes dela. Nunca uma frase cortada pela metade.
+  const teto = { caracteres: maxCaracteres, palavras: o.maxPalavras };
+  const sistema = "Você escreve a manchete de uma arte de rede social em português do Brasil. Devolva SÓ a manchete, sem aspas, sem comentário. Nunca use travessão. Nunca invente número, nome ou dado que não esteja no texto.";
+  const candidatas: string[] = [];
+  let erro = "";
+  for (let t = 0; t < TENTATIVAS_DA_MANCHETE; t++) {
+    const motivo = o.porque && t === 0 ? `A frase abaixo não serve para a arte: ${o.porque}.` : "A frase abaixo é longa demais para caber na arte.";
+    const bruto = await redator(
+      sistema,
+      `${motivo} Reescreva-a como UMA manchete completa, com sentido fechado, de no máximo ${o.maxPalavras} palavras e ${maxCaracteres} caracteres, mantendo a ideia e as palavras fortes dela. Nunca uma frase cortada pela metade; nunca repita a mesma palavra ou expressão dentro da manchete.${erro ? `\n\nA SUA TENTATIVA ANTERIOR NÃO SERVIU: ${erro}. Escreva outra.` : ""}
 
-FRASE LONGA:
+FRASE:
 ${o.fraseLonga}
-${o.contexto ? `\nCONTEXTO (de onde a frase veio):\n${o.contexto.slice(0, 1500)}` : ""}`,
-    { maxTokens: 400, effort: "low", usage: { operation: "manchete_curta", ...o.usage } }
-  );
-  const manchete = limpar(bruto.split("\n")[0]).replace(/^["“]|["”]$/g, "").replace(/\s*[—–]\s*/g, ", ");
-  // O redator estourou o teto: fica a primeira frase completa dele que cabe, ou o corte na última palavra inteira (sem reticências).
-  if (textoCabe(manchete, { caracteres: maxCaracteres, palavras: o.maxPalavras })) return manchete;
-  const completa = fraseCompleta(manchete, { caracteres: maxCaracteres, palavras: o.maxPalavras });
-  if (completa) return completa;
-  const palavras = manchete.split(" ").slice(0, o.maxPalavras);
-  let curta = palavras.join(" ");
-  while (curta.length > maxCaracteres && palavras.length > 1) {
-    palavras.pop();
-    curta = palavras.join(" ");
+${o.contexto ? `\nCONTEXTO (de onde a frase veio):\n${o.contexto.slice(0, 1500)}` : ""}`
+    );
+    const manchete = limpar(bruto.split("\n")[0]).replace(/^["“]|["”]$/g, "").replace(/\s*[—–]\s*/g, ", ");
+    if (!manchete) {
+      erro = "veio vazia";
+      continue;
+    }
+    const problema = problemaDaFrase(manchete);
+    if (problema) {
+      erro = `"${manchete}": ${problema}`;
+      continue;
+    }
+    if (textoCabe(manchete, teto)) return manchete;
+    // A primeira frase completa dela que cabe (inteira, nunca um pedaço).
+    const completa = fraseCompleta(manchete, teto);
+    if (completa && !problemaDaFrase(completa)) return completa;
+    candidatas.push(manchete);
+    erro = `"${manchete}" tem ${manchete.split(" ").length} palavras e ${manchete.length} caracteres, acima do teto`;
   }
-  return curta.replace(/[,;:]$/, "");
+  const inteira = candidatas.filter((c) => c.length <= maxCaracteres).sort((a, b) => a.length - b.length)[0];
+  if (inteira) return inteira;
+  throw new Error(`a manchete da arte não saiu inteira dentro do teto (${erro})`);
 }
 
 /**
@@ -129,9 +216,11 @@ export async function fraseGarantida(o: {
   maxCaracteres?: number;
   contexto?: string;
   usage?: { projectId?: string; runId?: string };
+  redator?: RedatorDaManchete;
 }): Promise<string> {
   const teto = { caracteres: o.maxCaracteres ?? TETO_DA_FRASE, palavras: o.maxPalavras };
   const pronta = fraseCompleta(o.bruta, teto);
-  if (pronta && !pareceTruncada(pronta)) return pronta;
-  return mancheteCurta({ fraseLonga: o.bruta, maxPalavras: o.maxPalavras ?? 12, maxCaracteres: teto.caracteres, contexto: o.contexto, usage: o.usage });
+  const problema = pronta ? problemaDaFrase(pronta) : null;
+  if (pronta && !problema) return pronta;
+  return mancheteCurta({ fraseLonga: o.bruta, maxPalavras: o.maxPalavras ?? 12, maxCaracteres: teto.caracteres, contexto: o.contexto, usage: o.usage, porque: problema ?? undefined, redator: o.redator });
 }

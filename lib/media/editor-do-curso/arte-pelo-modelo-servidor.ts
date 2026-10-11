@@ -13,7 +13,9 @@ import {
   formatoNoModelo,
   legendaComCreditos,
   marcasDoModelo,
+  metadataComMudancas,
   planoDoCallback,
+  VOLTAS_DO_VIGIA,
   tetoDoLoteUsd,
   textoDoInfograficoNoModelo,
   type CallbackDaArte,
@@ -21,8 +23,9 @@ import {
   type PecaDoLote,
   type PostDoLote,
 } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
-import { estiloDasArtesDoProjeto, estiloVaiPelaIa, promptDeEstiloDoModelo } from "@/lib/media/editor-do-curso/arte-pela-ia";
+import { ehEstiloSobMedida, estiloDasArtesDoProjeto, estiloVaiPelaIa, promptDeEstiloDoModelo } from "@/lib/media/editor-do-curso/arte-pela-ia";
 import { TENTATIVAS_NO_ESTILO } from "@/lib/media/editor-do-curso/arte-pela-ia-servidor";
+import { lastroDaArte } from "@/lib/media/lastro-do-video";
 
 /**
  * O LADO DO SERVIDOR DAS ARTES PELO MODELO DO CURSO (10/10/2026). As decisões
@@ -170,6 +173,10 @@ async function extrasDoVideo(videoJobId: string, o: { semFoto: boolean; quantas:
  * `retorno` extra: o que o callback precisa além do lote (a capa leva o vídeo e o alvo).
  */
 export async function enviarLoteAoWorker(o: { chave: string; projectId: string; runId: string | null; modelo: string; pecas: PecaDoLote[]; base: BaseDoPedido; pessoaUrl?: string | null; retorno?: Record<string, unknown> }): Promise<{ ok: true } | { ok: false; erro: string }> {
+  // A OPÇÃO SOB MEDIDA NUNCA VAI AO WORKER (11/10): ela não tem template lá, e
+  // o lote ficaria esperando um retorno que não vem. Quem chama cai na IA no
+  // mesmo estilo (a recusa é o caminho da segunda tentativa).
+  if (ehEstiloSobMedida(o.modelo)) return { ok: false, erro: `a opção ${o.modelo} é desenhada pela IA, não pelo template do worker` };
   const worker = (process.env.VIDEO_WORKER_URL ?? "").replace(/\/$/, "");
   if (!worker) return { ok: false, erro: "VIDEO_WORKER_URL não configurado" };
   const app = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
@@ -327,13 +334,15 @@ async function reservaDoLote(projectId: string, lote: string, motivo: string): P
  * Continua pendente até a reserva sair: se a reserva morrer no meio (a função
  * que roda depois da resposta tem teto), o vigia a refaz depois do prazo.
  */
-export async function marcarReserva(postIds: string[], motivo: string): Promise<void> {
+export async function marcarReserva(postIds: string[], motivo: string, o: { doVigia?: boolean } = {}): Promise<void> {
   for (const id of postIds) {
     const p = await prisma.post.findUnique({ where: { id }, select: { metadata: true } });
     if (!p) continue;
     const m = marcarGerando(p.metadata, new Date(), { prazoMs: 30 * 60_000 });
     const arte = (m.arteNoModelo && typeof m.arteNoModelo === "object" ? m.arteNoModelo : {}) as Record<string, unknown>;
-    const meta = { ...m, arteNoModelo: { ...arte, pendente: true, reserva: motivo.slice(0, 300) } };
+    // As voltas do vigia (11/10) contam: passado o teto, a peça para como falha técnica, nunca "fazendo" para sempre.
+    const voltas = (Number(arte.voltasDoVigia) || 0) + (o.doVigia ? 1 : 0);
+    const meta = { ...m, arteNoModelo: { ...arte, pendente: true, reserva: motivo.slice(0, 300), ...(voltas ? { voltasDoVigia: voltas } : {}) } };
     await prisma.post.update({ where: { id }, data: { metadata: meta as Prisma.InputJsonValue } }).catch(() => {});
   }
 }
@@ -466,6 +475,38 @@ export async function redesenharNoEstilo(projectId: string, postIds: string[]): 
   return desenharGrupoNoEstilo(projectId, posts, projeto?.niche ?? null, { tentativas: TENTATIVAS_NO_ESTILO });
 }
 
+/**
+ * A FRASE NOVA NO ESTILO DO POST (11/10, a correção da Vera): quando a Vera
+ * aponta a frase de uma imagem que tem estilo (modelo do curso ou opção sob
+ * medida), a Diana redesenha NO MESMO estilo, pela IA, com duas tentativas.
+ * Antes ia pelo caminho antigo (arteDoDia), trocando o estilo sozinho. Devolve
+ * a imagem (data URI); lança quando não sai, e quem chama mantém a arte e a
+ * frase de antes.
+ */
+export async function arteNoEstiloComFrase(o: {
+  projectId: string;
+  post: { id: string; platform: string; runId: string | null; dayOfWeek: number | null; metadata: unknown; content: string };
+  frase: string;
+  nicho: string | null;
+}): Promise<string> {
+  const modelo = estiloGravadoNoPost(o.post.metadata);
+  if (!modelo || !promptDeEstiloDoModelo(modelo)) throw new Error(`o estilo ${modelo ?? "(nenhum gravado no post)"} não tem o prompt de estilo`);
+  const meta = (o.post.metadata ?? {}) as { videoJobId?: unknown };
+  const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
+  const { desenharPelaIa, noMesmoEstilo } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+  const marca = await marcaDaArte(o.projectId, { runId: o.post.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts([o.post]) });
+  const doVideo = await falaEFotoDoVideo(typeof meta.videoJobId === "string" ? meta.videoJobId : null, Boolean(promptDeEstiloDoModelo(modelo)?.pessoa));
+  return noMesmoEstilo(
+    async () => {
+      const porRede = await desenharPelaIa({ projectId: o.projectId, runId: o.post.runId, modelo, mediaType: "image", redes: [o.post.platform], frase: o.frase, textoDoPost: o.post.content, dia: o.post.dayOfWeek, nicho: o.nicho, marca, ...doVideo });
+      const img = porRede[o.post.platform];
+      if (!img) throw new Error("a IA não devolveu a arte desta rede");
+      return img;
+    },
+    { tentativas: TENTATIVAS_NO_ESTILO, rotulo: `correção ${o.post.id} no ${modelo}` }
+  );
+}
+
 /** O estilo gravado no post (o modelo do curso ou a opção sob medida da semana), ou null. */
 export function estiloGravadoNoPost(meta: unknown): string | null {
   const m = (meta ?? {}) as { arteNoModelo?: { modelo?: unknown } };
@@ -531,7 +572,8 @@ async function desenharGrupoNoEstilo(projectId: string, posts: PostDaReserva[], 
     const chave = process.env.GEMINI_API_KEY;
     if (!chave) throw new Error("GEMINI_API_KEY não configurada");
     const { extrairConteudoDoInfografico } = await import("@/lib/media/infographic");
-    infografico = await extrairConteudoDoInfografico(base.content, nicho ?? "negocios", chave, { projectId });
+    // Número só da fala (11/10): a extração já sabe quais a pessoa disse.
+    infografico = await extrairConteudoDoInfografico(base.content, nicho ?? "negocios", chave, { projectId, ...(doVideo.fala ? { numerosSoDaFala: lastroDaArte({ transcricao: doVideo.fala, material: [nicho] }) } : {}) });
     novo.infografico = infografico;
   }
   const porRede = await noMesmoEstilo(
@@ -579,34 +621,43 @@ async function desenharGrupoNoEstilo(projectId: string, posts: PostDaReserva[], 
 
 /**
  * O VIGIA DOS LOTES QUE NÃO VOLTARAM (cron da fila): post pendente cujo prazo
- * passou. Antes de desistir, pergunta ao worker (`/vivo` com a chave do lote):
- * rodando ou esperando a vez, o prazo cresce 30 min (até o teto de 6 h);
- * ausente ou fora do ar, o lote vai à segunda tentativa no MESMO estilo (pela IA). Poucos lotes por
- * passada: cada tentativa leva minutos. O lote pela IA que morreu no meio volta às duas tentativas.
+ * passou. O lote do template pergunta antes ao worker (`/vivo` com a chave do
+ * lote): rodando ou esperando a vez, o prazo cresce 30 min (até o teto de 6 h).
+ * O lote pela IA (11/10) não tem o que perguntar ao worker: refaz direto no
+ * MESMO estilo. Cada volta do vigia conta; passado VOLTAS_DO_VIGIA, a peça para
+ * como falha técnica com "Tentar de novo" (nunca "fazendo" para sempre, nunca
+ * outro estilo). Poucos lotes por passada: cada tentativa leva minutos.
+ *
+ * E o conserto do estado que sobreviveu ao fato (11/10): post COM arte e
+ * `arteNoModelo.pendente` ainda true (uma escrita velha por cima da arte que
+ * já tinha saído) fecha aqui, sem desenhar de novo.
  */
-export async function vigiarArtesNoModelo(o: { maximo?: number } = {}): Promise<{ olhados: number; estendidos: number; reserva: number }> {
+export async function vigiarArtesNoModelo(o: { maximo?: number } = {}): Promise<{ olhados: number; estendidos: number; reserva: number; falhas: number; consertados: number }> {
+  const consertados = await fecharPendentesComArte();
   const posts = await prisma.post.findMany({
     where: { imageUrl: null, status: { in: PENDENTE }, metadata: { path: ["arteNoModelo", "pendente"], equals: true } },
     select: { id: true, projectId: true, metadata: true },
     take: 80,
   });
   const agora = Date.now();
-  const porLote = new Map<string, { projectId: string; ids: string[]; desde: number; naReserva: boolean; pelaIa: boolean }>();
+  const porLote = new Map<string, { projectId: string; ids: string[]; desde: number; naReserva: boolean; pelaIa: boolean; voltas: number }>();
   for (const p of posts) {
     const a = arteNoModeloDe(p.metadata);
     const ate = Date.parse(String((p.metadata as { gerandoArte?: { ate?: unknown } } | null)?.gerandoArte?.ate ?? ""));
     // Sem prazo legível, conta como vencido: "fazendo" sem fim é o que este vigia existe para impedir.
     if (!a || ate >= agora) continue;
-    const l = porLote.get(a.lote) ?? { projectId: p.projectId, ids: [], desde: Date.parse(a.desde) || agora, naReserva: false, pelaIa: estiloVaiPelaIa(estiloGravadoNoPost(p.metadata)) };
+    const l = porLote.get(a.lote) ?? { projectId: p.projectId, ids: [], desde: Date.parse(a.desde) || agora, naReserva: false, pelaIa: estiloVaiPelaIa(estiloGravadoNoPost(p.metadata)), voltas: 0 };
     l.ids.push(p.id);
     // A reserva que já tinha começado e não terminou (a função que roda depois da resposta morreu): refaz direto.
     if (a.reserva) l.naReserva = true;
+    l.voltas = Math.max(l.voltas, Number((a as { voltasDoVigia?: unknown }).voltasDoVigia) || 0);
     porLote.set(a.lote, l);
   }
   let estendidos = 0;
   let reserva = 0;
+  let falhas = 0;
   for (const [lote, l] of [...porLote.entries()].slice(0, o.maximo ?? 2)) {
-    if (!l.naReserva && (await aindaEsperaOWorker(lote, lote, agora - l.desde))) {
+    if (!l.pelaIa && !l.naReserva && (await aindaEsperaOWorker(lote, lote, agora - l.desde))) {
       for (const id of l.ids) {
         const p = await prisma.post.findUnique({ where: { id }, select: { metadata: true } });
         if (!p) continue;
@@ -617,12 +668,47 @@ export async function vigiarArtesNoModelo(o: { maximo?: number } = {}): Promise<
       estendidos++;
       continue;
     }
+    if (l.voltas >= VOLTAS_DO_VIGIA) {
+      falhas++;
+      console.error(`[arte-no-modelo][${l.projectId}] lote ${lote}: ${l.voltas} voltas do vigia sem a arte sair; para como falha técnica, sem trocar o estilo`);
+      await pararComoFalha(l.ids, `o desenho no estilo não terminou depois de ${l.voltas} voltas do vigia`);
+      continue;
+    }
     reserva++;
-    console.warn(`[arte-no-modelo][${l.projectId}] lote ${lote} sem callback no prazo e fora do worker: segunda tentativa no mesmo estilo`);
-    await marcarReserva(l.ids, "a arte do modelo não voltou no prazo");
-    await desenharNoMesmoEstilo(l.projectId, l.ids, "a arte do modelo não voltou no prazo", { tentativas: l.pelaIa ? TENTATIVAS_NO_ESTILO : 1 });
+    const motivo = l.pelaIa ? "o desenho pela IA não terminou no prazo" : "a arte do modelo não voltou no prazo";
+    console.warn(`[arte-no-modelo][${l.projectId}] lote ${lote}: ${motivo}; de novo no mesmo estilo (volta ${l.voltas + 1} de ${VOLTAS_DO_VIGIA})`);
+    await marcarReserva(l.ids, motivo, { doVigia: true });
+    await desenharNoMesmoEstilo(l.projectId, l.ids, motivo, { tentativas: l.pelaIa ? TENTATIVAS_NO_ESTILO : 1 });
   }
-  return { olhados: porLote.size, estendidos, reserva };
+  return { olhados: porLote.size, estendidos, reserva, falhas, consertados };
+}
+
+/** A falha técnica no quadro ("Tentar de novo", "Nada foi cobrado"), com o lote fechado. */
+async function pararComoFalha(postIds: string[], erro: string): Promise<void> {
+  for (const id of postIds) {
+    const atual = await prisma.post.findUnique({ where: { id }, select: { metadata: true, imageUrl: true } });
+    if (!atual || atual.imageUrl) continue;
+    await prisma.post.update({ where: { id }, data: { metadata: fecharArte(marcarFalha(atual.metadata, MOTIVO_DA_ARTE_QUE_PAROU), { reservaFalhou: erro.slice(0, 300) }) as Prisma.InputJsonValue } }).catch(() => {});
+  }
+}
+
+/** Os posts com arte e o lote ainda pendente: o estado velho que uma escrita deixou (11/10). Fecha, sem desenhar. */
+async function fecharPendentesComArte(): Promise<number> {
+  const posts = await prisma.post.findMany({
+    where: { imageUrl: { not: null }, status: { in: PENDENTE }, metadata: { path: ["arteNoModelo", "pendente"], equals: true } },
+    select: { id: true, metadata: true },
+    take: 80,
+  });
+  let n = 0;
+  for (const p of posts) {
+    const r = await prisma.post.updateMany({
+      where: { id: p.id, imageUrl: { not: null } },
+      data: { metadata: metadataComMudancas(p.metadata, {}, { arteNovaNoEstilo: true }) as Prisma.InputJsonValue },
+    });
+    n += r.count;
+  }
+  if (n) console.warn(`[arte-no-modelo] ${n} post(s) com arte e o lote ainda pendente: fechados (a arte já tinha saído)`);
+  return n;
 }
 
 /**
@@ -671,7 +757,8 @@ export async function refazerArteNoModelo(o: {
       const chave = process.env.GEMINI_API_KEY;
       if (!chave) throw new Error("GEMINI_API_KEY não configurada");
       const { extrairConteudoDoInfografico } = await import("@/lib/media/infographic");
-      const conteudo = await extrairConteudoDoInfografico(o.texto, o.nicho ?? "negocios", chave, { projectId: o.post.projectId });
+      const { fala } = await falaEFotoDoVideo(typeof meta.videoJobId === "string" ? meta.videoJobId : null, false);
+      const conteudo = await extrairConteudoDoInfografico(o.texto, o.nicho ?? "negocios", chave, { projectId: o.post.projectId, ...(fala ? { numerosSoDaFala: lastroDaArte({ transcricao: fala, material: [o.nicho] }) } : {}) });
       peca = { tipo: "infografico", texto: textoDoInfograficoNoModelo(conteudo), formatos: [formatoDoPost] };
       extra = { infografico: conteudo };
     } else {

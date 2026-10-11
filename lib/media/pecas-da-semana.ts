@@ -11,7 +11,7 @@ import { metadataDoElemento } from "@/lib/media/elemento-sem-repeticao";
 import { escolhaDaArteDoPost, fotosDoPost, metadataDasFotosEscolhidas } from "@/lib/materiais/material-da-campanha";
 import { avisoDoRecuo } from "@/lib/media/aviso-da-arte";
 import { fotoDaPeca, metadataDaFoto } from "@/lib/media/foto-da-peca";
-import { fraseCompleta, fraseGarantida, pareceTruncada, TETO_DA_FRASE } from "@/lib/media/frase-da-arte";
+import { fraseCompleta, fraseGarantida, mancheteCurta, pareceTruncada, problemaDaFrase, TETO_DA_FRASE } from "@/lib/media/frase-da-arte";
 import { conferirArte } from "@/lib/media/conferencia-da-arte";
 import { MENSAGEM_AGUARDANDO } from "@/lib/modelos-de-arte/identidade";
 import { tipoGeraArte } from "@/lib/modelos-de-arte/espera-da-identidade";
@@ -27,7 +27,7 @@ import { eloDaCampanha, eloDaPeca, pecasDoPlano, perfisDoCliente, regraDeLinkNaA
 import { lerInventario } from "@/lib/analytics/inventario-das-redes";
 import { listaDoInventarioParaRedator } from "@/lib/analytics/tipos-do-inventario";
 import { limparTextoGerado } from "@/lib/media/elo-na-publicacao";
-import { infograficoComLastro, lastroDoVideo } from "@/lib/media/lastro-do-video";
+import { infograficoSoComAFala, lastroDaArte, lastroDoVideo } from "@/lib/media/lastro-do-video";
 import { AberturasDaSemana, aberturaDe } from "@/lib/media/aberturas-da-semana";
 import { escreverLegendaDoCarrossel } from "@/lib/media/carrossel-do-video";
 import { textoDoRadar, type Radar } from "@/lib/media/radar-do-video";
@@ -57,9 +57,10 @@ import {
   marcasDoModelo,
   novaColeta,
   pecasDoDiaNoModelo,
-  PRAZO_DA_ARTE_NO_MODELO_MS,
+  prazoDaArte,
   type ColetaDoModelo,
 } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
+import { estiloVaiPelaIa } from "@/lib/media/editor-do-curso/arte-pela-ia";
 import { despacharColeta, regraDaArtePeloModelo, type RegraDoProjeto } from "@/lib/media/editor-do-curso/arte-pelo-modelo-servidor";
 
 export { principalDoDia };
@@ -222,6 +223,8 @@ type EloDoVideo = {
   limpar: (texto: string, rede: string, dia: number) => Promise<string>;
   /** A fala, o briefing e o material do cliente: o que um número precisa para entrar. */
   lastro: string;
+  /** Só a fala e o material do cliente (11/10): o que um número DESENHADO na arte precisa. */
+  lastroDaArte: string;
 };
 
 async function eloDoVideo(video: VideoParaEscrever, semana: SemanaDoVideo, runId: string): Promise<EloDoVideo> {
@@ -235,16 +238,15 @@ async function eloDoVideo(video: VideoParaEscrever, semana: SemanaDoVideo, runId
     ...lerLinks(video.project.config).map((l) => l.url),
     ...perfisDoCliente(video.project.socialAccounts, video.project.config).map((p) => p.url).filter((u): u is string => Boolean(u)),
   ];
-  const lastro = lastroDoVideo({
-    transcricao: (video.transcript as { text?: string } | null)?.text ?? "",
-    radar: radar ? textoDoRadar(radar) : "",
-    material: [video.project.name, video.project.niche, video.project.targetAudience, video.project.voice],
-  });
+  const material = [video.project.name, video.project.niche, video.project.targetAudience, video.project.voice];
+  const transcricao = (video.transcript as { text?: string } | null)?.text ?? "";
+  const lastro = lastroDoVideo({ transcricao, radar: radar ? textoDoRadar(radar) : "", material });
   return {
     pedido: () => eloDaCampanha({ inventario: lista }),
     doDia: (dia) => eloDaPeca({ videoJobId: video.id, runId, dia, pecas }),
     limpar: (texto, rede, dia) => limparTextoGerado({ texto, rede, dia, projectId: video.projectId, runId, inventario, permitidos, lastro }),
     lastro,
+    lastroDaArte: lastroDaArte({ transcricao, material }),
   };
 }
 
@@ -799,9 +801,11 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
         const { pecas, formatoDaRede } = pecasDoDiaNoModelo(o);
         const { lote, indices } = adicionarPecas(diaNoModelo.coleta, pecas);
         const agora = new Date();
+        // Pela IA (11/10) o "fazendo" vale minutos, não as horas da fila do worker.
+        const pelaIa = estiloVaiPelaIa(diaNoModelo.regra.modelo);
         return {
-          doPost: (rede: string) => marcasDoModelo({}, { lote, indices, formato: formatoDaRede[rede] ?? (o.formato === "carousel" ? "4:5" : "1:1"), modelo: diaNoModelo.regra.modelo }, agora),
-          doCard: () => marcarGerando({}, agora, { prazoMs: PRAZO_DA_ARTE_NO_MODELO_MS }),
+          doPost: (rede: string) => marcasDoModelo({}, { lote, indices, formato: formatoDaRede[rede] ?? (o.formato === "carousel" ? "4:5" : "1:1"), modelo: diaNoModelo.regra.modelo, pelaIa }, agora),
+          doCard: () => marcarGerando({}, agora, { prazoMs: prazoDaArte(pelaIa) }),
         };
       } catch (e) {
         console.warn(`[semana][${videoJobId}] ${DIAS[dia]}: as peças não foram para o modelo (vale o caminho de hoje):`, e instanceof Error ? e.message : e);
@@ -1061,15 +1065,25 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
         // UMA extração para todas as proporções (06/10): extrair por proporção
         // pagava duas chamadas e dava dois infográficos com textos diferentes
         // no mesmo dia (o do Instagram e o do LinkedIn não batiam).
-        const extraido = await Promise.race([
-          extrairConteudoDoInfografico(fonte, video.project.niche ?? "negocios", geminiKey, { projectId: video.projectId }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Infografico passou de 120s")), 120_000)),
-        ]);
-        // NÚMERO DESENHADO SÓ COM LASTRO (08/10): o destaque, o número dos
-        // cartões e o rodapé que não estão na fala nem na pesquisa saem antes
-        // do desenho (lib/media/lastro-do-video.ts).
-        const { conteudo, tirados: semLastro } = infograficoComLastro(extraido, [elo.lastro, legenda].join(" "));
-        if (semLastro.length) console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: número sem lastro fora do infográfico: ${semLastro.join("; ")}`);
+        const extrair = (regras: { numerosSoDaFala: string; evitarNumeros?: string }) =>
+          Promise.race([
+            extrairConteudoDoInfografico(fonte, video.project.niche ?? "negocios", geminiKey, { projectId: video.projectId, ...regras }),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Infografico passou de 120s")), 120_000)),
+          ]);
+        // NÚMERO DESENHADO SÓ DA FALA (11/10, antes 08/10 com a pesquisa): o
+        // infográfico é arte, e na arte todo número sai da fala ou do material do
+        // cliente (lib/media/lastro-do-video.ts, infograficoSoComAFala). O que não
+        // está lá sai antes do desenho; o título que só se sustentava num número
+        // de fora faz a extração sair de novo uma vez, e na segunda o dia para
+        // (o aviso do dia e a nova tentativa), nunca com número inventado.
+        let lido = infograficoSoComAFala(await extrair({ numerosSoDaFala: elo.lastroDaArte }), elo.lastroDaArte);
+        if (lido.refazer) {
+          console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: o título do infográfico tinha número fora da fala; extração de novo`);
+          lido = infograficoSoComAFala(await extrair({ numerosSoDaFala: elo.lastroDaArte, evitarNumeros: lido.tirados.join("; ") }), elo.lastroDaArte);
+          if (lido.refazer) throw new Error("o infográfico insistiu em número que a pessoa não disse no vídeo");
+        }
+        const { conteudo, tirados: semLastro } = lido;
+        if (semLastro.length) console.warn(`[vera][lastro][${video.id}] ${DIAS[dia]}: número fora da fala tirado do infográfico: ${semLastro.join("; ")}`);
         // O INFOGRÁFICO PELO MODELO DO CURSO (10/10): o título, o destaque e os
         // cartões vão ao template do modelo no lote da semana; o conteúdo
         // extraído fica no post, como hoje (a reserva desenha a partir dele).
@@ -1276,7 +1290,7 @@ async function frasesDosSlides(
     personaDe(diana, "Você é Diana Design, redatora visual de conteúdo para redes sociais."),
     `${contexto}
 
-Escolha as frases dos slides de um CARROSSEL de 3 slides a partir do vídeo e do briefing: uma ideia por slide, na ordem que conta uma história (a última fecha com o dado ou a conclusão). Cada frase com no máximo 12 palavras, sem aspas, sem numeração, sem travessão. Devolva SÓ as três frases, uma por linha.`,
+Escolha as frases dos slides de um CARROSSEL de 3 slides a partir do vídeo e do briefing: uma ideia por slide, na ordem que conta uma história (a última fecha com o dado ou a conclusão). Cada frase com no máximo 12 palavras, completa (nunca termina no meio da ideia), sem repetir palavra ou expressão dentro dela, sem aspas, sem numeração, sem travessão. Devolva SÓ as três frases, uma por linha.`,
     { maxTokens: 4000, cachedPrefix: prefixo, usage }
   );
   const frases = bruto
@@ -1287,7 +1301,16 @@ Escolha as frases dos slides de um CARROSSEL de 3 slides a partir do vídeo e do
     .map((l) => (pareceTruncada(l) ? (fraseCompleta(l, { caracteres: TETO_DA_FRASE }) ?? l) : l))
     .slice(0, 3);
   if (frases.length < 2) throw new Error("A Diana não devolveu frases para os slides");
-  return frases;
+  // A LÂMINA QUE NÃO FECHA OU REPETE UM TRECHO VOLTA AO REDATOR (11/10, "tarefa
+  // boa atrás de tarefa boa"): reescrita inteira, nunca cortada; o resto fica.
+  return Promise.all(
+    frases.map(async (f) => {
+      const problema = problemaDaFrase(f);
+      if (!problema) return f;
+      console.warn(`[semana] lâmina "${f}": ${problema}; reescrita pelo redator`);
+      return mancheteCurta({ fraseLonga: f, maxPalavras: 12, contexto, porque: problema, usage: { projectId: usage.projectId, runId: usage.runId } });
+    })
+  );
 }
 
 /**
