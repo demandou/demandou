@@ -229,7 +229,8 @@ export async function editarAvancado(
     const pedidoDoRender = {
       acao: "conferir",
       quadros: lista.map((s) => Math.round(s * FPS)),
-      escala: 0.375,
+      // 0,6 (11/10): a 0,375 o rótulo de 28 px virava 10 px e a revisão não via texto sobreposto nem ilegível
+      escala: 0.6,
       pasta: pastaDosQuadros,
       amostra: rodadaDosQuadros === 1 ? { de: deAmostra, ate: deAmostra + 3 * FPS, saida: join(projeto, "out", "amostra.mp4") } : null,
       limites: limitesDoRender(),
