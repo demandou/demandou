@@ -37,3 +37,13 @@ test("quem escreve a cena recebe o vídeo inteiro e o tema (a tenda de Isaías 5
   assert.equal(blocoDoCorte({ ...ctx, videoInteiro: null }, [] as never).includes("O VÍDEO INTEIRO"), false);
   assert.equal(falaDoVideoParaACena("a b c d", 2), "a b [...]");
 });
+
+test("cor de texto no destaque cru vira a versão legível; traço e fundo ficam", async () => {
+  const { comDestaqueLegivel } = await import("@/lib/media/editor-avancado/atender");
+  const r = comDestaqueLegivel({
+    "cena-01.tsx": "<div style={{ color: MARCA.destaque, borderColor: MARCA.destaque }}><span style={{color:MARCA.destaqueTexto}}/></div><line stroke={MARCA.destaque} />",
+    "roteiro.json": '{"color: MARCA.destaque": 1}',
+  });
+  assert.equal(r["cena-01.tsx"], "<div style={{ color: MARCA.destaqueTexto, borderColor: MARCA.destaque }}><span style={{color:MARCA.destaqueTexto}}/></div><line stroke={MARCA.destaque} />");
+  assert.equal(r["roteiro.json"], '{"color: MARCA.destaque": 1}');
+});

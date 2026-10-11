@@ -51,6 +51,20 @@ export class FalhaComCusto extends Error {
   }
 }
 
+/**
+ * O DESTAQUE LEGÍVEL NO TEXTO (11/10, teste dos Gráficos): a cena escreveu "MELHOR PARTE"
+ * com color: MARCA.destaque, o vermelho-escuro da marca que some no fundo preto, apesar
+ * do kit oferecer MARCA.destaqueTexto. Em TEXTO (a propriedade color do CSS) o código
+ * devolvido troca sozinho para a versão legível; linha, fundo e traço seguem no destaque. Puro.
+ */
+export function comDestaqueLegivel(arquivos: Record<string, string>): Record<string, string> {
+  const r: Record<string, string> = {};
+  for (const [nome, codigo] of Object.entries(arquivos)) {
+    r[nome] = nome.endsWith(".tsx") ? codigo.replace(/(\bcolor\s*:\s*)MARCA\.destaque\b(?!Texto)/g, "$1MARCA.destaqueTexto") : codigo;
+  }
+  return r;
+}
+
 export async function atenderPedidoDaCena(p: PedidoDaCena): Promise<Record<string, unknown> & { custoUsd: number }> {
   let custoUsd = 0;
   const onCusto = (usd: number) => {
@@ -96,6 +110,7 @@ export async function atenderPedidoDaCena(p: PedidoDaCena): Promise<Record<strin
     if (e instanceof PedidoInvalido) throw e;
     throw new FalhaComCusto(e instanceof Error ? e.message : String(e), custoUsd);
   }
+  novos = comDestaqueLegivel(novos);
   const juntos = { ...(p.arquivos ?? {}), ...novos };
   return { arquivos: novos, numerosSemLastro: numerosSemLastroNaCena(juntos, falaParaAGuarda(p.fala)), custoUsd };
 }
