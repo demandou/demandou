@@ -21,6 +21,7 @@ import {
   type PecaDoLote,
   type PostDoLote,
 } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
+import { arteDoModeloPelaIa, promptDeEstiloDoModelo } from "@/lib/media/editor-do-curso/arte-pela-ia";
 
 /**
  * O LADO DO SERVIDOR DAS ARTES PELO MODELO DO CURSO (10/10/2026). As decisões
@@ -200,6 +201,23 @@ export async function enviarLoteAoWorker(o: { chave: string; projectId: string; 
 export async function despacharColeta(o: { projectId: string; runId: string | null; modelo: string; coleta: ColetaDoModelo; videoJobId?: string | null }): Promise<{ enviados: number; reserva: number }> {
   const lotes = o.coleta.lotes.filter((l) => l.pecas.length);
   if (!lotes.length) return { enviados: 0, reserva: 0 };
+  // PELA IA DE IMAGEM (11/10): o modelo com prompt de estilo não vai ao template
+  // do worker. As artes saem numa função à parte do app (a rota tem o prazo dela
+  // e a esteira não espera os minutos das imagens); a rota fora do ar desenha aqui.
+  if (arteDoModeloPelaIa() && promptDeEstiloDoModelo(o.modelo)) {
+    let enviados = 0;
+    for (const lote of lotes) {
+      const r = await pedirArtesPelaIa(o.projectId, lote.chave);
+      if (r.ok) {
+        enviados++;
+        console.log(`[arte-no-modelo][${o.projectId}] lote ${lote.chave} (${lote.pecas.length} peças) pela IA no estilo de ${o.modelo}`);
+        continue;
+      }
+      console.warn(`[arte-no-modelo][${o.projectId}] a rota das artes pela IA não aceitou o lote ${lote.chave} (${r.erro}); desenho aqui`);
+      await desenharLotePelaIa(o.projectId, lote.chave);
+    }
+    return { enviados, reserva: 0 };
+  }
   let base: BaseDoPedido | null = null;
   let erroDaBase: string | null = null;
   try {
@@ -221,6 +239,36 @@ export async function despacharColeta(o: { projectId: string; runId: string | nu
     await reservaDoLote(o.projectId, lote.chave, `o worker não aceitou as peças (${r.erro.slice(0, 120)})`);
   }
   return { enviados, reserva };
+}
+
+/**
+ * Pede à rota das artes pela IA (app/api/editor-do-curso/arte-pela-ia) que
+ * desenhe um lote depois de responder: uma função nova, com o prazo dela.
+ * Assinado como o pedido ao worker. 202 é aceito.
+ */
+async function pedirArtesPelaIa(projectId: string, lote: string): Promise<{ ok: true } | { ok: false; erro: string }> {
+  const app = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  if (!app) return { ok: false, erro: "NEXT_PUBLIC_APP_URL não configurado" };
+  const corpo = JSON.stringify({ projectId, lote });
+  try {
+    const r = await fetch(`${app}/api/editor-do-curso/arte-pela-ia`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", [CABECALHO_ASSINATURA]: assinarCorpo(corpo) },
+      body: corpo,
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (r.status === 202) return { ok: true };
+    return { ok: false, erro: `HTTP ${r.status}` };
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** Desenha os posts que ainda esperam um lote, pela IA (o que ela não fizer, pelo caminho de hoje). */
+export async function desenharLotePelaIa(projectId: string, lote: string): Promise<{ feitos: number; falhas: number }> {
+  const posts = (await postsDoLote(lote, projectId)).filter((p) => arteNoModeloDe(p.metadata)?.pendente && !p.imageUrl);
+  if (!posts.length) return { feitos: 0, falhas: 0 };
+  return desenharPeloCaminhoDeHoje(projectId, posts.map((p) => p.id), "a arte pela IA não saiu");
 }
 
 const SELECT_DO_POST = { id: true, projectId: true, platform: true, mediaType: true, imageUrl: true, runId: true, dayOfWeek: true, metadata: true, content: true, status: true } as const;
@@ -349,7 +397,9 @@ export async function desenharPeloCaminhoDeHoje(projectId: string, postIds: stri
   }
   let feitos = 0;
   let falhas = 0;
-  for (const grupo of grupos.values()) {
+  // Três dias por vez (11/10): pela IA cada dia leva de 1 a 3 minutos, e a semana em fila passaria do prazo da função.
+  const fila = [...grupos.values()];
+  const um = async (grupo: (typeof fila)[number]) => {
     try {
       await desenharGrupo(projectId, grupo, motivo);
       feitos++;
@@ -363,11 +413,75 @@ export async function desenharPeloCaminhoDeHoje(projectId: string, postIds: stri
         if (atual) await prisma.post.update({ where: { id: p.id }, data: { metadata: fecharArte(marcarFalha(atual.metadata, erro), { reservaFalhou: erro.slice(0, 300) }) as Prisma.InputJsonValue } }).catch(() => {});
       }
     }
-  }
+  };
+  const trabalhador = async () => {
+    for (let g = fila.shift(); g; g = fila.shift()) await um(g);
+  };
+  await Promise.all([1, 2, 3].map(trabalhador));
   return { feitos, falhas };
 }
 
 type PostDaReserva = { id: string; platform: string; mediaType: string | null; runId: string | null; dayOfWeek: number | null; metadata: unknown; content: string; imagePrompt: string | null };
+
+/**
+ * O GRUPO PELA IA DE IMAGEM (11/10, arte-pela-ia.ts): o post cujo projeto tem
+ * modelo do curso com prompt de estilo sai do Nano Banana Pro no estilo do
+ * modelo, com o texto exato e as cores da marca. True quando preencheu; false
+ * quando a IA não vale ou não saiu (o caminho de hoje desenha em seguida).
+ */
+async function desenharGrupoPelaIa(projectId: string, posts: PostDaReserva[], nicho: string | null): Promise<boolean> {
+  const base = posts[0];
+  const meta = (base.metadata ?? {}) as { frase?: string; slides?: unknown; infografico?: unknown; arteNoModelo?: { modelo?: string; origem?: string } };
+  const modelo = meta.arteNoModelo?.modelo;
+  if (!arteDoModeloPelaIa() || !promptDeEstiloDoModelo(modelo)) return false;
+  const tipo = base.mediaType === "carousel" || base.mediaType === "infographic" ? base.mediaType : "image";
+  // O refazer de carrossel é uma imagem só (a manchete), como hoje.
+  const refazer = meta.arteNoModelo?.origem === "refazer";
+  const mediaType = tipo === "carousel" && refazer ? "image" : tipo;
+  try {
+    const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
+    const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+    const marca = await marcaDaArte(projectId, { runId: base.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(posts) });
+    const porRede = await desenharPelaIa({
+      projectId,
+      runId: base.runId,
+      modelo: modelo!,
+      mediaType,
+      redes: posts.map((p) => p.platform),
+      frase: typeof meta.frase === "string" ? meta.frase : null,
+      slides: Array.isArray(meta.slides) ? meta.slides.filter((s): s is string => typeof s === "string") : null,
+      infografico: (meta.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null,
+      textoDoPost: base.content,
+      dia: base.dayOfWeek,
+      nicho,
+      marca,
+    });
+    const agora = new Date().toISOString();
+    for (const p of posts) {
+      const nova = porRede[p.platform];
+      if (!nova) continue;
+      const metaNova = fecharArte(semEspera(p.metadata), { feitoEm: agora, reserva: null, pelaIa: true });
+      await prisma.post.updateMany({ where: { id: p.id, imageUrl: null }, data: { imageUrl: nova, metadata: metaNova as Prisma.InputJsonValue } });
+      await atualizarCards(p.id, { imagem: nova, conteudo: null, refazer });
+    }
+    if (!refazer && base.runId && base.dayOfWeek) {
+      const { artePrincipal } = await import("@/lib/media/arte-por-rede");
+      const principal = artePrincipal(porRede);
+      if (principal) {
+        const cards = await prisma.campaignCard.findMany({ where: { runId: base.runId, dayOfWeek: base.dayOfWeek, cardType: "media" }, select: { id: true, metadata: true } }).catch(() => []);
+        for (const c of cards) await prisma.campaignCard.update({ where: { id: c.id }, data: { mediaUrl: principal, metadata: semEspera(c.metadata) as Prisma.InputJsonValue } }).catch(() => {});
+      }
+    }
+    console.log(`[arte-no-modelo][${projectId}] ${posts.length} post(s) ${base.mediaType} pela IA no estilo de ${modelo}`);
+    return true;
+  } catch (e) {
+    // Sem saldo não troca de caminho calado: o erro sobe (a fila espera o saldo), como toda arte.
+    const { ehSemSaldoDaOpenAI } = await import("@/lib/media/gpt-image");
+    if (ehSemSaldoDaOpenAI(e)) throw e;
+    console.warn(`[arte-no-modelo][${projectId}] a IA não desenhou ${posts.map((p) => p.id).join(",")} (vai pelo caminho de hoje): ${e instanceof Error ? e.message : e}`);
+    return false;
+  }
+}
 
 async function desenharGrupo(projectId: string, posts: PostDaReserva[], motivo: string): Promise<void> {
   const base = posts[0];
@@ -375,6 +489,7 @@ async function desenharGrupo(projectId: string, posts: PostDaReserva[], motivo: 
   const runId = base.runId;
   const projeto = await prisma.project.findUnique({ where: { id: projectId }, select: { niche: true } });
   const nicho = projeto?.niche ?? null;
+  if (await desenharGrupoPelaIa(projectId, posts, nicho)) return;
   const run = runId ? await prisma.pipelineRun.findUnique({ where: { id: runId }, select: { config: true } }).catch(() => null) : null;
   const { direcaoDaPeca } = await import("@/lib/media/direcao-de-arte");
   const { marcaDaArte, marcaDaLaminaComFoto } = await import("@/lib/media/arte-com-frase");
@@ -501,7 +616,7 @@ export async function refazerArteNoModelo(o: {
   post: { id: string; projectId: string; platform: string; mediaType: string | null; runId: string | null; metadata: unknown; imagePrompt: string | null };
   texto: string;
   nicho: string | null;
-}): Promise<{ metadata: Record<string, unknown> } | null> {
+}): Promise<{ metadata: Record<string, unknown>; imagem?: string } | null> {
   if (!arteDoModeloLigada()) return null;
   const meta = (o.post.metadata ?? {}) as Record<string, unknown>;
   if (meta.origem !== "video") return null;
@@ -526,6 +641,38 @@ export async function refazerArteNoModelo(o: {
     const m = await mancheteDaPeca({ textoDoPost: o.texto, estiloVisual: o.post.imagePrompt ?? "", nicho: o.nicho, projectId: o.post.projectId, runId: o.post.runId ?? undefined });
     peca = { tipo: formato === "carousel" ? "capa" : "post", texto: m.manchete, formatos: [formatoDoPost] };
     extra = { frase: m.manchete };
+  }
+  // PELA IA (11/10): o refazer de UMA peça desenha aqui mesmo (uma imagem, um a
+  // dois minutos), e o post sai do refazer já com a arte. Não saiu: o caminho de hoje.
+  if (arteDoModeloPelaIa() && promptDeEstiloDoModelo(regra.modelo)) {
+    try {
+      const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
+      const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+      const marca = await marcaDaArte(o.post.projectId, { runId: o.post.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts([o.post]) });
+      const porRede = await desenharPelaIa({
+        projectId: o.post.projectId,
+        runId: o.post.runId,
+        modelo: regra.modelo,
+        mediaType: formato === "infographic" ? "infographic" : "image",
+        redes: [o.post.platform],
+        frase: typeof extra.frase === "string" ? extra.frase : null,
+        infografico: (extra.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null,
+        textoDoPost: o.texto,
+        dia: (o.post as { dayOfWeek?: number | null }).dayOfWeek ?? null,
+        nicho: o.nicho,
+        marca,
+      });
+      const imagem = porRede[o.post.platform];
+      if (imagem) {
+        const agora = new Date().toISOString();
+        const { arteNoModelo: _antiga, ...resto } = { ...meta, ...extra } as Record<string, unknown>;
+        void _antiga;
+        return { metadata: { ...resto, arteNoModelo: { lote: `refazer-${o.post.id}`, indices: [1], formato: formatoDoPost, modelo: regra.modelo, pendente: false, origem: "refazer", desde: agora, feitoEm: agora, pelaIa: true } }, imagem };
+      }
+    } catch (e) {
+      console.warn(`[arte-no-modelo][${o.post.projectId}] o refazer de ${o.post.id} pela IA não saiu (vai pelo caminho de hoje): ${e instanceof Error ? e.message : e}`);
+      return null;
+    }
   }
   const chave = `refazer-${o.post.id}-${Date.now().toString(36)}`;
   const base = await baseDoPedido(o.post.projectId, o.post.runId, { videoJobId: typeof meta.videoJobId === "string" ? meta.videoJobId : null, quantas: 3 });
