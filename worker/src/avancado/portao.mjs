@@ -274,6 +274,17 @@ export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquiv
   const p = (motivo) => problemas.push({ arquivo: "roteiro.json", linha: 1, motivo });
   if (!roteiro || typeof roteiro !== "object") return [{ arquivo: "roteiro.json", linha: 1, motivo: "o roteiro não é um objeto JSON" }];
   if (!TECNICAS.includes(roteiro.tecnica)) p(`tecnica inválida: ${roteiro.tecnica} (use ${TECNICAS.join(", ")})`);
+  // A MAQUETE É A COISA QUE A FALA NOMEIA (11/10, crítica do Bruno ao teste: "o que a casa tem a ver com o
+  // que está sendo dito? o que são aqueles potes com uma bola?"). Na 8.1 o roteiro declara o objeto e a
+  // palavra da fala que o nomeia; palavra que não foi dita reprova (a tenda da aula: "estica a corda").
+  if (roteiro.tecnica === "maquete-3d") {
+    const o = roteiro.objeto;
+    if (!o || typeof o !== "object" || !String(o.nome ?? "").trim() || !String(o.palavra ?? "").trim()) {
+      p('maquete-3d: falta "objeto": {"nome", "palavra"} com o objeto físico que a fala nomeia (a maquete é ESSA coisa, nunca uma metáfora abstrata)');
+    } else if (!acharNaFala(palavras, String(o.palavra))) {
+      p(`maquete-3d: o objeto "${o.nome}" não foi nomeado na fala ("${o.palavra}" não foi dito); escolha uma coisa que a pessoa nomeia com todas as letras`);
+    }
+  }
   if (roteiro.fundo !== undefined && !["estudio", "liso", "grade"].includes(roteiro.fundo)) p(`fundo inválido: ${roteiro.fundo}`);
   if (roteiro.paralaxe !== undefined && !(Number(roteiro.paralaxe) >= 0 && Number(roteiro.paralaxe) <= 1.5)) p("paralaxe fora de 0 a 1,5");
   const ancora = (a, onde, { obrigatoriaNaFala = false } = {}) => {

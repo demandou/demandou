@@ -1,5 +1,6 @@
 {
   "tecnica": "maquete-3d",
+  "objeto": { "nome": "tenda", "palavra": "cortina" },
   "fundo": "liso",
   "paralaxe": 0,
   "apresentador": [

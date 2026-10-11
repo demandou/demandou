@@ -10,6 +10,8 @@ Imports permitidos, e só estes: `react`, `remotion`, `@remotion/three`, `three`
 
 ## 1. roteiro.json
 
+- Na técnica `maquete-3d`, o roteiro leva `"objeto": {"nome": "tenda", "palavra": "cortina"}`: o objeto físico que a fala nomeia e a palavra exata dita que nomeia ele ou uma parte dele. Palavra que não está na fala reprova no portão.
+
 ```json
 {
   "tecnica": "recorte-letreiro",
