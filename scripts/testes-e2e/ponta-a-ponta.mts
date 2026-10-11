@@ -494,6 +494,8 @@ async function aprovar(r: Relatorio, v: Video, userId: string): Promise<boolean>
           // A produção não fez o plano da jornada para este vídeo: a chave dela, lá, não vale para este caminho.
           delete process.env.EDITOR_JORNADA;
           evento(r, "o roteiro não tem plano da jornada depois de 8 min: EDITOR_JORNADA desligado neste processo para a aprovação, como a produção se comportou");
+          // Segue para testar o resto da jornada, mas o caso reprova: ou a produção deixou de fazer o plano, ou a chave dela difere da documentada.
+          r.conferencias.push({ nome: "plano da jornada no roteiro", ok: false, motivo: `${agoraIso()}: a produção não fez o plano da jornada em 8 min; conferir EDITOR_JORNADA na Vercel e a esteira do roteiro` });
           continue;
         }
         log(`aprovação recusada (${msg}); de novo em 20 s`);
