@@ -62,7 +62,7 @@ const TIPO = "editor";
 const CHAVE = "modelo-do-curso";
 
 export function editorDoCursoLigado(): boolean {
-  return process.env.EDITOR_DO_CURSO === "1";
+  return process.env.EDITOR_DO_CURSO?.trim() === "1";
 }
 
 /**
@@ -117,6 +117,31 @@ export async function modeloDoCursoDoProjeto(projectId: string): Promise<string 
   if (modeloServeNoCorte(modelo)) return modelo;
   const { modeloServeNoProjeto } = await import("./material-do-modelo-servidor");
   return (await modeloServeNoProjeto(projectId, modelo)) ? modelo : null;
+}
+
+/**
+ * O "MEU ESTILO" CONFIRMADO VENCE O MODELO DO CURSO? (10/10, noite, bug do
+ * teste do Bruno no Torre.) Só quando ele é o estilo próprio do cliente (não
+ * a fala que saiu de um modelo) E foi confirmado DEPOIS da escolha do modelo:
+ * escolher um modelo é pedir as peças nele. Antes, um estilo próprio antigo
+ * (o de 09/10) seguia confirmado e as artes da campanha saíam nele, mesmo com
+ * o Torre escolhido antes do envio.
+ */
+export async function estiloProprioValeSobreOModelo(projectId: string): Promise<boolean> {
+  const { estadoDoMeuEstilo } = await import("@/lib/estilo-proprio/servidor");
+  const { modeloDaFala } = await import("./estilo-das-pecas");
+  const confirmado = (await estadoDoMeuEstilo(projectId).catch(() => null))?.confirmado ?? null;
+  if (!confirmado || modeloDaFala(confirmado.falas?.[0])) return false;
+  const linha = await prisma.projectMemory.findUnique({ where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } }, select: { value: true, updatedAt: true } });
+  const escolhidoEm = (linha?.value as { em?: string } | null)?.em ?? linha?.updatedAt?.toISOString() ?? null;
+  return estiloProprioDepoisDoModelo((confirmado as { em?: string }).em ?? null, escolhidoEm);
+}
+
+/** Puro: o estilo próprio só vale se foi confirmado depois da escolha do modelo (sem data do modelo, vale o estilo). */
+export function estiloProprioDepoisDoModelo(confirmadoEm: string | null, modeloEscolhidoEm: string | null): boolean {
+  if (!modeloEscolhidoEm) return true;
+  if (!confirmadoEm) return false;
+  return new Date(confirmadoEm).getTime() > new Date(modeloEscolhidoEm).getTime();
 }
 
 /**
@@ -196,7 +221,7 @@ export function versaoDeitadaDoModelo(id: string | null | undefined): string | n
 }
 
 export function completoPeloModeloLigado(): boolean {
-  return process.env.COMPLETO_PELO_MODELO === "1";
+  return process.env.COMPLETO_PELO_MODELO?.trim() === "1";
 }
 
 export type CaminhoDoCompleto = { caminho: "curso"; modelo: string; versao: string; formato: FormatoDoModelo } | { caminho: "reserva"; motivo: string };
@@ -231,12 +256,13 @@ export function caminhoDoCompleto(p: {
 
 /**
  * O prazo do app para o callback do completo no modelo: o da montagem (render
- * de 8 s por segundo, mais a fila) e ~12 min por bloco de 150 s do plano
- * (escrita, conserto e revisão), a mesma conta do worker.
+ * de 8 s por segundo, mais a fila) e ~15 min por bloco de 150 s do plano
+ * (escrita, conserto e revisão, e o passo das imagens nos modelos com imagem,
+ * 10/10), a mesma conta do worker.
  */
 export function prazoDoCompletoNoModeloMs(duracaoSeg: number | null | undefined): number {
   const dur = Number(duracaoSeg) > 0 ? Number(duracaoSeg) : 1200;
-  return Math.round((20 * 60 + dur * 8) * 1000) + 45 * 60_000 + Math.ceil(dur / 150) * 12 * 60_000;
+  return Math.round((20 * 60 + dur * 8) * 1000) + 45 * 60_000 + Math.ceil(dur / 150) * 15 * 60_000;
 }
 
 /**

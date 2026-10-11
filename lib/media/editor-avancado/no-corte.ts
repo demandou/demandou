@@ -68,7 +68,7 @@ export const DETALHE_DO_SOB_MEDIDA =
   "Cada corte ganha uma edição própria, escrita para a sua fala, sempre nas cores e na letra da sua marca. Leva mais tempo que um modelo pronto; se um corte não sair, ele é montado pelo modelo que você usava antes.";
 
 export function editorAvancadoLigado(): boolean {
-  return process.env.EDITOR_AVANCADO === "1";
+  return process.env.EDITOR_AVANCADO?.trim() === "1";
 }
 
 /** O modelo de texto que escreve as cenas (decisão do Bruno, 10/10: Sonnet 5). */

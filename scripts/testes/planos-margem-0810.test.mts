@@ -142,7 +142,8 @@ test("os minutos de cada plano saem do saldo (o que ele paga numa gravação só
     // O titular consegue enviar a gravação mais longa do plano dentro dos minutos do mês (o podcast de 3 h no Enterprise).
     assert.ok(p.duracaoMaximaMin <= min, `${p.nome}: duração máxima ${p.duracaoMaximaMin} acima dos ${min} minutos do mês`);
   }
-  assert.equal(planoPublico("studio").duracaoMaximaMin, 180, "o podcast do Enterprise é de até 3 horas");
+  // 10/10, noite (Bruno): por vídeo, Starter até 7 min, Pro até 22 min, Enterprise até 2 h.
+  assert.equal(planoPublico("studio").duracaoMaximaMin, 120, "o vídeo do Enterprise é de até 2 horas");
   // O que é pago a mais vira minutos na mesma régua: o acesso extra (1.800) são 7 minutos; um pacote de 4.700, 20.
   assert.equal(minutosDosCreditosExtras(ACESSO_EXTRA.creditosPorMes), 7);
   assert.equal(minutosDosCreditosExtras(4700), 20);
@@ -200,13 +201,13 @@ test("acesso extra e pacotes avulsos respeitam a régua com o crédito de vídeo
 
 // ─── a duração de cada gravação por papel ───
 
-test("quem envia pela equipe ou pelo contrato sobe até 5 minutos; o titular sobe a duração do plano; o podcast de 3 h só no Enterprise", () => {
+test("quem envia pela equipe ou pelo contrato sobe até 5 minutos; o titular sobe a duração do plano (7 min, 22 min, 2 h)", () => {
   assert.equal(MINUTOS_POR_GRAVACAO_DO_MEMBRO, 5);
   for (const p of PLANOS_PUBLICOS) {
     assert.equal(duracaoMaximaDaGravacaoMin("membro", p.duracaoMaximaMin), 5, p.nome);
     assert.equal(duracaoMaximaDaGravacaoMin("titular", p.duracaoMaximaMin), p.duracaoMaximaMin, p.nome);
   }
-  assert.deepEqual(PLANOS_PUBLICOS.map((p) => duracaoMaximaDaGravacaoMin("titular", p.duracaoMaximaMin)), [60, 120, 180]);
+  assert.deepEqual(PLANOS_PUBLICOS.map((p) => duracaoMaximaDaGravacaoMin("titular", p.duracaoMaximaMin)), [7, 22, 120]);
   // O envio: o teto é o menor entre o papel e o que sobra no mês.
   assert.equal(duracaoMaximaDoEnvioSeg(duracaoMaximaDaGravacaoMin("membro", 180), 150), 5 * 60);
   assert.equal(duracaoMaximaDoEnvioSeg(duracaoMaximaDaGravacaoMin("titular", 180), 150), 150 * 60);

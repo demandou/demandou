@@ -8,8 +8,8 @@ import { AproveitarRoteiro } from "@/components/video/aproveitar-roteiro";
 import { etapaDeRetomada, proximaAcao } from "@/lib/media/video-state";
 import { STATUS_CANCELADO, textoDaConfirmacao } from "@/lib/media/cancelamento";
 import { abrirChamado } from "@/lib/suporte/abrir-chamado";
-import { segundosDaEdicao } from "@/lib/media/tempos-medidos";
-import { lerLinhaDoTempo, linhaQueSoAvanca, mesmaMemoria, type ExtrasDaLinha, type GemeoNaLinha, type LeituraDaLinha, type MemoriaDaLinha, type Passo } from "@/lib/media/linha-do-tempo";
+import { segundosDaEdicao, segundosDaEtapa } from "@/lib/media/tempos-medidos";
+import { lerLinhaDoTempo, segundosNoModeloDoCurso, linhaQueSoAvanca, mesmaMemoria, type ExtrasDaLinha, type GemeoNaLinha, type LeituraDaLinha, type MemoriaDaLinha, type Passo } from "@/lib/media/linha-do-tempo";
 import { CODIGO_DA_ETAPA, pedirLeituraDoSino } from "@/lib/notificacoes/tipos";
 import toast from "react-hot-toast";
 import { BotaoDescartar, useDescarte, useDescartes } from "@/components/ui/descartar";
@@ -1153,7 +1153,12 @@ function CartaoDoVideo({
   const restante = Math.max(total - decorrido, 0);
   const atrasandoNaEtapa = !atrasou && total - decorrido < linha.restaDepoisDoAtualSegundos;
   const minutosDaEdicao = Math.ceil(
-    segundosDaEdicao(v.durationSec, { efeitos: Boolean(v.linha?.efeitosLigados), revisao: Boolean(v.linha?.revisaoLigada) }) / 60
+    (v.linha?.modeloDoCurso
+      ? segundosDaEtapa("base", v.durationSec) +
+        segundosNoModeloDoCurso(v.durationSec, v.linha.modeloDoCurso.tres).efeitos +
+        segundosNoModeloDoCurso(v.durationSec, v.linha.modeloDoCurso.tres).montagem +
+        (v.linha.revisaoLigada ? segundosDaEtapa("revisao", v.durationSec) : 0)
+      : segundosDaEdicao(v.durationSec, { efeitos: Boolean(v.linha?.efeitosLigados), revisao: Boolean(v.linha?.revisaoLigada) })) / 60
   );
   // O relógio PARA quando a esteira termina (08/09): sem `terminadoEm` (vídeos
   // antigos) fica o decorrido, que ao menos não mente sobre a ordem de grandeza.

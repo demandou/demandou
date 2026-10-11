@@ -1,0 +1,8 @@
+{
+  "formato": "16:9",
+  "variante": { "de": "modelo-ao-pe-da-letra", "formato": "16:9" },
+  "imagens": true,
+  "blocos": { "assinatura": ["literal"] },
+  "palavraPorPalavra": ["abertura", "frase", "cta"],
+  "conferir": { "cobertura": 0.5, "vao": 8, "parado": 6, "segundosPorMomento": 10 }
+}

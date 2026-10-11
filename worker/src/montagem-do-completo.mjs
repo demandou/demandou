@@ -200,14 +200,16 @@ export async function analisarCompleto(arquivo) {
     const bufs = [];
     const tempos = [];
     let resto = "";
+    let ultimas = "";
     p.stdout.on("data", (d) => bufs.push(d));
     p.stderr.on("data", (d) => {
       resto += d.toString();
+      ultimas = (ultimas + d.toString()).slice(-1200);
       for (const m of resto.matchAll(/pts_time:([\d.]+)/g)) tempos.push(Number(m[1]));
       resto = resto.slice(resto.lastIndexOf("pts_time:") + 1);
     });
     p.on("error", rejeitar);
-    p.on("close", (code) => (code === 0 ? resolver({ quadros: Buffer.concat(bufs), tempos }) : rejeitar(new Error(`análise saiu com ${code}`))));
+    p.on("close", (code) => (code === 0 ? resolver({ quadros: Buffer.concat(bufs), tempos }) : rejeitar(new Error(`análise saiu com ${code}: ${ultimas.split(/\r?\n/).filter((l) => l && !l.includes("showinfo")).slice(-4).join(" | ").slice(0, 400)}`))));
   });
   const n = Math.min(Math.floor(quadros.length / N), tempos.length);
   const vet = (i) => quadros.subarray(i * N, (i + 1) * N);

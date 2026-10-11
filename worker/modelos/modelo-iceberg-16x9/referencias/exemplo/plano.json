@@ -1,0 +1,431 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 16.8,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Rafael Torres",
+    "area": "Café"
+  },
+  "sfx": true,
+  "cortesEm": [
+    1.76,
+    3.52,
+    5.59,
+    8.02,
+    11.68,
+    15.19
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 1.76,
+      "texto": "O iceberg do café",
+      "destaque": "café",
+      "em": 0.28
+    },
+    {
+      "tipo": "iceberg",
+      "de": 1.76,
+      "ate": 15.2,
+      "unidade": "m",
+      "niveis": [
+        {
+          "nome": "Expresso",
+          "em": 2.87,
+          "rotulo": "Na superfície",
+          "imagem": {
+            "id": "expresso"
+          }
+        },
+        {
+          "nome": "Cold Brew",
+          "em": 4.6,
+          "rotulo": "Um pouco mais fundo",
+          "imagem": {
+            "id": "coldbrew"
+          },
+          "desceEm": 3.85
+        },
+        {
+          "nome": "Café do Jacu",
+          "em": 6.92,
+          "rotulo": "Descendo mais",
+          "imagem": {
+            "id": "jacu"
+          },
+          "inset": {
+            "imagem": {
+              "id": "graos"
+            },
+            "em": 8.59
+          },
+          "detalhes": [
+            {
+              "texto": "Grãos que um pássaro come",
+              "em": 9.3
+            },
+            {
+              "texto": "e devolve inteiros",
+              "em": 10.3,
+              "destaque": true
+            }
+          ],
+          "desceEm": 6.2
+        },
+        {
+          "nome": "Kopi Luwak",
+          "em": 13.08,
+          "rotulo": "Lá no fundo",
+          "desceEm": 11.6,
+          "imagem": {
+            "id": "civeta"
+          },
+          "detalhes": [
+            {
+              "texto": "Indonésia",
+              "em": 14.47,
+              "destaque": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 15.2,
+      "ate": 16.8,
+      "texto": "Até onde você desce?",
+      "icone": "comentar",
+      "em": 15.28
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "Kopiluvak": "Kopi Luwak"
+  },
+  "palavras": [
+    {
+      "em": 0.28,
+      "ate": 0.34,
+      "w": "O"
+    },
+    {
+      "em": 0.31,
+      "ate": 0.81,
+      "w": "iceberg"
+    },
+    {
+      "em": 0.81,
+      "ate": 1.02,
+      "w": "do"
+    },
+    {
+      "em": 1.02,
+      "ate": 1.56,
+      "w": "café."
+    },
+    {
+      "em": 1.82,
+      "ate": 1.88,
+      "w": "Na"
+    },
+    {
+      "em": 1.85,
+      "ate": 2.83,
+      "w": "superfície,"
+    },
+    {
+      "em": 2.83,
+      "ate": 2.89,
+      "w": "o"
+    },
+    {
+      "em": 2.87,
+      "ate": 3.52,
+      "w": "expresso."
+    },
+    {
+      "em": 3.59,
+      "ate": 3.65,
+      "w": "um"
+    },
+    {
+      "em": 3.62,
+      "ate": 3.95,
+      "w": "pouco"
+    },
+    {
+      "em": 3.95,
+      "ate": 4.26,
+      "w": "mais"
+    },
+    {
+      "em": 4.26,
+      "ate": 4.91,
+      "w": "fundo,"
+    },
+    {
+      "em": 4.91,
+      "ate": 4.97,
+      "w": "o"
+    },
+    {
+      "em": 4.93,
+      "ate": 5.25,
+      "w": "Cold"
+    },
+    {
+      "em": 5.25,
+      "ate": 5.59,
+      "w": "Brew."
+    },
+    {
+      "em": 5.68,
+      "ate": 6.23,
+      "w": "Descendo"
+    },
+    {
+      "em": 6.23,
+      "ate": 6.82,
+      "w": "mais,"
+    },
+    {
+      "em": 6.82,
+      "ate": 6.92,
+      "w": "o"
+    },
+    {
+      "em": 6.92,
+      "ate": 7.44,
+      "w": "Café"
+    },
+    {
+      "em": 7.44,
+      "ate": 7.7,
+      "w": "do"
+    },
+    {
+      "em": 7.7,
+      "ate": 8.02,
+      "w": "Jacu,"
+    },
+    {
+      "em": 8.14,
+      "ate": 8.29,
+      "w": "feito"
+    },
+    {
+      "em": 8.29,
+      "ate": 8.46,
+      "w": "com"
+    },
+    {
+      "em": 8.46,
+      "ate": 8.59,
+      "w": "os"
+    },
+    {
+      "em": 8.59,
+      "ate": 8.99,
+      "w": "grãos"
+    },
+    {
+      "em": 8.99,
+      "ate": 9.25,
+      "w": "que"
+    },
+    {
+      "em": 9.25,
+      "ate": 9.32,
+      "w": "um"
+    },
+    {
+      "em": 9.32,
+      "ate": 9.85,
+      "w": "pássaro"
+    },
+    {
+      "em": 9.85,
+      "ate": 10.27,
+      "w": "come"
+    },
+    {
+      "em": 10.27,
+      "ate": 10.33,
+      "w": "e"
+    },
+    {
+      "em": 10.31,
+      "ate": 10.96,
+      "w": "devolve"
+    },
+    {
+      "em": 10.96,
+      "ate": 11.68,
+      "w": "inteiros,"
+    },
+    {
+      "em": 11.74,
+      "ate": 11.8,
+      "w": "e"
+    },
+    {
+      "em": 11.77,
+      "ate": 12.03,
+      "w": "lá"
+    },
+    {
+      "em": 12.03,
+      "ate": 12.41,
+      "w": "no"
+    },
+    {
+      "em": 12.41,
+      "ate": 12.86,
+      "w": "fundo"
+    },
+    {
+      "em": 13.05,
+      "ate": 13.11,
+      "w": "o"
+    },
+    {
+      "em": 13.08,
+      "ate": 14.42,
+      "w": "Kopiluvak,"
+    },
+    {
+      "em": 14.42,
+      "ate": 14.48,
+      "w": "da"
+    },
+    {
+      "em": 14.47,
+      "ate": 15.19,
+      "w": "Indonésia."
+    },
+    {
+      "em": 15.28,
+      "ate": 15.34,
+      "w": "Até"
+    },
+    {
+      "em": 15.3,
+      "ate": 15.51,
+      "w": "onde"
+    },
+    {
+      "em": 15.51,
+      "ate": 15.77,
+      "w": "você"
+    },
+    {
+      "em": 15.77,
+      "ate": 16.21,
+      "w": "desce."
+    }
+  ],
+  "imagens": {
+    "expresso": {
+      "arquivo": "img/expresso.jpg",
+      "foco": {
+        "x": 0.54,
+        "y": 0.48
+      },
+      "largura": 1600,
+      "altura": 1066,
+      "transparente": false,
+      "fonte": "Wikimedia Commons",
+      "titulo": "Espresso Coffee 01",
+      "autor": "Jubair1985",
+      "licenca": "CC0",
+      "credito": false,
+      "link": "https://commons.wikimedia.org/wiki/File:Espresso_Coffee_01.jpg",
+      "palavra": "expresso"
+    },
+    "coldbrew": {
+      "arquivo": "img/coldbrew.jpg",
+      "foco": {
+        "x": 0.45,
+        "y": 0.48
+      },
+      "largura": 1600,
+      "altura": 1066,
+      "transparente": false,
+      "fonte": "Wikimedia Commons",
+      "titulo": "Iced cold brew coffee",
+      "autor": "Roland Tanglao",
+      "licenca": "CC0",
+      "credito": false,
+      "link": "https://commons.wikimedia.org/wiki/File:Iced_cold_brew_coffee.jpg",
+      "palavra": "cold brew"
+    },
+    "jacu": {
+      "arquivo": "img/jacu.jpg",
+      "foco": {
+        "x": 0.6,
+        "y": 0.42
+      },
+      "largura": 1600,
+      "altura": 1166,
+      "transparente": false,
+      "fonte": "Wikimedia Commons",
+      "titulo": "Pavas de monte (Penelope obscura), Uruguay, 2020",
+      "autor": "Enrique González",
+      "licenca": "CC BY 4.0",
+      "credito": true,
+      "link": "https://commons.wikimedia.org/wiki/File:Pavas_de_monte_(Penelope_obscura),_Uruguay,_2020.jpg",
+      "palavra": "jacu"
+    },
+    "graos": {
+      "arquivo": "img/graos.jpg",
+      "foco": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "largura": 1600,
+      "altura": 1200,
+      "transparente": false,
+      "fonte": "Wikimedia Commons",
+      "titulo": "Roasted coffee beans",
+      "autor": "MarkSweep",
+      "licenca": "Domínio público",
+      "credito": false,
+      "link": "https://commons.wikimedia.org/wiki/File:Roasted_coffee_beans.jpg",
+      "palavra": "grãos"
+    },
+    "civeta": {
+      "arquivo": "img/civeta.jpg",
+      "foco": {
+        "x": 0.56,
+        "y": 0.46
+      },
+      "largura": 1600,
+      "altura": 1200,
+      "transparente": false,
+      "fonte": "Wikimedia Commons",
+      "titulo": "Paradoxurus hermaphroditus 113702616",
+      "autor": "Ashwin Viswanathan",
+      "licenca": "CC BY 4.0",
+      "credito": true,
+      "link": "https://commons.wikimedia.org/wiki/File:Paradoxurus_hermaphroditus_113702616.jpg",
+      "palavra": "civeta"
+    }
+  }
+}

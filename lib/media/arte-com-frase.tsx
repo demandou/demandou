@@ -321,12 +321,11 @@ async function pecasTipograficasDoCurso(projectId: string): Promise<{ ids: strin
   const { modeloDoCursoDoProjeto } = await import("@/lib/media/editor-do-curso/no-corte");
   const modelo = await modeloDoCursoDoProjeto(projectId);
   if (!modelo) return null;
-  const { estiloDoModelo, modeloDaFala, MODELOS_TIPOGRAFICOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/estilo-das-pecas");
+  const { estiloDoModelo, MODELOS_TIPOGRAFICOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/estilo-das-pecas");
   const e = estiloDoModelo(modelo);
   if (e?.pecas !== "tipografia" || !e.papeis) return null;
-  const { estadoDoMeuEstilo } = await import("@/lib/estilo-proprio/servidor");
-  const confirmado = (await estadoDoMeuEstilo(projectId).catch(() => null))?.confirmado ?? null;
-  if (confirmado && !modeloDaFala(confirmado.falas?.[0])) return null;
+  const { estiloProprioValeSobreOModelo } = await import("@/lib/media/editor-do-curso/no-corte");
+  if (await estiloProprioValeSobreOModelo(projectId).catch(() => false)) return null;
   return { ids: MODELOS_TIPOGRAFICOS_DO_CURSO, papeis: e.papeis };
 }
 

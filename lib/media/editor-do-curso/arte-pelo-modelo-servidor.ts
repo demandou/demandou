@@ -45,10 +45,9 @@ export async function regraDaArtePeloModelo(projectId: string): Promise<RegraDoP
   const modelo = await modeloDoCursoDoProjeto(projectId).catch(() => null);
   if (!modelo) return null;
   // O "Meu estilo" confirmado que não saiu do modelo é o estilo próprio do cliente: ele manda.
-  const { estadoDoMeuEstilo } = await import("@/lib/estilo-proprio/servidor");
-  const { modeloDaFala } = await import("@/lib/media/editor-do-curso/estilo-das-pecas");
-  const confirmado = (await estadoDoMeuEstilo(projectId).catch(() => null))?.confirmado ?? null;
-  const estiloProprio = Boolean(confirmado && !modeloDaFala(confirmado.falas?.[0]));
+  // Só se confirmado depois da escolha do modelo (10/10, noite).
+  const { estiloProprioValeSobreOModelo } = await import("@/lib/media/editor-do-curso/no-corte");
+  const estiloProprio = await estiloProprioValeSobreOModelo(projectId).catch(() => false);
   const r = decidirArtePeloModelo({ ligada, modelo, estiloProprio });
   if (!r.usa) {
     console.log(`[arte-no-modelo][${projectId}] caminho de hoje: ${r.motivo}`);
