@@ -21,7 +21,7 @@ import {
   type PecaDoLote,
   type PostDoLote,
 } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
-import { arteDoModeloPelaIa, promptDeEstiloDoModelo } from "@/lib/media/editor-do-curso/arte-pela-ia";
+import { arteDoModeloPelaIa, estiloDasArtesDoProjeto, promptDeEstiloDoModelo, PROMPTS_SOB_MEDIDA } from "@/lib/media/editor-do-curso/arte-pela-ia";
 
 /**
  * O LADO DO SERVIDOR DAS ARTES PELO MODELO DO CURSO (10/10/2026). As decisões
@@ -42,13 +42,22 @@ export type RegraDoProjeto = { modelo: string; modo: "mestre" | "por-post" };
 export async function regraDaArtePeloModelo(projectId: string): Promise<RegraDoProjeto | null> {
   const ligada = arteDoModeloLigada();
   if (!ligada) return null;
-  const { modeloDoCursoDoProjeto } = await import("@/lib/media/editor-do-curso/no-corte");
-  const modelo = await modeloDoCursoDoProjeto(projectId).catch(() => null);
+  const { modeloDoCursoDoProjeto, escolhaDoEditorDoProjeto, estiloProprioValeSobreOModelo } = await import("@/lib/media/editor-do-curso/no-corte");
+  // A EDIÇÃO SOB MEDIDA ESCOLHIDA MANDA NAS ARTES (11/10): a opção com prompt
+  // próprio (Maquete 3D, Recorte, Gráficos), pela IA; não a reserva dela.
+  const escolha = await escolhaDoEditorDoProjeto(projectId).catch(() => ({ escolhido: null, reserva: null }));
+  const doProjeto = estiloDasArtesDoProjeto(escolha.escolhido, null);
+  const sobMedida = arteDoModeloPelaIa() && doProjeto && PROMPTS_SOB_MEDIDA[doProjeto] ? doProjeto : null;
+  const modelo = sobMedida ?? (await modeloDoCursoDoProjeto(projectId).catch(() => null));
   if (!modelo) return null;
   // O "Meu estilo" confirmado que não saiu do modelo é o estilo próprio do cliente: ele manda.
   // Só se confirmado depois da escolha do modelo (10/10, noite).
-  const { estiloProprioValeSobreOModelo } = await import("@/lib/media/editor-do-curso/no-corte");
   const estiloProprio = await estiloProprioValeSobreOModelo(projectId).catch(() => false);
+  if (sobMedida) {
+    if (estiloProprio) return null;
+    const { lerModoDosPosts } = await import("@/lib/estilo-dos-posts/design-mestre");
+    return { modelo: sobMedida, modo: await lerModoDosPosts(projectId).catch(() => "mestre" as const) };
+  }
   const r = decidirArtePeloModelo({ ligada, modelo, estiloProprio });
   if (!r.usa) {
     console.log(`[arte-no-modelo][${projectId}] caminho de hoje: ${r.motivo}`);
@@ -429,6 +438,31 @@ type PostDaReserva = { id: string; platform: string; mediaType: string | null; r
  * modelo, com o texto exato e as cores da marca. True quando preencheu; false
  * quando a IA não vale ou não saiu (o caminho de hoje desenha em seguida).
  */
+/**
+ * O que o vídeo dá à arte pela IA (11/10): a transcrição (o assunto de cada peça
+ * sai do trecho dela) e, no estilo que pede a pessoa, um quadro nítido da
+ * gravação (a regra da capa nítida). Sem vídeo, nada; falha não derruba a arte.
+ */
+export async function falaEFotoDoVideo(videoJobId: string | null | undefined, querFoto: boolean): Promise<{ fala: string | null; fotoDaPessoa: string | null }> {
+  if (!videoJobId) return { fala: null, fotoDaPessoa: null };
+  const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { transcript: true } }).catch(() => null);
+  const t = video?.transcript as { text?: unknown } | string | null | undefined;
+  const fala = typeof t === "string" ? t : typeof t?.text === "string" ? t.text : null;
+  let fotoDaPessoa: string | null = null;
+  if (querFoto) {
+    try {
+      const { quadrosNitidosDoVideo } = await import("@/lib/media/quadros-nitidos");
+      const { lerMidia } = await import("@/lib/media/storage");
+      const [q] = await quadrosNitidosDoVideo(videoJobId, { quantos: 1, alvo: { largura: 1080, altura: 1350 } });
+      const buf = q?.url ? await lerMidia(q.url) : null;
+      if (buf) fotoDaPessoa = `data:image/jpeg;base64,${buf.toString("base64")}`;
+    } catch (e) {
+      console.warn(`[arte-no-modelo] o quadro nítido da pessoa não veio (a arte sai sem pessoa): ${e instanceof Error ? e.message : e}`);
+    }
+  }
+  return { fala, fotoDaPessoa };
+}
+
 async function desenharGrupoPelaIa(projectId: string, posts: PostDaReserva[], nicho: string | null): Promise<boolean> {
   const base = posts[0];
   const meta = (base.metadata ?? {}) as { frase?: string; slides?: unknown; infografico?: unknown; arteNoModelo?: { modelo?: string; origem?: string } };
@@ -455,6 +489,7 @@ async function desenharGrupoPelaIa(projectId: string, posts: PostDaReserva[], ni
       dia: base.dayOfWeek,
       nicho,
       marca,
+      ...(await falaEFotoDoVideo((meta as { videoJobId?: string }).videoJobId, Boolean(promptDeEstiloDoModelo(modelo)?.pessoa))),
     });
     const agora = new Date().toISOString();
     for (const p of posts) {
@@ -661,6 +696,7 @@ export async function refazerArteNoModelo(o: {
         dia: (o.post as { dayOfWeek?: number | null }).dayOfWeek ?? null,
         nicho: o.nicho,
         marca,
+        ...(await falaEFotoDoVideo(typeof meta.videoJobId === "string" ? meta.videoJobId : null, Boolean(promptDeEstiloDoModelo(regra.modelo)?.pessoa))),
       });
       const imagem = porRede[o.post.platform];
       if (imagem) {

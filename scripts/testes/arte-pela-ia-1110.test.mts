@@ -167,6 +167,61 @@ test("texto reprovado nas três tentativas: a cena no estilo sem texto com a fra
   assert.match(porRede.instagram, /^data:image\/jpeg;base64,/);
 });
 
+// ─────────── 11/10, terceira rodada: sob medida e o assunto da fala ───────────
+
+test("as três opções sob medida têm estilo; a escolhida manda nas artes, a genérica segue a reserva", async () => {
+  const { estiloDasArtesDoProjeto, PROMPTS_SOB_MEDIDA } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
+  const { OPCOES_SOB_MEDIDA } = await import("@/lib/media/editor-avancado/no-corte");
+  for (const o of OPCOES_SOB_MEDIDA) assert.ok(promptDeEstiloDoModelo(o.id), `${o.id} sem estilo`);
+  assert.equal(estiloDasArtesDoProjeto("sob-medida-3d", "modelo-anatomia"), "sob-medida-3d");
+  assert.equal(estiloDasArtesDoProjeto("sob-medida", "modelo-anatomia"), "modelo-anatomia");
+  assert.equal(estiloDasArtesDoProjeto("modelo-torre", null), null);
+  assert.equal(PROMPTS_SOB_MEDIDA["sob-medida-recorte"].pessoa, true);
+  assert.doesNotMatch(JSON.stringify(PROMPTS_SOB_MEDIDA), /#[0-9a-f]{6}\b|[—–]/i);
+});
+
+test("o assunto vem da fala; o estilo só decide como desenhar", async () => {
+  const { trechoDaFala } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
+  const fala = "Cara, você passa o dia editando vídeo e escolhendo horário de postar. ".repeat(3) + "Isaías 54 manda alargar o espaço da tua tenda, estica as cordas e firma as estacas. " + "Depois vem o resto da conversa sobre outras coisas da semana. ".repeat(6);
+  const t = trechoDaFala(fala, "Alarga a tua tenda e firma as estacas", 30)!;
+  assert.match(t, /tenda/);
+  assert.equal(trechoDaFala("", "x"), null);
+  const p = promptDaArteNoModelo({ estilo: promptDeEstiloDoModelo("sob-medida-3d")!, texto: "Alarga a tua tenda", tipo: "post", cores: CORES, composicao: "x", trecho: t });
+  assert.match(p, /SUBJECT \(what to draw/);
+  assert.match(p, /Excerpt of the video: ".*tenda/);
+  assert.match(p, /HOW TO DRAW IT \(the style decides only the rendering/);
+});
+
+test("o recorte com a foto pede a pessoa da foto; sem foto, nenhuma pessoa", () => {
+  const recorte = promptDeEstiloDoModelo("sob-medida-recorte")!;
+  const com = promptDaArteNoModelo({ estilo: recorte, texto: "Bem feito", tipo: "post", cores: CORES, composicao: "x", comFotoDaPessoa: true });
+  assert.match(com, /real person from the attached reference photo/);
+  const sem = promptDaArteNoModelo({ estilo: recorte, texto: "Bem feito", tipo: "post", cores: CORES, composicao: "x" });
+  assert.doesNotMatch(sem, /attached reference photo/);
+  assert.match(sem, /No people/);
+});
+
+test("o recorte com a foto desenha pelo gerador com foto e permite a pessoa na conferência", async () => {
+  const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+  let comFoto = 0;
+  let permitiu = false;
+  await desenharPelaIa(
+    { projectId: "p", modelo: "sob-medida-recorte", mediaType: "image", redes: ["instagram"], frase: "Bem feito", marca: MARCA, fotoDaPessoa: "data:image/jpeg;base64,AAAA" },
+    {
+      gerarComFoto: async (_p, proporcao) => {
+        comFoto++;
+        return imagemFalsa(proporcao);
+      },
+      conferir: async (_d, o) => {
+        permitiu = Boolean((o as { permitirPessoas?: boolean }).permitirPessoas);
+        return { aprovada: true, motivo: "ok", medida: { cortado: false, resumo: "ok", lados: {} } } as never;
+      },
+    }
+  );
+  assert.equal(comFoto, 1);
+  assert.equal(permitiu, true);
+});
+
 test("modelo sem prompt de estilo lança antes de gastar", async () => {
   const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
   await assert.rejects(desenharPelaIa({ projectId: "p", modelo: "modelo-x", mediaType: "image", redes: ["instagram"], frase: "a", marca: MARCA }), /não tem o prompt de estilo/);

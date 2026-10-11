@@ -4,7 +4,7 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
 import type { ContextoMidia } from "@/lib/media/usage";
 import type { GeradorDoInfografico, ModeloDoInfografico } from "@/lib/media/infografico-pelo-modelo";
-import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, type CoresDaPeca } from "./arte-pela-ia";
+import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, trechoDaFala, type CoresDaPeca } from "./arte-pela-ia";
 
 /**
  * O DESENHO PELA IA DE IMAGEM DAS PEÇAS DE UM PROJETO COM MODELO DO CURSO
@@ -35,12 +35,48 @@ export type PecaPelaIa = {
   dia?: number | null;
   nicho?: string | null;
   marca: MarcaDaArte;
+  /** O trecho da transcrição de onde a peça saiu: o assunto da arte (11/10). */
+  trecho?: string | null;
+  /** A transcrição do vídeo: sem `trecho`, o de cada peça (cada lâmina) sai dela. */
+  fala?: string | null;
+  /** A foto da pessoa (data URI de um quadro nítido da gravação), para o estilo que pede a pessoa. */
+  fotoDaPessoa?: string | null;
 };
+
+/** Quem desenha COM a foto da pessoa de referência. Parâmetro para a prova e o teste trocarem. */
+export type GeradorComFoto = (prompt: string, proporcao: ProporcaoPedida, foto: string, ctx: ContextoMidia) => Promise<string>;
 
 export type InjecoesDaArte = {
   gerar?: GeradorDoInfografico;
+  gerarComFoto?: GeradorComFoto;
   conferir?: PedidoDeArte["conferir"];
 };
+
+/**
+ * O Nano Banana Pro com a foto da pessoa junto (a edição a partir da imagem):
+ * a pessoa do recorte é a da gravação, nunca uma inventada.
+ */
+export const gerarComFotoNoGoogle: GeradorComFoto = async (prompt, proporcao, foto, ctx) => {
+  const { pedidoAoGoogle, FICHA_DO_MODELO } = await import("@/lib/media/infografico-pelo-modelo");
+  const { gravarCustoDeImagem } = await import("@/lib/media/usage");
+  const chave = process.env.GEMINI_API_KEY;
+  if (!chave) throw new Error("GEMINI_API_KEY não configurada");
+  const { url, corpo } = pedidoAoGoogle("nano-banana-pro", prompt, proporcao);
+  const mime = foto.slice(5, foto.indexOf(";")) || "image/jpeg";
+  (corpo.contents as Array<{ parts: unknown[] }>)[0].parts.unshift({ inlineData: { mimeType: mime, data: foto.slice(foto.indexOf(",") + 1) } });
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": chave }, body: JSON.stringify(corpo), signal: AbortSignal.timeout(150_000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text().catch(() => "")).slice(0, 160)}`);
+  const j = (await r.json()) as { candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data: string; mimeType?: string } }> } }> };
+  const parte = (j.candidates?.[0]?.content?.parts ?? []).find((x) => x.inlineData?.data);
+  if (!parte?.inlineData) throw new Error("o Nano Banana Pro não devolveu a imagem com a foto");
+  gravarCustoDeImagem(FICHA_DO_MODELO["nano-banana-pro"].id, FICHA_DO_MODELO["nano-banana-pro"].precoUsd, ctx);
+  return `data:${parte.inlineData.mimeType ?? "image/png"};base64,${parte.inlineData.data}`;
+};
+
+/** O trecho da fala desta peça: o dado, ou a janela da transcrição que mais casa com a frase (peso dobrado) e a legenda. */
+export function trechoDaPeca(p: Pick<PecaPelaIa, "trecho" | "fala" | "textoDoPost">, texto: string): string | null {
+  return p.trecho ?? trechoDaFala(p.fala, `${texto} ${texto} ${p.textoDoPost ?? ""}`);
+}
 
 /** As cores da marca nos papéis (os aprovados; sem aprovação, as da marca). */
 export async function coresDaPeca(marca: MarcaDaArte): Promise<CoresDaPeca> {
@@ -69,6 +105,7 @@ export async function pecaDeFrase(
   const { produzirArtePorRede } = await import("@/lib/media/arte-por-rede");
   const { ORDEM_PRINCIPAL, ORDEM_ALTERNATIVA } = await import("@/lib/media/infografico-pelo-modelo");
   const ctx: ContextoMidia = { projectId: p.projectId, runId: p.runId ?? undefined, operation: OPERACAO_DA_ARTE_PELA_IA };
+  const comFoto = Boolean(estilo.pessoa && p.fotoDaPessoa);
   const promptBase = promptDaArteNoModelo({
     estilo,
     texto: o.texto,
@@ -78,7 +115,12 @@ export async function pecaDeFrase(
     contexto: p.textoDoPost,
     nicho: p.nicho,
     pagina: o.pagina,
+    trecho: trechoDaPeca(p, o.texto),
+    comFotoDaPessoa: comFoto,
   });
+  // O estilo que pede a pessoa (o recorte) desenha com a foto dela; sem a foto, sem pessoa.
+  const foto = comFoto ? p.fotoDaPessoa! : null;
+  const comAFoto = foto ? async (prompt: string, proporcao: ProporcaoPedida) => (inj.gerarComFoto ?? gerarComFotoNoGoogle)(prompt, proporcao, foto, ctx) : null;
   const arte = await produzirArtePorRede({
     redes: o.redes,
     contentType: o.contentType,
@@ -86,9 +128,10 @@ export async function pecaDeFrase(
     textoEsperado: [o.texto],
     textoDesenhadoPeloModelo: true,
     usarOlho: true,
+    permitirPessoas: Boolean(foto),
     textoDoPost: p.textoDoPost ?? undefined,
-    desenhar: await desenhista(ORDEM_PRINCIPAL, ctx, inj.gerar),
-    desenharAlternativo: await desenhista(ORDEM_ALTERNATIVA, ctx, inj.gerar),
+    desenhar: comAFoto ?? (await desenhista(ORDEM_PRINCIPAL, ctx, inj.gerar)),
+    desenharAlternativo: comAFoto ?? (await desenhista(ORDEM_ALTERNATIVA, ctx, inj.gerar)),
     projectId: p.projectId,
     runId: p.runId ?? undefined,
     ...(inj.conferir ? { conferir: inj.conferir } : {}),
@@ -130,6 +173,7 @@ export async function cenaComFraseEmCodigo(
     composicao: composicaoDaPeca(estilo, { dia: p.dia, lamina: o.lamina }),
     contexto: p.textoDoPost,
     nicho: p.nicho,
+    trecho: trechoDaPeca(p, o.texto),
   });
   const arte = await produzirArtePorRede({
     redes: o.redes,

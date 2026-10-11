@@ -44,9 +44,75 @@ export type PromptDeEstilo = {
   evitar: string;
   soTipografico: boolean;
   fonte?: string;
+  /** O estilo põe a pessoa (o recorte): a foto dela vai como referência, quando há. */
+  pessoa?: boolean;
 };
 
 const PROMPTS = prompts as Record<string, PromptDeEstilo>;
+
+/**
+ * OS ESTILOS DAS EDIÇÕES SOB MEDIDA (11/10, Bruno escolheu a "Maquete 3D" e as
+ * artes saíram no Anatomia, a reserva). Escritos à mão a partir das provas
+ * aprovadas (aulas 8.1 e 8.2 e o exemplo da aula 6), no mesmo formato dos
+ * modelos do curso. Cores sempre as da marca.
+ */
+export const PROMPTS_SOB_MEDIDA: Record<string, PromptDeEstilo> = {
+  "sob-medida-3d": {
+    nomeDoEstilo: "Isometric 3D Diorama",
+    atmosfera: "Clean, premium explainer look, like a product reveal: one physical object built as a small 3D model on a dark stage, calm and precise.",
+    elementoVisual: "A clean isometric 3D maquette (diorama) of the concrete object the speaker talks about, rendered as a soft matte 3D model with real proportions and parts (for example a tent with its canvas, ropes and stakes; a desk with its tools; a shop with its counter). It may be shown whole, or slightly exploded into its parts floating apart with thin leader lines, or being rebuilt. Smooth materials, soft contact shadows, a thin accent outline marking its footprint on the floor.",
+    composicoes: [
+      "Hero text large in the upper third; the 3D maquette whole and centered below it, seen from a three quarter isometric angle, with a thin accent outline of its footprint on the floor.",
+      "Hero text in the lower third; the maquette in the upper half, exploded into its parts floating slightly apart, with thin leader lines between the parts.",
+      "Hero text in a left column; the maquette on the right, larger, cropped slightly by the edge, seen from a low isometric angle.",
+      "Hero text centered at the top; the maquette small in the center of a wide empty dark stage, with long soft shadows and lots of negative space.",
+      "Hero text at the bottom; the maquette close up, filling the upper two thirds, one part highlighted with the accent while the rest stays neutral.",
+    ],
+    tipografia: "A heavy geometric sans serif like Montserrat ExtraBold for the hero text, uppercase or sentence case, tight but readable tracking; small wide tracked uppercase labels only if made of words of the sentence.",
+    textura: "Matte 3D surfaces with soft ambient occlusion on a smooth dark stage; no grain, no clutter.",
+    luz: "Soft studio key light from above with a gentle rim light; the accent glows faintly on the outline and on one highlighted part.",
+    papeisDasCores: "Dark background dominates; the maquette is in neutral light tones; the accent appears only in the footprint outline, one highlighted part and one or two key words.",
+    evitar: "No busy city, no collage of many objects, no photorealistic room, no neon, no text on the model's parts unless copied from the sentence.",
+    soTipografico: false,
+  },
+  "sob-medida-recorte": {
+    nomeDoEstilo: "Cutout with Lettering",
+    atmosfera: "Bold, personal, editorial: the speaker is the hero, framed like a magazine cover on a dark gradient.",
+    elementoVisual: "The real person from the reference photo, cut out cleanly (head and shoulders to waist), with the key word of the sentence as giant bold lettering BEHIND the head (the head overlaps the letters), and one or two small glassy cards in front naming concrete things of the subject with words of the sentence, with a thin accent outline frame drawn around the lower part of the person.",
+    composicoes: [
+      "Giant key word behind the head in the upper third; the person centered from the waist up; the rest of the sentence as a smaller line at the bottom.",
+      "Giant key word behind the head, slightly to the left; the person to the right of center; one small card floating at the shoulder.",
+      "The sentence in two lines at the top with the key word huge behind the head; the person lower in the frame; a thin accent frame around the chest.",
+      "Key word behind the head in light tone; the person large and close; two small cards on each side at shoulder height with words of the sentence.",
+      "The person on the left third; the giant key word behind across the frame; the rest of the sentence at the right.",
+    ],
+    tipografia: "A very heavy geometric sans serif like Montserrat Black, uppercase, for the giant key word (one light tone, one accent tone); a bold sans serif in sentence case for the rest of the sentence.",
+    textura: "Smooth dark radial gradient behind the person; glassy cards with a soft blur and a thin border.",
+    luz: "Natural light on the person as in the photo; a soft halo of darkness around the edges.",
+    papeisDasCores: "Dark gradient background; giant word in a light tone with part in the accent; cards dark with an accent icon line; the person keeps natural colors, never tinted.",
+    evitar: "Never a different person or an altered face, no jagged cutout, no glow behind the head, no stickers or emojis.",
+    soTipografico: false,
+    pessoa: true,
+  },
+  "sob-medida-graficos": {
+    nomeDoEstilo: "Charts that Draw Themselves",
+    atmosfera: "Clean financial dashboard mood: one big number and one chart on a dark card, calm and credible.",
+    elementoVisual: "A dark rounded card with one simple chart (a rising or falling line, bars or a single comparison) drawn with a thin accent line and a soft accent area under it, built only from the numbers in the sentence; when the sentence has no number, a clean comparison card (two terms with a not equal sign, or a before and after) using only words of the sentence.",
+    composicoes: [
+      "The big number of the sentence on top of a dark card with a line chart rising to the right; the rest of the sentence below the card.",
+      "Two dark cards side by side comparing the two values or terms of the sentence, the winner marked with the accent.",
+      "One dark card with vertical bars growing left to right, the last bar in the accent; the sentence as the title above.",
+      "The sentence as the title at the top; a dark card with a single accent line chart ending in a glowing dot.",
+      "A dark card with the two terms of the sentence stacked and a large not equal sign between them in the accent.",
+    ],
+    tipografia: "A bold geometric sans serif like Montserrat for the sentence and big numbers, with small wide tracked uppercase labels only from words of the sentence.",
+    textura: "Dark glassy cards with soft shadows on a dark gradient; thin chart lines.",
+    luz: "Even soft light; the accent line and its end dot glow slightly.",
+    papeisDasCores: "Dark background and cards; light text; the accent only in the chart line, the highlighted bar and the key number.",
+    evitar: "Never a number, percentage, axis value or currency that is not in the sentence; no crowded dashboards, no fake interface text, no stock tickers.",
+    soTipografico: false,
+  },
+};
 
 /** As artes pelo modelo vão pela IA de imagem (o padrão) ou pelo template do worker (ARTE_PELO_MODELO_IA=0)? */
 export function arteDoModeloPelaIa(env: Record<string, string | undefined> = process.env): boolean {
@@ -57,8 +123,49 @@ export function arteDoModeloPelaIa(env: Record<string, string | undefined> = pro
 export function promptDeEstiloDoModelo(id: string | null | undefined, lista: Record<string, PromptDeEstilo> = PROMPTS): PromptDeEstilo | null {
   if (!id) return null;
   const base = id.replace(/-(16x9|9x16)$/, "");
-  const p = lista[id] ?? lista[base];
+  const p = lista[id] ?? lista[base] ?? PROMPTS_SOB_MEDIDA[id];
   return p && p.composicoes?.length ? p : null;
+}
+
+/**
+ * O ESTILO DAS ARTES quando o projeto escolheu uma edição sob medida (11/10):
+ * a opção escolhida, que tem prompt próprio; a genérica (sem prompt) segue a
+ * reserva. Puro.
+ */
+export function estiloDasArtesDoProjeto(escolhido: string | null | undefined, reserva: string | null | undefined): string | null {
+  if (escolhido && PROMPTS_SOB_MEDIDA[escolhido]) return escolhido;
+  return reserva ?? null;
+}
+
+/**
+ * O TRECHO DA FALA de onde a peça saiu (11/10): a janela da transcrição que
+ * mais divide palavras de conteúdo com a frase e a legenda da peça. Puro.
+ */
+const VAZIAS = new Set("a o as os de da do das dos e em no na nos nas um uma uns umas que se por para pra com sem seu sua seus suas voce você eu ele ela isso esse essa este esta aqui ai aí la lá mais menos muito muita ja já nao não sim tem ter ser foi vai vou e é ou mas como quando onde porque pq tudo todo toda".split(" "));
+function chaves(t: string): string[] {
+  return t
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2 && !VAZIAS.has(w));
+}
+export function trechoDaFala(transcricao: string | null | undefined, alvo: string, palavras = 70): string | null {
+  const todas = (transcricao ?? "").split(/\s+/).filter(Boolean);
+  if (!todas.length) return null;
+  if (todas.length <= palavras) return todas.join(" ");
+  const quer = new Set(chaves(alvo));
+  if (!quer.size) return null;
+  let melhor = { i: 0, nota: -1 };
+  const passo = Math.max(5, Math.floor(palavras / 4));
+  for (let i = 0; i + palavras <= todas.length + passo; i += passo) {
+    const janela = new Set(chaves(todas.slice(i, i + palavras).join(" ")));
+    let nota = 0;
+    for (const w of quer) if (janela.has(w)) nota++;
+    if (nota > melhor.nota) melhor = { i, nota };
+  }
+  if (melhor.nota <= 0) return null;
+  return todas.slice(melhor.i, melhor.i + palavras).join(" ");
 }
 
 /**
@@ -104,7 +211,35 @@ export type EntradaDaArte = {
   nicho?: string | null;
   /** A lâmina do carrossel (1 de n). */
   pagina?: { i: number; total: number } | null;
+  /** O trecho da transcrição de onde a peça saiu (11/10): o assunto da arte vem dele. */
+  trecho?: string | null;
+  /** A foto da pessoa vai junto como referência (o estilo que pede a pessoa, com o quadro nítido da gravação). */
+  comFotoDaPessoa?: boolean;
 };
+
+/**
+ * O ASSUNTO DA ARTE VEM DA FALA (11/10, Bruno: "as artes não têm nada a ver
+ * com o que eu falo no vídeo"). Antes o elemento visual do estilo (engrenagens,
+ * olho, cidade) virava o assunto; agora o assunto é um objeto ou uma cena
+ * concreta do trecho do vídeo e da frase, e o estilo decide só COMO desenhar.
+ * Os objetos que o estilo cita valem só como cenário. Puro.
+ */
+function linhasDoAssunto(s: PromptDeEstilo, e: { texto: string; trecho?: string | null; contexto?: string | null; nicho?: string | null }): string[] {
+  const trecho = curto(e.trecho, 700);
+  const contexto = curto(e.contexto, 360);
+  return [
+    `SUBJECT (what to draw; never written on the image): ONE concrete, physical thing that the speaker literally talks about${trecho ? " in this excerpt of the video" : ""} and that matches the sentence ${citar(e.texto)}: an object, a place, a tool or a scene that is named or described, not an abstract symbol, not a generic metaphor.${trecho ? ` Excerpt of the video: ${citar(trecho)}` : ""}${contexto ? ` Post caption: ${citar(contexto)}` : ""}${e.nicho ? ` The world of ${curto(e.nicho, 80)}.` : ""}`,
+    `HOW TO DRAW IT (the style decides only the rendering; the objects it mentions are at most scenery, never the subject): ${s.elementoVisual}`,
+  ];
+}
+
+/** A pessoa nos estilos que a pedem: a da foto de referência, recortada; sem foto, nenhuma pessoa. Puro. */
+function linhaDaPessoa(s: PromptDeEstilo, comFoto: boolean | undefined): string {
+  if (!s.pessoa) return "No people, faces, hands or silhouettes.";
+  return comFoto
+    ? "PERSON: use ONLY the real person from the attached reference photo, cut out cleanly from the background, same face, hair, clothes and body, never altered, never another person; no other people."
+    : "No people, faces, hands or silhouettes: without the reference photo the key word and the cards carry the piece.";
+}
 
 /** Texto de contexto cortado na palavra. */
 function curto(s: string | null | undefined, max: number): string {
@@ -132,8 +267,8 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     `Create a finished, publication ready social media image: ${papel}, in Brazilian Portuguese, in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering, nothing amateur.`,
     "",
     `STYLE (faithful to this look; it decides HOW things are drawn): ${s.atmosfera} ${s.textura} ${s.luz}`,
-    `VISUAL ELEMENT: ${s.elementoVisual} Build it from the idea of the sentence and its subject${e.nicho ? ` (the world of ${curto(e.nicho, 80)})` : ""}, as a metaphor; one strong element, not a collage of small things.`,
-    `COMPOSITION FOR THIS PIECE: ${e.composicao} The hero sentence and the visual element are both large and clearly separated; nothing tiny, nothing floating at random.`,
+    ...linhasDoAssunto(s, e),
+    `COMPOSITION FOR THIS PIECE: ${e.composicao} (where this layout names an object, put the SUBJECT there instead.) The hero sentence and the subject are both large and clearly separated; one strong element, nothing tiny, nothing floating at random.`,
     "",
     `TYPOGRAPHY: ${s.tipografia} The sentence is the hero text, big and highly readable on a phone, at most 4 balanced lines; a line never starts with a punctuation mark.`,
     `TEXT: render EXACTLY this sentence, once, letter by letter, every accent and cedilla correct, no word changed, added or removed: ${citar(texto)}`,
@@ -142,7 +277,7 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     "",
     `COLORS (the client's brand, use exactly; ignore any color the style might suggest): background and dominant field ${e.cores.fundo}; hero text ${e.cores.titulo}; accent ${e.cores.destaque} ONLY in details (thin lines, highlights, one or two key words, small shapes, lights). ${s.papeisDasCores} Rendered materials and light keep their natural look; the brand color is never a tint over the whole image.`,
     "",
-    `AVOID: ${s.evitar} No people, faces, hands or silhouettes.${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No long dash.`,
+    `AVOID: ${s.evitar} ${linhaDaPessoa(s, e.comFotoDaPessoa)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No long dash.`,
   ];
   if (e.pagina && e.pagina.total > 1) {
     linhas.push(
@@ -150,8 +285,6 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
       `CAROUSEL: this is slide ${e.pagina.i} of ${e.pagina.total}. Same visual language, typography and colors as the other slides, with its own composition; do not draw page numbers, dots or arrows.`
     );
   }
-  const contexto = curto(e.contexto, 420);
-  if (contexto) linhas.push("", `SUBJECT OF THE POST (context only, never written on the image): ${contexto}`);
   return linhas.join("\n");
 }
 
@@ -164,15 +297,13 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
  */
 export function promptDaCenaNoModelo(e: Omit<EntradaDaArte, "texto"> & { ideia: string }): string {
   const s = e.estilo;
-  const contexto = curto(e.contexto, 420);
   return [
     `Create the background artwork of a social media image (${e.tipo === "post" ? "a single Instagram feed post" : "an Instagram carousel slide"}) in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering.`,
     `STYLE: ${s.atmosfera} ${s.textura} ${s.luz}`,
-    `VISUAL ELEMENT: ${s.elementoVisual} Built from this idea, as a metaphor: ${citar(e.ideia)}${e.nicho ? ` (the world of ${curto(e.nicho, 80)})` : ""}. One strong element.`,
-    `COMPOSITION: the element sits in the lower 55% of the frame; the upper 40% is EMPTY, a flat area of plain ${e.cores.fundo}, where a headline will be added later in code. The whole background is ${e.cores.fundo} (this overrides any paper or surface tone named in the style).`,
+    ...linhasDoAssunto(s, { texto: e.ideia, trecho: e.trecho, contexto: e.contexto, nicho: e.nicho }),
+    `COMPOSITION: the subject sits in the lower 55% of the frame; the upper 40% is EMPTY, a flat area of plain ${e.cores.fundo}, where a headline will be added later in code. The whole background is ${e.cores.fundo} (this overrides any paper or surface tone named in the style).`,
     `COLORS (the client's brand): dominant field ${e.cores.fundo}; light tones ${e.cores.titulo}; accent ${e.cores.destaque} only in details. ${s.papeisDasCores}`,
     `ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere; arrows, leader lines and callouts are lines and dots only. No people, faces or hands.${frasePedeEquipamento(e.ideia) ? "" : " No camera, microphone, ring light or recording studio."} No empty boxes or frames.`,
-    ...(contexto ? [`SUBJECT (context only, never written): ${contexto}`] : []),
   ].join("\n");
 }
 
