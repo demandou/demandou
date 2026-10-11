@@ -19973,3 +19973,10 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 - RESULTADOS (artefato Provas do editor novo, versão 8): Gráficos 15h44 aprovado na conferência mas fraco (só cartões, 1ª metade Sonnet); Recorte 16h17 quase (artes sempre o Bruno real; palavra cortada na borda, texto na moldura, artes repetitivas; reprova por card do completo fora do fazendo, a verificar se é corrida de leitura); Maquete 3D com Opus e vídeo inteiro NÃO testada (conta de teste sem créditos: 20.000 concedidos pelo concederCreditos do admin).
 - DECISÕES DO BRUNO: os 8 modelos provados estão prontos, não retestar; foco só nas aulas 6, 8.1 e 8.2; nada de Remotion Lambda nem agente novo antes de terça (tokens e dinheiro no limite); gasto Google de 10 e 11/10: US$ 31 (142 imagens de arte, ~4 por peça por causa das novas tentativas).
 - PENDENTE resposta do Bruno: manter a Maquete e os Gráficos pausados; terça só com os modelos prontos e o sob medida e o gêmeo como próxima fase; trocar a nova tentativa da arte para o Nano Banana 2.
+
+## 11/10 ~19h05: RECORTE COM LETREIRO APROVADO PELO BRUNO
+
+- Teste de ponta a ponta das 18h37 (vídeo cmv4cg25h, trecho de 31 s de Marta e Maria, 1 corte, 2 artes): corte em 14 min, completo em 16 min, tudo em 17 min, US$ 2,57. Nomes ditos atrás da cabeça (aula 8.2), nada cortado, artes com o Bruno real, infográfico do tema. Folhas no artefato Provas do editor novo (versão 9).
+- O que fez passar: Opus escrevendo (EDITOR_AVANCADO_IA), transcrição do vídeo inteiro no pedido, Letreiro que encolhe até caber (b69de27), revisão funcionando (o Google estava SEM SALDO e a revisão falhava calada: vigiar o aviso-de-saldo nos logs).
+- Testes agora: trecho de 31 s (scratchpad/e2e/trechos/trecho-marta-30s.mp4, --cortes 1) e o projeto de teste com 2 artes no plano da semana (o plano antigo está em scratchpad/semana-do-teste-antes.json; restaurar depois).
+- Gráficos fora da terça (o estilo não serve para fala sem números). Próximo: Maquete 3D no mesmo formato.
