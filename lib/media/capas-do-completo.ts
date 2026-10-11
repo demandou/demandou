@@ -18,7 +18,7 @@ import { normalizarCapaParaYouTube } from "@/lib/media/capa-youtube";
 import { resolveSocialAccountAccessToken } from "@/lib/publish/oauth-post";
 import type { Radar } from "@/lib/media/radar-do-video";
 import { projetoVisivel } from "@/lib/equipe/conta";
-import { capaAindaEspera } from "@/lib/media/capa-pelo-modelo";
+import { caminhoDaCapa } from "@/lib/media/capa-pelo-modelo";
 import { fotoDaCapa, pedirCapaDoCompletoNoModelo, regraDaCapaPeloModelo } from "@/lib/media/capa-pelo-modelo-servidor";
 
 /**
@@ -209,7 +209,8 @@ export async function gerarCapasDoCompleto(
   // do modelo, como as artes. Um pedido por vez: enquanto o lote está no
   // worker, pedir de novo (a tela, o piloto) devolve o que já está a caminho.
   const regra = opcoes.semModelo ? null : await regraDaCapaPeloModelo(video.projectId);
-  if (regra && capaAindaEspera(anteriores?.noModelo)) return anteriores!;
+  const caminho = caminhoDaCapa({ temRegra: Boolean(regra), semModelo: opcoes.semModelo, pendente: anteriores?.noModelo ?? null });
+  if (caminho === "esperando") return anteriores!;
 
   const material = {
     titulo,
@@ -217,7 +218,7 @@ export async function gerarCapasDoCompleto(
     teses: (radar?.teses ?? []).map((t) => t.frase).slice(0, 6),
     nicho: video.project.niche,
   };
-  if (regra) {
+  if (regra && caminho === "modelo") {
     const frasesDoModelo = await escreverFrasesDaCapa(material, video.projectId, clima);
     const noModelo = await pedirCapaDoCompletoNoModelo({ videoJobId: video.id, projectId: video.projectId, modelo: regra.modelo, frases: frasesDoModelo }).catch((e) => {
       console.error(`[capas-do-completo][${video.id}] pedido ao modelo falhou, vai pelo caminho de hoje:`, e);

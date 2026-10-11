@@ -3,7 +3,9 @@ import { prisma } from "@/lib/db/prisma";
 import { lerMidia, midiaProduzida } from "@/lib/media/storage";
 import { comporCapa, type Expressao } from "@/lib/media/capa-e-titulo";
 import { dataUrlToBuffer } from "@/lib/media/nano-banana";
-import type { FotoDaCapa } from "@/lib/media/capa-pelo-modelo-servidor";
+import { baseDaCapaDoCorte, type FotoDaCapa, type TrechoDaCapa } from "@/lib/media/capa-pelo-modelo";
+
+export { baseDaCapaDoCorte };
 
 /**
  * A CAPA DE UM CORTE PELO CAMINHO DE HOJE (a composição em código sobre o
@@ -19,21 +21,6 @@ import type { FotoDaCapa } from "@/lib/media/capa-pelo-modelo-servidor";
  * - senão, nenhuma: a capa sai só com a frase. Nunca o quadro fixo do trecho
  *   nem o quadro-fonte antigo, que não passaram por crivo nenhum.
  */
-
-type TrechoDaCapa = {
-  publicar?: boolean;
-  midia?: { capa?: { url?: string } | null; recorte?: { url?: string } | null; capaArte?: { url?: string } | null } | null;
-  texto?: { fraseDaCapa?: string; expressao?: string; cenario?: string } | null;
-};
-
-/** O quadro e o recorte de um corte, pela regra: o do próprio corte só com recorte; senão a foto do vídeo. Puro. */
-export function baseDaCapaDoCorte(t: TrechoDaCapa, doVideo: FotoDaCapa | null): { quadroUrl: string | null; recorteUrl: string | null } {
-  const recorte = t.midia?.recorte?.url ?? null;
-  const quadro = t.midia?.capa?.url ?? null;
-  if (recorte && quadro) return { quadroUrl: quadro, recorteUrl: recorte };
-  if (doVideo?.url) return { quadroUrl: doVideo.url, recorteUrl: doVideo.recorteUrl };
-  return { quadroUrl: null, recorteUrl: null };
-}
 
 /** Compõe a capa 9:16 de um corte e devolve a URL, ou null. */
 export async function comporCapaDoCorte(o: {

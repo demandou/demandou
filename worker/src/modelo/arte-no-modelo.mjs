@@ -451,7 +451,7 @@ export function conferirPecas(plano, pecas, modelo = null, { tipos = null } = {}
 export function tiposDoModelo(projeto) {
   const arquivo = join(projeto, "src", "plano.ts");
   if (!existsSync(arquivo)) return [];
-  return [...new Set([...readFileSync(arquivo, "utf8").matchAll(/tipo:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]))];
+  return [...new Set([...readFileSync(arquivo, "utf8").matchAll(/\btipo:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]))];
 }
 
 /**

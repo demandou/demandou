@@ -7,6 +7,7 @@ import {
   pecasDasCapasDosCortes,
   PRAZO_DA_CAPA_NO_MODELO_MS,
   type CapaPendente,
+  type FotoDaCapa,
   type RetornoDaCapa,
 } from "@/lib/media/capa-pelo-modelo";
 import type { CapasDoCompleto, ExpressaoDaCapa, OpcaoDeCapa } from "@/lib/media/estilos-de-capa";
@@ -18,13 +19,7 @@ import type { CallbackDaArte } from "@/lib/media/editor-do-curso/arte-pelo-model
  * worker, o callback nas capas e o vigia do lote que não voltou.
  */
 
-export type FotoDaCapa = {
-  /** O quadro nítido da gravação (inteiro), ou a foto da Biblioteca. */
-  url: string | null;
-  /** A pessoa já recortada do quadro, quando o worker devolveu. */
-  recorteUrl: string | null;
-  origem: "quadro" | "biblioteca" | "nenhuma";
-};
+export type { FotoDaCapa } from "@/lib/media/capa-pelo-modelo";
 
 /**
  * A FOTO DA CAPA: o quadro NÍTIDO da gravação (o crivo do worker, com o

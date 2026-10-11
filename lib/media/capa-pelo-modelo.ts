@@ -164,3 +164,45 @@ export function fotosPorPeca(fotos: string[], quantas: number): string[] {
   if (!fotos.length) return [];
   return Array.from({ length: quantas }, (_, i) => fotos[i % fotos.length]);
 }
+
+export type FotoDaCapa = {
+  /** O quadro nítido da gravação (inteiro), ou a foto da Biblioteca. */
+  url: string | null;
+  /** A pessoa já recortada do quadro, quando o worker devolveu. */
+  recorteUrl: string | null;
+  origem: "quadro" | "biblioteca" | "nenhuma";
+};
+
+export type TrechoDaCapa = {
+  publicar?: boolean;
+  midia?: { capa?: { url?: string } | null; recorte?: { url?: string } | null; capaArte?: { url?: string } | null } | null;
+  texto?: { fraseDaCapa?: string; expressao?: string; cenario?: string } | null;
+};
+
+/**
+ * O quadro e o recorte da capa de um corte (o caminho de hoje), pela regra do
+ * quadro nítido: o quadro do PRÓPRIO corte só quando veio com o recorte (o
+ * worker só recorta quadro que passou no crivo); senão a foto do vídeo (o
+ * quadro nítido do vídeo inteiro, ou a da Biblioteca); senão nenhuma. Nunca o
+ * quadro fixo do trecho nem o quadro-fonte antigo. Puro.
+ */
+export function baseDaCapaDoCorte(t: TrechoDaCapa, doVideo: FotoDaCapa | null): { quadroUrl: string | null; recorteUrl: string | null } {
+  const recorte = t.midia?.recorte?.url ?? null;
+  const quadro = t.midia?.capa?.url ?? null;
+  if (recorte && quadro) return { quadroUrl: quadro, recorteUrl: recorte };
+  if (doVideo?.url) return { quadroUrl: doVideo.url, recorteUrl: doVideo.recorteUrl };
+  return { quadroUrl: null, recorteUrl: null };
+}
+
+export type CaminhoDaCapa = "modelo" | "esperando" | "hoje";
+
+/**
+ * Por onde a capa sai: pelo template do modelo (o projeto tem a regra das
+ * artes e ninguém forçou a reserva), "esperando" quando um pedido ao modelo
+ * ainda está no prazo (pedir de novo seria pagar duas vezes), ou pelo caminho
+ * de hoje. Puro.
+ */
+export function caminhoDaCapa(o: { temRegra: boolean; semModelo?: boolean; pendente?: Pick<CapaPendente, "pendente" | "desde"> | null; agora?: number }): CaminhoDaCapa {
+  if (o.semModelo || !o.temRegra) return "hoje";
+  return capaAindaEspera(o.pendente ?? null, o.agora ?? Date.now()) ? "esperando" : "modelo";
+}
