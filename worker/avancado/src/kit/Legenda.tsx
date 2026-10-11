@@ -80,7 +80,7 @@ export const Legenda: React.FC<{
           {linha.map((p, j) => {
             const dita = t >= p.de && t < p.ate + 0.08;
             return (
-              <span key={j} style={{ color: dita ? MARCA.destaque : MARCA.titulo }}>
+              <span key={j} style={{ color: dita ? MARCA.destaqueTexto : MARCA.titulo }}>
                 {p.w}
                 {j < linha.length - 1 ? " " : ""}
               </span>

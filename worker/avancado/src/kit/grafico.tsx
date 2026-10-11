@@ -176,7 +176,7 @@ export const GraficoDeBarras: React.FC<{
                 fontFamily: LETRA.texto,
                 fontWeight: 800,
                 fontSize: 28,
-                color: b.destaque ? MARCA.destaque : MARCA.titulo,
+                color: b.destaque ? MARCA.destaqueTexto : MARCA.titulo,
                 opacity: k(t, b.inicio, b.inicio + 0.4),
                 whiteSpace: "nowrap",
               }}

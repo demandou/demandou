@@ -67,7 +67,7 @@ export const Cartao: React.FC<{
       <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <div style={{ fontFamily: LETRA.titulo, fontWeight: 800, fontSize: tamanho, color: MARCA.titulo, letterSpacing: "-0.01em", lineHeight: 1 }}>{titulo}</div>
         {apoio ? (
-          <div style={{ fontFamily: LETRA.texto, fontWeight: 700, fontSize: tamanho * 0.72, color: MARCA.destaque, lineHeight: 1.05, opacity: apoioP, translate: `${(1 - apoioP) * -12}px 0px` }}>
+          <div style={{ fontFamily: LETRA.texto, fontWeight: 700, fontSize: tamanho * 0.72, color: MARCA.destaqueTexto, lineHeight: 1.05, opacity: apoioP, translate: `${(1 - apoioP) * -12}px 0px` }}>
             {apoio}
           </div>
         ) : null}

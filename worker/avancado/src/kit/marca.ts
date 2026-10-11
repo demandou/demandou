@@ -42,6 +42,27 @@ export function luminancia(cor: string): number {
 }
 
 const { fundo, titulo, destaque } = DADOS.cores;
+
+/** Contraste entre duas cores (1 a 21), pela luminância relativa. */
+export function contraste(a: string, b: string): number {
+  const x = luminancia(a);
+  const y = luminancia(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/**
+ * O destaque que dá para LER sobre o fundo (11/10, teste de ponta a ponta da
+ * Maquete 3D: o vermelho-escuro da marca na legenda sobre o preto sumia). O mesmo
+ * matiz, puxado para o título só o quanto falta para 4,5:1; se a cor já lê, fica.
+ */
+export function legivelSobre(cor: string, base: string, alvo = 4.5, rumo = titulo): string {
+  if (contraste(cor, base) >= alvo) return cor;
+  for (let p = 0.05; p <= 1; p += 0.05) {
+    const c = misturar(cor, rumo, p);
+    if (contraste(c, base) >= alvo) return c;
+  }
+  return rumo;
+}
 const escuro = luminancia(fundo) < 0.35;
 
 export const MARCA = {
@@ -51,6 +72,8 @@ export const MARCA = {
   titulo,
   /** O destaque: a palavra dita, o detalhe, a linha de chamada. Pouco e com função. */
   destaque,
+  /** O destaque em TEXTO (legenda, rótulo, palavra-chave): o mesmo matiz com contraste de leitura sobre o fundo. */
+  destaqueTexto: legivelSobre(destaque, fundo),
   /** O fundo é escuro? (decide sombra e brilho). */
   escuro,
   /** Painéis e cartões: o fundo puxado um pouco para o título. */

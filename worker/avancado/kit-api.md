@@ -82,7 +82,7 @@ export const Atras: React.FC<CenaProps> = ({ de, ate }) => {
 
 ## 4. A marca (nunca escreva cor nem fonte)
 
-- `MARCA.fundo`, `MARCA.titulo` (texto e superfícies claras), `MARCA.destaque` (pouco e com função: a palavra-chave, o detalhe, a linha de chamada), `MARCA.painel`, `MARCA.painelClaro`, `MARCA.fundoProfundo`, `MARCA.apoio` (texto de apoio), `MARCA.linha`, `MARCA.linhaForte`, `MARCA.sombra`, `MARCA.escuro`.
+- `MARCA.fundo`, `MARCA.titulo` (texto e superfícies claras), `MARCA.destaque` (pouco e com função: a palavra-chave, o detalhe, a linha de chamada), `MARCA.destaqueTexto` (o destaque em TEXTO sobre o fundo: sempre este em letra, legenda e rótulo, porque o destaque cru pode não ter contraste), `MARCA.painel`, `MARCA.painelClaro`, `MARCA.fundoProfundo`, `MARCA.apoio` (texto de apoio), `MARCA.linha`, `MARCA.linhaForte`, `MARCA.sombra`, `MARCA.escuro`.
 - `comAlfa(cor, a)` e `misturar(a, b, p)` para variar as cores da marca. Nenhuma outra cor.
 - `LETRA.titulo` (títulos e letreiros, peso 800 a 900), `LETRA.texto` (apoio e rótulos), `LETRA.caixaAlta`, `comoTitulo(texto)` (caixa alta quando a letra pede, com acento).
 

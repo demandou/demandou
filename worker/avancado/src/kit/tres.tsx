@@ -118,13 +118,21 @@ const RotulosPresos: React.FC<{ rotulos: Rotulo3D[]; chaves: ChaveDeCamera[]; la
       return { r, p, l, x, y, lado };
     })
     .sort((a, b) => a.y - b.y);
-  // sem rótulo em cima de rótulo: empurra para baixo o que encostou, e mantém dentro do canvas
-  for (let i = 1; i < medidos.length; i++) if (medidos[i].y < medidos[i - 1].y + alto + 12) medidos[i].y = medidos[i - 1].y + alto + 12;
+  // DENTRO DO QUADRO E SEM SOBREPOR (11/10, teste da Maquete 3D: rótulo cortado na borda e um
+  // em cima do outro depois da trava de baixo). A largura cabe no canvas; o x fica dentro dele;
+  // empurra para baixo o que encostou, prende embaixo e, se a trava de baixo juntou, sobe os de cima.
+  const passo = alto + 12;
+  for (const m of medidos) {
+    m.l = Math.min(m.l, largura - 32);
+    m.x = Math.min(largura - 16 - m.l, Math.max(16, m.x));
+  }
+  for (let i = 1; i < medidos.length; i++) if (medidos[i].y < medidos[i - 1].y + passo) medidos[i].y = medidos[i - 1].y + passo;
   for (const m of medidos) m.y = Math.min(altura - alto - 16, Math.max(16, m.y));
+  for (let i = medidos.length - 2; i >= 0; i--) if (medidos[i].y > medidos[i + 1].y - passo) medidos[i].y = Math.max(16, medidos[i + 1].y - passo);
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
       {medidos.map(({ r, p, l, x, y, lado }, i) => {
-        const cor = (r.ativo ?? 0) > 0.5 ? MARCA.destaque : MARCA.titulo;
+        const cor = (r.ativo ?? 0) > 0.5 ? MARCA.destaqueTexto : MARCA.titulo;
         const pontaX = lado === "direita" ? x : lado === "esquerda" ? x + l : p.x;
         const pontaY = lado === "acima" ? y + alto : y + alto / 2;
         return (
@@ -151,6 +159,8 @@ const RotulosPresos: React.FC<{ rotulos: Rotulo3D[]; chaves: ChaveDeCamera[]; la
                 fontSize: tamanho,
                 letterSpacing: "0.1em",
                 whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "clip",
                 opacity: r.visivel,
                 scale: mix(0.9, 1, r.visivel) * mix(1, 1.06, r.ativo ?? 0),
               }}
