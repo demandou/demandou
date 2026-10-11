@@ -19980,3 +19980,11 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 - O que fez passar: Opus escrevendo (EDITOR_AVANCADO_IA), transcrição do vídeo inteiro no pedido, Letreiro que encolhe até caber (b69de27), revisão funcionando (o Google estava SEM SALDO e a revisão falhava calada: vigiar o aviso-de-saldo nos logs).
 - Testes agora: trecho de 31 s (scratchpad/e2e/trechos/trecho-marta-30s.mp4, --cortes 1) e o projeto de teste com 2 artes no plano da semana (o plano antigo está em scratchpad/semana-do-teste-antes.json; restaurar depois).
 - Gráficos fora da terça (o estilo não serve para fala sem números). Próximo: Maquete 3D no mesmo formato.
+
+## 11/10 ~19h50: AS TRÊS OPÇÕES SOB MEDIDA APROVADAS PELO BRUNO
+
+- Recorte com letreiro (18h37, 30 s), Maquete 3D (18h55, 30 s, a cena de Marta e Maria; pessoas ainda em cone, aprovado assim) e Gráficos (19h14, vídeo do Ygor com números, 60 s, completo em pé). Folhas e vídeos no artefato Provas do editor novo (versão 11). Gráficos só servem quando a fala tem números.
+- Landing (4184b08, publicada): os dois cortes do editor antigo na seção de estilos trocados pelo Recorte e pela Maquete aprovados, com o aviso de que o 3D leva mais tempo; grade de estilos com o aviso "levam mais tempo: 30 a 45 minutos" no grupo 3D e efeitos.
+- Artefato Custos e Margem (versão 26): custo real por crédito medido hoje (R$ 0,013 a 0,022 no sob medida; gêmeo R$ 0,027), créditos certos dos planos (20, 32 e 48 mil), Simples 6%, GPU do RunPod, Claude Max e campos de assinatura. Conclusão: não subir o saldo-base agora; bônus com prazo, sim. PENDENTE do Bruno: faturas reais de Railway (24 vCPU), Vercel, Supabase e assinaturas.
+- Três vídeos crus para o Bruno testar na plataforma em C:\Users\devan\Videos\canal (teste-maquete-3d-tenda-23s, teste-recorte-fe-antes-da-certeza-17s, teste-graficos-consorcio-ygor-29s). Vídeo de até 90 s não pré-marca corte na tela de roteiro.
+- Projeto de teste ainda com o plano da semana de 2 artes; o antigo está em scratchpad/semana-do-teste-antes.json (restaurar quando o Bruno pedir).
