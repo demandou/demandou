@@ -1371,6 +1371,18 @@ const filaDaMontagem = [];
 let montagemRodando = false;
 /** As chaves dos cortes do editor do curso na fila ou rodando (10/10): um pedido por corte de cada vez. */
 const chavesDoCursoAndando = new Set();
+/**
+ * O pedido vivo de cada chave do curso (10/10, noite): o repetido que chega
+ * enquanto o primeiro anda troca o `retorno` dele, para o callback sair com o
+ * `desde` mais novo. Sem isso o app recusava o resultado do primeiro (o
+ * `desde` antigo) e o corte ficava "montando" para sempre (cmv303ufi, Torre).
+ */
+const pedidosDoCursoAndando = new Map();
+function pedidoRepetidoDoCurso(pedido) {
+  const vivo = pedidosDoCursoAndando.get(pedido.chave);
+  if (vivo && pedido.retorno) vivo.retorno = pedido.retorno;
+  if (vivo && pedido.callbackUrl) vivo.callbackUrl = pedido.callbackUrl;
+}
 /** As chaves dos lotes de peças no modelo do curso na fila ou rodando (10/10): o mesmo lote nunca roda duas vezes. */
 const chavesDaArteAndando = new Set();
 /**
@@ -2479,14 +2491,16 @@ const servidor = createServer((req, res) => {
       // já trocava o pedido repetido que ESPERAVA; o que já RODA agora também
       // segura o repetido, e o callback de quem roda vale para os dois.
       if (chavesDoCursoAndando.has(pedido.chave)) {
+        pedidoRepetidoDoCurso(pedido);
         return responder(202, { aceito: true, chave: pedido.chave, jaAndando: true });
       }
       chavesDoCursoAndando.add(pedido.chave);
+      pedidosDoCursoAndando.set(pedido.chave, pedido);
       if (assincrono) responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
       // O COMPLETO NO MODELO (10/10, `completo: true`): entra na fila como o
       // completo de sempre (prioridade 1, a fatia do completo; os cortes passam
       // na frente dele enquanto ele espera).
-      enfileirarMontagem({ pedido, prioridade: pedido.completo === true ? 1 : 0, executar: () => executarNoModelo(pedido, assincrono).finally(() => chavesDoCursoAndando.delete(pedido.chave)) });
+      enfileirarMontagem({ pedido, prioridade: pedido.completo === true ? 1 : 0, executar: () => executarNoModelo(pedido, assincrono).finally(() => { chavesDoCursoAndando.delete(pedido.chave); pedidosDoCursoAndando.delete(pedido.chave); }) });
     });
     return;
   }
@@ -2592,11 +2606,13 @@ const servidor = createServer((req, res) => {
       if (recusa) return responder(403, { error: recusa });
       const assincrono = Boolean(pedido.callbackUrl);
       if (chavesDoCursoAndando.has(pedido.chave)) {
+        pedidoRepetidoDoCurso(pedido);
         return responder(202, { aceito: true, chave: pedido.chave, jaAndando: true });
       }
       chavesDoCursoAndando.add(pedido.chave);
+      pedidosDoCursoAndando.set(pedido.chave, pedido);
       if (assincrono) responder(202, { aceito: true, chave: pedido.chave, naFila: filaDaMontagem.length + (montagemRodando ? 1 : 0) });
-      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarAvancado(pedido, assincrono).finally(() => chavesDoCursoAndando.delete(pedido.chave)) });
+      enfileirarMontagem({ pedido, prioridade: 0, executar: () => executarAvancado(pedido, assincrono).finally(() => { chavesDoCursoAndando.delete(pedido.chave); pedidosDoCursoAndando.delete(pedido.chave); }) });
     });
     return;
   }

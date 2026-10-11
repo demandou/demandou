@@ -969,11 +969,13 @@ async function planoEmBlocos(projeto, { comum, pedido, pedir, gasto, teto, aoPas
 export async function renderizarEmPartes(projeto, nome = "video-editado.mp4", { prazoMs = 90 * 60_000, alvoSeg = BLOCO_ALVO_SEG } = {}) {
   const plano = lerPlano(projeto);
   const partes = partesDoRender(plano.duracao, plano.fps, alvoSeg);
-  const { paralelas, concorrencia } = paralelismoDoRender(fatiaAtual(), partes.length);
+  const tres = usaTres(projeto);
+  // No 3D, uma parte de cada vez, com duas abas: as partes em paralelo disputavam o processador.
+  const { paralelas, concorrencia } = tres ? { paralelas: 1, concorrencia: Math.max(1, Math.min(2, fatiaAtual().remotion)) } : paralelismoDoRender(fatiaAtual(), partes.length);
   const saida = join("out", nome);
   const r = await rodarNoProjeto(projeto, [join(AQUI, "render-em-partes.mjs"), saida], {
-    prazoMs,
-    env: { RENDER_DO_SERVIDOR: JSON.stringify(limitesDoRender()), RENDER_EM_PARTES: JSON.stringify({ partes, paralelas, concorrencia }) },
+    prazoMs: tres ? prazoMs * 2 : prazoMs,
+    env: { RENDER_DO_SERVIDOR: JSON.stringify(limitesDoRender(projeto)), RENDER_EM_PARTES: JSON.stringify({ partes, paralelas, concorrencia }) },
   });
   if (r.codigo !== 0) throw falhou("render-em-partes.mjs", r);
   let resumo = null;
@@ -1093,19 +1095,35 @@ export async function passoDasImagens(projeto, corpo, pedir, { fixos = [], offli
  * opcoesDoRender), da fatia deste trabalho na fila (capacidade.mjs). Ver
  * worker/modelos/limites-do-servidor.mjs.
  */
-export function limitesDoRender() {
+export function limitesDoRender(projeto = null) {
+  const tres = projeto ? usaTres(projeto) : false;
   return {
-    concurrency: fatiaAtual().remotion,
+    // O 3D (WebGL por CPU, swangle) pesa cada aba: menos abas e mais prazo por quadro (10/10, noite).
+    concurrency: tres ? Math.max(1, Math.min(2, fatiaAtual().remotion)) : fatiaAtual().remotion,
     offthreadVideoCacheSizeInBytes: 512 * 1024 * 1024,
     offthreadVideoThreads: 2,
     chromiumOptions: process.platform === "linux" ? { enableMultiProcessOnLinux: true } : {},
-    timeoutInMilliseconds: 120_000,
+    timeoutInMilliseconds: tres ? 600_000 : 120_000,
   };
+}
+
+/**
+ * O modelo desenha em 3D (@remotion/three no package.json do projeto)? No
+ * servidor o WebGL roda no processador: o completo 16:9 do Torre estourou os
+ * 120 s de espera do quadro com as partes em paralelo (cmv303ufi, 10/10).
+ */
+export function usaTres(projeto) {
+  try {
+    const pkg = JSON.parse(readFileSync(join(projeto, "package.json"), "utf8"));
+    return Boolean(pkg.dependencies?.["@remotion/three"] || pkg.devDependencies?.["@remotion/three"]);
+  } catch {
+    return false;
+  }
 }
 
 export async function renderizar(projeto, nome = "video-editado.mp4", { prazoMs = 90 * 60_000 } = {}) {
   const saida = join("out", nome);
-  const r = await rodarNoProjeto(projeto, ["scripts/render.mjs", saida], { prazoMs, env: { RENDER_DO_SERVIDOR: JSON.stringify(limitesDoRender()) } });
+  const r = await rodarNoProjeto(projeto, ["scripts/render.mjs", saida], { prazoMs, env: { RENDER_DO_SERVIDOR: JSON.stringify(limitesDoRender(projeto)) } });
   if (r.codigo !== 0) throw falhou("render.mjs", r);
   return join(projeto, saida);
 }
