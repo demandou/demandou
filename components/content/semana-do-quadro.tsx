@@ -1014,7 +1014,9 @@ export function SemanaDoQuadro({
             </span>
           </div>
 
-          {dia.formato && (
+          {/* A ETIQUETA DO DIA saiu (11/10, Bruno): dizia "vídeo" num dia de imagem e o dia pode ter várias
+              peças. O tipo vale só no cartão de cada peça, que sai do próprio post. */}
+          {false && dia.formato && (
             <span
               className="relative self-start rounded-md border px-1.5 py-[3px] text-[10.5px] font-bold uppercase tracking-[.03em]"
               style={{ background: "var(--bg-input)", borderColor: "var(--border)", color: "var(--text-muted)" }}
