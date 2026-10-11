@@ -39,6 +39,8 @@ export type ModeloNaBiblioteca = {
   serve: boolean;
   /** Para os que não servem: o que falta, em uma frase curta ("Em breve: ..."). */
   falta: string | null;
+  /** Para quem o modelo foi feito (10/10, noite): o exemplo do próprio curso, ex.: "um médico explicando Botox". */
+  feitoPara: string | null;
   /** O material do cliente que o modelo pede (capturas, prints, fotos de antes e depois), ou null. */
   material: PedidoDeMaterialNaTela | null;
   /** A arte do cartão (pessoa inventada no modelo), ou null quando ainda não há. */
@@ -95,6 +97,23 @@ export function descricaoParaDecidir(m: Pick<ModeloDoCurso, "descricao">): strin
   // O começo é igual em todos ("Edita qualquer vídeo... no estilo"): só gasta leitura.
   d = d.replace(/^Edita qualquer vídeo de uma pessoa falando para a câmera no estilo\s+/i, "Estilo ");
   return semTravessao(d).trim();
+}
+
+/**
+ * PARA QUEM O MODELO FOI FEITO (10/10, noite, pedido do Bruno: "deixar claro o
+ * que combina com cada modelo"): o exemplo que o próprio curso dá na descrição
+ * ("o exemplo é um médico explicando Botox; serve para dermatologia...",
+ * "Feito para comércio local (...)"). Os elementos do modelo nascem desse
+ * exemplo (o Torre desenha prédio e planta), então é o nicho em que ele casa
+ * com a fala. Sem o trecho na descrição, null.
+ */
+export function feitoParaDoModelo(m: Pick<ModeloDoCurso, "descricao">): string | null {
+  const d = semTravessao(m.descricao.replace(/\s+/g, " "));
+  const feito = d.match(/Feito para ([^:;]+?)(?:, mas|:|;|$)/i);
+  if (feito) return feito[1].trim().replace(/\.$/, "");
+  const ex = d.match(/o exemplo (?:do modelo )?(?:é|e) ([^;:)]+?)(?:, mas|;|\)|:)/i);
+  if (ex) return ex[1].trim().replace(/\.$/, "");
+  return null;
 }
 
 /** O que cada passo de fora quer dizer para o cliente. */
@@ -191,6 +210,7 @@ export function modelosDaBiblioteca(): ModeloNaBiblioteca[] {
       serve: modeloPodeSerEscolhido(m.id),
       falta: faltaDoModelo(m),
       material: pedidoDeMaterialNaTela(m.id),
+      feitoPara: feitoParaDoModelo(m),
       arte: arteDoModelo(m.id),
       // Sem prévia em vídeo por enquanto (09/10): o cartão mostra só a arte.
       previa: null,

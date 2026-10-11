@@ -312,6 +312,12 @@ export function ModelosDoCurso({
           <p className="mt-1 line-clamp-3 text-xs" style={{ color: "var(--text-muted)" }}>
             {m.resumo}
           </p>
+          {/* PARA QUEM FOI FEITO (10/10, noite): os elementos do modelo nascem do exemplo do curso; é ali que eles casam com a fala. */}
+          {m.feitoPara && (
+            <p className="mt-1 text-[11px]" style={{ color: "var(--text-muted)" }}>
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Pensado para:</span> {m.feitoPara}
+            </p>
+          )}
           {/* O MATERIAL DO CLIENTE (10/10): o modelo que usa capturas, prints ou fotos diz isso antes da escolha. */}
           {m.serve && m.material && <p className="mt-1 text-[11px] font-medium text-orange-400">Usa material seu: {m.material.oQue}.</p>}
           <div className="mt-auto pt-2">
