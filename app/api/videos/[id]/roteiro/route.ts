@@ -39,8 +39,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if (!video) return NextResponse.json({ error: "Vídeo não encontrado" }, { status: 404 });
 
-  const trechos = Array.isArray(video.clips) ? video.clips.length : 0;
-  if (!trechos) return NextResponse.json({ error: "Esse vídeo ainda não tem cortes escolhidos." }, { status: 400 });
+  // SÓ O COMPLETO (11/10): a seleção grava a lista VAZIA quando a fala não rende corte que se sustente
+  // sozinho; o roteiro segue com o vídeo completo. Sem lista nenhuma, a seleção ainda não rodou.
+  if (!Array.isArray(video.clips)) return NextResponse.json({ error: "Esse vídeo ainda não tem cortes escolhidos." }, { status: 400 });
   const r = await lerRoteiroDoVideo(id);
   if (r?.aprovadoEm) return NextResponse.json({ error: "Este roteiro já foi aprovado." }, { status: 409 });
 
