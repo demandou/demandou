@@ -69,7 +69,7 @@ export function pecasDasCapasDosCortes(cortes: Array<{ indice: number; frase: st
 /** O título da capa sem travessão nem aspas, numa linha só. Puro. */
 export function limparTitulo(t: string): string {
   return String(t ?? "")
-    .replace(/[—–]/g, ",")
+    .replace(/[\u2014\u2013]/g, ",")
     .replace(/["“”]/g, "")
     .replace(/\s+/g, " ")
     .trim()
@@ -233,7 +233,7 @@ export const MOTIVO_DA_FALHA_DA_CAPA = "A capa no estilo que você escolheu não
 
 /** Monta a falha técnica da capa. Puro. */
 export function falhaDaCapa(modelo: string, erro: unknown, agora: Date = new Date()): FalhaDaCapa {
-  const detalhe = (erro instanceof Error ? erro.message : String(erro ?? "sem detalhe")).replace(/[—–]/g, ",").slice(0, 300);
+  const detalhe = (erro instanceof Error ? erro.message : String(erro ?? "sem detalhe")).replace(/[\u2014\u2013]/g, ",").slice(0, 300);
   return { motivo: MOTIVO_DA_FALHA_DA_CAPA, detalhe, em: agora.toISOString(), modelo };
 }
 

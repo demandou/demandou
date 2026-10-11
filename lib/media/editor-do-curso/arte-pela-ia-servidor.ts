@@ -4,7 +4,7 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
 import type { ContextoMidia } from "@/lib/media/usage";
 import type { GeradorDoInfografico, ModeloDoInfografico } from "@/lib/media/infografico-pelo-modelo";
-import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
+import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, tipografiaDoEstilo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
 
 /**
  * O DESENHO PELA IA DE IMAGEM DAS PEÇAS DE UM PROJETO COM MODELO DO CURSO
@@ -193,7 +193,8 @@ export async function cenaComFraseEmCodigo(
   const ctx: ContextoMidia = { projectId: p.projectId, runId: p.runId ?? undefined, operation: OPERACAO_DA_ARTE_PELA_IA };
   // A família "sobrio" com a variante 0 põe a cena na peça inteira e a frase no
   // terço de cima, a área calma que o prompt da cena pede.
-  const marca: MarcaDaArte = { ...p.marca, familia: "sobrio", variante: 0, modelos: undefined, modeloFixo: undefined, estiloDoPost: undefined, materiais: undefined, tratamento: null } as MarcaDaArte;
+  // A letra da frase é a do estilo (11/10: a Maquete com a frase em serifa parecia outro estilo).
+  const marca: MarcaDaArte = { ...p.marca, familia: "sobrio", variante: 0, tipografia: tipografiaDoEstilo(estilo), modelos: undefined, modeloFixo: undefined, estiloDoPost: undefined, materiais: undefined, tratamento: null } as MarcaDaArte;
   // O estilo que pede a pessoa (o recorte) segue com ela na cena: sem a pessoa
   // seria outra coisa, não o mesmo estilo sem a letra.
   const foto = estilo.pessoa && p.fotoDaPessoa ? p.fotoDaPessoa : null;

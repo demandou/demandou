@@ -202,11 +202,11 @@ test("capa do corte que falha nas duas tentativas lança (quem chama grava capaF
 
 test("a falha técnica da capa diz Tentar de novo e Nada foi cobrado; o trecho do corte sai das palavras dele", async () => {
   const { falhaDaCapa, falaDoCorte, MOTIVO_DA_FALHA_DA_CAPA, caminhoDaCapa } = await import("@/lib/media/capa-pelo-modelo");
-  const f = falhaDaCapa("sob-medida-3d", new Error("HTTP 500 — interno"), new Date("2026-10-11T12:00:00Z"));
+  const f = falhaDaCapa("sob-medida-3d", new Error("HTTP 500 \u2014 interno"), new Date("2026-10-11T12:00:00Z"));
   assert.equal(f.motivo, MOTIVO_DA_FALHA_DA_CAPA);
   assert.match(f.motivo, /Tentar de novo/);
   assert.match(f.motivo, /Nada foi cobrado/);
-  assert.doesNotMatch(f.motivo + f.detalhe, /[—–]/);
+  assert.doesNotMatch(f.motivo + f.detalhe, /[\u2014\u2013]/);
   assert.equal(f.modelo, "sob-medida-3d");
   assert.equal(f.em, "2026-10-11T12:00:00.000Z");
   const palavras = [
@@ -237,9 +237,9 @@ test("a cena sem texto (a segunda forma do MESMO estilo) diz o papel da capa e s
 });
 
 test("o ajuste do refazer da capa entra no prompt sem sair do estilo", () => {
-  const p = promptDaArteNoModelo({ estilo: promptDeEstiloDoModelo("sob-medida-3d")!, texto: "Grava uma vez", tipo: "capa-vertical", cores: CORES, composicao: "x", ajuste: "deixa a maquete maior — bem maior" });
+  const p = promptDaArteNoModelo({ estilo: promptDeEstiloDoModelo("sob-medida-3d")!, texto: "Grava uma vez", tipo: "capa-vertical", cores: CORES, composicao: "x", ajuste: "deixa a maquete maior \u2014 bem maior" });
   assert.match(p, /CLIENT'S ADJUSTMENT \(apply it without leaving the style/);
-  assert.doesNotMatch(p, /[—–]/);
+  assert.doesNotMatch(p, /[\u2014\u2013]/);
 });
 
 test("nenhum caminho com estilo chama o caminho antigo como reserva (capas e artes)", async () => {

@@ -112,7 +112,7 @@ export const PROMPTS_SOB_MEDIDA: Record<string, PromptDeEstilo> = {
     textura: "Dark glassy cards with soft shadows on a dark gradient; thin chart lines.",
     luz: "Even soft light; the accent line and its end dot glow slightly.",
     papeisDasCores: "Dark background and cards; light text; the accent only in the chart line, the highlighted bar and the key number.",
-    evitar: "Never a number, percentage, axis value or currency that is not in the sentence; no crowded dashboards, no fake interface text, no stock tickers.",
+    evitar: "Charts carry NO axis, tick labels, legends, scales or counters: bars and lines are pure shapes. The only number allowed anywhere is one written in the sentence, copied exactly as written there (a number spelled as a word stays a word, never becomes a digit); never a percentage, currency or value that is not in the sentence; no crowded dashboards, no fake interface text, no stock tickers.",
     soTipografico: false,
   },
   // A GENÉRICA (sem técnica fixa: o JEV escolhe a aula de cada corte pela fala).
@@ -361,10 +361,25 @@ export function promptDaCenaNoModelo(e: Omit<EntradaDaArte, "texto"> & { ideia: 
     `Create the background artwork of ${papelDaPeca(e.tipo)}, in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering.`,
     `STYLE: ${s.atmosfera} ${s.textura} ${s.luz}`,
     ...linhasDoAssunto(s, { texto: e.ideia, trecho: e.trecho, contexto: e.contexto, nicho: e.nicho }),
-    `COMPOSITION: the subject sits in the lower 55% of the frame; the upper 40% is EMPTY, a flat area of plain ${e.cores.fundo}, where a headline will be added later in code. The whole background is ${e.cores.fundo} (this overrides any paper or surface tone named in the style).`,
+    e.tipo === "thumb"
+      ? `COMPOSITION (16:9): the subject sits in the RIGHT half of the frame; the LEFT 50% is EMPTY, a flat area of plain ${e.cores.fundo}, where a headline will be added later in code. The whole background is ${e.cores.fundo} (this overrides any paper or surface tone named in the style).`
+      : `COMPOSITION: the subject sits in the lower 55% of the frame; the upper 40% is EMPTY, a flat area of plain ${e.cores.fundo}, where a headline will be added later in code. The whole background is ${e.cores.fundo} (this overrides any paper or surface tone named in the style).`,
     `COLORS (the client's brand): dominant field ${e.cores.fundo}; light tones ${e.cores.titulo}; accent ${e.cores.destaque} only in details. ${s.papeisDasCores} Rendered materials, light and skin keep their natural look; the brand color is never a tint over the whole image.`,
     `ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere; arrows, leader lines and callouts are lines and dots only.${pessoa}${frasePedeEquipamento(e.ideia) ? "" : " No camera, microphone, ring light or recording studio."} No empty boxes or frames. No real brand logos or app icons.`,
   ].join("\n");
+}
+
+/**
+ * A letra da frase em código na cena sem texto, pela tipografia do estilo: a
+ * frase composta por cima segue o estilo (a geométrica sem serifa da Maquete,
+ * a serifada do editorial, a condensada do pôster), não a letra da família. Puro.
+ */
+export function tipografiaDoEstilo(s: Pick<PromptDeEstilo, "tipografia">): "condensada" | "serifada" | "sem-serifa" {
+  const t = s.tipografia ?? "";
+  if (/condensed/i.test(t)) return "condensada";
+  if (/sans[- ]?serif|grotesk|geometric|montserrat|inter\b|helvetica/i.test(t)) return "sem-serifa";
+  if (/serif/i.test(t)) return "serifada";
+  return "sem-serifa";
 }
 
 /** O estilo como LINGUAGEM, para o infográfico (o layout dele manda; aqui só como desenhar). Puro. */
