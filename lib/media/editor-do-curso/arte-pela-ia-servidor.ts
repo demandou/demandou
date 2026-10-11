@@ -4,7 +4,8 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
 import type { ContextoMidia } from "@/lib/media/usage";
 import type { GeradorDoInfografico, ModeloDoInfografico } from "@/lib/media/infografico-pelo-modelo";
-import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, tipografiaDoEstilo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
+import { infograficoSoComAFala, lastroDaArte } from "@/lib/media/lastro-do-video";
+import { composicaoDaPeca, estiloComoLinguagem, linguagemDoInfografico, promptDaArteNoModelo,promptDaCenaNoModelo, promptDeEstiloDoModelo, tipografiaDoEstilo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
 
 /**
  * O DESENHO PELA IA DE IMAGEM DAS PEÇAS DE UM PROJETO COM MODELO DO CURSO
@@ -109,7 +110,8 @@ export function trechoDaPeca(p: Pick<PecaPelaIa, "trecho" | "fala" | "textoDoPos
 export async function coresDaPeca(marca: MarcaDaArte): Promise<CoresDaPeca> {
   const { coresDoInfografico } = await import("@/lib/media/infografico-pelo-modelo");
   const c = coresDoInfografico(marca);
-  return { fundo: c.fundo, titulo: c.texto, destaque: c.destaque };
+  // A letra em destaque com contraste de leitura (11/10); a cor da marca fica nos detalhes.
+  return { fundo: c.fundo, titulo: c.texto, destaque: c.destaque, destaqueNoTexto: c.destaqueNoTexto };
 }
 
 /** O desenhista de uma ordem de modelos, devolvendo o data URI. */
@@ -310,6 +312,19 @@ export async function comLogoDaMarca(jpeg: Buffer, logo: { src: string } | null 
 }
 
 /**
+ * O conteúdo do infográfico só com número da fala (lib/media/lastro-do-video.ts,
+ * infograficoSoComAFala). Quando nem o título se salva, lança: quem chama tenta
+ * de novo no mesmo estilo e, sem sair, para a peça como falha técnica. Nunca
+ * desenha número que a pessoa não disse.
+ */
+export function infograficoDaFala(c: ConteudoDoInfografico, fala: string, nicho?: string | null): ConteudoDoInfografico {
+  const r = infograficoSoComAFala(c, lastroDaArte({ transcricao: fala, material: [nicho] }));
+  if (r.tirados.length) console.warn(`[vera][lastro] número fora da fala tirado do infográfico: ${r.tirados.join("; ")}`);
+  if (r.refazer) throw new Error(`o título do infográfico tem número que a pessoa não disse (${c.title}); a extração precisa sair de novo`);
+  return r.conteudo;
+}
+
+/**
  * As artes de um dia (ou de um post do refazer) pela IA, por rede. O carrossel
  * devolve as lâminas juntas por "|" (a mesma arte em todas as redes do dia,
  * como hoje). Lança quando não sai: quem chama tenta de novo no mesmo estilo
@@ -322,13 +337,18 @@ export async function desenharPelaIa(p: PecaPelaIa, inj: InjecoesDaArte = {}): P
     if (!p.infografico?.title) throw new Error("o infográfico não tem o conteúdo gravado no post");
     const { produzirArtePorRede } = await import("@/lib/media/arte-por-rede");
     const { pedidoDoInfografico } = await import("@/lib/media/infographic");
+    // TODO NÚMERO DESENHADO SAI DA FALA (11/10): a última trava antes de pagar a
+    // imagem, em todo caminho (semana, refazer, Tentar de novo). Sem a fala à mão,
+    // vale a trava da semana (pecas-da-semana.ts), que já gravou o conteúdo limpo.
+    const conteudo = p.fala ? infograficoDaFala(p.infografico, p.fala, p.nicho) : p.infografico;
     const arte = await produzirArtePorRede({
       redes: p.redes,
       textoDoPost: p.textoDoPost ?? undefined,
       projectId: p.projectId,
       runId: p.runId ?? undefined,
       ...(inj.conferir ? { conferir: inj.conferir } : {}),
-      ...pedidoDoInfografico(p.infografico, { estilo: estiloComoLinguagem(estilo), paleta: "", marca: p.marca }, { nicho: p.nicho, ctx: { projectId: p.projectId, runId: p.runId ?? undefined, operation: "infografico" }, gerar: inj.gerar }),
+      // O estilo escolhido DESENHA o infográfico (11/10): a linguagem dele, não só a atmosfera.
+      ...pedidoDoInfografico(conteudo, { estilo: estiloComoLinguagem(estilo), linguagem: linguagemDoInfografico(estilo), paleta: "", marca: p.marca }, { nicho: p.nicho, ctx: { projectId: p.projectId, runId: p.runId ?? undefined, operation: "infografico" }, gerar: inj.gerar }),
     });
     return arte.porRede;
   }

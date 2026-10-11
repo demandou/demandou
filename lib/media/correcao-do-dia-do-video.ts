@@ -33,6 +33,8 @@ import {
   secoesPorPeca,
 } from "@/lib/squad/correcao-da-vera";
 import type { Prisma } from "@prisma/client";
+import { metadataComMudancas } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
+import { estiloGravadoNoPost } from "@/lib/media/editor-do-curso/arte-pelo-modelo-servidor";
 
 /**
  * A SEMANA DO VÍDEO SE CORRIGE SOZINHA DEPOIS DA VERA (29/09).
@@ -224,6 +226,12 @@ ${post.content}
 
 /** A Diana redesenha a imagem com a frase nova, no mesmo formato e direção de arte. */
 async function refazerArte(ctx: ContextoDaCorrecao, post: PostDoDia, frase: string): Promise<string> {
+  // O POST COM ESTILO (11/10) redesenha NO MESMO estilo, pela IA: o caminho de
+  // baixo é o antigo, e usá-lo aqui era trocar o estilo escolhido sozinho.
+  const { arteNoEstiloComFrase } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
+  if (estiloGravadoNoPost(post.metadata)) {
+    return arteNoEstiloComFrase({ projectId: ctx.video.projectId, post: { ...post, content: post.content }, frase, nicho: ctx.video.project.niche });
+  }
   const direcao = await direcaoDaPeca({ projectId: ctx.video.projectId, runId: ctx.runId, dayOfWeek: ctx.dia, infografico: false, preferido: ctx.mediaStyle });
   // O mesmo caminho da semana desde 30/09: arte sem texto nem gente, frase
   // composta em código no formato da rede (lib/media/arte-com-frase.tsx).
@@ -402,12 +410,16 @@ export async function corrigirDiaDoVideo(args: {
           const novo = await reescreverPeca(ctx, t.post, t.dono, { geral, secao: t.secao, recomendacoes }, t.diana);
           if (!novo) return;
           const postMeta = { ...((t.post.metadata as Record<string, unknown> | null) ?? {}) };
+          // O que esta correção muda no metadata (11/10): só isto é gravado, por
+          // cima do metadata LIDO NA HORA da gravação (metadataComMudancas).
+          const mudancas: Record<string, unknown> = {};
           let imageUrl: string | undefined;
           // A FRASE DA IMAGEM ACOMPANHA O TEXTO NOVO (05/10, noite): mesmo quando
           // a Vera não apontou a arte, a reescrita pode ter mudado o assunto da
           // legenda. O JEV confere; se não conversa mais, a frase nasce do texto
           // novo (uma chamada curta) e a Diana refaz a arte.
           let refazer = t.diana;
+          const estiloDoPost = estiloGravadoNoPost(t.post.metadata);
           let fraseNova: string | null = novo.frase ?? null;
           if (!refazer && t.post.mediaType === "image" && typeof postMeta.frase === "string" && postMeta.frase.trim()) {
             const c = await arteCoerenteComOTexto({
@@ -436,23 +448,40 @@ export async function corrigirDiaDoVideo(args: {
               try {
                 imageUrl = await refazerArte(ctx, t.post, frase);
                 postMeta.frase = frase;
+                mudancas.frase = frase;
                 // Qual foto entrou na arte refeita (08/10, revisão): a da biblioteca, gerada ou nenhuma.
-                Object.assign(postMeta, metadataDaFoto([frase]));
+                // A arte no estilo não usa foto da biblioteca: a marca da foto é só do caminho antigo.
+                if (!estiloDoPost) {
+                  Object.assign(postMeta, metadataDaFoto([frase]));
+                  Object.assign(mudancas, metadataDaFoto([frase]));
+                }
               } catch (e) {
                 console.error(`[correcao][${video.id}] a Diana não refez a arte do dia ${card.dayOfWeek}:`, e);
               }
             }
           }
-          if (t.post.mediaType === "thread") postMeta.tweets = separarTweets(novo.texto).length;
+          if (t.post.mediaType === "thread") {
+            postMeta.tweets = separarTweets(novo.texto).length;
+            mudancas.tweets = postMeta.tweets;
+          }
+          // NUNCA O METADATA VELHO POR CIMA (11/10): a reescrita leva um minuto, e
+          // nesse meio a arte pela IA do lote fecha o post (pendente false, sem o
+          // "fazendo"). Gravar o metadata lido antes desfazia isso e o post ficava
+          // "pendente" para sempre com a arte na tela. Lido de novo, só o que mudou.
+          const atual = await prisma.post.findUnique({ where: { id: t.post.id }, select: { metadata: true } });
           await prisma.post.update({
             where: { id: t.post.id },
-            data: { content: novo.texto, ...(imageUrl ? { imageUrl } : {}), metadata: postMeta as Prisma.InputJsonValue },
+            data: { content: novo.texto, ...(imageUrl ? { imageUrl } : {}), metadata: metadataComMudancas(atual?.metadata ?? t.post.metadata, mudancas, { arteNovaNoEstilo: Boolean(imageUrl && estiloDoPost) }) as Prisma.InputJsonValue },
           });
           for (const c of produtores.filter((x) => x.postId === t.post.id)) {
-            const cMeta = { ...((c.metadata as Record<string, unknown> | null) ?? {}) };
+            // O card também: lido na hora, para não devolver a espera que a arte já tirou.
+            const cardAtual = await prisma.campaignCard.findUnique({ where: { id: c.id }, select: { metadata: true } });
+            const cMeta = { ...(((cardAtual?.metadata ?? c.metadata) as Record<string, unknown> | null) ?? {}) };
             if (c.agentId === "diana-design") {
               if (!imageUrl) continue;
               cMeta.frase = postMeta.frase;
+              // A arte nova saiu: o card não espera mais nada.
+              for (const k of ["aguardandoIdentidade", "gerandoArte", "arteFalhou"]) delete cMeta[k];
               await prisma.campaignCard.update({
                 where: { id: c.id },
                 data: { mediaUrl: imageUrl, content: `Imagem com a frase: "${postMeta.frase}"`, metadata: cMeta as Prisma.InputJsonValue },

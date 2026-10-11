@@ -18,6 +18,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { ProporcaoPedida } from "./formatos-das-redes";
 import { exigirIdentidadeAprovada, type MarcaDaArte } from "@/lib/media/arte-com-frase";
 import { semNumerosRepetidos } from "@/lib/media/infografico-sem-repeticao";
+import { numerosDoTexto } from "@/lib/media/numeros-falados";
 import { infograficoRepeteDado } from "@/lib/squad/coerencia-da-arte";
 import type { PedidoDeArte } from "@/lib/media/arte-por-rede";
 import {
@@ -28,6 +29,7 @@ import {
   ORDEM_PRINCIPAL,
   promptCompleto,
   textosDoInfografico,
+  type LinguagemDoInfografico,
   type OpcoesDoDesenho,
 } from "@/lib/media/infografico-pelo-modelo";
 
@@ -48,6 +50,11 @@ export interface DirecaoDeArte {
    * book e a trava da aprovação. É o que o prompt do infográfico usa (08/10).
    */
   marca?: MarcaDaArte;
+  /**
+   * A linguagem do estilo escolhido (11/10, o modelo do curso ou a opção sob
+   * medida): o elemento visual dele desenha o infográfico, no lugar dos ícones.
+   */
+  linguagem?: LinguagemDoInfografico | null;
 }
 
 /**
@@ -65,6 +72,25 @@ export interface RegrasDoInfografico {
   marca?: string;
   /** O projeto, para o JEV conferir o conjunto (06/10) e o uso cair na conta certa. */
   projectId?: string | null;
+  /**
+   * O lastro da arte (11/10): a fala e o material do cliente. Com ele, o
+   * infográfico só leva número que está aqui (a pesquisa do briefing não
+   * entra na arte); sem número nele, nenhum número.
+   */
+  numerosSoDaFala?: string;
+  /** A extração anterior trouxe estes números de fora da fala: não repetir. */
+  evitarNumeros?: string;
+}
+
+/** A regra dos números da extração, quando o lastro da fala vem (11/10). Pura. */
+export function regraDosNumerosDaFala(lastro: string | undefined, evitar?: string): string {
+  if (lastro === undefined) return "";
+  const ns = [...new Set(numerosDoTexto(lastro))].slice(0, 40);
+  const lista = ns.length
+    ? `Os ÚNICOS números permitidos são os que a pessoa disse no vídeo: ${ns.join(", ")}. Dado de pesquisa, estatística ou porcentagem do contexto que não esteja nessa lista NÃO entra, nem com fonte.`
+    : "A pessoa NÃO disse número nenhum no vídeo: o infográfico não tem número, porcentagem nem estatística (deixe \"highlight\" e \"keyNumbers\" de fora e o \"stat\" vazio). Organize as ideias em etapas, comparação ou lista.";
+  return `
+12. NÚMEROS SÓ DA FALA: ${lista}${evitar ? ` A versão anterior trouxe número de fora da fala (${evitar}); não repita.` : ""}`;
 }
 
 export interface ConteudoDoInfografico {
@@ -121,7 +147,7 @@ ${regras?.marca ? `\nContexto da marca (para acertar nomes e termos, NÃO para v
 ${semOferta}${porFunil}
 9. NUNCA abrevie palavra ("exper.", "qtd.", "info."): o texto vai inteiro para a peça. Se não couber no limite, reescreva mais curto com palavras inteiras.
 10. CADA DADO APARECE UMA VEZ SÓ no infográfico inteiro: o número do "highlight" NÃO volta no "stat" de uma seção nem em "keyNumbers", e duas seções não repetem o mesmo número nem a mesma ideia. Sem outro dado com fonte para uma seção, deixe o "stat" dela vazio.${evitar ? `
-11. A versão anterior REPETIU dado no conjunto (${evitar}). Escreva de novo sem nenhuma repetição.` : ""}
+11. A versão anterior REPETIU dado no conjunto (${evitar}). Escreva de novo sem nenhuma repetição.` : ""}${regraDosNumerosDaFala(regras?.numerosSoDaFala, regras?.evitarNumeros)}
 
 Retorne APENAS JSON válido sem markdown:
 {
@@ -186,7 +212,7 @@ export async function desenharInfografico(
   // marca a peça como "aguardando a sua identidade visual".
   if (direcao.marca) exigirIdentidadeAprovada(direcao.marca);
   const conteudo = conteudoDaPeca(content);
-  const prompt = promptCompleto({ conteudo, marca: direcao.marca, proporcao, estilo: direcao.estilo, nicho: opcoes.nicho }, opcoes.complemento);
+  const prompt = promptCompleto({ conteudo, marca: direcao.marca, proporcao, estilo: direcao.estilo, nicho: opcoes.nicho, linguagem: direcao.linguagem ?? null }, opcoes.complemento);
   const ctx = opcoes.ctx ?? { projectId: direcao.marca?.projectId, operation: OPERACAO_DO_INFOGRAFICO };
   const img = await gerarInfografico(prompt, proporcao, ctx, opcoes.ordem ?? ORDEM_PRINCIPAL, opcoes.gerar);
   return img.dataUrl;

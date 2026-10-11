@@ -69,3 +69,22 @@ Ramo: worktree-agent-a94b187ebaa5d01f1 (com o backup-0210 juntado). Nada publica
 - Gráficos com número escrito por extenso: a IA ainda desenha o algarismo; a reserva no mesmo estilo cobre, mas custa
   mais 4 imagens. Vale olhar no teste de ponta a ponta.
 - Não mexi em lib/media/editor-avancado, worker/src/avancado nem lib/media/montagem-do-completo.ts.
+
+## Rodada 11/10 (tarde): defeitos do teste de ponta a ponta na Maquete 3D
+
+- Pendente para sempre (cmv422x5f, cmv42307k, cmv4231bz): as artes SAÍRAM pela IA (não foram ao worker); a
+  correção da Vera (lib/media/correcao-do-dia-do-video.ts, corrigirDiaDoVideo) leu o post antes da arte, reescreveu
+  a legenda e gravou o metadata velho por cima (16:48:00 e 16:48:15, igual ao card da Vera). Agora grava por
+  metadataComMudancas (arte-pelo-modelo.ts) sobre o metadata lido na hora; a frase apontada pela Vera redesenha no
+  MESMO estilo (arteNoEstiloComFrase), não mais pelo arteDoDia. `aguardandoIdentidade` ali era a marca do
+  "fazendo" (marcarGerando), não espera de identidade.
+- Vigia: lote pela IA não pergunta ao worker, prazo de 25 min (PRAZO_DA_ARTE_PELA_IA_MS), no máximo 2 voltas
+  (VOLTAS_DO_VIGIA) e depois falha técnica com Tentar de novo; post com arte e lote pendente é fechado.
+  enviarLoteAoWorker recusa opção sob medida antes de qualquer rede.
+- Números: arte só com número da fala ou do material (lastroDaArte, infograficoSoComAFala em lastro-do-video.ts),
+  na semana, no refazer e como última trava em desenharPelaIa; a extração recebe os números permitidos.
+- Infográfico no estilo: linguagemDoInfografico (elemento visual do estilo desenha o visual e os módulos).
+- Frase: mancheteCurta não corta mais por palavra (volta ao redator até 3 vezes); pareceTruncada pega fim em
+  artigo, preposição e "o que você"; trechoRepetido pega "tarefa boa atrás de tarefa boa".
+- Destaque: destaqueLegivel (papeis-da-paleta.ts) dá à letra em destaque o mesmo matiz com contraste 4,5.
+- Teste: scripts/testes/artes-do-e2e-1110.test.mts (17). Nada pago, nada publicado.

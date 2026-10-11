@@ -204,6 +204,101 @@ export function infograficoComLastro<
 }
 
 /**
+ * O LASTRO DA ARTE (11/10): só a fala e o material do cliente. O briefing do
+ * Roberto fica de fora: o teste de ponta a ponta de 11/10 desenhou "40% redução
+ * amarguras nos relacionamentos", "89%", "52%", "44%" e "32%" num infográfico
+ * de um vídeo que não diz número nenhum (eram da pesquisa, sem a fonte na
+ * arte). Regra do Bruno: todo número desenhado na arte sai da fala ou do
+ * material do cliente. Puro.
+ */
+export function lastroDaArte(p: { transcricao?: string | null; material?: Array<string | null | undefined> }): string {
+  return lastroDoVideo({ transcricao: p.transcricao, radar: null, material: p.material });
+}
+
+/** O valor tem número (fora ano, data, hora e referência bíblica) que o lastro não tem? */
+function numeroForaDoLastro(valor: string | null | undefined, doLastro: Set<string>): boolean {
+  return numerosQueAfirmam(valor ?? "").some((n) => !doLastro.has(n));
+}
+
+/** O texto sem as frases que têm número fora do lastro (a frase sai inteira, nunca um pedaço). */
+function semFrasesSemLastro(texto: string, doLastro: Set<string>): string {
+  return (texto ?? "")
+    .split(/(?<=[.!?…])\s+/)
+    .filter((f) => !numeroForaDoLastro(f, doLastro))
+    .join(" ")
+    .trim();
+}
+
+/**
+ * O INFOGRÁFICO SÓ COM NÚMERO DA FALA (11/10). Mais estrito que
+ * `infograficoComLastro`, porque vale para o que é DESENHADO: todo número de
+ * todo campo (título, subtítulo, destaque, cartões, rodapé) tem de estar no
+ * lastro da arte (a fala e o material do cliente, `lastroDaArte`). O destaque,
+ * o número do cartão e o rodapé sem lastro saem; o cartão cujo título tem
+ * número sem lastro sai inteiro; no texto do cartão e no subtítulo sai a frase
+ * com o número. Sem número que fique, o infográfico organiza as ideias (etapas,
+ * comparação, lista), nunca inventa. `refazer` quando nem o título se salva:
+ * quem chama extrai de novo ou para a peça. Puro.
+ */
+export function infograficoSoComAFala<C extends { title: string; subtitle?: string; sections?: Array<{ heading: string; body: string; stat?: string }>; highlight?: { value: string; label: string }; keyNumbers?: Array<{ value: string; label: string }> }>(
+  c: C,
+  lastro: string
+): { conteudo: C; tirados: string[]; refazer: boolean } {
+  const doLastro = new Set(numerosDoTexto(lastro));
+  const fora = (v: string | null | undefined) => numeroForaDoLastro(v, doLastro);
+  const tirados: string[] = [];
+  const conteudo = { ...c };
+  if (c.highlight && (fora(c.highlight.value) || fora(c.highlight.label))) {
+    tirados.push(`destaque ${c.highlight.value} ${c.highlight.label ?? ""}`.trim());
+    delete conteudo.highlight;
+  }
+  if (c.keyNumbers) {
+    conteudo.keyNumbers = c.keyNumbers.filter((n) => {
+      if (!fora(n.value) && !fora(n.label)) return true;
+      tirados.push(`rodapé ${n.value} ${n.label ?? ""}`.trim());
+      return false;
+    });
+  }
+  if (c.sections) {
+    conteudo.sections = c.sections
+      .filter((s) => {
+        if (!fora(s.heading)) return true;
+        tirados.push(`cartão "${s.heading}"`);
+        return false;
+      })
+      .map((s) => {
+        const novo = { ...s };
+        if (s.stat && fora(s.stat)) {
+          tirados.push(`número do cartão ${s.stat}`);
+          delete novo.stat;
+        }
+        if (fora(s.body)) {
+          tirados.push(`texto do cartão "${s.body}"`);
+          novo.body = semFrasesSemLastro(s.body, doLastro);
+        }
+        return novo;
+      });
+  }
+  if (c.subtitle && fora(c.subtitle)) {
+    tirados.push(`subtítulo "${c.subtitle}"`);
+    conteudo.subtitle = semFrasesSemLastro(c.subtitle, doLastro);
+  }
+  let refazer = false;
+  if (fora(c.title)) {
+    tirados.push(`título "${c.title}"`);
+    const titulo = semFrasesSemLastro(c.title, doLastro);
+    if (titulo) conteudo.title = titulo;
+    else refazer = true;
+  }
+  return { conteudo, tirados, refazer };
+}
+
+/** O infográfico tem algum número desenhado fora do lastro da arte? Puro. */
+export function infograficoTemNumeroDeFora(c: Parameters<typeof infograficoSoComAFala>[0], lastro: string): boolean {
+  return infograficoSoComAFala(c, lastro).tirados.length > 0;
+}
+
+/**
  * O BRIEFING DO ROBERTO SÓ COM DADO QUE EXISTE NA PESQUISA (08/10). O pedido
  * dizia "SOMENTE se estiverem no resultado da pesquisa", mas nada conferia:
  * um dado cujo número não aparece no resultado da busca, ou um achado cuja

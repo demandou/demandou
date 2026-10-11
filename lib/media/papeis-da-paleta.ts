@@ -61,6 +61,51 @@ export function contraste(a: string, b: string): number {
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 
+/** O contraste mínimo do destaque escrito sobre o fundo (WCAG AA para texto grande é 3; pedimos 4,5, o do texto comum). */
+export const CONTRASTE_DO_DESTAQUE = 4.5;
+
+function hslParaHex(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return `#${[r, g, b].map((v) => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function matizDe(hex: string): number {
+  const h = hexDe6(hex) ?? "#000000";
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (!d) return 0;
+  const h0 = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h0 * 60 + 360) % 360;
+}
+
+/**
+ * O DESTAQUE QUE SE LÊ (11/10): o vermelho-escuro da marca (#B3001B) escrito
+ * sobre o fundo preto (#111111) dá contraste de 2,6 e a palavra em destaque
+ * some ("TAREFA BOA" no teste de ponta a ponta). A cor da marca NÃO muda: ela
+ * segue nos detalhes (linhas, contornos, formas). Só a LETRA em destaque usa
+ * o mesmo matiz mais claro (fundo escuro) ou mais escuro (fundo claro), o
+ * mínimo para chegar a `minimo`. Já legível, devolve a própria cor. Puro.
+ */
+export function destaqueLegivel(destaque: string, fundo: string, minimo = CONTRASTE_DO_DESTAQUE): string {
+  const d = hexDe6(destaque);
+  const f = hexDe6(fundo);
+  if (!d || !f) return destaque;
+  if (contraste(d, f) >= minimo) return d;
+  const { l, s } = medidaDaCor(d);
+  const h = matizDe(d);
+  const subir = medidaDaCor(f).lum < 0.5;
+  for (let passo = 1; passo <= 100; passo++) {
+    const nl = subir ? l + ((1 - l) * passo) / 100 : l - (l * passo) / 100;
+    const c = hslParaHex(h, s, Math.min(1, Math.max(0, nl)));
+    if (contraste(c, f) >= minimo) return c;
+  }
+  return subir ? "#ffffff" : "#000000";
+}
+
 /** Cor de tinta: escura e pouco saturada (marinho, grafite, preto), ou quase preta. */
 export function corDeTinta(c: string): boolean {
   const m = medidaDaCor(c);

@@ -3,6 +3,7 @@ import { conferirResposta } from "@/lib/fornecedores/aviso-de-saldo";
 import { gerarNaHiggsfield, type ImagemGerada } from "@/lib/media/imagem-higgsfield";
 import { MARGEM_SEGURA, type ProporcaoPedida } from "@/lib/media/formatos-das-redes";
 import { LETRAS } from "@/lib/modelos-de-arte/identidade";
+import { destaqueLegivel } from "@/lib/media/papeis-da-paleta";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
 import type { ConteudoDoInfografico } from "@/lib/media/infographic";
 
@@ -156,14 +157,27 @@ function nomeDaFonte(id: string): string {
 }
 
 /** As cores nos papéis aprovados (fundo, título, destaque); sem aprovação, as da marca. */
-export function coresDoInfografico(marca?: MarcaDaArte): { fundo: string; texto: string; destaque: string } {
+export function coresDoInfografico(marca?: MarcaDaArte): { fundo: string; texto: string; destaque: string; destaqueNoTexto: string } {
   const p = marca?.cores.papeis;
+  const fundo = p?.fundo ?? marca?.cores.claro ?? "#f7f5f0";
+  const destaque = p?.destaque ?? marca?.cores.acento ?? "#F97316";
   return {
-    fundo: p?.fundo ?? marca?.cores.claro ?? "#f7f5f0",
+    fundo,
     texto: p?.titulo ?? marca?.cores.escuro ?? "#15171a",
-    destaque: p?.destaque ?? marca?.cores.acento ?? "#F97316",
+    destaque,
+    // A letra e o número em destaque com contraste de leitura (11/10); a cor da marca segue nos detalhes.
+    destaqueNoTexto: destaqueLegivel(destaque, fundo),
   };
 }
+
+/**
+ * A LINGUAGEM DO ESTILO ESCOLHIDO no infográfico (11/10): na Maquete 3D o
+ * infográfico saía escuro e genérico, com ícones chapados, porque o estilo
+ * entrava só como "como desenhar" e o desenho dele (a maquete) era mandado
+ * ignorar. Com a linguagem, o elemento visual do estilo desenha o visual
+ * principal e as ilustrações dos módulos, no lugar dos ícones.
+ */
+export type LinguagemDoInfografico = { nome: string; desenho: string; elemento: string; tipografia: string; evitar: string };
 
 // A FAIXA DE NÚMEROS SÓ EXISTE COM NÚMERO REAL (08/10, prova paga): o layout pedia "key numbers in a
 // bottom strip" mesmo sem número nenhum, e o modelo preencheu a faixa inventando "67%", "82%" e "3x".
@@ -193,6 +207,8 @@ export type EntradaDoPrompt = {
   estilo?: string;
   /** O nicho do projeto, para os ícones virem do mundo do cliente. */
   nicho?: string | null;
+  /** O estilo escolhido (modelo do curso ou opção sob medida): desenha o visual e os módulos, no lugar dos ícones. */
+  linguagem?: LinguagemDoInfografico | null;
 };
 
 /**
@@ -211,29 +227,48 @@ export function promptDoInfografico(e: EntradaDoPrompt): string {
   const setor = e.marca?.identidade?.setor?.nome;
   const publico = e.marca?.identidade?.publico;
 
+  const lg = e.linguagem ?? null;
+  const temNumero = Boolean(c.highlight?.value?.trim()) || numeros.length > 0 || secoes.some((s) => s.stat?.trim());
   const linhas: string[] = [
-    `Create a finished, publication ready INFOGRAPHIC for a social media feed, in Brazilian Portuguese. Visual storytelling, NOT a slide of text: each module has its own icon or small illustration, at least one simple chart drawn ONLY from the numbers listed below (never invent a number, percentage, multiplier or statistic), and arrows connecting the ideas.`,
+    lg
+      ? `Create a finished, publication ready INFOGRAPHIC for a social media feed, in Brazilian Portuguese, drawn ENTIRELY in the visual style called ${lg.nome}. Visual storytelling, NOT a slide of text and NOT a generic dark dashboard: the hero visual and every module illustration are drawn in that style (described below), never flat icons or clip art; ${temNumero ? "at least one simple chart drawn ONLY from the numbers listed below (never invent a number, percentage, multiplier or statistic)" : "there is NO number in this infographic: organize it as steps, a comparison or a list, with no chart, percentage or statistic"}, and arrows connecting the ideas.`
+      : `Create a finished, publication ready INFOGRAPHIC for a social media feed, in Brazilian Portuguese. Visual storytelling, NOT a slide of text: each module has its own icon or small illustration, ${temNumero ? "at least one simple chart drawn ONLY from the numbers listed below (never invent a number, percentage, multiplier or statistic)" : "NO chart, percentage or statistic (the text below has no number: organize it as steps, a comparison or a list)"}, and arrows connecting the ideas.`,
     "",
     `SUBJECT: ${curto(e.nicho, 90) || "business"}${setor ? `; sector ${setor}` : ""}${publico ? `; audience ${curto(publico, 110)}` : ""}. Icons and illustrations come from the subject of the text below and from this world.`,
     "",
     `HIERARCHY: 1) TITLE, the largest text, at the top; 2) MAIN NUMBER, very big, in the accent color, with its label; 3) SUBTITLE; 4) MODULES (heading, icon, number if any, short text); 5) KEY NUMBERS, small, at the bottom. Generous whitespace, aligned grid, nothing overlapping.`,
     "",
     layoutDaProporcao(e.proporcao, secoes.length, numeros.length > 0),
+  ];
+  if (lg) {
+    linhas.push(
+      "",
+      `VISUAL STYLE (mandatory; wherever this prompt says icon or illustration, draw it in this style): ${lg.nome}. ${curto(lg.desenho, 420)}`,
+      `ILLUSTRATIONS: ${curto(lg.elemento, 520)} The hero visual is the main concrete thing of the text drawn this way; each module gets its own small piece in the same rendering (one object of that module's idea), not an icon.`,
+      `STYLE TYPOGRAPHY: ${curto(lg.tipografia, 220)}`,
+      `STYLE AVOID: ${curto(lg.evitar, 300)}`
+    );
+  }
+  linhas.push(
     "",
     `BRAND IDENTITY (approved by the client, use exactly):`,
     `- background ${cores.fundo}, flat or with a very subtle texture in the same color;`,
     `- title and all body text ${cores.texto};`,
     `- accent ${cores.destaque} ONLY in details (main number, module numbers, icon accents, arrows, thin bands, the chart); illustrations stay neutral with accent touches, never flooded with it;`,
+    ...(cores.destaqueNoTexto.toLowerCase() !== cores.destaque.toLowerCase()
+      ? [`- the main number, module numbers and any word written in the accent use ${cores.destaqueNoTexto} (the same hue, adjusted to read on the background); lines and shapes keep ${cores.destaque};`]
+      : []),
     letra
       ? nomeDaFonte(letra.titulo) === nomeDaFonte(letra.texto)
         ? `- typography: a ${nomeDaFonte(letra.titulo)} style typeface for everything, bold titles${letra.caixaAlta ? " in UPPERCASE" : ""}, regular body text, nothing decorative.`
         : `- typography: titles in a ${nomeDaFonte(letra.titulo)} style typeface${letra.caixaAlta ? " in UPPERCASE" : ""}; body text in a ${nomeDaFonte(letra.texto)} style typeface; nothing decorative.`
-      : `- typography: one clean ${e.marca?.tipografia ?? "sem-serifa"} family, bold titles, regular body text.`,
-  ];
+      : `- typography: one clean ${e.marca?.tipografia ?? "sem-serifa"} family, bold titles, regular body text.`
+  );
   // O modelo do book NÃO entra: ele é a composição de uma peça de frase
   // ("letra condensada enorme ocupando a peça"), e brigava com o layout do
   // infográfico na prova de 08/10. A identidade entra pelas cores e pela letra.
-  if (e.estilo?.trim()) {
+  // Com a linguagem do estilo escolhido (11/10), ela é o estilo: o texto solto não entra por cima.
+  if (e.estilo?.trim() && !lg) {
     linhas.push(
       "",
       `ART STYLE (only HOW things are drawn: rendering, line, texture, mood; ignore any object, person, scene, logo area or word count it names; the layout above wins): ${curto(e.estilo, 450)}`
