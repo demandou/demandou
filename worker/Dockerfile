@@ -26,7 +26,7 @@ FROM node:22-bookworm-slim
 # gente implementou simplesmente não aparece", que é a pior forma de bug.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ffmpeg ca-certificates python3 python3-pip \
+        ffmpeg ca-certificates python3 python3-pip tini \
         libegl1 libgles2 libgl1 libglib2.0-0 libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -208,4 +208,9 @@ ENV MODELO_ROSTO=/app/modelos/face_landmarker.task
 ENV MODELO_MULTICLASSE=/app/modelos/selfie_multiclass.tflite
 EXPOSE 8080
 
+# O TINI É O PROCESSO 1 (11/10): o Node como PID 1 não recolhe os filhos que o
+# Chrome do render deixa órfãos; os zumbis se acumulavam até o contêiner não
+# abrir mais processo ("spawn ... EAGAIN", "Cannot fork") e o completo sair cru.
+# -g repassa os sinais ao grupo inteiro.
+ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
 CMD ["node", "src/index.mjs"]
