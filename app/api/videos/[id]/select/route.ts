@@ -173,6 +173,8 @@ export async function POST(
         attempts: 0,
         clips: trechos,
         error: null,
+        // O aviso do nicho (11/10): a fala fora do nicho do projeto segue, com um alerta na tela de roteiro.
+        ...((trechos as { avisoDoNicho?: string | null }).avisoDoNicho ? { diagnostico: (trechos as { avisoDoNicho?: string | null }).avisoDoNicho } : {}),
       },
     });
 

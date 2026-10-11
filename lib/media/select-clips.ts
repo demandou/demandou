@@ -175,9 +175,11 @@ dentro de um campo de texto.** Se a fala tinha pausa, use ponto ou vírgula. JSO
 com quebra de linha crua dentro de string é inválido, e aí o trabalho inteiro
 falha.
 
+O PERFIL DO CLIENTE (nicho, público, tom) serve para escolher o ângulo e o melhor trecho, NUNCA para recusar nem para baixar nota. O cliente pode gravar sobre outro assunto: avalie a fala pelo que ela é (gancho, tese, prova, autonomia, emoção, fecho) e devolva os trechos normalmente. Se o assunto foge do nicho, escreva em "foraDoNicho" uma frase curta e gentil para o cliente (por exemplo: "Este vídeo fala de consórcio, fora do seu nicho de marketing de conteúdo; os cortes saem mesmo assim."). No nicho, "foraDoNicho" fica vazio.
+
 Além dos trechos, devolva um "diagnostico": uma frase honesta sobre a matéria-prima, do jeito que um editor experiente diria ao cliente. Se você achou poucos trechos, diga por quê, e diga o que a próxima gravação precisaria ter. Sem consolo e sem grosseria.
 
-{"diagnostico":"...","trechos":[{"inicio":0,"fim":0,"titulo":"...","motivo":"...","ideia":"...","abertura":"...","notas":{"gancho":0,"tese":0,"prova":0,"autonomia":0,"emocao":0,"fecho":0},"nota":0}]}`;
+{"diagnostico":"...","foraDoNicho":"","trechos":[{"inicio":0,"fim":0,"titulo":"...","motivo":"...","ideia":"...","abertura":"...","notas":{"gancho":0,"tese":0,"prova":0,"autonomia":0,"emocao":0,"fecho":0},"nota":0}]}`;
 
 type Paragrafo = { text: string; start: number; end: number };
 
@@ -323,10 +325,13 @@ export async function selecionarTrechos(
     console.warn(`[selecao] só ${escolhidos.length} de ${meta.minimo} cortes pedidos: a gravação não rendeu mais`);
   }
 
-  return escolhidos.map(({ alinhado, ...t }) => ({
+  const lista = escolhidos.map(({ alinhado, ...t }) => ({
     ...t,
     transcricao: recortarFala(t.inicio, t.fim, paragrafos, palavras, alinhado),
   }));
+  // O AVISO DO NICHO (11/10, Bruno: "deixe apenas um alerta para o usuário"): a fala fora do nicho
+  // não é recusada; a rota grava este aviso no diagnóstico, que a tela de roteiro mostra.
+  return Object.assign(lista, { avisoDoNicho: primeira.foraDoNicho || null });
 }
 
 type TrechoPreparado = TrechoBruto & { alinhado?: boolean };
@@ -444,7 +449,7 @@ async function pedirTrechos(
   usageCtx?: { projectId?: string; runId?: string },
   timeoutMs = 240_000,
   recusados: Array<{ inicio: number; fim: number; titulo?: string }> = []
-): Promise<{ trechos: TrechoBruto[]; diagnostico?: string }> {
+): Promise<{ trechos: TrechoBruto[]; diagnostico?: string; foraDoNicho?: string }> {
   const blocos = paragrafos
     .map((p, i) => `[${i}] ${p.start.toFixed(0)}s a ${p.end.toFixed(0)}s: ${p.text}`)
     .join("\n\n");
@@ -520,7 +525,7 @@ ${blocos}`,
   const dados = parseTolerante(limpo);
   // A fala entra depois, recortada do que já está no banco: o modelo devolve
   // só os tempos.
-  return { trechos: dados.trechos ?? [], diagnostico: dados.diagnostico };
+  return { trechos: dados.trechos ?? [], diagnostico: dados.diagnostico, foraDoNicho: typeof dados.foraDoNicho === "string" ? dados.foraDoNicho.trim() : undefined };
 }
 
 /**
@@ -947,9 +952,9 @@ export function recortarFala(
 }
 
 /** Escapa quebra de linha crua dentro de string antes de parsear. */
-function parseTolerante(bruto: string): { trechos?: TrechoBruto[]; diagnostico?: string } {
+function parseTolerante(bruto: string): { trechos?: TrechoBruto[]; diagnostico?: string; foraDoNicho?: string } {
   try {
-    return JSON.parse(bruto) as { trechos?: TrechoBruto[]; diagnostico?: string };
+    return JSON.parse(bruto) as { trechos?: TrechoBruto[]; diagnostico?: string; foraDoNicho?: string };
   } catch {
     let dentro = false;
     let escapando = false;
