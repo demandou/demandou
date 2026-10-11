@@ -71,7 +71,7 @@ export function roteiroSemCena(arquivos, nome) {
   return saida;
 }
 
-export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, aoPasso = () => {}, obterTrilha = null, publicar = null, destinoDoRecorte = null, aoPublicar = () => {}, recortar = recortarApresentador }) {
+export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, aoPasso = () => {}, obterTrilha = null, publicar = null, destinoDoRecorte = null, aoPublicar = () => {}, recortar = recortarApresentador, cenaJaEscrita = null }) {
   const tempos = {};
   let t = Date.now();
   const marcar = (nome) => {
@@ -211,7 +211,8 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   };
 
   // 7. A ESCRITA (Sonnet 5 no app) e os consertos de código
-  const escrito = await pedir("escrever", { kit, fala, contexto });
+  // `cenaJaEscrita`: retomar um trabalho cuja escrita já foi paga (só a prova local usa)
+  const escrito = cenaJaEscrita ?? (await pedir("escrever", { kit, fala, contexto }));
   if (!escrito?.arquivos || typeof escrito.arquivos !== "object") throw new Error("o app não devolveu os arquivos da cena");
   let atual = { ...escrito.arquivos };
   marcar("escrever");
