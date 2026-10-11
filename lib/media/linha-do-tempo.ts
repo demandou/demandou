@@ -217,8 +217,10 @@ const DETALHES: Record<ChaveDoPasso, { rotulo: string; detalhe: string }> = {
 export function segundosNoModeloDoCurso(d: number | null | undefined, tres: boolean): { efeitos: number; montagem: number } {
   const min = (d ?? 600) / 60;
   return {
-    efeitos: Math.round(Math.max(20, (tres ? 6 : 4) * min) * 60),
-    montagem: Math.round((tres ? Math.max(45, 20 * min) : Math.max(15, 3 * min)) * 60),
+    // 11/10, 01h40 (Bruno: "70 minutos para um vídeo de 2 está maluco"): recalibrado depois do tini, que
+    // tirou as falhas e novas tentativas que inflavam o tempo. Ainda pelo alto, mas perto do real.
+    efeitos: Math.round(Math.max(tres ? 10 : 8, (tres ? 4 : 3) * min) * 60),
+    montagem: Math.round((tres ? Math.max(15, 8 * min) : Math.max(8, 2 * min)) * 60),
   };
 }
 
