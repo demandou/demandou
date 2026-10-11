@@ -2593,21 +2593,19 @@ const servidor = createServer((req, res) => {
         const pedirPlano = async (corpo) => {
           const recusa = motivoParaRecusarCallback(pedido.planoUrl, AMBIENTE);
           if (recusa) throw new Error(recusa);
-          // assíncrono desde 11/10 (avancado/pedir-cena.mjs): 202 com id na hora e consulta até o fim
-          const { pedirCenaAssincrona } = await import("./avancado/pedir-cena.mjs");
-          return pedirCenaAssincrona(
-            { ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null },
-            {
-              enviar: (texto) =>
-                fetch(pedido.cenaUrl, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
-                  body: texto,
-                  signal: AbortSignal.timeout(2 * 60_000),
-                }),
-              aoLog: (l) => console.log(),
-            }
-          );
+          // O plano dos modelos do curso vai ao `planoUrl` (rota síncrona do app). O pedido
+          // assíncrono do editor avançado (pedir-cena.mjs, `cenaUrl`) entrou aqui por engano em
+          // d368b43 e todo corte e completo nos modelos do curso falhava com "Failed to parse URL
+          // from undefined" (11/10, vídeo cmv4fy2v1).
+          const texto = JSON.stringify({ ...corpo, projectId: pedido.projectId ?? null, videoJobId: pedido.videoJobId ?? null });
+          const r = await fetch(pedido.planoUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-demandou-assinatura": assinar(texto) },
+            body: texto,
+            signal: AbortSignal.timeout(14 * 60_000),
+          });
+          if (!r.ok) throw new Error(`o app não escreveu o plano (HTTP ${r.status}): ${(await r.text().catch(() => "")).slice(0, 300)}`);
+          return r.json();
         };
         const e = await editarNoModelo(pedido, pasta, {
           obterOriginal,
