@@ -15,7 +15,7 @@ export const Frente: React.FC<CenaProps> = ({ ate }) => {
   return (
     <div style={{ position: "absolute", inset: 0, clipPath: `inset(0px 0px ${Math.round(sai * 100)}% 0px)` }}>
       <div style={{ position: "absolute", left: 80, top: 228, fontFamily: LETRA.titulo, fontWeight: 900, fontSize: 172, lineHeight: 1, letterSpacing: "-0.02em", translate: `0px ${-sai * 60}px` }}>
-        <Letreiro texto={comoTitulo("o certo")} cor={MARCA.titulo} t={t} inicio={dito("o certo")} atraso={0.045} mascaraHorizontal />
+        <Letreiro texto={comoTitulo("o certo")} tamanho={172} largura={920} cor={MARCA.titulo} t={t} inicio={dito("o certo")} atraso={0.045} mascaraHorizontal />
         <div style={{ height: 12, marginTop: 10, width: Math.round(k(t, dito("o certo"), ditoAte("você tem"), (x) => x) * 640), backgroundColor: MARCA.destaque, borderRadius: 6 }} />
         <div
           style={{

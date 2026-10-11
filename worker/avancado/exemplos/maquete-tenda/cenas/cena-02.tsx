@@ -11,10 +11,10 @@ export const Frente: React.FC<CenaProps> = ({ de }) => {
   return (
     <div style={{ position: "absolute", top: 96, left: 0, width: 1080, textAlign: "center", fontFamily: LETRA.titulo, fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.02em" }}>
       <div style={{ fontSize: 92 }}>
-        <Letreiro texto={comoTitulo("o essencial")} cor={MARCA.titulo} t={t} inicio={de} atraso={0.04} />
+        <Letreiro texto={comoTitulo("o essencial")} tamanho={92} largura={980} cor={MARCA.titulo} t={t} inicio={de} atraso={0.04} />
       </div>
       <div style={{ fontSize: 122 }}>
-        <Letreiro texto={comoTitulo("bem feito")} cor={MARCA.destaque} t={t} inicio={dito("bem feito") - 0.03} atraso={0.05} />
+        <Letreiro texto={comoTitulo("bem feito")} tamanho={122} largura={980} cor={MARCA.destaque} t={t} inicio={dito("bem feito") - 0.03} atraso={0.05} />
       </div>
     </div>
   );

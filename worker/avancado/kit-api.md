@@ -65,7 +65,7 @@ export const Atras: React.FC<CenaProps> = ({ de, ate }) => {
   const topo = (ap.cabeca?.topo ?? 560) - 150;
   return (
     <div style={{ position: "absolute", left: 0, width: 1080, top: topo, textAlign: "center", fontFamily: LETRA.titulo, fontWeight: 900, fontSize: 200, lineHeight: 0.85, opacity: v.visivel }}>
-      <Letreiro texto={comoTitulo("bem")} cor={MARCA.titulo} t={t} inicio={dito("bem feito")} />
+      <Letreiro texto={comoTitulo("bem")} tamanho={180} largura={960} cor={MARCA.titulo} t={t} inicio={dito("bem feito")} />
     </div>
   );
 };
@@ -99,7 +99,7 @@ export const Atras: React.FC<CenaProps> = ({ de, ate }) => {
 
 ## 6. Peças de texto e traço
 
-- `<Letreiro texto t inicio cor atraso? duracao? mascaraHorizontal? />`: construção por letras (cada letra com atraso curto). `mascaraHorizontal`: revelada da esquerda para a direita (aula 8.2, ATENÇÃO). Ponha dentro de um `<div>` com a fonte, o peso e o tamanho.
+- `<Letreiro texto t inicio cor tamanho largura familia? peso? espacamentoEm? atraso? duracao? mascaraHorizontal? />`: construção por letras (cada letra com atraso curto). `tamanho` é o tamanho pedido e `largura` o espaço que a palavra pode ocupar (até a borda menos a margem): o letreiro ENCOLHE até caber e nunca sai do quadro. `mascaraHorizontal`: revelada da esquerda para a direita (aula 8.2, ATENÇÃO). Ponha dentro de um `<div>` com a fonte e o peso.
 - `<TituloQueCabe texto largura maximo cor peso? alinhar? espacamentoEm? style? />`: um título que ENCOLHE até caber (texto cortado na borda reprova a revisão); se numa linha ficaria com menos de 60% do `maximo`, vai em duas linhas equilibradas. `maximo` de 90 para cima. Por cima da gravação em tela cheia, ponha o título numa caixa com fundo `comAlfa(MARCA.fundo, 0.78)`. `useTamanhoQueCabe(texto, largura, maximo, opcoes?)` devolve o tamanho para quem monta o próprio bloco.
 - `<Cartao t inicio titulo apoio? icone? x|direita y largura? lado? ativo? saida? tamanho? />`: cartão de borda fina e cantos arredondados (aula 7) que entra com deslocamento curto e o ícone se desenhando; `ativo` 0 a 1 destaca o explicado e tira ênfase dos outros; `saida` (segundos) tira o cartão; com `largura`, o título encolhe até caber nela.
 - `<Icone nome tamanho? cor? espessura? progresso? />`: ícones de traço que se desenham (`progresso` 0 a 1). Nomes: caixa, notebook, celular, calendario, check, lista, pessoa, pessoas, casa, coracao, grafico, alvo, lampada, relogio, estrela, seta, cursor, conversa, poltrona, livro, ferramenta, foguete, escudo, lupa, engrenagem, bandeira, chave, cadeado, mundo, megafone, etiqueta, predio, berco, tenda, corda, estaca, plataforma, mao, mais, menos, xis. Outro ícone: desenhe com `<svg viewBox="0 0 24 24">` e `<path>` com `pathLength={1}`, `strokeDasharray="1 1"` e `strokeDashoffset={1 - p}`.

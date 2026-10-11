@@ -33,9 +33,9 @@ export const Atras: React.FC<CenaProps> = ({ ate }) => {
         filter: `blur(${afasta * 2}px)`,
       }}
     >
-      <Letreiro texto={comoTitulo("bem")} cor={MARCA.titulo} t={t} inicio={dito("bem feito")} atraso={0.05} />
+      <Letreiro texto={comoTitulo("bem")} tamanho={206} largura={980} cor={MARCA.titulo} t={t} inicio={dito("bem feito")} atraso={0.05} />
       <br />
-      <Letreiro texto={comoTitulo("feito")} cor={MARCA.destaque} t={t} inicio={dito("feito")} atraso={0.05} />
+      <Letreiro texto={comoTitulo("feito")} tamanho={206} largura={980} cor={MARCA.destaque} t={t} inicio={dito("feito")} atraso={0.05} />
     </div>
   );
 };

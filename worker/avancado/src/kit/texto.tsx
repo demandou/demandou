@@ -19,26 +19,39 @@ export const Letreiro: React.FC<{
   t: number;
   inicio: number;
   cor: string;
+  /** O tamanho pedido da letra, em px. */
+  tamanho: number;
+  /**
+   * A largura que a palavra pode ocupar, em px (11/10, teste do Recorte: "PRODUTIVIDAD" saiu
+   * cortado na borda). O letreiro usa o `tamanho` e só ENCOLHE se não couber: nunca vaza do quadro.
+   */
+  largura: number;
+  familia?: string;
+  peso?: number;
+  espacamentoEm?: number;
   atraso?: number;
   duracao?: number;
   mascaraHorizontal?: boolean;
-}> = ({ texto, t, inicio, cor, atraso = 0.045, duracao = 0.38, mascaraHorizontal = false }) => (
-  <span style={{ color: cor, whiteSpace: "nowrap" }}>
-    {[...texto].map((letra, i) => {
-      const p = k(t, inicio + i * atraso, inicio + i * atraso + duracao, SAIDA);
-      if (letra === " ") return <span key={i}> </span>;
-      return mascaraHorizontal ? (
-        <span key={i} style={{ display: "inline-block", clipPath: `inset(-30% ${Math.round((1 - p) * 1000) / 10}% -30% -5%)`, translate: `${(1 - p) * -0.12}em 0px` }}>
-          {letra}
-        </span>
-      ) : (
-        <span key={i} style={{ display: "inline-block", opacity: p, translate: `0px ${(1 - p) * 0.42}em` }}>
-          {letra}
-        </span>
-      );
-    })}
-  </span>
-);
+}> = ({ texto, t, inicio, cor, tamanho, largura, familia, peso = 900, espacamentoEm = -0.02, atraso = 0.045, duracao = 0.38, mascaraHorizontal = false }) => {
+  const cabe = useTamanhoQueCabe(texto, largura, tamanho, { familia, peso, espacamentoEm, minimo: 24 });
+  return (
+    <span style={{ color: cor, whiteSpace: "nowrap", fontSize: cabe }}>
+      {[...texto].map((letra, i) => {
+        const p = k(t, inicio + i * atraso, inicio + i * atraso + duracao, SAIDA);
+        if (letra === " ") return <span key={i}> </span>;
+        return mascaraHorizontal ? (
+          <span key={i} style={{ display: "inline-block", clipPath: `inset(-30% ${Math.round((1 - p) * 1000) / 10}% -30% -5%)`, translate: `${(1 - p) * -0.12}em 0px` }}>
+            {letra}
+          </span>
+        ) : (
+          <span key={i} style={{ display: "inline-block", opacity: p, translate: `0px ${(1 - p) * 0.42}em` }}>
+            {letra}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
 
 let tela: HTMLCanvasElement | null = null;
 
