@@ -32,11 +32,13 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
  * (sem banco, sem rede): as decisões e as contas, que o teste prova.
  */
 
-export type FormatoNoModelo = "4:5" | "1:1" | "9:16";
+/** O 16:9 (11/10) é só da capa do vídeo completo no YouTube (lib/media/capa-pelo-modelo.ts). */
+export type FormatoNoModelo = "4:5" | "1:1" | "9:16" | "16:9";
 export type TipoDaPecaNoModelo = "post" | "capa" | "lamina" | "infografico";
-export type PecaDoLote = { tipo: TipoDaPecaNoModelo; texto: string; formatos: FormatoNoModelo[] };
+/** `fotoUrl` (11/10): a foto da pessoa DESTA peça (um quadro nítido diferente da gravação por peça). */
+export type PecaDoLote = { tipo: TipoDaPecaNoModelo; texto: string; formatos: FormatoNoModelo[]; fotoUrl?: string };
 
-const FORMATOS: ReadonlySet<string> = new Set(["4:5", "1:1", "9:16"]);
+const FORMATOS: ReadonlySet<string> = new Set(["4:5", "1:1", "9:16", "16:9"]);
 /** Os travessões (longo e meio), que nunca vão para texto de peça ou de legenda. */
 const TRACOS = /[\u2014\u2013]/g;
 

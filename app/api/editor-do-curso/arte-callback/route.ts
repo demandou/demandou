@@ -6,6 +6,8 @@ import { after, NextRequest, NextResponse } from "next/server";
 import { corpoAssinadoConfere, CABECALHO_ASSINATURA } from "@/lib/media/worker-token";
 import { lerCallbackDaArte } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
 import { concluirArteNoModelo, desenharPeloCaminhoDeHoje } from "@/lib/media/editor-do-curso/arte-pelo-modelo-servidor";
+import { lerRetornoDaCapa } from "@/lib/media/capa-pelo-modelo";
+import { concluirCapaNoModelo, reservaDasCapas } from "@/lib/media/capa-pelo-modelo-servidor";
 
 /**
  * O worker avisa que terminou (ou não) um lote de peças da campanha no modelo
@@ -34,6 +36,16 @@ export async function POST(req: NextRequest) {
   if (!cb) return NextResponse.json({ error: "Sem o lote de retorno" }, { status: 400 });
   if (!cb.ok) console.error(`[arte-callback] lote ${cb.lote}: ${cb.erro}`);
   if (cb.avisos.length) console.warn(`[arte-callback] lote ${cb.lote}: ${cb.avisos.join(" | ").slice(0, 600)}`);
+  // AS CAPAS (11/10, lib/media/capa-pelo-modelo.ts): o lote "capa-..." vai para
+  // a capa do completo ou dos cortes, e o que faltou, para o caminho de hoje.
+  const daCapa = lerRetornoDaCapa(bruto);
+  if (daCapa) {
+    const r = await concluirCapaNoModelo(cb, daCapa);
+    if (r.reserva.completo || r.reserva.cortes.length) {
+      after(() => reservaDasCapas(daCapa.videoJobId, r.reserva).catch((e) => console.error(`[arte-callback] reserva das capas do lote ${cb.lote} falhou:`, e)));
+    }
+    return NextResponse.json({ ok: true, capa: daCapa.alvo, reserva: r.reserva });
+  }
   const r = await concluirArteNoModelo(cb);
   if (r.projectId && r.reserva.length) {
     const projectId = r.projectId;

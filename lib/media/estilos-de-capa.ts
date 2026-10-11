@@ -161,6 +161,21 @@ export type CapasDoCompleto = {
   /** Índice em `opcoes` da capa que o cliente marcou. */
   escolhida: number;
   geradaEm: string;
+  /**
+   * As capas pedidas ao template do modelo do curso (11/10,
+   * lib/media/capa-pelo-modelo.ts): o lote no worker e as frases. Enquanto
+   * `pendente`, a tela mostra que estão sendo montadas.
+   */
+  noModelo?: {
+    lote: string;
+    pendente: boolean;
+    desde: string;
+    modelo: string;
+    foto: "quadro" | "biblioteca" | "nenhuma";
+    frases: Array<{ frase: string; expressao: ExpressaoDaCapa }>;
+    feitoEm?: string;
+    reserva?: string | null;
+  };
 };
 
 /**

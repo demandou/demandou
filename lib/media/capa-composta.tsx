@@ -137,7 +137,11 @@ export async function pessoaComAcabamento(recorte: Buffer, alturaAlvo: number, f
     .extract({ left: x0, top: y0, width: Math.max(1, x1 - x0 + 1), height: Math.max(1, y1 - y0 + 1) })
     .png()
     .toBuffer();
-  const redim = await sharp(aparado).resize({ height: alturaAlvo, fit: "inside" }).png().toBuffer();
+  // Nunca mais que 2x a altura original (11/10): a pessoa pequena ampliada até
+  // a altura pedida era a imagem mole e serrilhada que o Bruno chamou de
+  // distorcida. Fica menor, mas nítida (fit inside: a proporção não muda).
+  const alturaFinal = Math.max(1, Math.min(alturaAlvo, (y1 - y0 + 1) * 2));
+  const redim = await sharp(aparado).resize({ height: alturaFinal, fit: "inside" }).png().toBuffer();
   const meta = await sharp(redim).metadata();
   const w = meta.width ?? 1;
   const h = meta.height ?? 1;

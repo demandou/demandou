@@ -1175,7 +1175,7 @@ Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", me
   // dias que foram pelo modelo. Recusado, os posts dele vão na hora pelo
   // caminho de hoje (lib/media/editor-do-curso/arte-pelo-modelo-servidor.ts).
   if (peloModelo && coleta?.lotes.length) {
-    await despacharColeta({ projectId: video.projectId, runId: run.id, modelo: peloModelo.modelo, coleta }).catch((e) =>
+    await despacharColeta({ projectId: video.projectId, runId: run.id, modelo: peloModelo.modelo, coleta, videoJobId: video.id }).catch((e) =>
       console.error(`[semana][${videoJobId}] o lote das artes pelo modelo não saiu (o vigia da fila desenha pelo caminho de hoje no prazo):`, e)
     );
   }

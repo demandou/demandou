@@ -18,6 +18,8 @@ import { normalizarCapaParaYouTube } from "@/lib/media/capa-youtube";
 import { resolveSocialAccountAccessToken } from "@/lib/publish/oauth-post";
 import type { Radar } from "@/lib/media/radar-do-video";
 import { projetoVisivel } from "@/lib/equipe/conta";
+import { capaAindaEspera } from "@/lib/media/capa-pelo-modelo";
+import { fotoDaCapa, pedirCapaDoCompletoNoModelo, regraDaCapaPeloModelo } from "@/lib/media/capa-pelo-modelo-servidor";
 
 /**
  * A capa (thumbnail) do vídeo COMPLETO no YouTube.
@@ -154,7 +156,7 @@ function corPrincipal(paleta: string | null | undefined): string | null {
  */
 export async function gerarCapasDoCompleto(
   videoJobId: string,
-  opcoes: { estilo?: EstiloDeCapa; clima?: ClimaDaCapa; userId?: string } = {}
+  opcoes: { estilo?: EstiloDeCapa; clima?: ClimaDaCapa; userId?: string; semModelo?: boolean } = {}
 ): Promise<CapasDoCompleto> {
   const video = await prisma.videoJob.findFirst({
     where: { id: videoJobId, ...(opcoes.userId ? { project: projetoVisivel(opcoes.userId) } : {}) },
@@ -170,7 +172,8 @@ export async function gerarCapasDoCompleto(
     },
   });
   if (!video) throw new Error("Vídeo não encontrado.");
-  if (!video.capaFonteUrl) throw new Error("O vídeo ainda não tem o quadro-fonte da capa.");
+  // O quadro-fonte deixou de ser obrigatório (11/10): a foto da capa é o quadro
+  // NÍTIDO pedido ao worker, ou a da Biblioteca, ou nenhuma.
 
   const estilo: EstiloDeCapa = opcoes.estilo ?? (estiloDeCapaValido(video.project.capaEstilo) ? video.project.capaEstilo : "impacto");
   if (opcoes.estilo && opcoes.estilo !== video.project.capaEstilo) {
@@ -200,21 +203,48 @@ export async function gerarCapasDoCompleto(
     radar?.tema ||
     (video.originalName ?? "Vídeo").replace(/\.[^.]+$/, "");
 
-  const [frases, quadro] = await Promise.all([
-    escreverFrasesDaCapa(
-      {
-        titulo,
-        resumo: radar?.resumo ?? "",
-        teses: (radar?.teses ?? []).map((t) => t.frase).slice(0, 6),
-        nicho: video.project.niche,
-      },
-      video.projectId,
-      clima
-    ),
-    lerMidia(video.capaFonteUrl),
+  const anteriores = video.capas as CapasDoCompleto | null;
+
+  // PELO MODELO DO CURSO (11/10): o projeto com modelo faz a capa pelo template
+  // do modelo, como as artes. Um pedido por vez: enquanto o lote está no
+  // worker, pedir de novo (a tela, o piloto) devolve o que já está a caminho.
+  const regra = opcoes.semModelo ? null : await regraDaCapaPeloModelo(video.projectId);
+  if (regra && capaAindaEspera(anteriores?.noModelo)) return anteriores!;
+
+  const material = {
+    titulo,
+    resumo: radar?.resumo ?? "",
+    teses: (radar?.teses ?? []).map((t) => t.frase).slice(0, 6),
+    nicho: video.project.niche,
+  };
+  if (regra) {
+    const frasesDoModelo = await escreverFrasesDaCapa(material, video.projectId, clima);
+    const noModelo = await pedirCapaDoCompletoNoModelo({ videoJobId: video.id, projectId: video.projectId, modelo: regra.modelo, frases: frasesDoModelo }).catch((e) => {
+      console.error(`[capas-do-completo][${video.id}] pedido ao modelo falhou, vai pelo caminho de hoje:`, e);
+      return null;
+    });
+    if (noModelo) {
+      // As opções de antes ficam na tela até as novas chegarem pelo callback.
+      const capas: CapasDoCompleto = {
+        estilo,
+        clima,
+        opcoes: anteriores?.opcoes ?? [],
+        escolhida: anteriores?.escolhida ?? 0,
+        geradaEm: anteriores?.geradaEm ?? new Date().toISOString(),
+        noModelo,
+      };
+      await prisma.videoJob.update({ where: { id: video.id }, data: { capas: capas as never } });
+      return capas;
+    }
+  }
+
+  // O CAMINHO DE HOJE (sem modelo, ou a reserva), com a regra do quadro nítido.
+  const [frases, foto] = await Promise.all([
+    escreverFrasesDaCapa(material, video.projectId, clima),
+    fotoDaCapa(video.id, video.projectId, { largura: 1280, altura: 720 }),
   ]);
-  if (!quadro) throw new Error("Não consegui ler o quadro-fonte da capa.");
-  const quadroBase64 = quadro.toString("base64");
+  const quadro = foto.url ? await lerMidia(foto.url) : null;
+  const quadroBase64 = quadro ? quadro.toString("base64") : "";
 
   // As duas composições em paralelo: cada uma leva de 30 s a 1 min no Pro.
   const artes = await Promise.all(
@@ -227,8 +257,10 @@ export async function gerarCapasDoCompleto(
         clima: clima === "automatico" ? undefined : clima,
         corDaMarca: corPrincipal(video.project.colorPalette),
         usageCtx: { projectId: video.projectId },
-        // O worker recorta a pessoa do quadro-fonte; o rosto não passa por modelo nenhum.
-        quadroUrl: video.capaFonteUrl,
+        // A pessoa do quadro NÍTIDO (já recortada pelo worker) ou da Biblioteca;
+        // sem foto boa, a capa sai só com a frase. O rosto não passa por modelo nenhum.
+        quadroUrl: quadro ? foto.url : null,
+        recorteUrl: quadro ? foto.recorteUrl : null,
         chaveDoRecorte: `cortes/${video.id}/recorte-fonte.png`,
       })
     )
@@ -254,7 +286,6 @@ export async function gerarCapasDoCompleto(
   // (05/10): "Gerar outras 2" e a geração automática trocam as composições,
   // não a escolha dele. Se a escolhida era uma foto da biblioteca, ela segue
   // escolhida e as geradas entram só como opções.
-  const anteriores = video.capas as CapasDoCompleto | null;
   const daBiblioteca = (anteriores?.opcoes ?? []).filter((o) => o.materialId);
   const fotoEscolhida = anteriores?.opcoes[anteriores.escolhida]?.materialId;
   const opcoesNovas = [...prontas, ...daBiblioteca];
@@ -265,6 +296,8 @@ export async function gerarCapasDoCompleto(
     opcoes: opcoesNovas,
     escolhida,
     geradaEm: new Date().toISOString(),
+    // A reserva guarda o motivo do pedido ao modelo que não voltou.
+    ...(anteriores?.noModelo ? { noModelo: { ...anteriores.noModelo, pendente: false } } : {}),
   };
   await prisma.videoJob.update({ where: { id: video.id }, data: { capas: capas as never } });
   // A escolha da foto já está no card, no post e no YouTube: não reaponta.
@@ -382,6 +415,26 @@ export async function usarMaterialComoCapa(
     .update({ where: { id: material.id }, data: { usos: { increment: 1 }, ultimoUsoEm: new Date() } })
     .catch(() => {});
   return escolherCapaDoCompleto(video.id, userId, capas.opcoes.length - 1);
+}
+
+/**
+ * A capa que chegou pelo modelo do curso (lib/media/capa-pelo-modelo-servidor.ts)
+ * vai para o card do completo e para o post do YouTube, como a escolhida.
+ */
+export async function apontarCapaDoCompleto(videoJobId: string, projectId: string, url: string): Promise<void> {
+  const post = await prisma.post.findFirst({
+    where: {
+      projectId,
+      platform: "youtube",
+      AND: [
+        { metadata: { path: ["videoJobId"], equals: videoJobId } },
+        { metadata: { path: ["gravacaoCompleta"], equals: true } },
+      ],
+    },
+    select: { id: true, metadata: true },
+  });
+  // Como a geração de sempre: aponta no card e no post; o YouTube só troca quando o cliente escolhe.
+  await apontarCapaEscolhida(videoJobId, projectId, post, url);
 }
 
 /**

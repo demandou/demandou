@@ -65,6 +65,14 @@ export type BaseDoPedido = {
   nicho: string | null;
   fotoUrl: string | null;
   logo: { claro: string; proporcao: number; pastilha: string | null; proporcaoDaPastilha: number | null } | null;
+  /**
+   * Sem foto na Biblioteca (11/10, teste do Bruno no Estúdio: a janela da
+   * pessoa saía vazia): quadros NÍTIDOS da própria gravação, um diferente por
+   * peça. A foto da Biblioteca, quando há, continua na frente.
+   */
+  fotos?: string[];
+  /** Os blocos que o corte do mesmo vídeo usou no modelo (referência para o redator). */
+  referenciaDoCorte?: string | null;
 };
 
 /**
@@ -96,7 +104,7 @@ async function logoDoProjeto(logoUrl: string | null | undefined): Promise<BaseDo
   }
 }
 
-export async function baseDoPedido(projectId: string, runId?: string | null): Promise<BaseDoPedido> {
+export async function baseDoPedido(projectId: string, runId?: string | null, o: { videoJobId?: string | null; quantas?: number } = {}): Promise<BaseDoPedido> {
   const { coresDaMarcaParaOModelo, quemFalaNoProjeto } = await import("@/lib/media/editor-do-curso/no-corte");
   const { materiaisDaMarca } = await import("@/lib/materiais/escolha");
   const { materiaisDaPessoa, menosUsado } = await import("@/lib/media/referencia-da-pessoa");
@@ -107,16 +115,47 @@ export async function baseDoPedido(projectId: string, runId?: string | null): Pr
     materiaisDaMarca(projectId, runId ?? undefined).catch(() => []),
     logoDoProjeto(p?.logoUrl).catch(() => null),
   ]);
-  // Onde o modelo põe a pessoa: a foto dela da Biblioteca (a menos usada), nunca um quadro da gravação; sem foto, nada.
+  // Onde o modelo põe a pessoa: a foto dela da Biblioteca (a menos usada) na
+  // frente; sem ela, quadros nítidos da gravação, um por peça (11/10); sem
+  // nenhum que preste, nada (o fundo liso na cor da marca).
   const foto = menosUsado(materiaisDaPessoa(materiais));
-  return { cores, marca, nicho: p?.niche ?? null, fotoUrl: foto?.url ?? null, logo };
+  const extras = o.videoJobId ? await extrasDoVideo(o.videoJobId, { semFoto: !foto, quantas: o.quantas ?? 1 }).catch(() => ({ fotos: [], referenciaDoCorte: null })) : { fotos: [], referenciaDoCorte: null };
+  return { cores, marca, nicho: p?.niche ?? null, fotoUrl: foto?.url ?? null, logo, ...extras };
 }
 
-/** Manda um lote ao worker (POST /arte-no-modelo, assinado). 202 é aceito; o resto é recusa. */
-export async function enviarLoteAoWorker(o: { chave: string; projectId: string; runId: string | null; modelo: string; pecas: PecaDoLote[]; base: BaseDoPedido }): Promise<{ ok: true } | { ok: false; erro: string }> {
+/**
+ * O que o vídeo dá às peças (11/10): sem foto na Biblioteca, quadros nítidos da
+ * gravação, um por peça (o mesmo crivo da capa: olho aberto, rosto inteiro, sem
+ * borrão, sem ampliar mais de 2x para o 9:16); e os blocos que os cortes do
+ * vídeo usaram no modelo, como referência do que ficou bom.
+ */
+async function extrasDoVideo(videoJobId: string, o: { semFoto: boolean; quantas: number }): Promise<{ fotos: string[]; referenciaDoCorte: string | null }> {
+  const { quadrosNitidosDoVideo } = await import("@/lib/media/quadros-nitidos");
+  const { referenciaDosCortes } = await import("@/lib/media/capa-pelo-modelo");
+  const [quadros, video] = await Promise.all([
+    o.semFoto ? quadrosNitidosDoVideo(videoJobId, { quantos: Math.max(1, Math.min(10, o.quantas)), alvo: { largura: 1080, altura: 1920 } }) : Promise.resolve([]),
+    prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { clips: true } }).catch(() => null),
+  ]);
+  const cortes = ((video?.clips as Array<{ montagem?: { curso?: { tipos?: Array<{ tipo: string; vezes: number; exemplo?: string }>; mapa?: string } | null } | null }> | null) ?? []).map((c) => c?.montagem?.curso ?? null);
+  // Os cortes editados antes de 11/10 não guardam os blocos; o mapa editorial deles diz o mesmo em texto.
+  const mapa = cortes.find((c) => typeof c?.mapa === "string" && c.mapa.trim())?.mapa ?? null;
+  const referencia = referenciaDosCortes(cortes) ?? (mapa ? `O mapa editorial de um corte deste vídeo (trecho):\n${mapa.replace(/[—–]/g, ",").slice(0, 1500)}` : null);
+  return { fotos: quadros.map((q) => q.url), referenciaDoCorte: referencia };
+}
+
+/**
+ * Manda um lote ao worker (POST /arte-no-modelo, assinado). 202 é aceito; o resto é recusa.
+ * `pessoaUrl` (11/10): a pessoa da capa deitada (16:9), recortada no worker.
+ * `retorno` extra: o que o callback precisa além do lote (a capa leva o vídeo e o alvo).
+ */
+export async function enviarLoteAoWorker(o: { chave: string; projectId: string; runId: string | null; modelo: string; pecas: PecaDoLote[]; base: BaseDoPedido; pessoaUrl?: string | null; retorno?: Record<string, unknown> }): Promise<{ ok: true } | { ok: false; erro: string }> {
   const worker = (process.env.VIDEO_WORKER_URL ?? "").replace(/\/$/, "");
   if (!worker) return { ok: false, erro: "VIDEO_WORKER_URL não configurado" };
   const app = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
+  // Uma foto por peça (11/10): sem foto da Biblioteca, os quadros nítidos da
+  // gravação vão um em cada peça, sem repetir enquanto houver diferente.
+  const fotos = !o.base.fotoUrl && o.base.fotos?.length ? o.base.fotos : [];
+  const pecas = fotos.length ? o.pecas.map((p, i) => (p.fotoUrl ? p : { ...p, fotoUrl: fotos[i % fotos.length] })) : o.pecas;
   const corpo = JSON.stringify({
     chave: o.chave,
     // O /vivo do worker acha o trabalho por este id (o vigia pergunta antes de desistir).
@@ -124,9 +163,12 @@ export async function enviarLoteAoWorker(o: { chave: string; projectId: string; 
     projectId: o.projectId,
     runId: o.runId,
     modelo: o.modelo,
-    pecas: o.pecas,
+    pecas,
     cores: o.base.cores,
     fotoUrl: o.base.fotoUrl,
+    ...(fotos.length ? { fotosDaGravacao: true } : {}),
+    ...(o.base.referenciaDoCorte ? { referenciaDoCorte: o.base.referenciaDoCorte } : {}),
+    ...(o.pessoaUrl ? { pessoaUrl: o.pessoaUrl } : {}),
     marca: o.base.marca,
     nicho: o.base.nicho,
     logo: o.base.logo,
@@ -134,7 +176,7 @@ export async function enviarLoteAoWorker(o: { chave: string; projectId: string; 
     voltas: 3,
     planoUrl: `${app}/api/editor-do-curso/plano`,
     callbackUrl: `${app}/api/editor-do-curso/arte-callback`,
-    retorno: { lote: o.chave, projectId: o.projectId },
+    retorno: { ...(o.retorno ?? {}), lote: o.chave, projectId: o.projectId },
   });
   try {
     const r = await fetch(`${worker}/arte-no-modelo`, {
@@ -155,13 +197,13 @@ export async function enviarLoteAoWorker(o: { chave: string; projectId: string; 
  * um só). Lote recusado, ou a base do pedido que não saiu, vai para o caminho
  * de hoje na hora: o post não fica esperando um trabalho que não existe.
  */
-export async function despacharColeta(o: { projectId: string; runId: string | null; modelo: string; coleta: ColetaDoModelo }): Promise<{ enviados: number; reserva: number }> {
+export async function despacharColeta(o: { projectId: string; runId: string | null; modelo: string; coleta: ColetaDoModelo; videoJobId?: string | null }): Promise<{ enviados: number; reserva: number }> {
   const lotes = o.coleta.lotes.filter((l) => l.pecas.length);
   if (!lotes.length) return { enviados: 0, reserva: 0 };
   let base: BaseDoPedido | null = null;
   let erroDaBase: string | null = null;
   try {
-    base = await baseDoPedido(o.projectId, o.runId);
+    base = await baseDoPedido(o.projectId, o.runId, { videoJobId: o.videoJobId ?? null, quantas: Math.max(...lotes.map((l) => l.pecas.length)) });
   } catch (e) {
     erroDaBase = e instanceof Error ? e.message : String(e);
   }
@@ -486,7 +528,7 @@ export async function refazerArteNoModelo(o: {
     extra = { frase: m.manchete };
   }
   const chave = `refazer-${o.post.id}-${Date.now().toString(36)}`;
-  const base = await baseDoPedido(o.post.projectId, o.post.runId);
+  const base = await baseDoPedido(o.post.projectId, o.post.runId, { videoJobId: typeof meta.videoJobId === "string" ? meta.videoJobId : null, quantas: 3 });
   const r = await enviarLoteAoWorker({ chave, projectId: o.post.projectId, runId: o.post.runId, modelo: regra.modelo, pecas: [peca], base });
   if (!r.ok) {
     console.warn(`[arte-no-modelo][${o.post.projectId}] o refazer de ${o.post.id} vai pelo caminho de hoje: ${r.erro}`);

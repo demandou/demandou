@@ -178,26 +178,23 @@ export async function refazerCapa(
   const alvo = trechos[indice];
   if (!alvo?.texto?.fraseDaCapa) throw new Error("Esse corte ainda não tem capa para refazer.");
 
-  // O corte que chegou com o recorte próprio (quadro escolhido pelo rosto
-  // dentro do trecho, desde 30/09) usa o dele; o antigo cai na capa-fonte.
-  const recorteDoTrecho = (alvo.midia as { recorte?: { url?: string } | null } | undefined)?.recorte?.url ?? null;
-  const quadro = recorteDoTrecho
-    ? (alvo.midia?.capa as { url?: string } | undefined)?.url
-    : video.capaFonteUrl ?? (alvo.midia?.capa as { url?: string } | undefined)?.url;
-  if (!quadro) throw new Error("Não encontrei o quadro base da capa.");
+  // A base da capa pela regra do quadro nítido (11/10, lib/media/capa-do-corte.ts):
+  // o quadro do próprio corte só quando veio com o recorte (passou no crivo);
+  // senão o quadro nítido do vídeo, a foto da Biblioteca, ou nenhuma (só a frase).
+  const { baseDaCapaDoCorte, fotoDoVideoSePrecisar } = await import("@/lib/media/capa-do-corte");
+  const doVideo = await fotoDoVideoSePrecisar(video.id, video.projectId, [alvo as never]).catch(() => null);
+  const { quadroUrl, recorteUrl } = baseDaCapaDoCorte(alvo as never, doVideo);
+  const bytes = quadroUrl ? await lerMidia(quadroUrl) : null;
 
-  const bytes = await lerMidia(quadro);
-  if (!bytes) throw new Error("Não consegui ler o quadro base.");
-
-  const arte = await comporCapa(bytes.toString("base64"), alvo.texto.fraseDaCapa, {
+  const arte = await comporCapa(bytes ? bytes.toString("base64") : "", alvo.texto.fraseDaCapa, {
     expressao: alvo.texto.expressao as Expressao | undefined,
     cenario: alvo.texto.cenario,
     nicho: video.project?.niche,
     formato: "9:16",
     ajuste: instrucao,
     usageCtx: { projectId: video.projectId },
-    quadroUrl: quadro,
-    recorteUrl: recorteDoTrecho,
+    quadroUrl: bytes ? quadroUrl : null,
+    recorteUrl: bytes ? recorteUrl : null,
     chaveDoRecorte: `cortes/${video.id}/recorte-capa-${indice}.png`,
   });
   if (!arte) throw new Error("A capa nova não saiu desta vez. Tente descrever o ajuste de outro jeito.");
