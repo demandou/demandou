@@ -73,7 +73,8 @@ export function editorAvancadoLigado(): boolean {
 
 /** O modelo de texto que escreve as cenas (decisão do Bruno, 10/10: Sonnet 5). */
 export function modeloDasCenas(): string {
-  return process.env.EDITOR_AVANCADO_IA || "claude-sonnet-5";
+  // trim (11/10): variável da Vercel gravada com quebra de linha não pode virar modelo inexistente
+  return (process.env.EDITOR_AVANCADO_IA ?? "").trim() || "claude-sonnet-5";
 }
 
 /** O id é uma das edições sob medida (as três opções ou a genérica)? */
