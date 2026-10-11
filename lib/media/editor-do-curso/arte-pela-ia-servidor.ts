@@ -4,7 +4,7 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
 import type { ContextoMidia } from "@/lib/media/usage";
 import type { GeradorDoInfografico, ModeloDoInfografico } from "@/lib/media/infografico-pelo-modelo";
-import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, trechoDaFala, type CoresDaPeca } from "./arte-pela-ia";
+import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
 
 /**
  * O DESENHO PELA IA DE IMAGEM DAS PEÇAS DE UM PROJETO COM MODELO DO CURSO
@@ -97,7 +97,7 @@ async function desenhista(ordem: ModeloDoInfografico[], ctx: ContextoMidia, gera
  */
 export async function pecaDeFrase(
   p: PecaPelaIa,
-  o: { texto: string; tipo: "post" | "capa" | "lamina"; lamina?: number; pagina?: { i: number; total: number } | null; redes: string[]; contentType: string },
+  o: { texto: string; tipo: TipoDaArte; lamina?: number; pagina?: { i: number; total: number } | null; redes: string[]; contentType: string },
   inj: InjecoesDaArte
 ): Promise<Record<string, string>> {
   const estilo = promptDeEstiloDoModelo(p.modelo);
@@ -153,7 +153,7 @@ export async function pecaDeFrase(
  */
 export async function cenaComFraseEmCodigo(
   p: PecaPelaIa,
-  o: { texto: string; tipo: "post" | "capa" | "lamina"; lamina?: number; redes: string[]; contentType: string },
+  o: { texto: string; tipo: TipoDaArte; lamina?: number; redes: string[]; contentType: string },
   inj: InjecoesDaArte
 ): Promise<Record<string, string>> {
   const estilo = promptDeEstiloDoModelo(p.modelo)!;
@@ -197,6 +197,73 @@ export async function cenaComFraseEmCodigo(
   });
   if (arte.algumaReprovada) throw new Error(`nem a cena no estilo do modelo com a frase em código passou na conferência: ${arte.avisos.filter((a) => /problema/.test(a)).join(" | ").slice(0, 300)}`);
   return arte.porRede;
+}
+
+/**
+ * A CAPA DO VÍDEO PELA IA NO ESTILO DA EDIÇÃO SOB MEDIDA (11/10): a thumb 16:9
+ * do completo e a capa 9:16 de cada corte saem no estilo da opção escolhida,
+ * com o assunto do trecho da fala, a frase da capa exata, a pessoa do quadro
+ * nítido quando a opção pede a pessoa, as cores e o logo da marca. Devolve o
+ * JPEG no tamanho final; lança quando não sai (quem chama vai ao caminho de hoje).
+ */
+export async function capaPelaIa(o: {
+  projectId: string;
+  modelo: string;
+  frase: string;
+  formato: "16:9" | "9:16";
+  nicho?: string | null;
+  contexto?: string | null;
+  fala?: string | null;
+  trecho?: string | null;
+  fotoDaPessoa?: string | null;
+  marca?: MarcaDaArte;
+  inj?: InjecoesDaArte;
+}): Promise<Buffer> {
+  const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
+  const marca = o.marca ?? (await marcaDaArte(o.projectId));
+  const redes = o.formato === "16:9" ? ["youtube"] : ["instagram"];
+  const porRede = await pecaDeFrase(
+    { projectId: o.projectId, modelo: o.modelo, mediaType: "image", redes, frase: o.frase, textoDoPost: o.contexto ?? null, nicho: o.nicho ?? null, marca, fala: o.fala ?? null, trecho: o.trecho ?? null, fotoDaPessoa: o.fotoDaPessoa ?? null },
+    { texto: o.frase, tipo: o.formato === "16:9" ? "thumb" : "capa-vertical", redes, contentType: o.formato === "16:9" ? "image" : "reels" },
+    o.inj ?? {}
+  );
+  const uri = porRede[redes[0]];
+  if (!uri) throw new Error("a capa pela IA não saiu");
+  const sharp = (await import("sharp")).default;
+  const base = Buffer.from(uri.slice(uri.indexOf(",") + 1), "base64");
+  const logo = marca.logoDoModelo ?? (await logoDoProjeto(o.projectId));
+  return comLogoDaMarca(await sharp(base).jpeg({ quality: 92 }).toBuffer(), logo);
+}
+
+/** O logo do projeto pronto para a arte (o mesmo tratamento das artes de hoje), ou null. */
+async function logoDoProjeto(projectId: string): Promise<{ src: string } | null> {
+  try {
+    const { prisma } = await import("@/lib/db/prisma");
+    const p = await prisma.project.findUnique({ where: { id: projectId }, select: { logoUrl: true } });
+    if (!p?.logoUrl) return null;
+    const { lerMidia } = await import("@/lib/media/storage");
+    const { logoParaArte } = await import("@/lib/modelos-de-arte/compor");
+    return await logoParaArte(await lerMidia(p.logoUrl).catch(() => null));
+  } catch {
+    return null;
+  }
+}
+
+/** O logo da marca no canto de cima à esquerda (7% do lado menor), quando o projeto tem logo. */
+export async function comLogoDaMarca(jpeg: Buffer, logo: { src: string } | null | undefined): Promise<Buffer> {
+  if (!logo?.src) return jpeg;
+  try {
+    const sharp = (await import("sharp")).default;
+    const m = await sharp(jpeg).metadata();
+    const W = m.width ?? 1080;
+    const H = m.height ?? 1920;
+    const alto = Math.round(Math.min(W, H) * 0.07);
+    const png = await sharp(Buffer.from(logo.src.slice(logo.src.indexOf(",") + 1), "base64")).resize({ height: alto }).png().toBuffer();
+    const margem = Math.round(Math.min(W, H) * 0.05);
+    return await sharp(jpeg).composite([{ input: png, left: margem, top: margem }]).jpeg({ quality: 92 }).toBuffer();
+  } catch {
+    return jpeg;
+  }
 }
 
 /**

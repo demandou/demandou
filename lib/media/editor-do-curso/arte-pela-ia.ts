@@ -199,11 +199,14 @@ export function frasePedeEquipamento(frase: string): boolean {
 
 export type CoresDaPeca = { fundo: string; titulo: string; destaque: string };
 
+/** O que a arte é: o post, a capa e a lâmina do carrossel, e as capas do vídeo (11/10): a thumb 16:9 do completo e a capa 9:16 do corte. */
+export type TipoDaArte = "post" | "capa" | "lamina" | "thumb" | "capa-vertical";
+
 export type EntradaDaArte = {
   estilo: PromptDeEstilo;
   /** O texto exato da peça (a frase do dia, a lâmina). */
   texto: string;
-  tipo: "post" | "capa" | "lamina";
+  tipo: TipoDaArte;
   cores: CoresDaPeca;
   composicao: string;
   /** O texto do post (a legenda), para o elemento visual sair do assunto certo. */
@@ -262,7 +265,11 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
       ? "the COVER slide of an Instagram carousel (it must stop the scroll)"
       : e.tipo === "lamina"
         ? "one INNER slide of an Instagram carousel"
-        : "a single Instagram feed post";
+        : e.tipo === "thumb"
+          ? "the THUMBNAIL of a YouTube video (16:9, it must win the click at small size: few words, huge type, strong contrast)"
+          : e.tipo === "capa-vertical"
+            ? "the COVER of a vertical short video (9:16, Reels, Shorts, TikTok: the key words big in the middle band, nothing important at the very top or bottom)"
+            : "a single Instagram feed post";
   const linhas = [
     `Create a finished, publication ready social media image: ${papel}, in Brazilian Portuguese, in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering, nothing amateur.`,
     "",
