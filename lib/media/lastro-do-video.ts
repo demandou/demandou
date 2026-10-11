@@ -1,5 +1,6 @@
 import { numerosDoTexto } from "@/lib/media/numeros-falados";
 import { LINHA_DO_ELO } from "@/lib/media/elo-da-campanha";
+import { dadoDoNumero, dadosComFonte, rodapeDasFontes, type DadoDePesquisa, type FonteDoNumero, type LastroDaArte } from "@/lib/media/dados-da-arte";
 
 /**
  * O LASTRO DOS NÚMEROS E DAS FONTES NAS PEÇAS DO VÍDEO (08/10/2026).
@@ -204,57 +205,86 @@ export function infograficoComLastro<
 }
 
 /**
- * O LASTRO DA ARTE (11/10): só a fala e o material do cliente. O briefing do
- * Roberto fica de fora: o teste de ponta a ponta de 11/10 desenhou "40% redução
- * amarguras nos relacionamentos", "89%", "52%", "44%" e "32%" num infográfico
- * de um vídeo que não diz número nenhum (eram da pesquisa, sem a fonte na
- * arte). Regra do Bruno: todo número desenhado na arte sai da fala ou do
- * material do cliente. Puro.
+ * O LASTRO DA ARTE (11/10, revisto na mesma noite pelo Bruno): "Números das
+ * artes podem usar pesquisa, desde que não seja inventado, e tenha fonte
+ * rastreável. O mais importante é ter relação com o tema do vídeo." O lastro
+ * é a fala e o material do cliente (texto) e os dados da pesquisa do Roberto
+ * que têm fonte rastreável E que o JEV disse que complementam o tema
+ * (lib/media/dados-da-arte.ts e lib/squad/coerencia-da-arte.ts). O teste de
+ * ponta a ponta de 11/10 desenhou "40% redução amarguras nos relacionamentos"
+ * num vídeo sobre produtividade bíblica: com fonte, mas fora do tema, não
+ * entra; sem fonte, não entra; inventado, nunca. Puro.
  */
-export function lastroDaArte(p: { transcricao?: string | null; material?: Array<string | null | undefined> }): string {
-  return lastroDoVideo({ transcricao: p.transcricao, radar: null, material: p.material });
+export function lastroDaArte(p: { transcricao?: string | null; material?: Array<string | null | undefined>; dados?: DadoDePesquisa[] | null }): LastroDaArte {
+  return { texto: lastroDoVideo({ transcricao: p.transcricao, radar: null, material: p.material }), dados: dadosComFonte(p.dados ?? []) };
 }
 
-/** O valor tem número (fora ano, data, hora e referência bíblica) que o lastro não tem? */
-function numeroForaDoLastro(valor: string | null | undefined, doLastro: Set<string>): boolean {
-  return numerosQueAfirmam(valor ?? "").some((n) => !doLastro.has(n));
+/** O lastro de uma arte já gravada: a fala e as fontes que o post guardou em `fontesDosNumeros`. Puro. */
+export function lastroComAsFontesDoPost(p: { transcricao?: string | null; material?: Array<string | null | undefined>; fontes?: FonteDoNumero[] | null }): LastroDaArte {
+  const dados = (p.fontes ?? []).map((f) => ({ valor: f.numero, oQueMede: "", fonte: f.fonte, url: f.url ?? null }));
+  return lastroDaArte({ transcricao: p.transcricao, material: p.material, dados });
 }
 
-/** O texto sem as frases que têm número fora do lastro (a frase sai inteira, nunca um pedaço). */
-function semFrasesSemLastro(texto: string, doLastro: Set<string>): string {
-  return (texto ?? "")
-    .split(/(?<=[.!?…])\s+/)
-    .filter((f) => !numeroForaDoLastro(f, doLastro))
-    .join(" ")
-    .trim();
+/** As fontes gravadas num metadata de post (`fontesDosNumeros`), válidas. Puro. */
+export function fontesDoPost(meta: unknown): FonteDoNumero[] {
+  const l = (meta && typeof meta === "object" ? (meta as { fontesDosNumeros?: unknown }).fontesDosNumeros : null) as unknown;
+  if (!Array.isArray(l)) return [];
+  return l
+    .filter((f): f is FonteDoNumero => Boolean(f && typeof f === "object" && typeof (f as FonteDoNumero).numero === "string" && typeof (f as FonteDoNumero).fonte === "string"))
+    .map((f) => ({ numero: f.numero, fonte: f.fonte, ...(f.url ? { url: f.url } : {}) }));
 }
+
+type ConteudoComNumeros = {
+  title: string;
+  subtitle?: string;
+  sections?: Array<{ heading: string; body: string; stat?: string }>;
+  highlight?: { value: string; label: string };
+  keyNumbers?: Array<{ value: string; label: string }>;
+  fonte?: string;
+};
 
 /**
- * O INFOGRÁFICO SÓ COM NÚMERO DA FALA (11/10). Mais estrito que
- * `infograficoComLastro`, porque vale para o que é DESENHADO: todo número de
- * todo campo (título, subtítulo, destaque, cartões, rodapé) tem de estar no
- * lastro da arte (a fala e o material do cliente, `lastroDaArte`). O destaque,
- * o número do cartão e o rodapé sem lastro saem; o cartão cujo título tem
- * número sem lastro sai inteiro; no texto do cartão e no subtítulo sai a frase
- * com o número. Sem número que fique, o infográfico organiza as ideias (etapas,
- * comparação, lista), nunca inventa. `refazer` quando nem o título se salva:
- * quem chama extrai de novo ou para a peça. Puro.
+ * O INFOGRÁFICO SÓ COM NÚMERO QUE TEM LASTRO DE ARTE (11/10). Vale para o que é
+ * DESENHADO: todo número de todo campo (título, subtítulo, destaque, cartões,
+ * rodapé) está na fala ou no material, ou num dado de pesquisa com fonte e no
+ * tema. O destaque, o número do cartão e o rodapé sem lastro saem; o cartão
+ * cujo título tem número sem lastro sai inteiro; no texto do cartão e no
+ * subtítulo sai a frase com o número. O número de pesquisa que fica volta em
+ * `fontes` e o conteúdo ganha `fonte` ("Fonte: Robert Half, 2026"), o rodapé
+ * discreto que a arte escreve. `refazer` quando nem o título se salva. Puro.
  */
-export function infograficoSoComAFala<C extends { title: string; subtitle?: string; sections?: Array<{ heading: string; body: string; stat?: string }>; highlight?: { value: string; label: string }; keyNumbers?: Array<{ value: string; label: string }> }>(
-  c: C,
-  lastro: string
-): { conteudo: C; tirados: string[]; refazer: boolean } {
-  const doLastro = new Set(numerosDoTexto(lastro));
-  const fora = (v: string | null | undefined) => numeroForaDoLastro(v, doLastro);
+export function infograficoSoComAFala<C extends ConteudoComNumeros>(c: C, lastro: LastroDaArte | string): { conteudo: C & { fonte?: string }; tirados: string[]; refazer: boolean; fontes: FonteDoNumero[] } {
+  const l: LastroDaArte = typeof lastro === "string" ? { texto: lastro, dados: [] } : lastro;
+  const daFala = new Set(numerosDoTexto(l.texto));
+  const fontes = new Map<string, FonteDoNumero>();
+  // O valor tem número sem lastro? O de pesquisa com fonte vale, e a fonte fica anotada.
+  const fora = (v: string | null | undefined) => numerosQueAfirmam(v ?? "").some((n) => !daFala.has(n) && !dadoDoNumero(n, l.dados));
+  const anotar = (v: string | null | undefined) => {
+    for (const n of numerosQueAfirmam(v ?? "")) {
+      if (daFala.has(n)) continue;
+      const d = dadoDoNumero(n, l.dados);
+      if (d && !fontes.has(n)) fontes.set(n, { numero: n, fonte: d.fonte.trim(), ...(d.url ? { url: d.url } : {}) });
+    }
+  };
   const tirados: string[] = [];
-  const conteudo = { ...c };
-  if (c.highlight && (fora(c.highlight.value) || fora(c.highlight.label))) {
-    tirados.push(`destaque ${c.highlight.value} ${c.highlight.label ?? ""}`.trim());
-    delete conteudo.highlight;
+  const conteudo: C & { fonte?: string } = { ...c };
+  delete conteudo.fonte;
+  if (c.highlight) {
+    if (fora(c.highlight.value) || fora(c.highlight.label)) {
+      tirados.push(`destaque ${c.highlight.value} ${c.highlight.label ?? ""}`.trim());
+      delete conteudo.highlight;
+    } else {
+      anotar(c.highlight.value);
+      anotar(c.highlight.label);
+    }
   }
   if (c.keyNumbers) {
     conteudo.keyNumbers = c.keyNumbers.filter((n) => {
-      if (!fora(n.value) && !fora(n.label)) return true;
+      if (!fora(n.value) && !fora(n.label)) {
+        anotar(n.value);
+        anotar(n.label);
+        return true;
+      }
       tirados.push(`rodapé ${n.value} ${n.label ?? ""}`.trim());
       return false;
     });
@@ -268,33 +298,49 @@ export function infograficoSoComAFala<C extends { title: string; subtitle?: stri
       })
       .map((s) => {
         const novo = { ...s };
+        anotar(s.heading);
         if (s.stat && fora(s.stat)) {
           tirados.push(`número do cartão ${s.stat}`);
           delete novo.stat;
-        }
+        } else anotar(s.stat);
         if (fora(s.body)) {
           tirados.push(`texto do cartão "${s.body}"`);
-          novo.body = semFrasesSemLastro(s.body, doLastro);
+          novo.body = semFrasesForaDoLastro(s.body, fora);
         }
+        anotar(novo.body);
         return novo;
       });
   }
   if (c.subtitle && fora(c.subtitle)) {
     tirados.push(`subtítulo "${c.subtitle}"`);
-    conteudo.subtitle = semFrasesSemLastro(c.subtitle, doLastro);
+    conteudo.subtitle = semFrasesForaDoLastro(c.subtitle, fora);
   }
+  anotar(conteudo.subtitle);
   let refazer = false;
   if (fora(c.title)) {
     tirados.push(`título "${c.title}"`);
-    const titulo = semFrasesSemLastro(c.title, doLastro);
+    const titulo = semFrasesForaDoLastro(c.title, fora);
     if (titulo) conteudo.title = titulo;
     else refazer = true;
   }
-  return { conteudo, tirados, refazer };
+  anotar(conteudo.title);
+  const lista = [...fontes.values()];
+  const rodape = rodapeDasFontes(lista);
+  if (rodape) conteudo.fonte = rodape;
+  return { conteudo, tirados, refazer, fontes: lista };
+}
+
+/** O texto sem as frases que têm número fora do lastro (a frase sai inteira, nunca um pedaço). */
+function semFrasesForaDoLastro(texto: string, fora: (v: string) => boolean): string {
+  return (texto ?? "")
+    .split(/(?<=[.!?…])\s+/)
+    .filter((f) => !fora(f))
+    .join(" ")
+    .trim();
 }
 
 /** O infográfico tem algum número desenhado fora do lastro da arte? Puro. */
-export function infograficoTemNumeroDeFora(c: Parameters<typeof infograficoSoComAFala>[0], lastro: string): boolean {
+export function infograficoTemNumeroDeFora(c: ConteudoComNumeros, lastro: LastroDaArte | string): boolean {
   return infograficoSoComAFala(c, lastro).tirados.length > 0;
 }
 

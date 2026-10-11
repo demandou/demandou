@@ -133,6 +133,7 @@ export function textosDoInfografico(c: ConteudoDoInfografico): string[] {
     add(n.value);
     add(n.label);
   }
+  add(c.fonte);
   return t;
 }
 
@@ -288,9 +289,12 @@ export function promptDoInfografico(e: EntradaDoPrompt): string {
     linhas.push(`MODULE ${i + 1}: ${partes.join("; ")}`);
   });
   if (numeros.length) linhas.push(`KEY NUMBERS: ${numeros.map((n) => `${q(n.value)} with the label ${q(n.label ?? "")}`).join("; ")}`);
+  // A FONTE RASTREÁVEL do número de pesquisa (11/10): um rodapé discreto, escrito como pedido.
+  const fonte = c.fonte?.trim();
+  if (fonte) linhas.push(`SOURCE LINE (small, discreet, at the very bottom, inside the safe margin, in the body text color at low emphasis): ${q(fonte)}`);
   linhas.push(
     "",
-    `DO NOT draw any other word, number or label: no step numbers ("01"), source line, date, logo, watermark, signature, speech bubble, English word or fake interface. No people, faces, hands or silhouettes: icons are objects and symbols. No long dash.`
+    `DO NOT draw any other word, number or label: no step numbers ("01"), ${fonte ? "other source line" : "source line"}, date, logo, watermark, signature, speech bubble, English word or fake interface. No people, faces, hands or silhouettes: icons are objects and symbols. No long dash.`
   );
   return linhas.join("\n");
 }
