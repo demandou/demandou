@@ -782,36 +782,44 @@ async function esperarOMaterial(id: string, indice: number, lido: MontagemDoCort
  * A EDIÇÃO SOB MEDIDA (10/10) desiste para a reserva dela: o modelo do curso que o projeto
  * usava antes (fixo neste corte), e só sem ele para o editor de sempre.
  */
+/** Quantas vezes o corte tenta o ESTILO ESCOLHIDO antes de parar (11/10). */
+const TENTATIVAS_NO_ESTILO = 2;
+
+/**
+ * O ESTILO ESCOLHIDO FALHOU (11/10, regra do Bruno: "escolhi a Maquete e o
+ * corte apareceu sozinho no quadro com outro estilo"). Antes, a edição sob
+ * medida caía no modelo de reserva e o modelo do curso no editor de antes, os
+ * dois em OUTRO estilo e sem aviso. Agora: tenta de novo no mesmo estilo (até
+ * TENTATIVAS_NO_ESTILO vezes) e, se ainda falhar, o corte para como falha
+ * técnica, com "Tentar de novo", nunca trocando o estilo por conta própria.
+ */
 async function desistirDoModeloDoCurso(id: string, indice: number, lido: MontagemDoCorte, motivo: string): Promise<void> {
-  if (ehSobMedida(lido.curso?.modelo)) {
-    const projeto = await prisma.videoJob.findUnique({ where: { id }, select: { projectId: true } }).catch(() => null);
-    const escolha = projeto ? await escolhaDoEditorDoProjeto(projeto.projectId).catch(() => null) : null;
-    const r = reservaDoSobMedida({ reserva: escolha?.reserva, modeloServe: (x) => Boolean(modeloServeNoCorte(x)), cursoLigado: editorDoCursoLigado() });
-    if (r.tipo === "modelo") {
-      console.warn(`[montagem][${id}] corte ${indice}: a edição sob medida desistiu (${motivo}); vai para o ${r.modelo}`);
-      await trocarEstado(id, indice, lido, {
-        ...lido,
-        estado: "na-fila",
-        desde: agora(),
-        tentativas: 0,
-        esperarAte: null,
-        motivo: null,
-        falhaTecnica: false,
-        curso: { modelo: r.modelo, fixo: true, desistiu: null, avancadoDesistiu: motivo.slice(0, 500) },
-      });
-      return;
-    }
+  const feitas = Number((lido.curso as { tentativasNoEstilo?: number } | null | undefined)?.tentativasNoEstilo ?? 0) + 1;
+  const estilo = lido.curso?.modelo ?? "";
+  if (feitas < TENTATIVAS_NO_ESTILO) {
+    console.warn(`[montagem][${id}] corte ${indice}: ${estilo} falhou (${motivo}); tentativa ${feitas + 1} no mesmo estilo`);
+    await trocarEstado(id, indice, lido, {
+      ...lido,
+      estado: "na-fila",
+      desde: agora(),
+      tentativas: 0,
+      esperarAte: depois(60_000),
+      motivo: null,
+      falhaTecnica: false,
+      curso: { ...(lido.curso ?? { modelo: "" }), tentativasNoEstilo: feitas },
+    });
+    return;
   }
-  console.warn(`[montagem][${id}] corte ${indice}: modelo do curso desistiu: ${motivo}`);
+  console.warn(`[montagem][${id}] corte ${indice}: ${estilo} falhou ${feitas} vezes (${motivo}); para sem trocar o estilo`);
   await trocarEstado(id, indice, lido, {
     ...lido,
-    estado: "na-fila",
+    estado: "sem-montagem",
     desde: agora(),
     tentativas: 0,
     esperarAte: null,
-    motivo: null,
-    falhaTecnica: false,
-    curso: { ...(lido.curso ?? { modelo: "" }), desistiu: motivo.slice(0, 500) },
+    falhaTecnica: true,
+    motivo: "A edição no estilo que você escolheu não terminou desta vez. Toque em Tentar de novo: ela recomeça no mesmo estilo.",
+    curso: { ...(lido.curso ?? { modelo: "" }), tentativasNoEstilo: feitas, desistiu: motivo.slice(0, 500) },
   });
 }
 
@@ -1999,7 +2007,10 @@ export async function tentarMontagemDoCorteDeNovo(videoJobId: string, indice: nu
     // Pedir de novo depois da VERSÃO SEGURA (02/10) volta o plano com as
     // inserções e zera a revisão visual; a devolução já feita fica (cortesia).
     const volta = m.planoAntesDaSegura ? { plano: m.planoAntesDaSegura, planoAntesDaSegura: null, revisaoVisual: null } : {};
-    const ok = await trocarEstado(videoJobId, indice, m, { ...m, ...volta, estado: "gerando", desde: agora(), tentativas: 0, esperarAte: null, motivo: null, falhaTecnica: false, candidato: null, trabalhando: false });
+    // O "Tentar de novo" volta ao ESTILO ESCOLHIDO (11/10): limpa a desistência do curso, senão o corte
+    // ia para o editor de antes, outro estilo.
+    const cursoDeNovo = m.curso ? { ...m.curso, desistiu: null, avancadoDesistiu: null, tentativasNoEstilo: 0 } : m.curso;
+    const ok = await trocarEstado(videoJobId, indice, m, { ...m, ...volta, curso: cursoDeNovo, estado: "gerando", desde: agora(), tentativas: 0, esperarAte: null, motivo: null, falhaTecnica: false, candidato: null, trabalhando: false });
     return { ok, caminho: "reenvio" };
   }
   const n = await refazerMontagens(videoJobId, [indice]);

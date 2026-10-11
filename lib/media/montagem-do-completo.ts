@@ -364,6 +364,8 @@ export type CursoNoCompleto = {
   /** O formato do completo no modelo (10/10): o da gravação, "16:9" deitada ou "9:16" em pé. */
   formato?: "16:9" | "9:16";
   desistiu?: string | null;
+  /** Quantas vezes o modelo escolhido já falhou neste completo (11/10): na segunda, para sem trocar o estilo. */
+  tentativasNoEstilo?: number;
   mapa?: string;
   voltas?: number;
   custoUsd?: number;
@@ -2321,20 +2323,41 @@ async function enviarCompletoAoModelo(v: VideoDoCompleto, lido: MontagemDoComple
   }
 }
 
-/** O caminho do curso desiste e o completo volta à fila, para o editor de sempre (a reserva). */
+/**
+ * O MODELO ESCOLHIDO FALHOU NO COMPLETO (11/10, regra do Bruno: nunca trocar o
+ * estilo sozinho): tenta de novo no mesmo modelo uma vez; na segunda falha o
+ * completo para como falha técnica, com "Tentar de novo", em vez de ir ao
+ * editor de antes (outro estilo).
+ */
 async function desistirDoModeloNoCompleto(id: string, lido: MontagemDoCompleto, motivo: string): Promise<void> {
-  console.warn(`[montagem-do-completo][${id}] modelo do curso desistiu: ${motivo}`);
+  const feitas = Number((lido.curso as { tentativasNoEstilo?: number } | null | undefined)?.tentativasNoEstilo ?? 0) + 1;
+  if (feitas < 2) {
+    console.warn(`[montagem-do-completo][${id}] modelo do curso falhou (${motivo}); tentativa ${feitas + 1} no mesmo modelo`);
+    await trocarEstado(id, lido, {
+      ...lido,
+      estado: "na-fila",
+      desde: agora(),
+      tentativas: 0,
+      esperarAte: depois(60_000),
+      motivo: null,
+      falhaTecnica: false,
+      curso: { ...(lido.curso ?? { modelo: "" }), tentativasNoEstilo: feitas },
+    });
+    return;
+  }
+  console.warn(`[montagem-do-completo][${id}] modelo do curso falhou ${feitas} vezes: ${motivo}; para sem trocar o estilo`);
   await trocarEstado(id, lido, {
     ...lido,
-    estado: "na-fila",
+    estado: "sem-montagem",
     desde: agora(),
     tentativas: 0,
     esperarAte: null,
-    motivo: null,
-    falhaTecnica: false,
-    curso: { ...(lido.curso ?? { modelo: "" }), desistiu: motivo.slice(0, 500) },
+    falhaTecnica: true,
+    motivo: "A edição do vídeo completo no estilo que você escolheu não terminou desta vez. Toque em Tentar de novo: ela recomeça no mesmo estilo.",
+    curso: { ...(lido.curso ?? { modelo: "" }), tentativasNoEstilo: feitas, desistiu: motivo.slice(0, 500) },
   });
 }
+
 
 // ─────────────────────────────── 2b. o editor sob medida ───────────────────────────────
 
@@ -3148,6 +3171,8 @@ export async function tentarMontagemDoCompletoDeNovo(videoJobId: string): Promis
     const ok = await trocarEstado(videoJobId, m, {
       ...m,
       ...volta,
+      // O "Tentar de novo" volta ao modelo escolhido (11/10): limpa a desistência do curso.
+      ...(m.curso ? { curso: { ...m.curso, desistiu: null, tentativasNoEstilo: 0 } } : {}),
       candidato: null,
       estado: "gerando",
       desde: agora(),
