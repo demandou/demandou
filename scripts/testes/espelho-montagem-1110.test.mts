@@ -5,7 +5,7 @@ import { espelhoDaMontagemDoTrecho } from "@/lib/media/sincronizar-quadro";
 import { cardEmProducao } from "@/lib/squad/peca-em-producao";
 
 test("trecho em montagem: o card novo nasce como fazendo", () => {
-  const meta = { videoJobId: "v", trechoIndice: 0, ...espelhoDaMontagemDoTrecho({ montagem: { estado: "montando", desde: "2026-10-11T15:44:47Z" } }) };
+  const meta: Record<string, unknown> = { videoJobId: "v", trechoIndice: 0, ...espelhoDaMontagemDoTrecho({ montagem: { estado: "montando", desde: "2026-10-11T15:44:47Z" } }) };
   assert.deepEqual(meta.montagem, { estado: "montando", desde: "2026-10-11T15:44:47Z", motivo: null, falhaTecnica: false });
   assert.equal(cardEmProducao({ content: "Marta fazia mais.", metadata: meta }), true);
 });
