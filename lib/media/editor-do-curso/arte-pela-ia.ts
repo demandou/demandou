@@ -76,7 +76,7 @@ export function composicaoDaPeca(estilo: Pick<PromptDeEstilo, "composicoes">, o:
 
 /** Travessão nunca vai para texto de peça (regra do Bruno): vira vírgula. */
 function semTravessao(t: string): string {
-  return t.replace(/\s*[—–]\s*/g, ", ").replace(/\s+/g, " ").trim();
+  return t.replace(/\s*[\u2014\u2013]\s*/g, ", ").replace(/\s+/g, " ").trim();
 }
 
 /** Aspas duplas dentro da frase viram simples para não quebrar a citação. */

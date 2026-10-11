@@ -7,8 +7,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
-import catalogo from "../../lib/media/editor-do-curso/catalogo.json" with { type: "json" };
-import prompts from "../../lib/media/editor-do-curso/prompts-de-estilo.json" with { type: "json" };
+import catalogo from "@/lib/media/editor-do-curso/catalogo.json";
+import prompts from "@/lib/media/editor-do-curso/prompts-de-estilo.json";
 import {
   arteDoModeloPelaIa,
   composicaoDaPeca,
@@ -17,7 +17,7 @@ import {
   promptDaArteNoModelo,
   promptDeEstiloDoModelo,
   type PromptDeEstilo,
-} from "../../lib/media/editor-do-curso/arte-pela-ia.ts";
+} from "@/lib/media/editor-do-curso/arte-pela-ia";
 
 const CORES = { fundo: "#1e1f22", titulo: "#dbdee1", destaque: "#f97316" };
 const TORRE = promptDeEstiloDoModelo("modelo-torre")!;
@@ -30,7 +30,7 @@ test("todo modelo do catálogo tem o prompt de estilo, com pelo menos 3 composi�
     assert.ok(p.composicoes.length >= 3, `${m.id} com ${p.composicoes.length} composições`);
     const tudo = JSON.stringify(p);
     assert.doesNotMatch(tudo, /#[0-9a-f]{6}\b/i, `${m.id} com hex`);
-    assert.doesNotMatch(tudo, /[—–]/, `${m.id} com travessão`);
+    assert.doesNotMatch(tudo, /[\u2014\u2013]/, `${m.id} com travessão`);
   }
 });
 
@@ -55,12 +55,12 @@ test("variedade: dias seguidos e lâminas seguidas não repetem a composição",
 });
 
 test("o prompt da peça leva o texto exato, as cores da marca e nunca as do modelo", () => {
-  const frase = "Seu conteúdo não precisa de mais ideias — precisa de método";
+  const frase = "Seu conteúdo não precisa de mais ideias \u2014 precisa de método";
   const p = promptDaArteNoModelo({ estilo: TORRE, texto: frase, tipo: "post", cores: CORES, composicao: composicaoDaPeca(TORRE, { dia: 2 }), contexto: "Legenda do post sobre método.", nicho: "marketing" });
   assert.match(p, /"Seu conteúdo não precisa de mais ideias, precisa de método"/);
   for (const c of Object.values(CORES)) assert.ok(p.includes(c), `falta ${c}`);
   assert.doesNotMatch(p, /#D9BE8A|#070C17|#F5F0E6/i);
-  assert.doesNotMatch(p, /[—–]/);
+  assert.doesNotMatch(p, /[\u2014\u2013]/);
   assert.match(p, /No camera, microphone/);
   assert.match(p, /No empty boxes/);
   assert.match(p, new RegExp(TORRE.nomeDoEstilo));
@@ -91,7 +91,7 @@ async function imagemFalsa(proporcao: string): Promise<string> {
 const MARCA = { familia: "editorial", cores: { acento: "#f97316", escuro: "#1e1f22", claro: "#dbdee1", papeis: { fundo: "#1e1f22", titulo: "#dbdee1", destaque: "#f97316" } } } as never;
 
 test("o carrossel sai lâmina por lâmina, cada uma com a sua composição, juntas por |", async () => {
-  const { desenharPelaIa } = await import("../../lib/media/editor-do-curso/arte-pela-ia-servidor.ts");
+  const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
   const pedidos: string[] = [];
   const porRede = await desenharPelaIa(
     { projectId: "p", runId: "r", modelo: "modelo-torre", mediaType: "carousel", redes: ["instagram", "linkedin"], slides: ["Um", "Dois", "Três"], textoDoPost: "post", dia: 1, marca: MARCA },
@@ -112,7 +112,7 @@ test("o carrossel sai lâmina por lâmina, cada uma com a sua composição, junt
 });
 
 test("arte reprovada nas três tentativas lança (quem chama vai ao caminho de hoje)", async () => {
-  const { desenharPelaIa } = await import("../../lib/media/editor-do-curso/arte-pela-ia-servidor.ts");
+  const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
   let chamadas = 0;
   await assert.rejects(
     desenharPelaIa(
@@ -131,6 +131,6 @@ test("arte reprovada nas três tentativas lança (quem chama vai ao caminho de h
 });
 
 test("modelo sem prompt de estilo lança antes de gastar", async () => {
-  const { desenharPelaIa } = await import("../../lib/media/editor-do-curso/arte-pela-ia-servidor.ts");
+  const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
   await assert.rejects(desenharPelaIa({ projectId: "p", modelo: "modelo-x", mediaType: "image", redes: ["instagram"], frase: "a", marca: MARCA }), /não tem o prompt de estilo/);
 });

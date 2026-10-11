@@ -130,7 +130,7 @@ async function descrever(id, k, tentativaDoTexto = 1, aviso = "") {
     const texto = (j.candidates?.[0]?.content?.parts ?? []).filter((p) => !p.thought).map((p) => p.text ?? "").join("");
     const u = j.usageMetadata ?? {};
     gasto += ((u.promptTokenCount ?? 0) * PRECO.entrada + ((u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0)) * PRECO.saida) / 1e6;
-    const limpo = (s) => String(s ?? "").replace(/\s*[—–]\s*/g, ", ").replace(/\s+/g, " ").trim();
+    const limpo = (s) => String(s ?? "").replace(/\s*[\u2014\u2013]\s*/g, ", ").replace(/\s+/g, " ").trim();
     const d = JSON.parse(texto.slice(texto.indexOf("{"), texto.lastIndexOf("}") + 1));
     const comp = (Array.isArray(d.layouts) ? d.layouts : []).map(limpo).filter(Boolean).slice(0, 5);
     if (comp.length < 3) throw new Error("menos de 3 composições");
