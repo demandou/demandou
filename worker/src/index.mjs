@@ -1573,11 +1573,15 @@ async function andarFilaParalela() {
       const cabeca = filaDaMontagem[0];
       if (cabeca) {
         const k = unidadesDaMontagem(cabeca);
-        const reserva = emAndamento > 0 ? CAPACIDADE.unidadesDosTrabalhos : 0;
+        // Os trabalhos DE FORA da fila (corte cru, transcrição, capa...). A montagem que roda
+        // também soma em emAndamento (executarNoModelo, executarAvancado, executarMontagem); contada
+        // aqui, ela reservava as unidades dos trabalhos e o corte esperava o completo inteiro (11/10).
+        const foraDaFila = Math.max(0, emAndamento - montagensRodando);
+        const reserva = foraDaFila > 0 ? CAPACIDADE.unidadesDosTrabalhos : 0;
         const temFatia = CAPACIDADE.rendersJuntos - unidadesOcupadas - reserva >= k;
-        const sozinho = unidadesOcupadas === 0 && emAndamento === 0;
+        const sozinho = unidadesOcupadas === 0 && foraDaFila === 0;
         let pode = temFatia && (sozinho || memoriaLivreMb() >= 3000 * k);
-        if (!pode && unidadesOcupadas === 0 && emAndamento > 0) {
+        if (!pode && unidadesOcupadas === 0 && foraDaFila > 0) {
           // A espera de sempre, sem nada da fila rodando: 15 min pelos trabalhos.
           esperaDesde ??= Date.now();
           if (Date.now() - esperaDesde >= 15 * 60_000) {
