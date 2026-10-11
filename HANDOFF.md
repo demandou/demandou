@@ -19945,3 +19945,13 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 - 11/10 ~11h10 PLANO APROVADO PELO BRUNO: pronto = teste de ponta a ponta na produção (projeto de teste O essencial bem feito), US$ 3 a 6 por teste; vídeo longo nos estilos sob medida a ~US$ 1,50 a 2 por minuto. Frentes: a64c5db = dono do editor avançado (cena assíncrona + completo sob medida por blocos de ~60 s); a94b187 = artes e capas das 3 opções sob medida + assunto vindo da fala em todos os modelos; a7ad27e = script de teste de ponta a ponta (scripts/testes-e2e/ponta-a-ponta.mts). Escopo de terça a confirmar: 3 sob medida + 8 modelos provados. EDITOR_AVANCADO segue 1 (Bruno: tirar não é solução).
 
 ## 11/10 ~11h30: TROCA DE CONVERSA. Estado consolidado em docs/editor-do-curso-1110.md (regras, o que está no ar, ramos em andamento, o que falta para pronto, lições). Os três ramos de agentes (a64c5db editor avançado, a94b187 artes sob medida, a7ad27e teste de ponta a ponta) param com ESTADO-*.md na raiz de cada worktree.
+
+## 11/10 ~12h40: três frentes juntadas e publicadas (13413e9)
+
+- JUNTADO no backup-0210 e PUBLICADO (worker 8a7938a9 SUCCESS; app donaire-squad-1aos-6nlfl7bbk Ready), da cópia limpa producao-13413e9:
+  - Completo sob medida (a64c5db): 16:9 no editor avançado, worker/src/avancado/completo-avancado.mjs (blocos de ~60 s na maior pausa, escrita em paralelo depois do primeiro, -14 LUFS e trilha uma vez, recorte por bloco), ligação em montagem-do-completo.ts (enviarCompletoAoAvancado, chave completo-editado-sob-medida.mp4, curso.modelo = a opção; falha para com Tentar de novo, nunca a reserva).
+  - Artes e capas sob medida (a94b187): capas pela IA na opção (lib/media/capa-pela-ia.ts), nenhuma queda para outro estilo em artes e capas (2 tentativas no mesmo estilo, depois falha técnica com Tentar de novo e sem cobrança; capas.falha e midia.capaFalhou), cena sem texto com frase em código conta como o mesmo estilo (sem marca de reserva; templateFalhou no lugar). Prova US$ 1,31 boa (scratchpad prova-capas).
+  - Teste de ponta a ponta (a7ad27e): scripts/testes-e2e/ponta-a-ponta.mts (--estilo, --simular, --acompanhar, --conferir, --limpar); trava no projeto cmtmym5bo; trecho de 120 s; relatório e folhas em scratchpad/e2e.
+- tsc limpo e 121 de 121 nos testes das três áreas. Sem migração.
+- MÁQUINA LOCAL: travou com três agentes em paralelo (render órfão da prova local do completo e o rg do VS Code nos 60+ worktrees). Regra: um trabalho pesado por vez; prova de render vai para o worker pelo teste de ponta a ponta.
+- EM ANDAMENTO: teste de ponta a ponta pago na Maquete 3D; depois Recorte, Gráficos e os 8 modelos provados, em série.
