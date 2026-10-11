@@ -98,7 +98,7 @@ export function emendarBlocos(arquivos, pasta, saida) {
     throw new Error(`a emenda saiu com som e imagem de durações diferentes (${durA.toFixed(3)} s e ${durV.toFixed(3)} s)`);
   }
   // -14 LUFS no vídeo inteiro, em duas passadas (o mesmo filtro do render do curso)
-  // pelo WAV copiado do .mov (audio-do-mov.mjs): o ffmpeg 5.1 do contêiner não refaz o filtro quando o layout muda
+  // pelo ffmpeg 7.1 do Remotion (audio-do-mov.mjs): o 5.1 do contêiner não monta o filtro com o PCM do Remotion
   const m = nivelarAudioDoMov(ffmpeg, junto, saida);
   return { duracaoVideo: +durV.toFixed(3), duracaoAudio: +durA.toFixed(3), volume: `${m.input_i} LUFS -> -14 LUFS` };
 }

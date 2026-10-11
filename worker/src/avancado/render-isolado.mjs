@@ -138,7 +138,7 @@ try {
       console.log(JSON.stringify({ ok: true, bundle_s: +tBundle.toFixed(1), render_s: +tRender.toFixed(1), render_por_s: +(tRender / duracao).toFixed(2), duracao_s: duracao, arquivo: pedido.saida }));
     } else {
     // -14 LUFS em duas passadas (o mesmo filtro do render.mjs do curso)
-    // pelo WAV copiado do .mov (audio-do-mov.mjs): o ffmpeg 5.1 do contêiner não refaz o filtro quando o layout muda
+    // pelo ffmpeg 7.1 do Remotion (audio-do-mov.mjs): o 5.1 do contêiner não monta o filtro com o PCM do Remotion
     const m = nivelarAudioDoMov(ffmpeg, bruto, pedido.saida);
     rmSync(bruto, { force: true });
     const duracao = composition.durationInFrames / composition.fps;
