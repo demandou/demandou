@@ -109,6 +109,15 @@ export function escolherQuadroNitido(candidatos, opcoes = {}) {
     }
     if (!escolhido || notaComNitidez(c.medida) > notaComNitidez(escolhido.medida)) escolhido = c;
   }
+  // GRAVAÇÃO PEQUENA (11/10, WhatsApp do Bruno): quando a ÚNICA recusa é a ampliação, todos os quadros
+  // da gravação ampliam igual; vale o melhor quadro nítido até 3x, em vez de capa sem a pessoa.
+  if (!escolhido && opcoes.alvo) {
+    const regra = opcoes.regra ?? REGRA_DO_QUADRO;
+    for (const c of candidatos ?? []) {
+      const a = avaliarQuadro(c, { ...opcoes, regra: { ...regra, ampliacaoMaxima: Math.max(regra.ampliacaoMaxima, 3) } });
+      if (a.ok && (!escolhido || notaComNitidez(c.medida) > notaComNitidez(escolhido.medida))) escolhido = c;
+    }
+  }
   return { escolhido, descartados };
 }
 

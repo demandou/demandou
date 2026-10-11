@@ -5599,6 +5599,10 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
     if (espera?.estado === "gerando") return "fazendo";
     if (espera?.estado === "falhou") return "falhou";
     if (espera?.estado === "aguardando") return "aguardando";
+    // O CORTE AINDA NA EDIÇÃO (11/10): o card espelha a montagem; enquanto ela anda, o vídeo no post é o
+    // corte cru e "esperando você aprovar" convidava a publicar sem edição.
+    const montagemDoCard = (principal?.metadata as { montagem?: { estado?: string } } | null)?.montagem?.estado;
+    if (montagemDoCard && ["gerando", "na-fila", "preparando", "dirigindo", "montando"].includes(montagemDoCard)) return "fazendo";
     // Ainda sendo feita: não há o que aprovar, e "esperando você" pedia
     // decisão sobre o que não existe (29/09).
     if (emProducao) return "fazendo";

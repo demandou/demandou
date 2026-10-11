@@ -8,6 +8,14 @@ import { Readable } from "node:stream";
 import { tmpdir, availableParallelism } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Agent, setGlobalDispatcher } from "undici";
+
+// AS CHAMADAS LONGAS AO APP (11/10): o fetch do Node desiste se a resposta não
+// COMEÇA em 5 min (headersTimeout). A escrita da cena do editor avançado leva
+// ~6 min e caiu com "fetch failed" aos 5:01 (cmv3rreuv, a Maquete 3D virou o
+// modelo de reserva); o plano do curso corre o mesmo risco. Cada chamada já tem
+// o próprio prazo (AbortSignal); aqui só tiramos o teto escondido de 5 min.
+setGlobalDispatcher(new Agent({ headersTimeout: 20 * 60_000, bodyTimeout: 20 * 60_000, connect: { timeout: 30_000 } }));
 import { del, get, put } from "@vercel/blob";
 import {
   ffprobe,
@@ -148,7 +156,31 @@ function prazoDeEnvio(bytes) {
   return Math.round(Math.min(45 * 60_000, 10 * 60_000 + (mb / 3) * 60_000));
 }
 
-async function subir(caminho, chave, contentType, { privado = false } = {}) {
+/**
+ * O ENVIO COM NOVA TENTATIVA DE VERDADE (11/10): o `put` do Blob tenta de novo
+ * sozinho quando a rede oscila, mas reaproveita o MESMO stream do arquivo, já
+ * lido, e quebra com "Response body object should not be disturbed or locked".
+ * Foi assim que o completo cru de cmv3rreuv falhou aos 69 s. Aqui cada
+ * tentativa abre o arquivo de novo.
+ */
+async function subir(caminho, chave, contentType, opcoes = {}) {
+  let ultimo = null;
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      return await subirUmaVez(caminho, chave, contentType, opcoes);
+    } catch (e) {
+      ultimo = e;
+      const msg = e instanceof Error ? e.message : String(e);
+      // Prazo estourado não adianta repetir.
+      if (/passou de .* min/.test(msg) || tentativa === 3) break;
+      console.warn(`[subir ${chave}] tentativa ${tentativa} falhou (${msg.slice(0, 160)}); de novo`);
+      await new Promise((r) => setTimeout(r, 3000 * tentativa));
+    }
+  }
+  throw ultimo;
+}
+
+async function subirUmaVez(caminho, chave, contentType, { privado = false } = {}) {
   const { size } = await stat(caminho);
 
   const controle = new AbortController();
