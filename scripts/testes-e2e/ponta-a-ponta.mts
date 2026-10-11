@@ -434,6 +434,9 @@ function cruEsperandoVoce(v: Video, p: Pecas): string[] {
     if (!t || FINAIS.includes(t.montagem?.estado ?? "")) continue;
     if (["approved", "rejected"].includes(card.status)) continue;
     if (app.producao.cardEmProducao(card as never)) continue;
+    // A leitura do vídeo e a dos cards não são a mesma foto: o card que já espelha a montagem
+    // PRONTA foi lido depois de ela acabar (11/10, Recorte: card pronto às 15:26:24,968, vídeo lido antes).
+    if (FINAIS.includes((m.montagem as { estado?: string } | undefined)?.estado ?? "")) continue;
     const post = card.postId ? p.posts.find((x) => x.id === card.postId) : null;
     const cru = t.midia?.verticalOriginal?.url ?? t.midia?.vertical?.url ?? null;
     const urlDoPost = post?.imageUrl ?? card.mediaUrl ?? null;
