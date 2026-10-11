@@ -26,6 +26,25 @@ export type ContextoDaCena = {
   letra?: string;
   temRecorte: boolean;
   geometria?: Record<string, unknown> | null;
+  /** O quadro do corte (11/10): 1080 × 1920 em pé (os cortes) ou 1920 × 1080 deitado (o completo de gravação deitada). */
+  quadro?: { largura: number; altura: number; formato?: "9:16" | "16:9" } | null;
+  /** O completo em blocos (11/10): qual bloco é este, de quantos, e onde ele cai no vídeo inteiro. */
+  bloco?: { indice: number; total: number; inicioNoVideo: number; duracaoDoVideo: number } | null;
+  /** O completo em blocos: como o bloco anterior terminou, para este seguir sem salto. */
+  continuidade?: ContinuidadeDoBloco | null;
+};
+export type ContinuidadeDoBloco = {
+  /**
+   * O ENQUADRAMENTO BASE do vídeo (o último quadro do apresentador no primeiro bloco, sem o "em"):
+   * todo bloco começa e termina nele, e a emenda entre blocos não salta (o worker fixa os dois).
+   */
+  apresentador?: Record<string, unknown> | null;
+  /** A faixa da legenda do vídeo inteiro (a mesma em todos os blocos). */
+  legenda?: Record<string, unknown> | null;
+  /** As cenas do primeiro bloco: a linguagem visual do vídeo (o que cada uma explicou). */
+  cenas?: Array<{ arquivo: string; oQue: string }>;
+  /** O comum.tsx do primeiro bloco, quando havia: o mesmo objeto continua igual se voltar. */
+  comum?: string | null;
 };
 export type ProblemaDoPortao = { arquivo: string; linha?: number; motivo: string };
 export type DefeitoDaCena = { arquivo: string; problemas: Array<{ t: number; tipo: string; descricao: string }>; probabilidade?: number | null };
@@ -55,8 +74,40 @@ const O_QUE_E: Record<ContextoDaCena["tecnica"], string> = {
 const formatarFala = (fala: PalavraDaCena[]) => fala.map((p) => `${p.de.toFixed(2)}–${p.ate.toFixed(2)} ${p.w}`).join("\n");
 
 /** O bloco do corte (o mesmo em todas as fases): a técnica, os números do apresentador e a fala com os tempos. */
+/** O quadro do corte, em texto (o deitado leva as regras de composição do 16:9). Puro (testado). */
+export function textoDoQuadro(quadro: ContextoDaCena["quadro"]): string {
+  const L = Number(quadro?.largura) > 0 ? Number(quadro!.largura) : 1080;
+  const A = Number(quadro?.altura) > 0 ? Number(quadro!.altura) : 1920;
+  if (L <= A) return `O QUADRO: em pé, ${L} × ${A} (9:16).`;
+  return `O QUADRO: DEITADO, ${L} × ${A} (16:9), o vídeo completo para o YouTube. Siga a seção "O quadro deitado (16:9)" do kit: todo número de posição e tamanho é em px DESTE quadro (use LARGURA e ALTURA do kit, nunca os números dos exemplos em pé), a pessoa ocupa um lado e a explicação o outro, a legenda numa faixa embaixo terminando acima de y = ${Math.round(A * (1840 / 1920))}.`;
+}
+
+/** O bloco do completo e a continuidade com o bloco anterior, em texto. Puro (testado). */
+export function textoDaContinuidade(contexto: ContextoDaCena): string {
+  const b = contexto.bloco;
+  if (!b) return "";
+  const partes = [
+    `# ESTE É UM BLOCO DO VÍDEO COMPLETO
+Bloco ${b.indice + 1} de ${b.total}: os segundos ${b.inicioNoVideo.toFixed(1)} a ${(b.inicioNoVideo + contexto.duracao).toFixed(1)} de um vídeo de ${b.duracaoDoVideo.toFixed(0)} s, editado em blocos de cerca de um minuto que são emendados um atrás do outro. O tempo da fala abaixo já é o do bloco (começa em 0). Vídeo longo: a pessoa é a base, e as cenas entram nas ideias fortes da fala, cada uma explicando o que é dito, com respiro entre elas (de 4 a 8 cenas por bloco de um minuto, no lugar da densidade do corte curto). Nada termina pela metade no fim do bloco: a última cena sai antes do "fim", e o apresentador termina o bloco num enquadramento estável (sem transição nos últimos 1,5 s).`,
+  ];
+  const c = contexto.continuidade;
+  if (b.indice === 0 || !c) {
+    partes.push("É o primeiro bloco: o apresentador começa como a técnica pede, e a linguagem visual que você escolher aqui (formas, enquadramentos, faixa da legenda, ritmo das entradas) vale para o vídeo inteiro. O enquadramento em que o apresentador termina este bloco vira o enquadramento base de todos os outros.");
+  } else {
+    partes.push(`CONTINUIDADE (os blocos são emendados sem corte visível; o worker garante a emenda):
+- O ENQUADRAMENTO BASE do vídeo: o primeiro quadro do apresentador (em "inicio") é exatamente este, e o bloco termina nele (o worker fixa os dois). Entre o começo e o fim, mude com transição quando a fala pedir: ${JSON.stringify(c.apresentador ?? {})}
+- A legenda é a mesma faixa do vídeo inteiro (o worker fixa): ${JSON.stringify(c.legenda ?? {})}. Planeje as cenas fora dela.
+- A linguagem do vídeo, do primeiro bloco (siga as mesmas formas, a mesma paleta de movimentos e o mesmo nível; não repita a mesma explicação): ${(c.cenas ?? []).map((x) => `${x.arquivo}: ${x.oQue}`).join(" | ") || "nada"}${c.comum ? `
+- O comum.tsx do primeiro bloco (o mesmo objeto continua igual, se ele voltar nesta fala; pode reaproveitar este código):
+${c.comum.slice(0, 6000)}` : ""}`);
+  }
+  return partes.join("\n\n");
+}
+
 export function blocoDoCorte(contexto: ContextoDaCena, fala: PalavraDaCena[]): string {
   const quem = contexto.marca?.nome ? `Quem fala: ${contexto.marca.nome}${contexto.marca.area ? `, ${contexto.marca.area}` : ""}.` : "";
+  const quadro = contexto.quadro ?? { largura: 1080, altura: 1920 };
+  const continuidade = textoDaContinuidade(contexto);
   return `# O CORTE
 
 Técnica (escolhida pelo cliente, ou pelo JEV pela fala): "${contexto.tecnica}", ${O_QUE_E[contexto.tecnica]}.
@@ -65,9 +116,12 @@ Recorte com alfa: ${contexto.temRecorte ? "SIM (recorte: true vale nos quadros d
 Letra da marca: ${contexto.letra ?? "moderna"}.
 ${quem}
 ${contexto.nicho ? `Assunto do perfil (só contexto para entender a fala; não é texto de tela): ${contexto.nicho}\n` : ""}
-Geometria do apresentador neste corte (px; a gravação é deitada e o quadro é 1080 × 1920):
+${textoDoQuadro(contexto.quadro)}
+Geometria do apresentador neste corte (px; a gravação é deitada e o quadro é ${quadro.largura} × ${quadro.altura}):
 ${JSON.stringify(contexto.geometria ?? {}, null, 1)}
-
+${continuidade ? `
+${continuidade}
+` : ""}
 A fala do corte, uma palavra por linha (início–fim em segundos e a palavra, já no tempo do corte):
 ${formatarFala(fala)}`;
 }

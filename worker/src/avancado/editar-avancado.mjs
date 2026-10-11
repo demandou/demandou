@@ -3,7 +3,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { extrairTrecho, folhasDosQuadros, limitesDoRender } from "../modelo/editar-no-modelo.mjs";
-import { geometriaDoApresentador } from "./geometria.mjs";
+import { geometriaDoApresentador, quadroDoFormato } from "./geometria.mjs";
 import { cenasNoInstante, conferirArquivos, instantesDaConferencia, nomeDeArquivoValido, segundosDaAncora, TECNICAS } from "./portao.mjs";
 import { portaoDoTsc, rodarIsolado } from "./processo.mjs";
 import { gravarCenas, gravarDados, montarProjeto, referenciaDoKit } from "./projeto.mjs";
@@ -71,7 +71,19 @@ export function roteiroSemCena(arquivos, nome) {
   return saida;
 }
 
-export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, aoPasso = () => {}, obterTrilha = null, publicar = null, destinoDoRecorte = null, aoPublicar = () => {}, recortar = recortarApresentador, cenaJaEscrita = null }) {
+/**
+ * Opções do completo em blocos (11/10, completo-avancado.mjs):
+ *   pesado(nome, fn)        roda o passo que pesa na máquina (trecho, rosto, portões, render) numa
+ *                           fila comum aos blocos; a escrita (rede) segue em paralelo
+ *   ajustarRoteiro(arq, x)  o worker fixa a emenda no roteiro de cada versão (fixarContinuidade)
+ *   aoEscrito(x)            a primeira versão que passou nos portões (o primeiro bloco libera os outros)
+ *   aoGastar(usd)           cada custo de IA, também o de chamada que falhou (o teto do completo)
+ */
+export async function editarAvancado(
+  pedido,
+  pasta,
+  { obterOriginal, pedirCena, aoPasso = () => {}, obterTrilha = null, publicar = null, destinoDoRecorte = null, aoPublicar = () => {}, recortar = recortarApresentador, cenaJaEscrita = null, pesado = (_nome, fn) => fn(), ajustarRoteiro = null, aoEscrito = null, aoGastar = () => {} }
+) {
   const tempos = {};
   let t = Date.now();
   const marcar = (nome) => {
@@ -90,6 +102,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
     if (!cabeNoTeto(gasto, teto, fase)) throw new SemTeto(`o teto de US$ ${teto.toFixed(2)} não cabe mais a fase ${fase} (gasto US$ ${gasto.toFixed(3)})`);
     const somar = (c) => {
       gasto += c;
+      aoGastar(c);
       gastoPorFase[fase] = +((gastoPorFase[fase] ?? 0) + c).toFixed(4);
     };
     let r;
@@ -115,7 +128,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   // 1. O TRECHO: a fala limpa na gravação original, e a voz separada
   const original = await obterOriginal(pedido.sourceUrl);
   const trecho = join(pasta, "trecho.mp4");
-  await extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, pedido.manter);
+  await pesado("trecho", () => extrairTrecho(original, trecho, pedido.inicio ?? 0, pedido.duracao, pedido.manter));
   const duracao = Math.floor(duracaoDe(trecho) * FPS) / FPS;
   if (!(duracao > 1)) throw new Error("o trecho do corte saiu vazio");
   const quadros = Math.round(duracao * FPS);
@@ -133,7 +146,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   // 2. O ROSTO quadro a quadro (sem rosto achado, o centro da gravação: o corte não para)
   let rosto = [];
   try {
-    rosto = (await rastroDoRosto({ trecho, duracao, saida: join(pasta, "rosto.json") })).rosto ?? [];
+    rosto = (await pesado("rosto", () => rastroDoRosto({ trecho, duracao, saida: join(pasta, "rosto.json") }))).rosto ?? [];
   } catch (e) {
     avisos.push(`sem rastro do rosto: ${e instanceof Error ? e.message.slice(0, 160) : e}`);
   }
@@ -151,7 +164,10 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   }
   marcar("tecnica");
 
-  // 4. O RECORTE, só na 8.2. Falhou: a moldura com o fundo, sem fingir recorte (aula 8.2).
+  // 4. O RECORTE, só na 8.2. Falhou: a moldura com o fundo, sem fingir recorte (aula 8.2), só quando
+  // o JEV escolheu a técnica. Com o Recorte com letreiro ESCOLHIDO pelo cliente (`pedido.tecnica`), a
+  // falha para o corte (11/10, regra do Bruno: nunca trocar o estilo sozinho; o app tenta de novo nele).
+  const recorteEscolhido = pedido.tecnica === "recorte-letreiro";
   let recorte = null;
   let medidaDoRecorte = null;
   if (tecnica === "recorte-letreiro") {
@@ -162,6 +178,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
       while (recorte.cabeca.length < quadros) recorte.cabeca.push(recorte.cabeca[recorte.cabeca.length - 1] ?? null);
       medidaDoRecorte = { backend: r.backend, segundos: r.segundos, ...r.medida };
     } catch (e) {
+      if (recorteEscolhido) throw new Error(`o recorte do apresentador falhou: ${e instanceof Error ? e.message.slice(0, 300) : e}`);
       avisos.push(`o recorte falhou e o corte saiu com o apresentador na moldura: ${e instanceof Error ? e.message.slice(0, 200) : e}`);
       tecnica = "moldura-explicativa";
     }
@@ -171,24 +188,32 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   // 5. OS DADOS do corte para o kit, e o que vai para quem escreve
   const cores = pedido.cores?.destaque ? pedido.cores : { fundo: "#1e1f22", titulo: "#dbdee1", destaque: "#f97316" };
   const letra = ["impacto", "moderna", "classica", "amigavel"].includes(pedido.letra) ? pedido.letra : "moderna";
-  gravarDados(projeto, { fps: FPS, largura: 1080, altura: 1920, duracao, quadros, cores, letra, palavras, gravacao, rosto, recorte, tecnica });
+  // O QUADRO (11/10): 1080 × 1920 nos cortes; 1920 × 1080 no completo de gravação deitada (`formato: "16:9"`)
+  const quadro = quadroDoFormato(pedido.formato);
+  gravarDados(projeto, { fps: FPS, largura: quadro.largura, altura: quadro.altura, duracao, quadros, cores, letra, palavras, gravacao, rosto, recorte, tecnica });
   const kit = referenciaDoKit();
   const contexto = {
     tecnica,
     duracao,
+    quadro,
     marca: pedido.marca ?? null,
     nicho: pedido.nicho ?? null,
     cores,
     letra,
     temRecorte: Boolean(recorte),
-    geometria: geometriaDoApresentador({ rosto, gravacao, recorte }),
+    geometria: geometriaDoApresentador({ rosto, gravacao, recorte, quadro }),
+    // O completo em blocos (11/10): o bloco anterior (onde o apresentador terminou e as cenas dele), para a edição seguir sem salto
+    ...(pedido.continuidade ? { continuidade: pedido.continuidade } : {}),
+    ...(pedido.bloco ? { bloco: pedido.bloco } : {}),
   };
   const fala = palavras;
-  const opcoesDoPortao = { palavras, duracao, temRecorte: Boolean(recorte) };
+  const opcoesDoPortao = { palavras, duracao, temRecorte: Boolean(recorte), quadro };
 
   // 6. OS PORTÕES de uma versão do código: estático, tsc, bundle e render de conferência
   let rodadaDosQuadros = 0;
-  const portoes = async (arquivos, numerosSemLastro, { instantes = null } = {}) => {
+  const ajustar = (arquivos) => (ajustarRoteiro ? ajustarRoteiro(arquivos, { palavras, duracao }) : arquivos);
+  const portoes = (arquivos, numerosSemLastro, opcoes) => pesado("portoes", () => portoesDaVersao(arquivos, numerosSemLastro, opcoes));
+  const portoesDaVersao = async (arquivos, numerosSemLastro, { instantes = null } = {}) => {
     const { problemas, roteiro } = conferirArquivos(arquivos, opcoesDoPortao);
     for (const n of numerosSemLastro ?? []) problemas.push({ arquivo: "*", linha: 1, motivo: `número na tela que não foi dito na fala: ${n} (tire ou troque pelas palavras ditas)` });
     if (problemas.length) return { problemas, roteiro, etapa: "estatico" };
@@ -224,14 +249,14 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   // `cenaJaEscrita`: retomar um trabalho cuja escrita já foi paga (só a prova local usa)
   const escrito = cenaJaEscrita ?? (await pedir("escrever", { kit, fala, contexto }));
   if (!escrito?.arquivos || typeof escrito.arquivos !== "object") throw new Error("o app não devolveu os arquivos da cena");
-  let atual = { ...escrito.arquivos };
+  let atual = ajustar({ ...escrito.arquivos });
   marcar("escrever");
   let res = await portoes(atual, escrito.numerosSemLastro);
   marcar("portoes");
   for (let volta = 1; res.problemas.length && volta <= 2 && cabeNoTeto(gasto, teto, "consertar-codigo"); volta++) {
     historico.push({ volta: `codigo-${volta}`, etapa: res.etapa, problemas: res.problemas.slice(0, 25) });
     const c = await pedir("consertar-codigo", { kit, fala, contexto, arquivos: atual, problemas: res.problemas.slice(0, 40) });
-    atual = { ...atual, ...Object.fromEntries(Object.entries(c.arquivos ?? {}).filter(([n]) => nomeDeArquivoValido(n))) };
+    atual = ajustar({ ...atual, ...Object.fromEntries(Object.entries(c.arquivos ?? {}).filter(([n]) => nomeDeArquivoValido(n))) });
     marcar("consertos");
     res = await portoes(atual, c.numerosSemLastro);
     marcar("portoes");
@@ -252,6 +277,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   }
   let roteiro = res.roteiro;
   let conferencia = res.conferencia;
+  if (aoEscrito) aoEscrito({ arquivos: atual, roteiro, tecnica, palavras, duracao });
   const amostra = conferencia.amostra ?? null;
   const todosOsQuadros = new Map(conferencia.quadros.map((q) => [q.t, q.arquivo]));
 
@@ -288,7 +314,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
     const novos = Object.fromEntries(Object.entries(c.arquivos ?? {}).filter(([n]) => alvo.includes(n)));
     marcar("consertos");
     if (!Object.keys(novos).length) break;
-    const tentativa = { ...atual, ...novos };
+    let tentativa = ajustar({ ...atual, ...novos });
     // os quadros de novo, só dentro das cenas consertadas (o roteiro mexido pede todos)
     let instantes = null;
     if (!alvo.includes("roteiro.json")) {
@@ -299,7 +325,7 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
     marcar("portoes");
     if (r2.problemas.length && cabeNoTeto(gasto, teto, "consertar-codigo")) {
       const c2 = await pedir("consertar-codigo", { kit, fala, contexto, arquivos: tentativa, problemas: r2.problemas.slice(0, 40) });
-      Object.assign(tentativa, Object.fromEntries(Object.entries(c2.arquivos ?? {}).filter(([n]) => alvo.includes(n))));
+      tentativa = ajustar({ ...tentativa, ...Object.fromEntries(Object.entries(c2.arquivos ?? {}).filter(([n]) => alvo.includes(n))) });
       marcar("consertos");
       r2 = await portoes(tentativa, c2.numerosSemLastro, { instantes });
       marcar("portoes");
@@ -324,17 +350,19 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
   const folhas = await folhasDosQuadros(projeto, [...todosOsQuadros.values()].filter((a) => existsSync(a))).catch(() => []);
   const arquivosDasFolhas = folhas.map((_, i) => join(projeto, "work", `folha-${i + 1}.jpg`));
 
-  // 9. O RENDER FINAL, isolado, a -14 LUFS
-  const saida = join(projeto, "out", "corte.mp4");
+  // 9. O RENDER FINAL, isolado, a -14 LUFS. Um bloco do completo (`bruto: true`, 11/10) sai em .mov
+  // com o áudio PCM: a emenda é sem recodificar e o -14 LUFS e a trilha entram uma vez só no vídeo inteiro.
+  const bruto = pedido.bruto === true;
+  const saida = join(projeto, "out", bruto ? "bloco.mov" : "corte.mp4");
   const arquivoDoPedido = join(projeto, "pedido-render.json");
-  writeFileSync(arquivoDoPedido, JSON.stringify({ acao: "final", saida, limites: limitesDoRender(), gl: process.env.GL_DOS_MODELOS || "swangle" }));
-  const fim = await rodarIsolado(RENDER, [projeto, arquivoDoPedido], { cwd: projeto, prazoMs: Math.max(30, Math.ceil(duracao / 60) * 40) * 60_000, memoriaMb: 4096, aoLinha: (l) => l.startsWith("progresso") && aoPasso(`render ${l.slice(10)}`) });
+  writeFileSync(arquivoDoPedido, JSON.stringify({ acao: "final", saida, bruto, limites: limitesDoRender(), gl: process.env.GL_DOS_MODELOS || "swangle" }));
+  const fim = await pesado("render", () => rodarIsolado(RENDER, [projeto, arquivoDoPedido], { cwd: projeto, prazoMs: Math.max(30, Math.ceil(duracao / 60) * 40) * 60_000, memoriaMb: 4096, aoLinha: (l) => l.startsWith("progresso") && aoPasso(`render ${l.slice(10)}`) }));
   if (!fim.json?.ok) throw new Error(`o render final falhou: ${(fim.estourou ? "passou do prazo" : (fim.json?.erro ?? fim.saida.slice(-800))).slice(0, 800)}`);
   let arquivo = saida;
   marcar("render");
 
   // 10. A TRILHA do projeto por baixo (como no editor do curso); falhou, sai sem ela
-  if (pedido.trilha?.url && obterTrilha) {
+  if (pedido.trilha?.url && obterTrilha && !bruto) {
     try {
       const ext = String(pedido.trilha.url).match(/\.[a-z0-9]{2,4}(?=\?|$)/i)?.[0] ?? ".mp3";
       const trilha = await obterTrilha(pedido.trilha.url, join(pasta, `trilha${ext}`));
@@ -364,7 +392,10 @@ export async function editarAvancado(pedido, pasta, { obterOriginal, pedirCena, 
     amostra,
     folhas: arquivosDasFolhas,
     projeto,
+    quadro,
     arquivosDaCena: atual,
+    roteiro,
+    rostoNoFim: rosto[rosto.length - 1] ?? null,
   };
 }
 
