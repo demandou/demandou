@@ -286,3 +286,13 @@ test("conferência: palavra dobrada que o texto pedido não tem reprova", async 
   const d = decidirPelaDescricao({ textos: [{ texto: "PRODUTIVIDADE PRODUTIVIDADE BÍBLICA: FAZER O ESSENCIAL COM EXCELÊNCIA" }], pessoas: "nenhuma", cortado: "nada" } as never, { textoEsperado: ["Produtividade bíblica: fazer o essencial com excelência"] });
   assert.match(String(d.reprovou), /duplicada/);
 });
+
+test("frase da arte: ponto de milhar não corta o número; voz do criador e valor cortado voltam ao redator", async () => {
+  const { frasesCompletas, problemaDaFrase, fraseCompleta } = await import("@/lib/media/frase-da-arte");
+  assert.deepEqual(frasesCompletas("Pagou 29 meses de R$ 2.645. Depois recebeu R$ 152.638."), ["Pagou 29 meses de R$ 2.645.", "Depois recebeu R$ 152.638."]);
+  assert.equal(fraseCompleta("O cliente pagou 29 meses de R$ 2.645 e recebeu R$ 152.638 na contemplação.", { caracteres: 200 }), "O cliente pagou 29 meses de R$ 2.645 e recebeu R$ 152.638 na contemplação.");
+  assert.match(String(problemaDaFrase("Você mostra que o cliente sustentou 29 meses de parcelas.")), /PÚBLICO/);
+  assert.match(String(problemaDaFrase("O cliente pagou 29 meses de parcelas de R$2")), /cortado|não fecha/);
+  assert.equal(problemaDaFrase("Você pode sair do aluguel em 29 meses."), null);
+  assert.equal(problemaDaFrase("Ele pagou R$ 2.645 por mês."), null);
+});

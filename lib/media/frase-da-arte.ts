@@ -29,7 +29,9 @@ function limpar(t: string): string {
 export function frasesCompletas(texto: string): string[] {
   const t = limpar(texto);
   const saida: string[] = [];
-  const re = /[^.!?…]+[.!?…]+["”')\]]?/g;
+  // Fim de frase só com a pontuação seguida de espaço ou do fim (11/10: "R$2.645" virava "R$2" porque o
+  // ponto de milhar contava como fim de frase).
+  const re = /[^]*?[.!?…]+["”')\]]?(?=\s|$)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(t))) {
     const f = m[0].trim();
@@ -89,6 +91,14 @@ export function pareceTruncada(frase: string): boolean {
   return false;
 }
 
+/**
+ * A FRASE QUE FALA COM O CRIADOR (11/10, arte do Bruno: "Você mostra que o cliente sustentou 29 meses..."):
+ * a tese do Roberto descreve o vídeo para quem gravou; na arte, o post é DELE e fala com o público. Puro.
+ */
+export function falaComOCriador(frase: string): boolean {
+  return /\b(voc[eê]|o v[ií]deo|este v[ií]deo|esse v[ií]deo|neste v[ií]deo|nesse v[ií]deo|no v[ií]deo|seu v[ií]deo|a grava[cç][aã]o)\s+(mostra|mostrou|fala|falou|explica|explicou|conta|contou|traz|trouxe|apresenta|apresentou|defende|argumenta)\b/i.test(frase);
+}
+
 /** Palavras que nunca terminam uma frase em português. */
 const NUNCA_FECHA = new Set(
   "o a os as um uma uns umas de do da dos das em no na nos nas com sem para pra por pelo pela pelos pelas ao aos e ou mas que se seu sua seus suas meu minha nosso nossa cujo cuja entre sobre até porque quando como".split(" ")
@@ -124,6 +134,8 @@ export function trechoRepetido(frase: string): string | null {
 /** O que impede a frase de ir para a arte: truncada ou repetindo um trecho. Null quando serve. Puro. */
 export function problemaDaFrase(frase: string): string | null {
   if (pareceTruncada(frase)) return "a frase não fecha (termina no meio de uma ideia)";
+  if (falaComOCriador(frase)) return "a frase fala com quem gravou o vídeo (\"você mostra que\", \"no vídeo\"); a arte é post dele e fala com o PÚBLICO dele";
+  if (/R\$\s?\d{1,3}(?![\d.,])\s*[.!?]?$/.test(limpar(frase)) && !/R\$\s?\d{1,3}(?:[.,]\d{2})?\s+(reais|mil|milh)/i.test(frase)) return "o valor em reais está cortado no fim";
   const rep = trechoRepetido(frase);
   if (rep) return `a frase repete "${rep}"`;
   return null;
@@ -171,7 +183,7 @@ export async function mancheteCurta(o: {
   const redator = o.redator ?? redatorPadrao(o.usage);
   const maxCaracteres = o.maxCaracteres ?? TETO_DA_FRASE;
   const teto = { caracteres: maxCaracteres, palavras: o.maxPalavras };
-  const sistema = "Você escreve a manchete de uma arte de rede social em português do Brasil. Devolva SÓ a manchete, sem aspas, sem comentário. Nunca use travessão. Nunca invente número, nome ou dado que não esteja no texto.";
+  const sistema = "Você escreve a manchete de uma arte de rede social em português do Brasil. A arte é um post de quem gravou o vídeo e fala com o PÚBLICO dele, na voz dele: nunca descreva o vídeo nem fale com quem gravou (nada de \"você mostra que\", \"no vídeo\"). Número sempre inteiro, como foi dito (R$ 2.645, nunca R$2). Devolva SÓ a manchete, sem aspas, sem comentário. Nunca use travessão. Nunca invente número, nome ou dado que não esteja no texto.";
   const candidatas: string[] = [];
   let erro = "";
   for (let t = 0; t < TENTATIVAS_DA_MANCHETE; t++) {
