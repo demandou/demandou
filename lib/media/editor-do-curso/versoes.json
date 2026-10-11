@@ -7,7 +7,8 @@
     "16:9": "modelo-anatomia-16x9"
   },
   "modelo-ao-pe-da-letra": {
-    "9:16": "modelo-ao-pe-da-letra"
+    "9:16": "modelo-ao-pe-da-letra",
+    "16:9": "modelo-ao-pe-da-letra-16x9"
   },
   "modelo-arquivo": {
     "9:16": "modelo-arquivo"
@@ -110,7 +111,8 @@
     "9:16": "modelo-herbario"
   },
   "modelo-iceberg": {
-    "9:16": "modelo-iceberg"
+    "9:16": "modelo-iceberg",
+    "16:9": "modelo-iceberg-16x9"
   },
   "modelo-ignicao": {
     "9:16": "modelo-ignicao"
