@@ -59,7 +59,7 @@ async function desenhista(ordem: ModeloDoInfografico[], ctx: ContextoMidia, gera
  * Uma peça de frase (a foto do dia, uma lâmina) em todas as redes pedidas: uma
  * imagem por proporção, recortada por rede, conferida (lib/media/arte-por-rede.ts).
  */
-async function pecaDeFrase(
+export async function pecaDeFrase(
   p: PecaPelaIa,
   o: { texto: string; tipo: "post" | "capa" | "lamina"; lamina?: number; pagina?: { i: number; total: number } | null; redes: string[]; contentType: string },
   inj: InjecoesDaArte
