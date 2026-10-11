@@ -25,3 +25,15 @@ test("objeto com palavra que não foi dita reprova (a casa que ninguém falou)",
 test("objeto nomeado na fala passa", () => {
   assert.deepEqual(conferir({ ...base, objeto: { nome: "Maria aos pés de Jesus", palavra: "pés" } }), []);
 });
+
+test("quem escreve a cena recebe o vídeo inteiro e o tema (a tenda de Isaías 54 fora do trecho)", async () => {
+  const { blocoDoCorte } = await import("@/lib/media/editor-avancado/escrever-cenas");
+  const { falaDoVideoParaACena } = await import("@/lib/media/editor-avancado/video-inteiro");
+  const ctx = { tecnica: "maquete-3d" as const, duracao: 12, temRecorte: false, videoInteiro: { texto: "alargue o lugar da sua tenda, estenda bem as cortinas", tema: "Isaías 54" } };
+  const t = blocoDoCorte(ctx, [{ w: "corda", de: 0, ate: 0.3 }] as never);
+  assert.match(t, /O VÍDEO INTEIRO/);
+  assert.match(t, /alargue o lugar da sua tenda/);
+  assert.match(t, /Tema do vídeo: Isaías 54\n/);
+  assert.equal(blocoDoCorte({ ...ctx, videoInteiro: null }, [] as never).includes("O VÍDEO INTEIRO"), false);
+  assert.equal(falaDoVideoParaACena("a b c d", 2), "a b [...]");
+});

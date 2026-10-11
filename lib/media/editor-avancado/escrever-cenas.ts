@@ -32,6 +32,8 @@ export type ContextoDaCena = {
   bloco?: { indice: number; total: number; inicioNoVideo: number; duracaoDoVideo: number } | null;
   /** O completo em blocos: como o bloco anterior terminou, para este seguir sem salto. */
   continuidade?: ContinuidadeDoBloco | null;
+  /** A fala do VÍDEO INTEIRO e o tema (11/10): para entender de que o trecho fala (a tenda de Isaías 54). */
+  videoInteiro?: { texto: string; tema: string | null } | null;
 };
 export type ContinuidadeDoBloco = {
   /**
@@ -104,6 +106,19 @@ ${c.comum.slice(0, 6000)}` : ""}`);
   return partes.join("\n\n");
 }
 
+/** O vídeo inteiro em texto, para quem escreve entender o assunto do trecho. Puro (testado). */
+export function textoDoVideoInteiro(contexto: ContextoDaCena): string {
+  const v = contexto.videoInteiro;
+  if (!v?.texto) return "";
+  return `# O VÍDEO INTEIRO (contexto; leia ANTES de escolher o que desenhar)
+Este corte é um trecho de um vídeo maior. Leia a fala inteira para entender DE QUE a pessoa está falando: o objeto e a cena do trecho saem do assunto do vídeo (na aula 8.1 o trecho dizia só "estica a corda, finca a estaca, a cortina", e o vídeo inteiro falava da tenda de Isaías 54: a maquete foi ESSA tenda). Desenhe o que o vídeo inteiro está explicando, ancorado nas palavras ditas NESTE trecho; nada que o vídeo não fale.
+${v.tema ? `Tema do vídeo: ${v.tema}
+` : ""}A fala do vídeo inteiro:
+${v.texto}
+
+`;
+}
+
 export function blocoDoCorte(contexto: ContextoDaCena, fala: PalavraDaCena[]): string {
   const quem = contexto.marca?.nome ? `Quem fala: ${contexto.marca.nome}${contexto.marca.area ? `, ${contexto.marca.area}` : ""}.` : "";
   const quadro = contexto.quadro ?? { largura: 1080, altura: 1920 };
@@ -122,7 +137,7 @@ ${JSON.stringify(contexto.geometria ?? {}, null, 1)}
 ${continuidade ? `
 ${continuidade}
 ` : ""}
-A fala do corte, uma palavra por linha (início–fim em segundos e a palavra, já no tempo do corte):
+${textoDoVideoInteiro(contexto)}A fala do corte, uma palavra por linha (início–fim em segundos e a palavra, já no tempo do corte):
 ${formatarFala(fala)}`;
 }
 

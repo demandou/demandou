@@ -2,6 +2,7 @@ import { falaParaAGuarda, numerosSemLastroNaCena, NOME_VALIDO } from "./arquivos
 import { consertarCenas, consertarCodigo, escreverCenas, type ContextoDaCena, type DefeitoDaCena, type KitDoWorker, type PalavraDaCena, type ProblemaDoPortao } from "./escrever-cenas";
 import { revisarQuadros, type CenaDoRoteiroResumida, type QuadroParaRevisar } from "./revisao";
 import { decidirTecnica } from "./tecnica";
+import { videoInteiroDoCorte } from "./video-inteiro";
 import { usoVazio } from "@/lib/jev/cliente";
 
 /**
@@ -72,7 +73,9 @@ export async function atenderPedidoDaCena(p: PedidoDaCena): Promise<Record<strin
   }
 
   if (!p.kit?.api || !p.contexto || !p.fala?.length) throw new PedidoInvalido("faltam o kit, o contexto ou a fala do corte");
-  const base = { kit: p.kit, contexto: p.contexto, fala: p.fala, usage, onCusto, tetoRestanteUsd: p.tetoRestanteUsd ?? null, esforco: ["low", "medium", "high"].includes(String(p.esforco)) ? p.esforco : null };
+  // O vídeo inteiro (11/10): quem escreve lê a fala toda para saber de que o trecho fala.
+  const contexto = p.contexto.videoInteiro || !p.videoJobId ? p.contexto : { ...p.contexto, videoInteiro: await videoInteiroDoCorte(p.videoJobId).catch(() => null) };
+  const base = { kit: p.kit, contexto, fala: p.fala, usage, onCusto, tetoRestanteUsd: p.tetoRestanteUsd ?? null, esforco: ["low", "medium", "high"].includes(String(p.esforco)) ? p.esforco : null };
   let novos: Record<string, string>;
   try {
     if (p.fase === "escrever") {

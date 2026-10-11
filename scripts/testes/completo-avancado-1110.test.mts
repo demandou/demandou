@@ -108,6 +108,7 @@ test("a emenda fixada: o bloco começa no enquadramento base, termina nele está
   const legenda = { topo: 900, esquerda: 900, largura: 960, tamanho: 44 };
   const escrito = {
     tecnica: "maquete-3d",
+    objeto: { nome: "a casa que vamos construir", palavra: "construir" },
     apresentador: [{ em: "inicio" }, { em: { palavra: "vamos" }, caixa: { x: 1000, y: 100, l: 800, a: 800 } }, { em: 39.5, ...molduraEsquerda }],
     legenda: { topo: 950, esquerda: 100, largura: 800, tamanho: 44 },
     cenas: [{ arquivo: "cena-01.tsx", de: { palavra: "construir" }, ate: "fim", oQue: "x" }],
