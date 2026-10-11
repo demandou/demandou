@@ -147,7 +147,8 @@ export function instrucaoDoBloco(b: BlocoDoPlano, duracaoDoTrecho: number): stri
     ultimo
       ? "- É o FIM do vídeo: feche como a skill manda (a chamada final e a assinatura, no último momento)."
       : "- NÃO é o fim do vídeo: nada de chamada final, de pôster de fecho nem de assinatura neste trecho (eles só existem no último trecho).",
-    "- A densidade, a cobertura, a variedade de blocos, a assinatura e os efeitos próprios valem para este trecho como se ele fosse um vídeo inteiro: ele é conferido sozinho e junto com os outros.",
+    "- É o VÍDEO LONGO (YouTube, aula, podcast), não um corte: edite como a aula 9 do curso manda. A pessoa em tela cheia é a base; um bloco do modelo entra só quando a ideia ganha com apoio visual e sai quando a ideia termina. Mire em um momento a cada 20 a 30 s e cerca de um terço do trecho com bloco na tela; o resto é a pessoa falando com a legenda. Prefira poucos momentos fortes a muitos fracos. A conferência deste trecho cobra no mínimo 30% de cobertura e um momento a cada 25 s.",
+    "- A variedade de blocos, a assinatura e os efeitos próprios do modelo continuam valendo neste trecho.",
     '- Use em "marca" exatamente o nome e a área de quem fala, iguais em todos os trechos.',
   ];
   if (b.cauda) {

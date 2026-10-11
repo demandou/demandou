@@ -328,7 +328,7 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
     marcas: 1,
     videosPorDia: 4,
     armazenamentoGb: 48,
-    duracaoMaximaMin: 60,
+    duracaoMaximaMin: 7, // 10/10, noite (Bruno): Starter até 7 min, Pro até 22 min, Enterprise até 2 h por vídeo.
     arquivoMaximoGb: 4,
     // Saldo e carteira de vídeo do Starter (vieram de lib/stripe/index.ts em
     // 06/10, sem mudar valor). O porquê de cada número continua comentado lá.
@@ -360,7 +360,7 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
     marcas: 2,
     videosPorDia: 6,
     armazenamentoGb: 96,
-    duracaoMaximaMin: 120,
+    duracaoMaximaMin: 22, // 10/10, noite (Bruno): Starter até 7 min, Pro até 22 min, Enterprise até 2 h por vídeo.
     arquivoMaximoGb: 8,
     // Até 08/10: 40.000 e 8.320. Ver a nota "O SALDO DE 08/10" acima.
     creditosPorMes: 32000,
@@ -388,7 +388,7 @@ export const PLANOS_PUBLICOS: PlanoPublico[] = [
     armazenamentoGb: 192,
     // 300 até 08/10. O podcast de até 3 horas é o do Enterprise, e só o titular
     // o envia (lib/media/limits.ts, duracaoMaximaDaGravacaoMin).
-    duracaoMaximaMin: 180,
+    duracaoMaximaMin: 120, // 10/10, noite (Bruno): Starter até 7 min, Pro até 22 min, Enterprise até 2 h por vídeo.
     arquivoMaximoGb: 20,
     // Até 08/10: 60.000 e 20.800. Ver a nota "O SALDO DE 08/10" acima.
     creditosPorMes: 48000,

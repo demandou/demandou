@@ -120,6 +120,31 @@ export async function modeloDoCursoDoProjeto(projectId: string): Promise<string 
 }
 
 /**
+ * O "MEU ESTILO" CONFIRMADO VENCE O MODELO DO CURSO? (10/10, noite, bug do
+ * teste do Bruno no Torre.) Só quando ele é o estilo próprio do cliente (não
+ * a fala que saiu de um modelo) E foi confirmado DEPOIS da escolha do modelo:
+ * escolher um modelo é pedir as peças nele. Antes, um estilo próprio antigo
+ * (o de 09/10) seguia confirmado e as artes da campanha saíam nele, mesmo com
+ * o Torre escolhido antes do envio.
+ */
+export async function estiloProprioValeSobreOModelo(projectId: string): Promise<boolean> {
+  const { estadoDoMeuEstilo } = await import("@/lib/estilo-proprio/servidor");
+  const { modeloDaFala } = await import("./estilo-das-pecas");
+  const confirmado = (await estadoDoMeuEstilo(projectId).catch(() => null))?.confirmado ?? null;
+  if (!confirmado || modeloDaFala(confirmado.falas?.[0])) return false;
+  const linha = await prisma.projectMemory.findUnique({ where: { projectId_type_key: { projectId, type: TIPO, key: CHAVE } }, select: { value: true, updatedAt: true } });
+  const escolhidoEm = (linha?.value as { em?: string } | null)?.em ?? linha?.updatedAt?.toISOString() ?? null;
+  return estiloProprioDepoisDoModelo((confirmado as { em?: string }).em ?? null, escolhidoEm);
+}
+
+/** Puro: o estilo próprio só vale se foi confirmado depois da escolha do modelo (sem data do modelo, vale o estilo). */
+export function estiloProprioDepoisDoModelo(confirmadoEm: string | null, modeloEscolhidoEm: string | null): boolean {
+  if (!modeloEscolhidoEm) return true;
+  if (!confirmadoEm) return false;
+  return new Date(confirmadoEm).getTime() > new Date(modeloEscolhidoEm).getTime();
+}
+
+/**
  * Grava (ou apaga, com `null`) o modelo do curso do projeto. "sob-medida" (a
  * edição sob medida, com EDITOR_AVANCADO=1) guarda junto, como reserva, o
  * modelo do curso que estava em uso: um corte que falhar na edição sob medida

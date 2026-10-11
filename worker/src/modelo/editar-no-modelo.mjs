@@ -535,6 +535,8 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
     }
   }
   const projeto = criarProjeto(modelo, pasta);
+  // O VÍDEO LONGO MAIS LEVE (10/10, noite, Bruno): edição de aula (aula 9), a pessoa em tela cheia como base.
+  if (pedido.completo === true) aliviarConferenciaDoLongo(projeto);
   // AS CORES DA MARCA (10/10, regra do Bruno): o estilo é do modelo, a cor é da marca.
   if (pedido.cores?.destaque) {
     const { aplicarCoresDaMarca } = await import("./cores-da-marca.mjs");
@@ -754,6 +756,34 @@ async function comTrilha(arquivo, { pedido, pasta, modelo, obterTrilha, avisos, 
   }
   marcar("trilha");
   return saida;
+}
+
+/**
+ * O VÍDEO LONGO É MAIS LEVE QUE O CORTE (10/10, noite, decisão do Bruno): a
+ * aula 9 do curso pede tela cheia como base e o quadro só quando a ideia
+ * precisa. A conferência do curso (modelo.json -> conferir) cobra a densidade
+ * do corte (70% de cobertura, um momento a cada 8 s); no completo ela passa a
+ * cobrar 30%, um momento a cada 25 s e trechos só com a pessoa de até 25 s.
+ * Corta o tempo de escrita, de render e o custo pela metade ou mais.
+ */
+export const CONFERIR_DO_LONGO = { cobertura: 0.3, vao: 25, segundosPorMomento: 25 };
+export function aliviarConferenciaDoLongo(projeto) {
+  const arquivo = join(projeto, "modelo.json");
+  let m = {};
+  try {
+    if (existsSync(arquivo)) m = JSON.parse(readFileSync(arquivo, "utf8"));
+  } catch {
+    m = {};
+  }
+  const c = m.conferir ?? {};
+  m.conferir = {
+    ...c,
+    cobertura: Math.min(c.cobertura ?? 0.7, CONFERIR_DO_LONGO.cobertura),
+    vao: Math.max(c.vao ?? 3.5, CONFERIR_DO_LONGO.vao),
+    segundosPorMomento: Math.max(c.segundosPorMomento ?? 8, CONFERIR_DO_LONGO.segundosPorMomento),
+  };
+  writeFileSync(arquivo, JSON.stringify(m, null, 2));
+  return m.conferir;
 }
 
 /** Os tipos de momento do modelo, lidos do src/plano.ts do projeto (a mesma conta do conferir.mjs). */
