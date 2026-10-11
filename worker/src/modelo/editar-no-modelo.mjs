@@ -774,7 +774,34 @@ export async function editarNoModelo(pedido, pasta, { obterOriginal, pedirPlano,
   let arquivo = emPartes ? (await renderizarEmPartes(projeto, `${modelo}.mp4`, { prazoMs: prazoDoRender })).arquivo : await renderizar(projeto, `${modelo}.mp4`, { prazoMs: prazoDoRender });
   marcar("render");
   arquivo = await comTrilha(arquivo, { pedido, pasta, modelo, obterTrilha, avisos, marcar });
-  return { arquivo, modelo, formato: formatoDoModelo(modelo), mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos };
+  // Os blocos que o plano aprovado usou (11/10): o app guarda no corte e passa
+  // às peças da campanha do mesmo vídeo como referência do que ficou bom.
+  let tipos = [];
+  try {
+    tipos = tiposUsadosNoPlano(lerPlano(projeto));
+  } catch {
+    tipos = [];
+  }
+  return { arquivo, modelo, formato: formatoDoModelo(modelo), mapa, voltas: volta, historico, revisao, creditos, custoUsd: +gasto.toFixed(4), tomadas, avisos, tempos, tipos };
+}
+
+/**
+ * Os blocos de um plano, na ordem, com quantas vezes cada um entrou e o
+ * primeiro texto dele (até 80 caracteres). Puro.
+ */
+export function tiposUsadosNoPlano(plano) {
+  const porTipo = new Map();
+  for (const m of plano?.momentos ?? []) {
+    if (!m?.tipo) continue;
+    const atual = porTipo.get(m.tipo) ?? { tipo: m.tipo, vezes: 0, exemplo: "" };
+    atual.vezes++;
+    if (!atual.exemplo) {
+      const texto = [m.texto, m.titulo, m.frase, m.termo, m.pergunta].find((t) => typeof t === "string" && t.trim());
+      if (texto) atual.exemplo = texto.trim().slice(0, 80);
+    }
+    porTipo.set(m.tipo, atual);
+  }
+  return [...porTipo.values()];
 }
 
 /**

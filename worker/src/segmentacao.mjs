@@ -181,30 +181,16 @@ export async function acharCaixaDaPessoa(entrada, pasta, indice, inicio, duracao
 const MODELO_ROSTO = process.env.MODELO_ROSTO ?? "/app/modelos/face_landmarker.task";
 const MODELO_MULTICLASSE = process.env.MODELO_MULTICLASSE ?? "/app/modelos/selfie_multiclass.tflite";
 
-/**
- * O QUADRO DA CAPA (30/09): o melhor quadro real como foto, e a pessoa
- * recortada dele. Ver quadro-da-capa.py para o porquê (o teste de 29/09 teve
- * capa de olho fechado e rosto redesenhado pela IA).
- *
- * `fonte` é { video, instantes } para escolher entre quadros, ou { imagem }
- * para só recortar um quadro já escolhido. Devolve null quando não acha rosto:
- * quem chama segue com a capa antiga, que é pior mas existe.
- */
-export async function quadroDaCapa(fonte, pasta, nome) {
-  const config = JSON.stringify({
-    ...fonte,
-    saida: join(pasta, nome),
-    modelo_rosto: MODELO_ROSTO,
-    modelo_segmentacao: MODELO_MULTICLASSE,
-  });
+/** Roda o quadro-da-capa.py com um pedido e devolve a última linha JSON, ou null. */
+async function rodarQuadroDaCapa(config, nome) {
   const texto = await new Promise((resolve) => {
-    const p = spawn(PYTHON, [join(AQUI, "quadro-da-capa.py"), config], { cwd: pasta });
+    const p = spawn(PYTHON, [join(AQUI, "quadro-da-capa.py"), JSON.stringify(config)], { cwd: dirname(config.saida) });
     let saidaPadrao = "";
     let erro = "";
     p.stdout.on("data", (d) => (saidaPadrao += d));
     p.stderr.on("data", (d) => (erro += d));
-    // Cada quadro custa uma busca do ffmpeg e duas inferências (perto de 1 s
-    // medido na máquina de desenvolvimento); 24 quadros cabem com folga em 3 min.
+    // Cada quadro custa uma busca do ffmpeg e uma inferência (perto de 1 s
+    // medido na máquina de desenvolvimento); 40 quadros cabem em 3 min.
     const relogio = setTimeout(() => {
       p.kill("SIGKILL");
       resolve(null);
@@ -227,12 +213,64 @@ export async function quadroDaCapa(fonte, pasta, nome) {
       .split(String.fromCharCode(10))
       .reverse()
       .find((l) => l.trim().startsWith("{"));
-    if (!linha) return null;
-    const r = JSON.parse(linha);
-    return r.erro ? null : r;
+    return linha ? JSON.parse(linha) : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * O QUADRO DA CAPA (30/09; nítido desde 11/10): o melhor quadro real como
+ * foto, e a pessoa recortada dele. Ver quadro-da-capa.py (a medida) e
+ * quadro-nitido.mjs (a regra: olho aberto, rosto inteiro e grande o bastante,
+ * nítido, de frente, sem ampliar demais).
+ *
+ * `fonte` é { video, instantes, alvo? } para escolher entre quadros, ou
+ * { imagem } para só recortar um quadro já escolhido. Devolve null quando
+ * nenhum quadro serve: quem chama segue SEM a foto da pessoa (nunca com um
+ * quadro ruim). `alvo` ({ largura, altura }) é o destino, quando conhecido:
+ * o quadro que precisaria ampliar mais de 2x para cobri-lo não serve.
+ */
+export async function quadroDaCapa(fonte, pasta, nome) {
+  const base = { saida: join(pasta, nome), modelo_rosto: MODELO_ROSTO, modelo_segmentacao: MODELO_MULTICLASSE };
+  if (fonte.imagem) {
+    const r = await rodarQuadroDaCapa({ ...base, imagem: fonte.imagem }, nome);
+    return r && !r.erro ? r : null;
+  }
+  const medidas = await rodarQuadroDaCapa({ ...base, video: fonte.video, instantes: fonte.instantes }, nome);
+  if (!medidas || !Array.isArray(medidas.candidatos)) return null;
+  const { escolherQuadroNitido } = await import("./quadro-nitido.mjs");
+  const { escolhido, descartados } = escolherQuadroNitido(medidas.candidatos, { alvo: fonte.alvo ?? null });
+  if (!escolhido) {
+    console.log(`[capa ${nome}] nenhum quadro nítido em ${medidas.avaliados} (${descartados.slice(0, 6).map((d) => `${d.instante}s: ${d.motivos.join(", ")}`).join("; ")}): a capa sai sem a foto`);
+    return null;
+  }
+  const recorte = await rodarQuadroDaCapa({ ...base, saida: join(pasta, `${nome}-final`), imagem: escolhido.quadro }, nome);
+  if (!recorte || recorte.erro) return null;
+  return {
+    ...recorte,
+    instante: escolhido.instante,
+    quadro: escolhido.quadro,
+    notas: escolhido.medida,
+    rosto: escolhido.medida.caixa,
+    avaliados: medidas.avaliados,
+    descartados: descartados.length,
+  };
+}
+
+/**
+ * VÁRIOS QUADROS NÍTIDOS E DIFERENTES (11/10): um por peça da campanha, para
+ * a janela da pessoa do modelo não repetir o mesmo quadro em todas. Mede os
+ * instantes uma vez, fica com os que passam na regra, em ordem de nota, a pelo
+ * menos `distancia` segundos uns dos outros. Sem recorte (o modelo usa o
+ * quadro inteiro). Devolve [] quando nenhum serve.
+ */
+export async function quadrosNitidos(fonte, pasta, nome, { quantos = 1, distancia = 8 } = {}) {
+  const base = { saida: join(pasta, nome), modelo_rosto: MODELO_ROSTO, modelo_segmentacao: MODELO_MULTICLASSE };
+  const medidas = await rodarQuadroDaCapa({ ...base, video: fonte.video, instantes: fonte.instantes }, nome);
+  if (!medidas || !Array.isArray(medidas.candidatos)) return [];
+  const { escolherVariosNitidos } = await import("./quadro-nitido.mjs");
+  return escolherVariosNitidos(medidas.candidatos, { quantos, distancia, alvo: fonte.alvo ?? null });
 }
 
 /** Instantes espalhados num intervalo, fugindo das bordas (entrada e saída de fala). */

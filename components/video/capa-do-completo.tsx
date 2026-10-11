@@ -80,11 +80,14 @@ export function CapaDoCompleto({
   // cliente abriu o card antes disso, a tela espera e consulta de novo.
   // A foto da biblioteca escolhida antes da geração não para a espera
   // (05/10): as duas compostas ainda chegam, como opções.
+  // As capas pedidas ao template do modelo do curso (11/10) chegam pelo
+  // callback do worker, minutos depois: a tela espera e consulta de novo.
+  const noModelo = Boolean(capas?.noModelo?.pendente);
   useEffect(() => {
-    if (carregando || temCapasGeradas(capas) || gerando) return;
+    if (carregando || (temCapasGeradas(capas) && !noModelo) || gerando) return;
     const t = setInterval(() => void carregar(), 8_000);
     return () => clearInterval(t);
-  }, [carregando, capas, gerando, carregar]);
+  }, [carregando, capas, gerando, carregar, noModelo]);
 
   const gerar = async (pedido: { estilo?: EstiloDeCapa; clima?: ClimaDaCapa } = {}) => {
     setGerando(true);
@@ -101,8 +104,12 @@ export function CapaDoCompleto({
       const d = (await r.json().catch(() => ({}))) as { capas?: CapasDoCompleto; error?: string };
       if (!r.ok || !d.capas) throw new Error(d.error ?? "Não consegui gerar as capas.");
       setCapas(d.capas);
-      onEscolhida?.(d.capas.opcoes[d.capas.escolhida]?.url);
-      toast.success("Duas capas novas. Clique na que vai para o YouTube.");
+      if (d.capas.noModelo?.pendente) {
+        toast.success("As capas estão sendo montadas no estilo do seu modelo. Aparecem aqui em alguns minutos.");
+      } else {
+        onEscolhida?.(d.capas.opcoes[d.capas.escolhida]?.url);
+        toast.success("Duas capas novas. Clique na que vai para o YouTube.");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não consegui gerar as capas.");
     } finally {
@@ -302,6 +309,13 @@ export function CapaDoCompleto({
       <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
         {CLIMAS_DE_CAPA_ROTULO[clima].descricao} O clima é só deste vídeo.
       </p>
+
+      {noModelo && (
+        <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Vitor Vídeo está montando as capas no estilo do seu modelo, com a sua melhor foto nítida do vídeo. Leva alguns minutos; esta parte atualiza sozinha.
+        </div>
+      )}
 
       {ocupado || !capas ? (
         <div className="flex items-center gap-2 text-xs py-3" style={{ color: "var(--text-muted)" }}>

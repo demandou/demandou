@@ -10,9 +10,11 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
  * Regra do Bruno, aprovada no protótipo (worker/src/modelo/arte-no-modelo.mjs):
  * o post, a capa e as lâminas do carrossel e o infográfico de um projeto que
  * escolheu um modelo do curso, e cujos posts seguem o estilo mestre, saem
- * desenhados pelo PRÓPRIO template do modelo, nas cores da marca, sem a pessoa
- * da gravação (onde o modelo põe a pessoa entra a foto dela da Biblioteca de
- * materiais, ou nada). Quem criou o próprio estilo dos posts ("não gostei")
+ * desenhados pelo PRÓPRIO template do modelo, nas cores da marca (onde o modelo
+ * põe a pessoa entra a foto dela da Biblioteca de materiais; sem foto, desde
+ * 11/10, um quadro NÍTIDO da gravação diferente em cada peça; sem quadro bom,
+ * nada). Desde 11/10 cada peça do lote usa um bloco diferente do modelo (só as
+ * lâminas repetem entre si). Quem criou o próprio estilo dos posts ("não gostei")
  * segue o dele, e o modelo que pede capturas ou entradas de fora (`pede` no
  * catálogo) fica no caminho de hoje.
  *
@@ -32,11 +34,13 @@ import type { ConteudoDoInfografico } from "@/lib/media/infographic";
  * (sem banco, sem rede): as decisões e as contas, que o teste prova.
  */
 
-export type FormatoNoModelo = "4:5" | "1:1" | "9:16";
+/** O 16:9 (11/10) é só da capa do vídeo completo no YouTube (lib/media/capa-pelo-modelo.ts). */
+export type FormatoNoModelo = "4:5" | "1:1" | "9:16" | "16:9";
 export type TipoDaPecaNoModelo = "post" | "capa" | "lamina" | "infografico";
-export type PecaDoLote = { tipo: TipoDaPecaNoModelo; texto: string; formatos: FormatoNoModelo[] };
+/** `fotoUrl` (11/10): a foto da pessoa DESTA peça (um quadro nítido diferente da gravação por peça). */
+export type PecaDoLote = { tipo: TipoDaPecaNoModelo; texto: string; formatos: FormatoNoModelo[]; fotoUrl?: string };
 
-const FORMATOS: ReadonlySet<string> = new Set(["4:5", "1:1", "9:16"]);
+const FORMATOS: ReadonlySet<string> = new Set(["4:5", "1:1", "9:16", "16:9"]);
 /** Os travessões (longo e meio), que nunca vão para texto de peça ou de legenda. */
 const TRACOS = /[\u2014\u2013]/g;
 

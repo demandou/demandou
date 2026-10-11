@@ -4,13 +4,13 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 800;
 
 import { NextRequest, NextResponse } from "next/server";
-import { lerMidia, midiaProduzida } from "@/lib/media/storage";
-import { put } from "@vercel/blob";
 import { acessoAoVideo } from "@/lib/media/piloto-do-servidor";
 import { prisma } from "@/lib/db/prisma";
 import type { Trecho } from "@/lib/media/select-clips";
-import { escreverTextoDoCorte, comporCapa } from "@/lib/media/capa-e-titulo";
-import { dataUrlToBuffer } from "@/lib/media/nano-banana";
+import { escreverTextoDoCorte } from "@/lib/media/capa-e-titulo";
+import { comporCapaDoCorte, fotoDoVideoSePrecisar } from "@/lib/media/capa-do-corte";
+import { pedirCapasDosCortesNoModelo, regraDaCapaPeloModelo } from "@/lib/media/capa-pelo-modelo-servidor";
+import { fundirNoTrecho } from "@/lib/media/revisao-do-corte";
 
 /**
  * Título, descrição e capa de cada corte marcado.
@@ -89,104 +89,76 @@ export async function POST(
     voz: video.project.voice,
   };
 
-  const resultados = await Promise.all(
+  // Os textos de cada corte primeiro (título, descrição, frase da capa).
+  const textos = await Promise.all(
     alvos.map(async ({ t, i }) => {
       try {
-        const texto = await escreverTextoDoCorte(t, contexto, {
-          projectId: video.projectId,
-        });
-
-        let capaArte: { url: string } | null = null;
-        // O quadro do ROSTO, escolhido pelo squad varrendo o vídeo inteiro, e
-        // não o quadro de dentro do trecho.
-        //
-        // A diferença decide se a capa presta: os melhores momentos de fala não
-        // coincidem com os melhores momentos de imagem. Na gravação de teste,
-        // todos os sete trechos caíam em tela compartilhada, e a capa saía com
-        // texto branco em cima de um slide. O quadro certo estava no segundo 20,
-        // na abertura, que a seleção de trechos descarta de propósito.
-        //
-        // Cai para o quadro do trecho quando a varredura não achou nada, que é
-        // melhor que não ter capa.
-        // Desde 30/09 o corte chega com o PRÓPRIO quadro escolhido pelo rosto
-        // (olho aberto, boca fechada) e a pessoa já recortada; esse vale mais
-        // que a capa-fonte, porque é do assunto do corte.
-        const recorteDoTrecho = t.midia?.recorte?.url ?? null;
-        const quadro = recorteDoTrecho ? t.midia?.capa?.url : video.capaFonteUrl ?? t.midia?.capa?.url;
-        if (quadro) {
-          // O quadro vive no storage privado, então precisa do SDK. `fetch`
-          // devolveria 403, armadilha que este projeto já pagou três vezes.
-          // O quadro pode estar no store privado (acervo antigo) ou no
-          // público (produzido a partir de 01/09), então quem lê precisa
-          // saber dos dois. `fetch` puro numa URL privada devolve 403,
-          // armadilha que este projeto já pagou três vezes.
-          const bytes = await lerMidia(quadro);
-          if (bytes) {
-            const arte = await comporCapa(bytes.toString("base64"), texto.fraseDaCapa, {
-              expressao: texto.expressao,
-              cenario: texto.cenario,
-              nicho: video.project.niche,
-              usageCtx: { projectId: video.projectId },
-              // O corte é vertical, a capa dele também. A thumb 16:9 do vídeo
-              // completo vem do quadro-fonte, não daqui.
-              formato: "9:16",
-              quadroUrl: quadro,
-              recorteUrl: recorteDoTrecho,
-              chaveDoRecorte: `cortes/${video.id}/recorte-capa-${i}.png`,
-            });
-            if (arte) {
-              const { url } = await put(
-                `cortes/${video.id}/capa-arte-${i}.jpg`,
-                dataUrlToBuffer(arte),
-                {
-                  // Capa é mídia PRODUZIDA: vai para o store público, que é
-                  // quem entrega cache e Range ao navegador do cliente.
-                  ...midiaProduzida(),
-                  contentType: "image/jpeg",
-                  addRandomSuffix: true,
-                }
-              );
-              capaArte = { url };
-            }
-          }
-        }
-
-        return { i, texto, capaArte, erro: null as string | null };
+        return { i, texto: await escreverTextoDoCorte(t, contexto, { projectId: video.projectId }), erro: null as string | null };
       } catch (err) {
         // Um corte que falha não derruba os outros, mesma regra do worker.
-        return {
-          i,
-          texto: null,
-          capaArte: null,
-          erro: err instanceof Error ? err.message : "falhou",
-        };
+        return { i, texto: null, erro: err instanceof Error ? err.message : "falhou" };
       }
     })
   );
 
-  const atualizados = trechos.map((t, i) => {
-    const r = resultados.find((x) => x.i === i);
-    if (!r || !r.texto) return t;
-    return {
-      ...t,
-      texto: r.texto,
-      midia: { ...(t.midia ?? {}), capaArte: r.capaArte },
-    };
-  });
+  // A CAPA PELO MODELO DO CURSO (11/10): o projeto com modelo faz as capas
+  // dos cortes pelo template do modelo (lib/media/capa-pelo-modelo-servidor.ts),
+  // num lote só; elas chegam pelo callback das artes. Sem modelo, ou com o
+  // worker recusando, a capa é composta aqui, pelo caminho de hoje, já com a
+  // regra do quadro nítido (lib/media/capa-do-corte.ts).
+  const comTexto = textos.filter((r) => r.texto);
+  let peloModelo: number[] = [];
+  const regra = comTexto.length ? await regraDaCapaPeloModelo(video.projectId) : null;
+  if (regra) {
+    peloModelo = await pedirCapasDosCortesNoModelo({
+      videoJobId: video.id,
+      projectId: video.projectId,
+      modelo: regra.modelo,
+      cortes: comTexto.map((r) => ({ indice: r.i, frase: r.texto!.fraseDaCapa })),
+    }).catch((e) => {
+      console.error(`[capas][${video.id}] pedido ao modelo falhou, vai pelo caminho de hoje:`, e);
+      return [] as number[];
+    });
+  }
+  const aCompor = comTexto.filter((r) => !peloModelo.includes(r.i));
+  const doVideo = aCompor.length
+    ? await fotoDoVideoSePrecisar(video.id, video.projectId, aCompor.map((r) => trechos[r.i])).catch(() => null)
+    : null;
+  const resultados = await Promise.all(
+    textos.map(async (r) => {
+      if (!r.texto || peloModelo.includes(r.i)) return { ...r, capaArte: null as { url: string } | null };
+      const url = await comporCapaDoCorte({
+        videoJobId: video.id,
+        projectId: video.projectId,
+        nicho: video.project.niche,
+        indice: r.i,
+        trecho: { ...trechos[r.i], texto: r.texto },
+        doVideo,
+      }).catch((e) => {
+        console.error(`[capas][${video.id}] capa do corte ${r.i}:`, e);
+        return null;
+      });
+      return { ...r, capaArte: url ? { url } : null };
+    })
+  );
 
-  await prisma.videoJob.update({
-    where: { id },
-    data: { clips: atualizados as never },
-  });
+  // Funde só o que esta rota escreve (o texto e, no caminho de hoje, a capa),
+  // corte a corte: o pedido ao modelo já gravou `capaNoModelo` nos cortes dele,
+  // e regravar a lista inteira lida antes apagaria isso.
+  for (const r of resultados) {
+    if (!r.texto) continue;
+    await fundirNoTrecho(id, r.i, { texto: r.texto }, peloModelo.includes(r.i) ? {} : { capaArte: r.capaArte });
+  }
 
-  const comTexto = resultados.filter((r) => r.texto).length;
   const comArte = resultados.filter((r) => r.capaArte).length;
   const falhas = resultados.filter((r) => r.erro);
 
   return NextResponse.json({
-    ok: comTexto > 0,
-    comTexto,
+    ok: comTexto.length > 0,
+    comTexto: comTexto.length,
     comArte,
+    // As capas que vão pelo template do modelo do curso e chegam pelo callback.
+    peloModelo: peloModelo.length,
     // A diferença entre texto e arte importa para a tela: capa que não compôs
     // não é falha do corte, é o quadro real seguindo sem tratamento.
     erros: falhas.map((f) => `corte ${f.i}: ${f.erro}`),

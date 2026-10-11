@@ -647,6 +647,10 @@ async function processar(trabalho) {
           "qc-fonte"
         );
         if (perto?.instante != null) instante = perto.instante;
+        // Sem quadro nítido (11/10): o quadro do agente segue como pôster do
+        // card, mas não vira recorte de pessoa. A capa do app não usa este
+        // quadro para pôr a pessoa: ela pede um quadro nítido ao /melhor-quadro.
+        if (!perto) console.log(`[${trabalho.videoJobId}] capa-fonte sem quadro nítido: pôster sem recorte`);
         await extrairCapaFinal(fonte, arquivo, instante, capa.recorte);
         // Em pé, a capa deitada tem as laterais desfocadas: o recorte da
         // pessoa sai de um quadro inteiro em pé, sem borrão para confundir o
@@ -656,7 +660,7 @@ async function processar(trabalho) {
           imagemDoRecorte = join(pasta, "capa-fonte-em-pe.jpg");
           await extrairQuadroInteiro(fonte, imagemDoRecorte, instante);
         }
-        const recorteDaFonte = await quadroDaCapa({ imagem: imagemDoRecorte }, pasta, "qc-fonte-final");
+        const recorteDaFonte = perto ? await quadroDaCapa({ imagem: imagemDoRecorte }, pasta, "qc-fonte-final") : null;
         if (recorteDaFonte) {
           resultados.capaFonteRecorte = await subir(
             recorteDaFonte.recorte,
@@ -965,7 +969,10 @@ async function processar(trabalho) {
         // A capa do corte: o melhor quadro do trecho como FOTO (olho aberto,
         // boca fechada, rosto de frente) e a pessoa recortada dele, para a capa
         // ser composta em código sem o modelo de imagem tocar no rosto (teste de
-        // 29/09). Sem rosto achado, cai no quadro fixo de antes.
+        // 29/09). Sem quadro NÍTIDO (11/10: olho aberto, rosto inteiro e
+        // grande, sem borrão), cai no quadro fixo de antes, SEM recorte: o app
+        // só põe a pessoa na capa quando o recorte veio, e sem ele a capa sai
+        // sem a foto.
         const escolhido = await quadroDaCapa(
           { video: limpo, instantes: instantesEspalhados(0, duracaoLimpa, 16) },
           pasta,
@@ -1839,11 +1846,27 @@ const servidor = createServer((req, res) => {
       if (!instantes.length) return responder(400, { error: "Faltam instantes" });
       const pasta = await mkdtemp(join(tmpdir(), "melhor-quadro-"));
       emAndamento += 1;
+      // `alvo` (11/10): o destino ({ largura, altura }); quadro que precisaria
+      // ampliar mais de 2x para cobri-lo não serve. `quantos` > 1: vários
+      // quadros nítidos e diferentes (um por peça da campanha), sem recorte.
+      const alvo = pedido.alvo && Number(pedido.alvo.largura) > 0 && Number(pedido.alvo.altura) > 0 ? { largura: Number(pedido.alvo.largura), altura: Number(pedido.alvo.altura) } : null;
+      const quantos = Math.max(1, Math.min(12, Math.floor(Number(pedido.quantos) || 1)));
       try {
         const fonte = join(pasta, "fonte.mp4");
         await baixarQualquer(pedido.sourceUrl, fonte);
-        const escolhido = await quadroDaCapa({ video: fonte, instantes }, pasta, "mq");
-        if (!escolhido) return responder(422, { error: "Nenhum quadro com rosto inteiro e olhos abertos" });
+        if (quantos > 1) {
+          const { quadrosNitidos } = await import("./segmentacao.mjs");
+          const varios = await quadrosNitidos({ video: fonte, instantes, alvo }, pasta, "mq", { quantos, distancia: Number(pedido.distancia) > 0 ? Number(pedido.distancia) : 8 });
+          if (!varios.length) return responder(422, { error: "Nenhum quadro nítido (olho aberto, rosto inteiro, sem borrão)" });
+          const quadros = [];
+          for (const [k, q] of varios.entries()) {
+            const up = await subir(q.quadro, `${pedido.chave}-quadro-${k + 1}.jpg`, "image/jpeg");
+            quadros.push({ ...up, instante: q.instante, rosto: q.medida.caixa, notas: q.medida, largura: q.largura, altura: q.altura });
+          }
+          return responder(200, { quadros, avaliados: instantes.length });
+        }
+        const escolhido = await quadroDaCapa({ video: fonte, instantes, alvo }, pasta, "mq");
+        if (!escolhido) return responder(422, { error: "Nenhum quadro nítido (olho aberto, rosto inteiro, sem borrão)" });
         const quadro = await subir(escolhido.quadro, `${pedido.chave}-quadro.jpg`, "image/jpeg");
         const recorte = await subir(escolhido.recorte, `${pedido.chave}-recorte.png`, "image/png");
         responder(200, {
@@ -2565,7 +2588,7 @@ const servidor = createServer((req, res) => {
         ok: true,
         montado,
         tempos: e.tempos,
-        curso: { modelo: pedido.modelo, versao: e.modelo, formato: e.formato, mapa: e.mapa, voltas: e.voltas, historico: e.historico, custoUsd: e.custoUsd, avisos: e.avisos, ...(e.blocos ? { blocos: e.blocos } : {}), ...(e.render ? { render: e.render } : {}) },
+        curso: { modelo: pedido.modelo, versao: e.modelo, formato: e.formato, mapa: e.mapa, ...(e.tipos?.length ? { tipos: e.tipos } : {}), voltas: e.voltas, historico: e.historico, custoUsd: e.custoUsd, avisos: e.avisos, ...(e.blocos ? { blocos: e.blocos } : {}), ...(e.render ? { render: e.render } : {}) },
         segundos: Math.round((Date.now() - inicio) / 1000),
         retorno: pedido.retorno ?? null,
       };

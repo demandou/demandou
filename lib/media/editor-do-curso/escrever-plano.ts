@@ -79,7 +79,7 @@ export type PecaParada = {
   indice: number;
   tipo: TipoDePecaParada;
   texto: string;
-  formato: "4:5" | "9:16" | "1:1";
+  formato: "4:5" | "9:16" | "1:1" | "16:9";
   /** O trecho da peça no vídeo já cortado: o momento dela cobre de `de` a `ate`. */
   de: number;
   ate: number;
@@ -93,6 +93,12 @@ export type PecasParadas = {
   /** Sem foto do cliente: onde o modelo põe a pessoa fica um fundo liso nesta cor. */
   semPessoa: boolean;
   corDoFundo?: string | null;
+  /** A janela da pessoa leva quadros nítidos da própria gravação, um diferente por peça (11/10). */
+  pessoaDaGravacao?: boolean;
+  /** Os blocos que o corte do mesmo vídeo usou neste modelo (o que ficou bom), em texto curto. */
+  referenciaDoCorte?: string | null;
+  /** Os tipos de bloco que o template do modelo aceita (do src/plano.ts). */
+  blocosDoModelo?: string[] | null;
 };
 
 const NOME_DA_PECA: Record<TipoDePecaParada, string> = {
@@ -168,13 +174,21 @@ export function instrucaoDoBloco(b: BlocoDoPlano, duracaoDoTrecho: number): stri
 }
 
 /** O bloco de instrução do modo peças paradas (o mesmo no mapa das imagens e no plano). */
+/** O nome da peça para o redator: a capa em 16:9 ou 9:16 é a capa do VÍDEO (thumbnail), não a do carrossel. */
+export function nomeDaPeca(p: Pick<PecaParada, "tipo" | "formato">): string {
+  if (p.tipo === "capa" && (p.formato === "16:9" || p.formato === "9:16")) return "capa do vídeo (thumbnail: o título enorme, para ler de relance)";
+  return NOME_DA_PECA[p.tipo] ?? p.tipo;
+}
+
 export function instrucaoDasPecasParadas(pp: PecasParadas): string {
   const lista = pp.pecas
-    .map((p) => `${p.indice}. ${NOME_DA_PECA[p.tipo] ?? p.tipo} (${p.formato}), trecho de ${p.de.toFixed(2)} a ${p.ate.toFixed(2)} s (primeira palavra em ${p.primeiraEm.toFixed(2)}, última termina em ${p.ultimaAte.toFixed(2)}): "${p.texto}"`)
+    .map((p) => `${p.indice}. ${nomeDaPeca(p)} (${p.formato}), trecho de ${p.de.toFixed(2)} a ${p.ate.toFixed(2)} s (primeira palavra em ${p.primeiraEm.toFixed(2)}, última termina em ${p.ultimaAte.toFixed(2)}): "${p.texto}"`)
     .join("\n");
   const pessoa = pp.semPessoa
     ? `Não há pessoa nestas peças: onde o modelo põe o vídeo da pessoa (quadro cheio, janela, letras vazadas, moldura, metade de baixo), aparece um fundo liso na cor ${pp.corDoFundo ?? "do fundo da marca"}. Não escolha um campo, placa ou fundo de bloco dessa mesma cor nem perto dela, para o que o modelo desenha por cima do vídeo continuar visível.`
-    : "Onde o modelo põe a pessoa, entra uma foto parada do cliente (não é quadro de gravação).";
+    : pp.pessoaDaGravacao
+      ? "Onde o modelo põe a pessoa, entra um quadro parado e nítido da própria gravação do cliente, diferente em cada peça: use os blocos que mostram a pessoa (janela, moldura, câmera) onde fizer sentido."
+      : "Onde o modelo põe a pessoa, entra uma foto parada do cliente (não é quadro de gravação).";
   return `# MODO PEÇAS PARADAS (posts da campanha, não um vídeo)
 
 Esta "fala" não é uma gravação: é o texto das peças de uma campanha lido em sequência, uma peça por trecho, para o fluxo do curso funcionar. Ninguém vai assistir a este vídeo. Cada peça vira UMA IMAGEM PARADA, tirada do render depois que o bloco dela assentou (todas as palavras já ditas e tudo já entrou). O estilo é o deste modelo (a letra, o layout, os blocos, o jeito de pôr imagem); as cores já foram trocadas pelas da marca.
@@ -187,7 +201,10 @@ Regras deste modo (valem por cima do ritmo de vídeo da skill):
 - O texto da peça aparece INTEIRO e legível no estado final do momento: todas as palavras, na ordem, sem resumir, sem trocar palavra e sem cortar (pode quebrar linha, mudar o tamanho e pôr um trecho em destaque ou na cor de acento). Os campos de texto do bloco, somados, contêm o texto todo da peça.
 - Número com símbolo ("35%", "R$ 97") aparece com o símbolo na tela: não ponha esse número num campo que o template limpa para só letras e algarismos (como a palavra-janela gigante); use outra palavra na janela e deixe o número no texto.
 - Escolha o bloco mais forte do modelo que mostra o texto inteiro parado: prefira a assinatura e os blocos próprios do modelo. Não use bloco que só funciona em movimento (o que só aparece na troca, a imagem em tela cheia que esconde o texto, o contador que só faz sentido andando) nem bloco que deixa o texto para a legenda: a legenda some em todas as peças.
-- Capa e lâminas são da mesma série de carrossel: as lâminas usam o mesmo bloco, mudando só o texto, e a capa abre a série com o bloco mais forte.
+- VARIEDADE (as peças saíam todas iguais): cada peça usa um TIPO DE BLOCO DIFERENTE das outras peças deste pedido. A única exceção são as lâminas de um mesmo carrossel, que podem repetir o bloco entre si (a série); a capa do carrossel usa um bloco diferente das lâminas e abre a série com o mais forte. A conferência reprova duas peças com o mesmo bloco. Prefira a assinatura do modelo e os blocos mais visuais (os que desenham, mostram a pessoa ou têm imagem), não o bloco de texto simples em todas.${pp.blocosDoModelo?.length ? `
+- Os blocos deste modelo: ${pp.blocosDoModelo.join(", ")}.` : ""}${pp.referenciaDoCorte ? `
+- O que ficou bom no corte deste mesmo vídeo, editado neste modelo (use como referência de bloco e de tom, sem copiar o texto):
+${pp.referenciaDoCorte}` : ""}
 - Dentro do momento, cada item ainda entra no "em" da palavra que o nomeia, como a skill manda; o quadro é tirado depois da última palavra da peça.
 - ${pessoa}
 - A densidade de momentos por segundo, a cobertura, a variedade de blocos e os efeitos que só existem em movimento, que a skill pede para vídeo, não valem aqui e não são conferidos. A assinatura do modelo continua obrigatória pelo menos uma vez, as regras de fidelidade (nada inventado) e os campos obrigatórios de cada bloco também.`;

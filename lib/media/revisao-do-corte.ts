@@ -458,7 +458,7 @@ export function conferirAjuste(
  * callback do worker); ler, mudar e regravar a lista inteira apagaria o que
  * outra rota gravou no meio. `midia` é fundida um nível abaixo.
  */
-async function fundirNoTrecho(
+export async function fundirNoTrecho(
   videoJobId: string,
   indice: number,
   campos: Record<string, unknown>,
