@@ -19955,3 +19955,14 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 - tsc limpo e 121 de 121 nos testes das três áreas. Sem migração.
 - MÁQUINA LOCAL: travou com três agentes em paralelo (render órfão da prova local do completo e o rg do VS Code nos 60+ worktrees). Regra: um trabalho pesado por vez; prova de render vai para o worker pelo teste de ponta a ponta.
 - EM ANDAMENTO: teste de ponta a ponta pago na Maquete 3D; depois Recorte, Gráficos e os 8 modelos provados, em série.
+
+## 11/10 ~14h45: o que os testes de ponta a ponta da Maquete 3D acharam e o que foi publicado (5a4db2a)
+
+- Publicado (worker e app, cópia limpa producao-5a4db2a), com OK do Bruno para publicar o worker mesmo ocupado com teste condenado:
+  - card de corte nasce com o espelho da montagem (sincronizar-quadro.ts, espelhoDaMontagemDoTrecho);
+  - fila paralela do worker: a montagem que roda não reserva as unidades dos trabalhos (corte e completo editam juntos; foraDaFila em andarFilaParalela);
+  - -14 LUFS do editor avançado pelo ffmpeg 7.1 do Remotion (worker/src/avancado/audio-do-mov.mjs): o ffmpeg 5.1 do contêiner não monta o filtro com o PCM do Remotion (nem pelo WAV); o corte sob medida NUNCA tinha saído na produção por isso;
+  - kit: MARCA.destaqueTexto (destaque com 4,5:1 sobre o fundo) na legenda, cartão, gráfico e rótulo; rótulos 3D dentro do quadro e sem sobrepor; revisão olha quadros a 60% (era 37,5%);
+  - artes (6dc85c0): a correção da Vera regravava metadata velho e prendia arte em pendente (metadataComMudancas); vigia com prazo de 25 min e 2 voltas, depois falha técnica; números da arte só da fala e do material do cliente (lastroDaArte, infograficoSoComAFala; muda a regra de 08/10 que aceitava pesquisa com fonte, a confirmar com o Bruno); infográfico na linguagem do estilo; manchete nunca cortada por palavra; trecho repetido volta ao redator; destaqueLegivel nas artes.
+- Medidas do teste 3 (Maquete 3D, 120 s de gravação): roteiro 1,8 min, cortes crus 1,6 min, capas 1,9 min, corte de 41 s pronto em 13,4 min (promessa 18,8), completo 16:9 em 2 blocos pronto em ~34 min da aprovação; IA US$ 2,39 no teste inteiro.
+- Testes no projeto de teste são UM POR VEZ (o estilo é do projeto). Rodada 4 em série: Maquete 3D, Recorte, Gráficos (scratchpad/rodar-e2e.sh).
