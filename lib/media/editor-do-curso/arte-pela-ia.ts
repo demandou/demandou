@@ -277,7 +277,7 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     "",
     `COLORS (the client's brand, use exactly; ignore any color the style might suggest): background and dominant field ${e.cores.fundo}; hero text ${e.cores.titulo}; accent ${e.cores.destaque} ONLY in details (thin lines, highlights, one or two key words, small shapes, lights). ${s.papeisDasCores} Rendered materials and light keep their natural look; the brand color is never a tint over the whole image.`,
     "",
-    `AVOID: ${s.evitar} ${linhaDaPessoa(s, e.comFotoDaPessoa)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No long dash.`,
+    `AVOID: ${s.evitar} ${linhaDaPessoa(s, e.comFotoDaPessoa)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No real brand logos or app icons (Instagram, TikTok, YouTube, Facebook, WhatsApp and the like), even when the speaker names them: use plain generic shapes. No long dash.`,
   ];
   if (e.pagina && e.pagina.total > 1) {
     linhas.push(
