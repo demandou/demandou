@@ -19993,3 +19993,10 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 
 - Publicado depois das 19h50: seleção que nunca recusa por nicho (60bc76a), vídeo sem corte segue só como completo (3ad4dba), roteiro aceita lista de cortes vazia (último commit), arte com número inteiro e voz para o público (aa54050). Vídeos de teste em C:\Users\devan\Videos\canal.
 - ABERTO, começar por aqui: o completo do vídeo cmv4fy2v1001x06l6jad7lf91 (projeto Demandou, modelo-arquivo) saiu SEM edição: "Failed to parse URL from undefined".
+
+## 11/10 ~21h40: causa do completo cru do vídeo do Ygor (cmv4fy2v1) achada e corrigida (bb6efe3, worker publicado)
+
+- Causa: em d368b43 (rota da cena assíncrona do editor avançado, 11/10 10h37) o pedirPlano do /editar-no-modelo do worker passou a chamar pedido.cenaUrl, que só o editor avançado manda. Todo corte e completo nos modelos do curso (fora do sob medida) falhava logo depois do passo "cortar" com "Failed to parse URL from undefined". Não era o caminho de zero cortes nem material do modelo-arquivo. Nos logs do Railway desde 13h só esse vídeo caiu (os testes do dia foram no sob medida).
+- Conserto: pedirPlano volta ao fetch síncrono no planoUrl (14 min). Worker publicado da cópia limpa (deploy SUCCESS, /saude ocioso antes).
+- Teste de ponta a ponta no projeto de teste: modelo-arquivo, vídeo do Ygor de 29 s, --cortes 0. O projeto de teste estava em sob-medida-graficos (reserva modelo-manifesto): voltar depois.
+- lib/referencias/padroes.ts tem mudança de 3 linhas que não é desta conversa: não commitada.
