@@ -27,21 +27,20 @@ import { ESTILOS_DE_LEGENDA } from "@/lib/media/legenda-escolhida";
  * JavaScript nosso.
  */
 
+// 11/10: os dois estilos sob medida aprovados pelo Bruno no teste de ponta a ponta, do MESMO trecho
+// (Marta e Maria, 31 s da gravação do OBS), feitos pela esteira e só reduzidos para a web (12 s, sem som).
 const LADO_A_LADO = [
   {
-    video: "/pitch/estilo-colagem.mp4",
-    capa: "/pitch/estilo-colagem.jpg",
-    nome: "Explicativo editorial",
-    detalhe: "Colagem de recortes e legenda em recorte de papel (estilo Vox)",
+    video: "/pitch/estilo-recorte-1110.mp4",
+    capa: "/pitch/estilo-recorte-1110.jpg",
+    nome: "Recorte com letreiro",
+    detalhe: "Você recortado, com os nomes ditos passando atrás da sua cabeça",
   },
   {
-    // 02/10: só os trechos com a parede real de fundo (0 a 3 s e 7,5 a 10 s do
-    // corte). O meio trocava o fundo por laranja chapado e trazia um cartão
-    // "NAO PRECISA" sem acento, que é defeito da montagem e não vitrine.
-    video: "/pitch/estilo-destaque-0210.mp4",
-    capa: "/pitch/estilo-destaque-0210.jpg",
-    nome: "Narrador com punch",
-    detalhe: "Você em tela cheia e palavras gigantes na cor da marca",
+    video: "/pitch/estilo-maquete-1110.mp4",
+    capa: "/pitch/estilo-maquete-1110.jpg",
+    nome: "Maquete 3D",
+    detalhe: "A cena que você conta montada em 3D, na hora em que é dita (leva mais tempo para ficar pronta)",
   },
 ];
 
@@ -92,7 +91,7 @@ export function Exemplos() {
           ))}
         </div>
         <p className="text-center text-sm text-[var(--text-muted)] mb-16">
-          Dois cortes reais da mesma gravação, do mesmo segundo, editados pela plataforma em estilos diferentes.
+          Dois cortes reais do mesmo trecho, editados pela plataforma em estilos diferentes. Os estilos em 3D são os mais impressionantes e levam mais tempo para ficar prontos.
         </p>
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-5">

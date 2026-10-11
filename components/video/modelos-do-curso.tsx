@@ -562,6 +562,12 @@ export function ModelosDoCurso({
               <p id={`grupo-${grupo}`} className="mb-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                 {TITULO_DO_GRUPO[grupo]}
               </p>
+              {grupo === "3d-e-efeitos" && (
+                // O AVISO DO TEMPO (11/10, Bruno: "destacar os 3D, mas avisar que demoram mais").
+                <p className="-mt-1 mb-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+                  Os mais impressionantes da biblioteca. Os modelos em 3D levam mais tempo para ficar prontos: o vídeo pode demorar de 30 a 45 minutos.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">{(recolhe ? modelos.slice(0, VISIVEIS) : modelos).map((m) => cartao(m))}</div>
             </div>
           );
