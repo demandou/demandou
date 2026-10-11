@@ -1,0 +1,1503 @@
+{
+ "modelo-agenda": {
+  "nomeDoEstilo": "Clean Agenda Planner",
+  "atmosfera": "Modern, precise, and calm, evoking a premium well-designed app interface. It feels functional and organized.",
+  "elementoVisual": "Abstract, flat graphic elements representing data blocks, timelines, or flowcharts fill the rounded frames. These elements are rendered as clean, vector-based shapes, suggesting structure and process, directly relating to the sentence's theme of organization or sequence.",
+  "composicoes": [
+   "Hero text centered at the top, a large visual element fills the bottom half of the post, with ample negative space around the text.",
+   "Hero text aligned left in the upper third, a medium visual element in a rounded frame sits right-aligned in the middle, with a clean background.",
+   "Hero text in the bottom third, a large visual element in a rounded frame fills the top two-thirds, leaving negative space for the text.",
+   "Hero text vertically stacked on the left, a small visual element in a rounded frame sits in the top right corner, with the rest as negative space.",
+   "Hero text centered in the middle, a large visual element in a rounded frame acts as a background element, with the text overlaying it."
+  ],
+  "tipografia": "A single sans-serif family, Golos Text, is used in weights from 600 to 800, with tabular numbers. Titles are large, items are medium, and labels are small uppercase with generous tracking, maintaining clear hierarchy.",
+  "textura": "Surfaces are smooth and flat, with soft, low shadows providing subtle depth. No grain, paper, or glass effects are present.",
+  "luz": "The scene is evenly lit with soft, diffused light, creating gentle shadows without harsh highlights or deep contrast.",
+  "papeisDasCores": "The background is a cool light tone, the main text is dark, and the primary accent color (warm and vibrant) highlights the key information or active elements.",
+  "evitar": "Do not use emojis, calendar app logos, bright glows behind elements, outlines on letters, gradients, analog clock hands, or busy patterns. Avoid any colored or stock icons; only simple line icons are permitted.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-anatomia": {
+  "nomeDoEstilo": "Anatomy Diagram Explainer",
+  "atmosfera": "Clinical, precise, and educational. This style evokes a premium, scientific journal aesthetic, suitable for detailed explanations.",
+  "elementoVisual": "A stylized 2.5D anatomical illustration or schematic diagram, rendered with fine lines and subtle shading, fills the upper portion of the post. It depicts a generic subject (e.g., a face, a body, an abstract object) with distinct regions or layers. One specific area is highlighted with a soft glow and fine light fibers, corresponding to the hero text.",
+  "composicoes": [
+   "Hero text is centered at the bottom, below a large, central visual element that occupies the upper two-thirds of the post, with ample negative space around the illustration.",
+   "Hero text is aligned left, positioned in the middle-right, with the visual element scaled to fill the entire left half of the post.",
+   "Hero text is large and centered within the visual element itself, which is a full-bleed illustration, with minimal negative space.",
+   "Hero text is small and bottom-right aligned, with the visual element dominating the top-left, leaving significant negative space in the bottom-right.",
+   "Hero text is stacked and centered, with the visual element as a cutaway diagram filling the top half, showing multiple layers with thin leader lines pointing to the text."
+  ],
+  "tipografia": "A variable geometric sans-serif like Sora is used throughout: heavy weights for titles and numbers, medium weights for labels, and lighter weights for supporting text. Tracking is tight for numbers, slightly wider for titles, and normal for body text, always in a clean, legible case.",
+  "textura": "The background surface is a smooth, very light, cool-toned paper, with illustrations rendered as fine ink lines on this surface, occasionally revealing subtle translucent layers.",
+  "luz": "The scene is evenly lit with a cool, soft light, highlighting the illustrative elements. Specific areas within the illustration feature a localized, soft glow and internal light fibers.",
+  "papeisDasCores": "A very light, cool background dominates, with dark text and lines. A single primary accent color is used for highlights and specific elements within the illustration, with a secondary accent for subtle variations.",
+  "evitar": "Do not use any additional accent colors beyond the designated primary and secondary. Avoid realistic or photographic illustrations, emojis, or app icons. Never place text too close to the edges or use condensed typography.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-ao-pe-da-letra": {
+  "nomeDoEstilo": "Literal vs. Real Meaning",
+  "atmosfera": "Informative yet playful, with a vintage airmail aesthetic. It feels premium and clear, designed for concise communication.",
+  "elementoVisual": "Two paper-like cards are presented side-by-side, each featuring a distinct subject-related image or texture. The left card's image is overlaid with a bold, rotated 'NO' stamp, while the right card's image is framed with a thin, hand-drawn line.",
+  "composicoes": [
+   "Hero text is centered at the top, above two large cards that fill the middle, leaving minimal space at the bottom.",
+   "Hero text is aligned left at the top, with the two cards slightly smaller and shifted right, creating negative space on the left.",
+   "Hero text is large and centered, with the two cards stacked vertically below it, leaving ample space on both sides.",
+   "Hero text is small and placed in the bottom left corner, while the two cards are scaled up to dominate the upper two-thirds of the post.",
+   "Hero text is integrated into the left card, with the right card scaled larger and positioned to its right, creating an asymmetrical balance."
+  ],
+  "tipografia": "The main text uses a strong, high-weight geometric sans-serif for readability, with some labels in wide-tracked uppercase. The hero sentence, representing the 'typed expression', uses a monospaced font, often larger and more prominent.",
+  "textura": "The background features a subtle, uniform texture, while the cards have a paper-like surface with diagonal airmail stripes and a slightly warmer background for the images.",
+  "luz": "The scene is evenly lit with a soft, diffused light, highlighting the paper textures without harsh shadows.",
+  "papeisDasCores": "A dark background dominates, with light text and card surfaces providing strong contrast; a cool light accent is used for emphasis, and a dark accent for the 'NO' stamp.",
+  "evitar": "Do not include any facial emojis, brand logos, or any text that is not the provided hero sentence. Avoid any elements that suggest a video interface or a person's presence.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-arquivo": {
+  "nomeDoEstilo": "Archive Dossier Document",
+  "atmosfera": "Sober, journalistic, and historical. This style evokes an authentic, premium documentary aesthetic.",
+  "elementoVisual": "A subject-related, monochromatic photographic image, rendered with a subtle film grain and vignette, is presented as a printed photo. This photo is affixed with tape to a textured background, suggesting an archive document or dossier sheet.",
+  "composicoes": [
+   "The hero text is large, centered at the top, with the photo positioned prominently at the bottom, filling the width.",
+   "The hero text is large, centered at the bottom, with the photo positioned prominently at the top, filling the width.",
+   "The hero text is large, occupying the full bottom width, while the photo is smaller, placed in the upper right corner.",
+   "The hero text is large, centered vertically on the left, with the photo filling the entire right half of the post.",
+   "The hero text is large, centered, with the photo scaled to fill the entire background, subtly overlaid by the text."
+  ],
+  "tipografia": "Titles and key phrases use a strong, wide geometric sans serif in a heavy weight, typically uppercase. Supporting text, labels, and dates are rendered in a monospaced typewriter font, often in uppercase with generous tracking, maintaining a clear hierarchy.",
+  "textura": "The background features a subtle paper fiber texture with soft table lighting. The photographic element includes a fine film grain and a paper shadow, adding depth.",
+  "luz": "The scene is lit with soft, even table lighting, creating subtle shadows under paper elements and a gentle falloff on the background.",
+  "papeisDasCores": "A light, warm background dominates, with dark text for primary information. A single, saturated accent color is used sparingly for specific graphic elements like stamps or lines.",
+  "evitar": "Do not use bright glows, colored gradients, emojis, or outline effects on text. Avoid adding stock photos, satellite maps, or flash transitions, as these break the authentic documentary feel.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-aula": {
+  "nomeDoEstilo": "Academic Modern Minimal",
+  "atmosfera": "Clean, professional, and academic, with a modern, premium feel. It evokes the clarity of a well-designed textbook page.",
+  "elementoVisual": "A subject-related abstract texture or scene fills a prominent rounded rectangle or square shape. This element is rendered as a flat graphic, a subtle gradient, or a soft focus photographic texture, directly illustrating the sentence's core idea without being literal.",
+  "composicoes": [
+   "Hero text is large and centered, with the visual element as a background texture behind it, filling the entire frame.",
+   "Hero text is aligned left in the upper half, with a large rounded rectangle visual element occupying the lower right, scaled to fill the space.",
+   "Hero text is in the upper right, with a smaller, square visual element in the lower left, surrounded by ample negative space.",
+   "Hero text is stacked vertically on the left, with a tall, narrow rounded rectangle visual element on the right, both occupying half the frame.",
+   "Hero text is small and centered at the bottom, with a large, full-width visual element filling the top two-thirds of the post."
+  ],
+  "tipografia": "The primary typeface is a robust sans-serif, like Plus Jakarta Sans, used in medium to heavy weights for readability, with titles in extra bold and slightly tracked negative. Formulas and variables use an elegant serif, like STIX Two Text, with italic letters and upright numbers, ensuring clear hierarchy.",
+  "textura": "The background features a subtle, light, slightly warm paper texture with a faint grid pattern. Content areas are smooth, light surfaces with soft shadows, suggesting layered sheets.",
+  "luz": "The scene is evenly lit with soft, diffused light, creating gentle shadows for depth without harsh highlights or strong directional sources.",
+  "papeisDasCores": "A light, slightly warm background dominates, with content areas in a pure light tone. Text is dark, with a single accent color used for emphasis and highlights.",
+  "evitar": "Do not use a dark background, more than one accent color, or any filters, glows, or halos. Avoid any text outlines or distracting animations that would break the still image aesthetic.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-autoridade": {
+  "nomeDoEstilo": "Authority Editorial Document",
+  "atmosfera": "Serious, authoritative, and premium, evoking the feel of a high-end editorial magazine. It projects calm expertise and considered information.",
+  "elementoVisual": "A stylized, flat graphic representation of a document, such as a legal brief, a technical diagram, a recipe card, or a financial report. This document is rendered as a light-toned paper card with a thin accent line at the top, and it serves as the primary visual carrier for the hero text or related imagery.",
+  "composicoes": [
+   "Hero text centered on a large document card, filling most of the frame, with minimal background space.",
+   "Hero text placed on a document card in the lower half, with a subject-related texture filling the upper background.",
+   "Hero text in a prominent, large scale on the background, with a smaller document card containing a related image or texture positioned below it.",
+   "Hero text aligned to the left on a document card that occupies the right two-thirds of the frame, leaving the left third as a solid background.",
+   "Hero text centered, with a large, abstract subject-related image or texture filling the entire background, and the document card acting as a subtle frame for the text."
+  ],
+  "tipografia": "Elegant, high-contrast serif like Instrument Serif is used for the main hero text, numbers, and document content, with emphasis in italic. A wide-tracked uppercase geometric sans like Inter is used for smaller labels, themes, and details, providing clear hierarchy.",
+  "textura": "The primary texture is a smooth, light-toned paper card with a subtle soft shadow, suggesting a physical document. The background can feature a deep, dark, matte surface or a subject-related abstract texture.",
+  "luz": "The scene is evenly lit with soft, diffused light, creating gentle shadows for depth on the document card. There are no harsh highlights or dramatic contrasts.",
+  "papeisDasCores": "A deep, dark background color dominates, providing a sober foundation. Light, warm text and document cards stand out, with a single thin accent color used sparingly for emphasis or decorative lines.",
+  "evitar": "Do not use any bright, saturated colors, gradients, or outlines on text. Avoid any elements that suggest movement, bounce, or flash, or any UI elements like progress bars or social media icons.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-balcao": {
+  "nomeDoEstilo": "Neighborhood Store Facade",
+  "atmosfera": "Warm, inviting, and trustworthy, evoking a classic local business feel. It's a premium take on a familiar, accessible aesthetic.",
+  "elementoVisual": "The main visual element is a stylized display window, framed by wood, presenting subject-related items. These items are rendered as either clean, isolated product photos or simple, flat illustrations, placed on a wooden shelf. The hero sentence is integrated as painted text on the glass or as labels for the displayed items.",
+  "composicoes": [
+   "Hero text painted large on the upper glass, with a single illustrative item centered on the shelf below, filling the lower glass area.",
+   "Hero text as labels for three illustrative items arranged in a row on the shelf, occupying the middle of the glass area.",
+   "Hero text stamped boldly on a paper-like card, placed centrally on the glass, with a single illustrative item on the shelf at the bottom.",
+   "Hero text as a title on a signboard under the awning, with a map illustration filling the entire glass area below it.",
+   "Hero text painted on the upper glass, with a single illustrative item on the shelf, and a small hanging sign with additional text in the upper right corner of the glass."
+  ],
+  "tipografia": "A robust, wide geometric sans serif in extra bold for titles and prices, with slightly tight tracking. A medium weight of the same sans serif is used for labels and details. A classic, elegant italic serif is reserved for the main business name on the awning signboard.",
+  "textura": "The post features a warm, slightly textured background resembling a painted wall, with visible wood grain for frames and shelves. Glass surfaces have subtle reflections and a slight gradient.",
+  "luz": "The scene is evenly lit with a soft, warm light, suggesting an inviting indoor or shaded outdoor setting. No harsh shadows or dramatic contrasts.",
+  "papeisDasCores": "The background uses a light, warm color, with dark accents for wood frames and text. A vibrant, warm accent color is used sparingly for emphasis, like a stamp or a pin.",
+  "evitar": "Do not use any glowing elements, neon lights, glitter, chalk textures, or dark backgrounds with bright accents. Avoid any visual elements that suggest a digital interface or modern technology.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-brilho": {
+  "nomeDoEstilo": "Editorial Clean Beauty",
+  "atmosfera": "Refined, clean, and premium. Evokes a beauty magazine aesthetic with an editorial feel.",
+  "elementoVisual": "A subject-related image, scene, or texture fills the background or a specific shape, never a person. This element is rendered as a soft, slightly out-of-focus photographic or painterly background, or as a clean, flat graphic shape containing a relevant texture or pattern. It provides context without being distracting, allowing the hero text to stand out.",
+  "composicoes": [
+   "Hero text is centered and large, with a thin accent line underneath, on a full-bleed background image.",
+   "Hero text is aligned left on a clean, light-colored panel that occupies two-thirds of the post, with a subtle background image on the remaining one-third.",
+   "Hero text is small and positioned at the bottom, with a large, abstract, subject-related graphic element filling the top two-thirds of the post.",
+   "Hero text is placed within a large, geometric shape (e.g., a circle or rectangle) that contains a relevant texture, with the rest of the post as a solid background.",
+   "Hero text is stacked vertically on the left, with a thin accent line separating it from a full-height, subject-related image on the right."
+  ],
+  "tipografia": "A single rounded geometric sans-serif typeface is used. Large numbers and initial lines use a light weight, body text uses a regular weight, and names, items, and captions use a medium weight. Uppercase labels are bold and widely tracked, maintaining a clear hierarchy.",
+  "textura": "Surfaces are smooth and matte, resembling fine paper or a soft, diffused light. There is a subtle, almost imperceptible grain or soft shadow for depth, avoiding harshness.",
+  "luz": "The scene is lit with soft, diffused light, creating gentle shadows and a warm or cool overall tone, enhancing a sense of calm and clarity.",
+  "papeisDasCores": "The background is predominantly light, with dark text and a single accent color used sparingly for numbers, circles, and key lines, never tinting photos.",
+  "evitar": "Do not add emojis, stickers, glow effects, text outlines, shaky effects, flashes, transitions between cuts, or stock photos. Avoid simulating before-and-after comparisons or 'perfect skin' effects; marks are guides.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-campo": {
+  "nomeDoEstilo": "Field Notebook Data Display",
+  "atmosfera": "A practical, organized, and informative mood, evoking a clean, modern field journal. It feels premium and precise, like a detailed overview.",
+  "elementoVisual": "The primary visual element is an aerial view, either a satellite photo with visible divisions or a stylized drawn map. This map features distinct, outlined 'plots' or 'territories' that relate to the sentence. A subject-related texture or abstract pattern fills the bottom frame where the presenter would be, complementing the overall theme.",
+  "composicoes": [
+   "Hero text is centered at the top, with a large aerial map filling the middle panel, and a subject-related texture filling the bottom frame.",
+   "Hero text is aligned left in the middle panel, with a smaller aerial map in the top section of the panel, and a data visualization card below it, all above the bottom texture.",
+   "Hero text is integrated into a large data visualization card that fills the middle panel, with a small aerial map in the top left corner, and the bottom texture.",
+   "Hero text is placed on a data visualization card in the lower part of the middle panel, with a large, detailed aerial map filling the upper part of the panel, and the bottom texture.",
+   "Hero text is large and centered within a pure typographic poster layout, with a subtle aerial map texture in the background of the middle panel, and the bottom texture."
+  ],
+  "tipografia": "Titles and calls to action use a bold, geometric sans-serif with tight tracking. Body text and items use a medium weight of the same sans-serif. All numbers, instrument labels, and short tags use a monospace font in uppercase with wider tracking, creating clear hierarchy.",
+  "textura": "The background features a light, warm, textured surface resembling straw with subtle, darker contour lines. Cards are clean, light, and smooth, with a soft, dark shadow. The bottom frame is filled with a relevant, generic texture.",
+  "luz": "The scene is evenly lit with a soft, natural light, creating gentle shadows for depth on the cards and highlighting the background texture.",
+  "papeisDasCores": "The background uses a dominant light, warm tone. Cards are a slightly lighter, creamy tone with a thin, darker border. Text is dark. Accent elements are a single bright, signaling tone, used sparingly for emphasis.",
+  "evitar": "Do not use dark panel backgrounds, neon colors, rainbow gradients, or any colors associated with specific brands. Avoid images with text, logos, machine brands, or recognizable people.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-canal": {
+  "nomeDoEstilo": "Professional Channel Glass",
+  "atmosfera": "A professional, clean, and modern aesthetic, conveying clear information with a premium feel.",
+  "elementoVisual": "A dark blurred glass panel, with rounded corners, serves as the primary information carrier. This panel either overlays a full-screen subject-related image or sits beside a cropped subject image, presenting the hero text or related visual content. The subject image itself is a static, full-bleed photograph or illustration, never a person.",
+  "composicoes": [
+   "Hero text is large, centered on a full-bleed subject image, with a subtle dark blurred glass panel behind it.",
+   "Hero text is aligned left on a dark blurred glass panel, which occupies the right half of the post, with a subject image filling the left half.",
+   "Hero text is aligned right on a dark blurred glass panel, which occupies the left half of the post, with a subject image filling the right half.",
+   "Hero text is small, bottom-left on a full-bleed subject image, with a thin dark blurred glass strip behind it.",
+   "Hero text is large, top-right on a full-bleed subject image, with a prominent dark blurred glass panel behind it."
+  ],
+  "tipografia": "A versatile sans-serif family in medium to extra-bold weights is used for all text, with titles featuring tight tracking. A monospaced sans-serif is reserved for short labels and counters, maintaining a clear hierarchy.",
+  "textura": "The dominant texture is a dark, frosted glass effect with blurred background elements, complemented by smooth, flat surfaces for text and accents.",
+  "luz": "The lighting is even and neutral, ensuring high contrast between text and its background, with no harsh shadows or strong directional light.",
+  "papeisDasCores": "The background is primarily dark, text is light, and a single vibrant accent color is used sparingly for emphasis, never tinting images.",
+  "evitar": "Do not use any filters, vignettes, glows, or halos. Avoid text with outlines, multiple accent colors, or any elements that appear to shake, spin, or bounce.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-carrossel": {
+  "nomeDoEstilo": "Carousel Slide Clarity",
+  "atmosfera": "Fresh and inviting, designed for easy comprehension. It evokes a modern, premium feel without being overly formal.",
+  "elementoVisual": "Stylized line art illustrations with rounded stroke caps and solid color fills. These generic, subject-related drawings are rendered flat, complementing the hero text and filling designated content areas.",
+  "composicoes": [
+   "Hero text is large and centered at the top, with a single illustrative element below it, occupying the middle third of the post.",
+   "Hero text is stacked in the upper left, with a large illustrative element filling the entire right half of the post.",
+   "A prominent illustrative element is centered, with the hero text positioned in a compact block directly above it.",
+   "Hero text is small and aligned to the bottom right, with a large, central illustrative element dominating the upper two-thirds of the post.",
+   "Hero text is presented as a single, oversized word, with a smaller illustrative element placed subtly in one corner."
+  ],
+  "tipografia": "A single geometric sans-serif typeface is used, featuring an open, friendly character. Titles and key terms use a heavy weight with tight tracking, while supporting text uses medium weights with standard tracking, maintaining clear hierarchy.",
+  "textura": "The primary surface is smooth and matte, resembling a clean sheet of paper. Line art elements have a flat, solid fill, with no gradients or simulated depth.",
+  "luz": "The scene is evenly lit with soft, ambient light, creating no harsh shadows or strong highlights, ensuring all elements are clearly visible.",
+  "papeisDasCores": "A light background dominates, with dark text for primary content. A secondary dark color is used for accent panels, and a single warm accent color highlights key elements and line art fills.",
+  "evitar": "Do not use gradients, outlines on letters, emojis, stickers, or stock photos. Avoid any simulated shine, shimmer, or shaky effects.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-case": {
+  "nomeDoEstilo": "Consulting Report Still",
+  "atmosfera": "Sober, editorial, and professional, like a printed consulting report. It conveys a premium, trustworthy, and organized feel.",
+  "elementoVisual": "The lower section, replacing the presenter, features a subject-related abstract texture or scene. This element is rendered as a flat, stylized illustration or a subtle photographic texture, filling the entire shape to support the hero text's theme.",
+  "composicoes": [
+   "Hero text is large and centered on the upper content area, with the visual element filling the lower half of the post.",
+   "Hero text is aligned left on the upper content area, with a smaller visual element to its right, and the main visual element below.",
+   "Hero text is split into two lines, with the first line large and the second line smaller, both centered above a prominent visual element that fills the bottom two-thirds.",
+   "Hero text is positioned in the upper left, with a small, stylized icon next to it, and the visual element occupying the entire lower portion of the post.",
+   "Hero text is a single large word, centrally placed on the upper content area, with the visual element as a subtle background texture across the entire lower section."
+  ],
+  "tipografia": "Inter for all readable text, using heavy weights (800) for titles and values with tight tracking, and medium weights (700, 500) for body text and details. Fragment Mono is reserved for short, uppercase labels and section tags (30-40px) with wide tracking.",
+  "textura": "The primary surface is a light, warm paper texture for the content area, set against a slightly darker, cool background. Thin, light lines define sections and elements, suggesting a printed document.",
+  "luz": "The scene is evenly lit, with soft, diffused light that highlights the paper-like surface and creates subtle, soft shadows for depth.",
+  "papeisDasCores": "A light, warm background dominates the content area, with dark text and medium dark secondary text. A single, vibrant accent color is used sparingly to highlight key information, while light accent tones mark specific items.",
+  "evitar": "Do not use any spinning, shaking, flashing, glowing, glitch effects, or particles. Avoid any dark dashboard aesthetics, neon colors, money-related greens, or flashing alert reds.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-chave": {
+  "nomeDoEstilo": "Tactile Apartment Hall",
+  "atmosfera": "Grounded, understated, and premium. Evokes the calm, well-maintained hall of an apartment, featuring tangible objects rather than digital interfaces.",
+  "elementoVisual": "The core visual elements are realistic, rendered objects like paper labels, a wooden key board, a metal-bound clipboard, or a receipt. These objects, appearing as if physically placed on a textured wall, carry the hero sentence. Where a presenter would be, a subject-related scene or texture fills the door-shaped frame.",
+  "composicoes": [
+   "The hero text is centered on a large, prominent object like a clipboard, filling most of the frame, with a subtle textured background.",
+   "The hero text is integrated into a key board visual element at the top, with a larger, abstract scene or texture filling the lower two-thirds of the post.",
+   "A door-shaped visual element, filled with a relevant scene, occupies the bottom half, while the hero text is placed on a floating label or plaque in the upper half.",
+   "The hero text is large and central, with a smaller, illustrative object (like a single key or label) placed as an accent in one corner, against a textured background.",
+   "The hero text is arranged vertically along one side of the post, with a large, detailed object (e.g., a receipt or a set of labels) occupying the majority of the opposing side."
+  ],
+  "tipografia": "Titles and key numbers use a heavy, warm serif typeface with aligned figures. Items, labels, and values use a clear, legible geometric sans-serif, ranging from medium to bold weight. Labels in all caps are wide tracked, while titles have slightly negative tracking.",
+  "textura": "Surfaces are tactile: a smooth, subtle concrete wall, light wood grains, matte dark metal, and slightly textured paper. Short, soft shadows give objects a physical presence.",
+  "luz": "The scene is lit with soft, even ambient light, suggesting an indoor setting without harsh highlights or deep shadows.",
+  "papeisDasCores": "The background is a dominant dark neutral, with light neutral paper elements. Text is dark, and a single accent color highlights current or important information.",
+  "evitar": "Do not use decorative gradients, bright glows behind elements, outlines on text, or stock photos. Avoid any digital interface elements or colorful icons; all visuals should appear as physical objects.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-cifra": {
+  "nomeDoEstilo": "Drawn Lesson Stage",
+  "atmosfera": "Educational and precise, with a premium, focused feel. It evokes a modern, clean classroom or workshop environment.",
+  "elementoVisual": "Stylized 2D graphic elements, rendered with a hand-drawn pencil sketch aesthetic that transitions to clean, solid ink. These elements, such as abstract strings, geometric shapes, or simplified diagrams, fill the space where the presenter's window would be, directly illustrating the sentence's concept.",
+  "composicoes": [
+   "Hero text centered at the top, a large illustrative element fills the bottom two-thirds of the post, with ample negative space around the element.",
+   "Hero text aligned left in the upper third, a tall, narrow visual element on the right, leaving significant negative space on the left.",
+   "Hero text large and centered, overlaid on a wide, low visual element that spans the bottom half, with the upper half as negative space.",
+   "Hero text small in the upper right corner, a dominant, large visual element filling most of the post, with minimal negative space.",
+   "Hero text in the center-left, with a medium-sized visual element in a distinct frame on the right, balancing the composition."
+  ],
+  "tipografia": "A single wide geometric sans-serif family is used, with a serif 'I' for clarity. Heavy weights (800-900) are for titles and key terms, medium weights (600-700) for body text and labels. Titles have tight tracking, while small uppercase labels are widely tracked.",
+  "textura": "Surfaces appear smooth and clean, with a subtle paper-like texture for specific elements like 'sheet music'. The overall depth is flat, emphasizing clear graphic shapes.",
+  "luz": "The scene is lit with a soft, even light, creating minimal shadows and emphasizing the graphic clarity of the elements against a dark background.",
+  "papeisDasCores": "A dark background dominates, with light text and graphic elements. A single accent color highlights the currently active or emphasized element, never tinting images.",
+  "evitar": "Do not use emoji, stickers, glow effects behind elements, outlined text, flying musical notes, decorative sheet music, or colorful gradients. Avoid any bouncy or elastic animations if this were a video; elements should appear decisively.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-cinema": {
+  "nomeDoEstilo": "Cinematic Dark Storytelling",
+  "atmosfera": "A premium, classic, and contained mood, evoking the quiet intensity of a film. It feels timeless and sophisticated, focusing on narrative depth.",
+  "elementoVisual": "Stylized line art illustrations or abstract graphic elements fill the space where the presenter would be, rendered with clean lines and a single accent color. These elements are metaphorical, depicting concepts like time, balance, or growth, and are integrated into the overall dark composition.",
+  "composicoes": [
+   "Hero text is centered in the lower dark bar, with a wide, cinematic visual element filling the middle section, leaving a thin dark bar at the top.",
+   "Hero text is large and centered, with a small, focused visual element placed above it, framed by generous dark negative space.",
+   "Hero text is aligned to the bottom left of the lower dark bar, with a tall, narrow visual element occupying the central vertical space, surrounded by dark bars.",
+   "Hero text is stacked in the upper dark bar, with a wide, low-profile visual element at the bottom, creating a strong horizontal division.",
+   "Hero text is large and central, with a subtle, abstract texture filling the entire background, creating a pure typographic poster effect."
+  ],
+  "tipografia": "Elegant high-contrast serif typeface, like Cormorant Garamond, is used for the hero text, with varying weights and italics for emphasis. A wide-tracked uppercase geometric sans-serif, like Jost, is used for smaller accent text, set in a light accent color.",
+  "textura": "A subtle, fine film grain is applied to the visual elements, contrasting with the clean, smooth dark background bars.",
+  "luz": "The visual elements are lit with a warm, directional light, creating a soft vignette effect, while the dark bars remain unlit and clean.",
+  "papeisDasCores": "The dark background color dominates, with light text for readability and a single warm accent color used sparingly for emphasis and graphic elements.",
+  "evitar": "Do not use bright colors, harsh gradients, outlined text, emojis, or any element that creates a busy or cluttered appearance. Avoid any visual elements that look like UI chrome or video player controls.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-clinico": {
+  "nomeDoEstilo": "Clinical Clarity Exam",
+  "atmosfera": "Clean, precise, and authoritative, evoking the clarity of a medical office or scientific explanation.",
+  "elementoVisual": "A central circular element, framed by a thin accent-colored ring, contains a subject-related texture or scene rendered with a clean, almost sterile aesthetic. Around this circle, technical illustrations, stylized diagrams, or abstract data visualizations appear, explaining the hero text.",
+  "composicoes": [
+   "Hero text is large at the bottom, with the circular visual element small in the top right corner and supporting graphics filling the mid-left.",
+   "Hero text is centered at the top, with the circular visual element large in the middle and supporting graphics radiating outwards.",
+   "Hero text is aligned left in the middle, with the circular visual element medium-sized on the right and supporting graphics below the text.",
+   "Hero text is small in the top left, with the circular visual element large and centered, and supporting graphics subtly placed around its perimeter.",
+   "Hero text is split into two lines, top and bottom, with the circular visual element medium-sized in the center and supporting graphics filling the remaining space."
+  ],
+  "tipografia": "A single sans-serif family is used: extra bold for key terms and numbers, bold for titles and labels, and semi-bold for smaller labels and captions. Text is precisely measured and broken into balanced lines, with tight tracking.",
+  "textura": "Surfaces are smooth and clean, with occasional light grid paper patterns for data visualizations and rounded line endings for illustrations, suggesting a technical drawing.",
+  "luz": "The scene is evenly lit with a cool, bright light, creating a sense of sterile clarity and focus.",
+  "papeisDasCores": "The background is a cool light color, text is a dark neutral, and a primary accent color is used for outlines, numbers, and correct indicators. A secondary accent color is reserved exclusively for error indicators.",
+  "evitar": "Do not include any shadows, glows, stock photos, or images of real people. Avoid any elements that suggest a video interface or dynamic motion, such as progress bars or flashes.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-constelacao": {
+  "nomeDoEstilo": "Celestial Chart Aesthetic",
+  "atmosfera": "Academic, sophisticated, and premium, reminiscent of vintage astronomical charts and scientific diagrams.",
+  "elementoVisual": "A stylized celestial map serves as the background, featuring a grid of coordinates, subtle star fields, and a graduated frame. Key concepts from the sentence are rendered as glowing stars, interconnected by thin lines to form a constellation or a path. A prominent circular area, formerly the presenter's ocular, is filled with a subject-related texture or abstract scene, never a person.",
+  "composicoes": [
+   "Hero text is large and centered, with the main constellation figure behind it, filling the upper two-thirds of the post. The circular visual element is small, in the bottom right corner.",
+   "Hero text is aligned top-left, with a vertical list of 'star' ideas on the left side, and their names on the right. The circular visual element is large, occupying the top-right quadrant.",
+   "Hero text is at the bottom center, with a large, central constellation figure formed by ideas, and the circular visual element positioned at the top-left.",
+   "Hero text is large and vertically stacked on the left, with a single prominent 'star' idea and its name on the right. The circular visual element is small, in the bottom-right corner, with a subtle accent line pointing to the star.",
+   "Hero text is small and bottom-right aligned, with a large, abstract constellation figure filling the entire background. The circular visual element is medium-sized, in the top-left corner, filled with a subtle texture."
+  ],
+  "tipografia": "Titles, items, and numbers use an elegant high-contrast serif font, with italic weights for emphasis and names. Labels and secondary text use a wide-tracked uppercase geometric sans-serif font. Text hierarchy is clear, with key phrases larger and more prominent, and all text measured to fit without overflow.",
+  "textura": "The background features a subtle grid of coordinates, faint dotted bands suggesting a Milky Way, and varied small stars. A dark vignette frames the edges, and a graduated border suggests a printed atlas page.",
+  "luz": "The scene is lit with a deep, cool ambient light, with specific elements like stars and guiding lines emitting a soft, warm glow.",
+  "papeisDasCores": "A dark background dominates, with light text and star elements. Lines and secondary graphics use a cool light accent, while a single warm accent color is reserved exclusively for guiding elements like target markers and emphasis lines.",
+  "evitar": "Do not include any photos, glowing effects behind elements, colorful gradients, text outlines, or any shaky or flashing animations. The circular visual element must never be empty or contain a person.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-conversa": {
+  "nomeDoEstilo": "Conversation App Aesthetic",
+  "atmosfera": "Modern, authentic, and engaging, mimicking a premium messaging app screenshot. It evokes a sense of direct, personal communication.",
+  "elementoVisual": "A subject-related image or texture fills the circular 'message bubble' shape or the full background. This element is a flat illustration or a stylized graphic, rendered with clean lines and minimal detail. It visually represents the core idea of the hero text, without being a literal depiction.",
+  "composicoes": [
+   "Hero text is centered in a large bubble at the bottom, with a smaller circular visual element above it, offset slightly left or right.",
+   "Hero text is in a large bubble on the left, with the circular visual element scaled large and centered on the right, filling most of the space.",
+   "Hero text is in a prominent bubble at the top, with the circular visual element scaled large and centered below it, occupying the lower two-thirds.",
+   "The entire background is filled by the visual element, with the hero text in a large, central bubble that provides strong contrast.",
+   "Hero text is in a narrow bubble at the bottom, with the circular visual element scaled to fill the entire upper portion of the post, leaving ample negative space around the text."
+  ],
+  "tipografia": "A single sans serif type family, designed for high legibility, is used throughout. Weights vary from medium for general text, to bold for names and titles, and extra bold for numbers and highlights. Text is set with comfortable tracking, with key phrases in uppercase.",
+  "textura": "Surfaces are clean and flat, with a subtle, cool background texture that suggests depth without being distracting. No paper, grain, or glass effects.",
+  "luz": "The scene is lit with a soft, ambient light that creates a subtle contrast between elements, avoiding harsh shadows or bright highlights.",
+  "papeisDasCores": "The dark background dominates, with light text for readability. A single vibrant accent color is used for key elements and to highlight success or positive outcomes.",
+  "evitar": "Do not include any gradient colors, bright glows behind elements, or outlines on letters. Avoid any visual elements that resemble emojis, stickers, or brand logos.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-convite": {
+  "nomeDoEstilo": "Fine Stationery Suite",
+  "atmosfera": "Elegant, calm, and refined, evoking the feeling of cherished paper goods. This style feels premium and timeless, like a treasured keepsake.",
+  "elementoVisual": "A subject-related image, scene, or texture fills an arch-shaped frame, reminiscent of a formal portrait. This element is rendered as a flat, detailed illustration or a softly lit photograph, integrated seamlessly into the paper layout.",
+  "composicoes": [
+   "Hero text is centered on a large main card, with the arch-shaped visual element at the top, occupying significant vertical space.",
+   "Hero text is on a smaller card positioned to one side, while the arch-shaped visual element is scaled down and placed on the opposite side, with a thin accent ribbon crossing the background.",
+   "Hero text is on a central, medium-sized card, with the arch-shaped visual element at the top, and a circular dial graphic with a number on the side.",
+   "Hero text is on a large main card, with the arch-shaped visual element at the top, and multiple smaller cards fanned out behind it, showing only their edges.",
+   "Hero text is on a medium card at the bottom, with the arch-shaped visual element at the top, and a thin accent ribbon extending horizontally across the middle."
+  ],
+  "tipografia": "Elegant high-contrast serif like EB Garamond for main body text, with a medium weight for readability. Key short phrases use a flowing calligraphic script like Great Vibes. Numbers and labels use a wide-tracked uppercase geometric serif like Cinzel, with generous letter spacing.",
+  "textura": "The background is a finely woven fabric with a subtle grain, overlaid with a slightly textured, off-white paper for the cards, suggesting cotton paper.",
+  "luz": "Soft, ambient light illuminates the scene from the top-left, creating gentle shadows and subtle depth on the paper elements.",
+  "papeisDasCores": "A light, warm background dominates, with dark text for high contrast. A single cool accent color is used sparingly for decorative elements like a wax seal or thin lines.",
+  "evitar": "Do not use decorative gradients, metallic effects, bright glows behind elements, outlines on text, emojis, or stickers. Avoid any visual elements that appear to be cut out from a background or distorted.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-criativo": {
+  "nomeDoEstilo": "Performance Glass Card Ad",
+  "atmosfera": "A modern, high-performance ad style designed for direct sales. It conveys a premium, trustworthy, and efficient mood.",
+  "elementoVisual": "Translucent glass cards with subtle depth display a hero product, a relevant photo, or a simple illustrative icon. These elements are rendered with a slight 3D perspective and soft light reflections, appearing to float over a background image or texture. The hero text is integrated into these glass cards or appears as a separate overlay, always related to the visual content.",
+  "composicoes": [
+   "The hero text is centered within a large, translucent glass card that occupies the lower half of the post, with a subject-related image filling the background.",
+   "The hero text is placed on a narrow, horizontal translucent strip at the bottom, while a prominent subject-related image or product fills a larger glass card above it, leaving generous negative space around the card.",
+   "A large subject-related image or product is scaled to fill a clear glass card positioned centrally, with the hero text appearing in a smaller, dark translucent strip at the bottom of the card.",
+   "The hero text is presented in a large, bold typeface, partially obscured by a central, clear glass card containing a detailed subject-related illustration or icon, with the background image visible around the card.",
+   "The hero text is stacked in the upper left corner, with a smaller, dark translucent card containing a subject-related image or icon positioned in the lower right, leaving significant negative space."
+  ],
+  "tipografia": "A single geometric sans-serif family is used, primarily in heavy and extra-heavy weights, with tight tracking for headlines and key phrases. Hierarchy is established through size and weight, with important words often in uppercase.",
+  "textura": "Surfaces are predominantly smooth glass with a subtle blur effect, featuring crisp edges and a hint of thickness, suggesting depth and transparency.",
+  "luz": "The scene is lit with a soft, ambient light, emphasizing the translucency and subtle reflections on the glass elements, without harsh shadows or direct light sources.",
+  "papeisDasCores": "The background is typically dark, text is light, and one specific brand color serves as the accent for key elements like buttons, seals, and highlighted words.",
+  "evitar": "Do not use generic photos that only vaguely match the subject, or any product images that differ between proofs. Never display numbers, prices, or deadlines that are not explicitly stated in the text.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-curriculo": {
+  "nomeDoEstilo": "Annotated Document Review",
+  "atmosfera": "Professional, focused, and analytical, evoking a sense of meticulous examination. It feels like a premium, educational review.",
+  "elementoVisual": "A clean, flat document page with a subject-related texture or abstract scene filling the area where the presenter would be. This element is rendered as a flat, illustrative texture or a subtle abstract pattern, integrated seamlessly into the document's layout. It serves as a visual anchor for the hero text, which appears as if handwritten on the document.",
+  "composicoes": [
+   "Hero text is large, handwritten, and centered on the document, with the visual element filling a large rectangular area at the bottom. The document is scaled to fill most of the post, with a dark cool background visible around it.",
+   "Hero text is handwritten in the upper right margin, pointing with a pen stroke to a smaller visual element on the main document area. The document is scaled to show ample negative space on the dark cool background.",
+   "Hero text is large and handwritten at the top of the document, with the visual element filling a wide horizontal strip below it. The document is scaled to fill the upper two-thirds of the post, leaving a dark cool background at the bottom.",
+   "Hero text is handwritten in a prominent, large box at the bottom of the document, with the visual element filling the entire upper portion of the document. The document is scaled to fill the entire post, with minimal dark cool background visible.",
+   "Hero text is handwritten as a central, dominant element, with the visual element subtly integrated as a background texture within the main document area. The document is scaled to fill the entire post, with no dark cool background visible."
+  ],
+  "tipografia": "The main document text uses an elegant, readable serif family with varying weights for hierarchy, from regular lines to bold titles. Handwritten annotations, including the hero text, use a casual, expressive sans-serif script, appearing in a dark, saturated accent color.",
+  "textura": "The primary texture is that of clean, slightly warm paper, with subtle shadows suggesting depth against a cool, flat background. There are no gradients, glows, or outlines.",
+  "luz": "The scene is evenly lit from above, casting soft, subtle shadows that define the edges of the paper document.",
+  "papeisDasCores": "The dominant role is the light main content background (paper), set against a dark cool background (table). Dark text is used for document content, with a single dark saturated accent color for all handwritten marks and the hero text.",
+  "evitar": "Do not include any UI elements, app icons, colorful highlights, or glowing effects. Avoid any photos, logos, or emojis, and never use flash transitions or shaky camera effects.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-demo": {
+  "nomeDoEstilo": "Direct Demo Display",
+  "atmosfera": "Modern, functional, and direct, this style conveys a no-nonsense, premium demonstration. It feels like a concise, focused presentation of information.",
+  "elementoVisual": "A clean, flat digital screen capture or a high-resolution photograph related to the subject fills a designated area. It is rendered without any borders, shadows, or rounded corners, appearing as a direct window into the content.",
+  "composicoes": [
+   "Hero text is large and centered at the bottom, with the visual element occupying the top 44% of the post.",
+   "Hero text is large and centered at the bottom, with the visual element filling the entire post area.",
+   "Hero text is large and centered at the bottom, with the visual element filling the entire post area, featuring a single thin accent strip at the top.",
+   "Hero text is large and centered at the bottom, with the visual element filling the entire post area, featuring a single thin accent strip at the bottom.",
+   "Hero text is large and centered at the bottom, with the visual element filling the top 44% of the post, and a thin accent strip centered at the seam."
+  ],
+  "tipografia": "The hero sentence uses a condensed display sans-serif, all uppercase, with a strong dark outline and shadow for high contrast. Supporting text within the visual element uses a wide geometric sans-serif, often in a heavy weight.",
+  "textura": "Surfaces are smooth and digital, with no discernible grain, paper texture, or glass effects. The overall feel is flat and clean.",
+  "luz": "The lighting is even and bright on the visual element, mimicking a well-lit screen or photograph, with no dramatic shadows or highlights.",
+  "papeisDasCores": "A dark background dominates, with light text for the main message and a single vibrant accent color used sparingly for emphasis or a thin strip.",
+  "evitar": "Do not include any filters, vignettes, blur, or color overlays on the visual element. Avoid animated zooms, emojis, or any UI elements not part of the original screen capture.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-devocional": {
+  "nomeDoEstilo": "Devotional Book Page",
+  "atmosfera": "Serene, contemplative, and timeless. Evokes an antique devotion book page, suggesting a premium, thoughtful experience.",
+  "elementoVisual": "Minimalist, line-art illustrations rendered flat with subtle fill. These generic drawings (e.g., sun, candle, branch, heart) appear when a specific word in the sentence literally matches the illustration's subject. The illustration fills the bottom area where the presenter would be, or a central medallion shape.",
+  "composicoes": [
+   "Hero text is centered on the upper page, with a large line-art illustration filling the bottom half of the post.",
+   "Hero text is centered on the upper page, with a smaller line-art illustration centered within a medallion shape at the bottom.",
+   "Hero text is large and centered, occupying most of the upper page, with a small line-art illustration placed subtly near a key word.",
+   "Hero text is left-aligned on the upper page, with a large line-art illustration filling the entire bottom half.",
+   "Hero text is centered on the upper page, with a line-art illustration subtly integrated as a background texture behind the text."
+  ],
+  "tipografia": "EB Garamond (Google Fonts) is used for all readable text on the page, in various weights (500 for body, 600 for emphasis) and cases (italic for support phrases). Titles, calls, and references use a custom small caps style (full uppercase with lowercase characters at 74% scale, wide tracked). Manrope is reserved for specific metadata elements not present in the hero text.",
+  "textura": "The background features a subtle, warm light-toned parchment texture with a slow, gentle drift. Light dust particles float softly, concentrated within a diagonal light beam.",
+  "luz": "A soft, warm light emanates from an unseen window, creating a gentle diagonal beam across the background. This light subtly breathes and highlights key words.",
+  "papeisDasCores": "The background uses a warm light tone, text is primarily a dark cool tone, and accents (illustrations, highlighted words) use a muted earthy tone. A soft warm light tone is used for glow effects.",
+  "evitar": "Do not use metallic accents, strong light rays, angelic imagery, crosses, doves, stained glass, baroque frames, cloud backgrounds, or text with shadows. Avoid any abrupt motion, flashes, or aggressive zooms.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-dicionario": {
+  "nomeDoEstilo": "Lexicon Page Style",
+  "atmosfera": "A classic, academic, and premium mood, evoking the sober elegance of a well-printed vintage dictionary page.",
+  "elementoVisual": "A stylized, ink-drawn illustration or technical diagram, rendered with cross-hatching and stippling, fills the framed area where the presenter would be. This generic visual element relates to the hero sentence's subject, appearing as a detailed engraving or cutaway.",
+  "composicoes": [
+   "The hero text is large and centered on the page, with the visual element in a framed box at the top right, leaving ample negative space.",
+   "The hero text is arranged in a narrow column on the left, with the visual element filling a large framed area on the right, balanced by a wide margin.",
+   "The hero text is placed prominently at the bottom of the page, with the visual element scaled large and centered at the top, creating a strong vertical hierarchy.",
+   "The hero text is integrated within a larger, stylized typographic block, with the visual element appearing as a smaller inset illustration in a corner.",
+   "The hero text is presented as a single, bold word at the top, with the visual element filling the entire lower two-thirds of the page, creating a strong visual anchor."
+  ],
+  "tipografia": "The primary typeface is an elegant, high-contrast serif for all main text, using bold for keywords and definitions, and italics for examples. A wide-tracked, uppercase geometric sans-serif is reserved for numbers, labels, and small accent text, ensuring clear hierarchy.",
+  "textura": "The background features a subtle, warm light paper texture, suggesting aged bible paper, with a soft shadow near the left edge, mimicking a book's spine.",
+  "luz": "The scene is evenly lit with a soft, warm light, emphasizing the paper texture and creating subtle depth for any layered elements.",
+  "papeisDasCores": "A warm light background dominates, with dark text for primary content and a medium dark accent color used sparingly for highlights, never tinting the visual elements.",
+  "evitar": "Do not use any gradients, colorful emojis, generic icons, or stock photos. Avoid any bright glows or outlines around text or images, and never use flash or shaky transitions.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-dossie": {
+  "nomeDoEstilo": "Investigation Board Dossier",
+  "atmosfera": "Serious, investigative, and slightly vintage. It evokes a sense of uncovering secrets or solving a mystery.",
+  "elementoVisual": "A dark cork board serves as the primary background, filled with various paper documents like manila folders, typed reports, photos, and sticky notes. These elements are pinned to the board and connected by a single thin accent line, forming a web of evidence around a central, decisive document.",
+  "composicoes": [
+   "Hero text is centered on a large report document, with smaller supporting documents pinned around it, partially visible at the edges.",
+   "Hero text is placed on a small, typed note in the upper left, with a larger photo or document filling the lower right, connected by the accent line.",
+   "Hero text is on a central, stamped memo, surrounded by several smaller documents arranged in a loose ring, all connected by the accent line.",
+   "Hero text is on a prominent manila folder in the lower third, with a single key document pinned above it, connected by the accent line.",
+   "Hero text is a large question mark on a sticky note, with a single relevant document pinned below it, occupying the center of the board."
+  ],
+  "tipografia": "The primary typeface is a strong, geometric sans-serif, used in heavy weight for titles and numbers, and medium weight for body text. Short labels use a monospaced typewriter font in uppercase with wide tracking. A handwritten marker style is reserved for specific emphasis like a question mark.",
+  "textura": "The background features a dark, textured cork surface. Documents have a subtle paper grain, and metal pins cast soft shadows, adding depth.",
+  "luz": "The scene is lit from above, creating a focused, slightly warm glow on the central elements, with the edges of the board fading into shadow.",
+  "papeisDasCores": "A dark background dominates, with various light warm paper tones for documents. Dark text is used throughout, and one strong accent is reserved exclusively for the connecting line and a prominent stamp.",
+  "evitar": "Do not use any color other than the designated accent for emphasis. Avoid long text in the typewriter font or any condensed typefaces. Do not include any logos or brand names.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-espelho": {
+  "nomeDoEstilo": "Reflective Editorial Luxury",
+  "atmosfera": "A discreet, high-end magazine aesthetic, emphasizing calm, well-designed simplicity. It conveys a premium and sophisticated feel.",
+  "elementoVisual": "A stylized symmetrical line drawing, like an atlas engraving, with 2 to 5 numbered points. This drawing stands on a thin horizontal accent line, filling the upper half or a specific area of the post. The drawing's parts illuminate one by one, with a subtle dotted accent veil.",
+  "composicoes": [
+   "The hero text is centered in the upper half, with the visual element scaled large and centered below it, standing on the accent line.",
+   "The hero text is aligned left in the upper half, with the visual element scaled to fill the entire upper half, standing on the accent line.",
+   "The hero text is large and centered, occupying most of the upper half, with a small, abstract visual element placed subtly in a corner.",
+   "The hero text is aligned left at the top, with the visual element occupying the entire lower half of the post, replacing the presenter area.",
+   "The hero text is split into two lines, with the first line large and centered, and the second line smaller and centered below it, above a large, centered visual element."
+  ],
+  "tipografia": "Elegant high-contrast serif like Bodoni Moda is used for titles, items, and numbers, with italic variants for emphasis and notes. A wide-tracked uppercase geometric sans like Jost is used for small labels and units. Text is precisely measured to fit, breaking into 2-3 balanced lines.",
+  "textura": "The dominant surface is smooth and matte, with a subtle dotted accent veil appearing on illuminated areas of the visual element. No other textures like grain or paper are present.",
+  "luz": "The scene is evenly lit, with a soft, diffused light that highlights the clean lines and subtle contrasts without harsh shadows or bright reflections.",
+  "papeisDasCores": "A light, warm background dominates, with dark text and lines. A single accent color is used sparingly for key elements like the dividing line, points, and symbols, providing a subtle contrast.",
+  "evitar": "Do not include any gradients, shadows, glows behind elements, text outlines, emojis, stickers, or stock photos. Avoid any elements that bounce, spin, pulse, or shake.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-estudio": {
+  "nomeDoEstilo": "Dark Studio Editorial",
+  "atmosfera": "A sophisticated, modern, and premium editorial feel, reminiscent of a well-produced studio podcast. It conveys a focused and authoritative tone.",
+  "elementoVisual": "A subject-related abstract texture or conceptual scene fills a prominent rounded rectangle frame, replacing the presenter. This element is rendered with subtle depth and a clean, illustrative quality, directly relating to the hero sentence's theme.",
+  "composicoes": [
+   "Hero text is large and centered at the bottom, with the visual element filling the top two-thirds of the post, scaled to dominate.",
+   "Hero text is placed in a narrow column on the left, with the visual element occupying a larger, offset rounded rectangle on the right.",
+   "Hero text is positioned at the top, with the visual element as a wide, short rounded rectangle across the bottom, leaving ample negative space in the middle.",
+   "Hero text is integrated within the visual element, which is a large, central rounded rectangle, with the text overlaying a clear area of the image.",
+   "Hero text is split into two lines, with the first line above a medium-sized visual element centered, and the second line below it, creating a balanced vertical composition."
+  ],
+  "tipografia": "A robust, wide geometric sans serif is used for the main hero text, featuring heavy weights and slightly negative tracking. Studio labels and smaller details use a monospaced sans serif in uppercase with regular weight.",
+  "textura": "Surfaces are smooth and dark with a subtle gradient, suggesting depth. Text appears as if drawn with a warm light on a dark background, with a crisp, clean finish.",
+  "luz": "The scene is lit with a low-key, dramatic approach, featuring a single, strong accent light that highlights key elements and creates sharp contrast.",
+  "papeisDasCores": "The background is predominantly dark, with light text for readability. A single, vibrant accent color is used sparingly for highlights and key visual elements.",
+  "evitar": "Do not use a second accent color, any color gradients, or bright glows. Avoid any animated zooms, flashes, or transitions; elements should appear decisively.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-etapas": {
+  "nomeDoEstilo": "Structured Process Guide",
+  "atmosfera": "Modern, informative, and highly organized. It conveys a premium, educational feel, suitable for explaining complex topics clearly.",
+  "elementoVisual": "A stylized, flat graphic representation of a multi-panel screen interface, like a digital dashboard or a grid of data windows. This element fills the space where the presenter would be, visually supporting the step-by-step nature of the content.",
+  "composicoes": [
+   "Hero text is large and centered at the top, with the visual element filling the lower two-thirds of the post, scaled to show multiple distinct panels.",
+   "Hero text is positioned in a prominent horizontal bar across the middle, dividing a smaller visual element at the top from a larger one at the bottom, both scaled to fit.",
+   "Hero text is vertically stacked on the left, with a large, single-panel visual element dominating the right two-thirds of the post, scaled to show detail.",
+   "Hero text is small and placed in a corner, allowing a full-bleed, detailed visual element to cover the entire post, scaled to emphasize a specific panel.",
+   "Hero text is centered within a single, large visual element that occupies the entire post, scaled to create a unified, impactful statement."
+  ],
+  "tipografia": "A contemporary sans-serif typeface, like Manrope, is used throughout. Key phrases are in bold uppercase with light tracking, while supporting text uses a slightly lighter weight in title case, maintaining clear hierarchy.",
+  "textura": "Clean, flat digital surfaces with subtle depth from layered elements. No paper, grain, or glass effects.",
+  "luz": "Even, soft, and cool-toned lighting, creating a bright and clear presentation without harsh shadows or strong highlights.",
+  "papeisDasCores": "A dark background dominates, with light text for readability and a single warm accent color used sparingly for highlights and key elements.",
+  "evitar": "Do not use any animated transitions, glowing effects, or colored words. Avoid any visual elements that appear to be a live video feed or a personal photo.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-etiqueta": {
+  "nomeDoEstilo": "Tiered Comparison Shelf",
+  "atmosfera": "Informative and structured, this style evokes a modern, approachable retail or workshop aesthetic. It feels premium yet accessible.",
+  "elementoVisual": "A stylized multi-tiered shelf or stepped display, crafted from light wood textures, serves as the central visual. Each step holds a distinct, subject-related object or abstract texture, rendered as a clean, transparent cutout or a flat graphic card. The visual elements are arranged to visually represent different tiers or options, directly relating to the comparative sentence.",
+  "composicoes": [
+   "The hero text is centered at the top, with the tiered shelf occupying the lower two-thirds, scaled to fit the available width.",
+   "The hero text is aligned to the top left, with the tiered shelf positioned to the right, slightly overlapping the text area.",
+   "The tiered shelf is large and centered, with the hero text placed within a prominent tag-like shape on the topmost tier.",
+   "The hero text is a single line across the bottom, with the tiered shelf filling the entire upper portion, scaled to emphasize depth.",
+   "The tiered shelf is arranged vertically along the left edge, with the hero text stacked vertically along the right edge, creating a balanced composition."
+  ],
+  "tipografia": "A single, wide, and rounded geometric sans serif family is used, with clear numerals. Heavy weights (800) are used for prices, labels, and key texts, while medium weights (600-700) are reserved for details. Text is never condensed or outlined.",
+  "textura": "The background features a subtle, perforated panel texture, suggesting a store wall. Elements like tags and cards have a clean, light paper texture, while the steps exhibit a smooth, light wood grain.",
+  "luz": "The scene is lit with a soft, even light from the top, creating subtle, hard-edged shadows beneath elements to give them depth and separation from the background.",
+  "papeisDasCores": "A dark background color dominates, providing contrast for light-colored paper elements and mid-value wooden steps. Two distinct accent colors are used sparingly for emphasis, highlights, and the seal, never tinting images.",
+  "evitar": "Do not use more than four tiers, as this makes the elements too narrow. Avoid decorative icons or emojis, and never change the accent colors for different parts of the post.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-extrato": {
+  "nomeDoEstilo": "Thermal Receipt Statement",
+  "atmosfera": "Functional and direct, evoking a sense of tangible information delivery. It feels like a modern, premium take on everyday transactions.",
+  "elementoVisual": "A stylized thermal paper receipt, with serrated edges, emerges from the bottom or side of the frame. It features the hero sentence printed on it, along with illustrative elements like dotted lines, numerical grids, or simple icons that visually support the text's meaning.",
+  "composicoes": [
+   "The hero text is centered on a short receipt strip, which is positioned in the lower half of the frame, with a subject-related texture filling the upper background.",
+   "The hero text is printed on a long receipt scroll, which fills the left two-thirds of the frame, with a subject-related texture filling the remaining right third.",
+   "The hero text is large and centered on a receipt strip that spans the full width, with a subtle subject-related texture as the background, creating a minimalist look.",
+   "A receipt strip with the hero text is placed in the upper right, angled slightly, with a subject-related texture filling the rest of the frame and providing negative space.",
+   "The hero text is integrated into a large, abstract shape (e.g., a stylized number or symbol) that is filled with a subject-related texture, all rendered on a receipt-like surface."
+  ],
+  "tipografia": "A monospaced geometric sans-serif, like Spline Sans Mono, is used for all text, always in uppercase with varied weights (medium to bold) to create hierarchy. A geometric sans-serif, like IBM Plex Sans, is reserved for specific emphasis like a stamp.",
+  "textura": "The primary surface is a light, warm thermal paper with subtle serrated edges and a soft shadow, resting on a dark, cool, matte background.",
+  "luz": "The scene is evenly lit with soft, diffused light, highlighting the paper's texture and casting gentle shadows.",
+  "papeisDasCores": "A dark background dominates, with light, warm paper as the main surface; dark text is used for primary content, medium contrast text for secondary details, and a single accent color for emphasis.",
+  "evitar": "Do not use any gradients, neon effects, 3D currency, real stock market graphs, outlines on letters, or any transitions beyond simple reveals and cuts.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-figurinha": {
+  "nomeDoEstilo": "Crafted Sticker Album",
+  "atmosfera": "Warm, playful, and meticulously crafted, evoking a high-quality physical sticker album. It feels approachable and engaging without being childish, suitable for any subject.",
+  "elementoVisual": "The hero text is integrated into a stylized paper sticker or a larger paper label, appearing as if hand-collaged onto a textured background. Illustrations are flat, outlined, and filled with solid colors, resembling collectible stickers. A friendly, illustrated dog mascot is often present, reacting subtly to the text's sentiment.",
+  "composicoes": [
+   "Hero text is centered on a large, slightly tilted paper label, with a subject-related illustration filling a prominent framed sticker shape on the top left.",
+   "Hero text is aligned left in a vertical column, with a smaller framed subject-related image at the top right, and the dog mascot positioned below the text.",
+   "A large, framed subject-related image fills the upper half of the post, with the hero text placed on a paper strip across its lower section.",
+   "Hero text is large and centered, with a small, outlined subject-related illustration placed as a 'sticker' in one corner, and the dog mascot in the opposite corner.",
+   "The hero text is presented on a large, central paper sticker, with a row of smaller, numbered 'album slots' at the bottom, some filled with tiny subject-related illustrations."
+  ],
+  "tipografia": "A single variable rounded sans-serif typeface is used, with heavy weights for titles and names, medium weights for body text, and slightly lighter, wide-tracked uppercase for labels. Text sizes vary significantly to establish clear hierarchy, ensuring readability and fitting within defined areas.",
+  "textura": "The background has a subtle, warm, light paper texture with a fine dot pattern, while stickers and labels appear as solid, slightly thicker paper elements with soft shadows, suggesting depth.",
+  "luz": "The scene is evenly lit with a soft, warm light, creating gentle, short shadows under paper elements to enhance the tactile, layered effect.",
+  "papeisDasCores": "A warm light background dominates, with dark text and outlines. Accent colors are used sparingly for highlights, stamps, and the dog mascot, appearing as solid fills without tinting any images.",
+  "evitar": "Do not use condensed fonts, text outlines, colorful gradients, shaky animations, flashes, confetti, or particles. Avoid placing elements over the subject's face or too close to the post edges.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-funil": {
+  "nomeDoEstilo": "Editorial Data Flow",
+  "atmosfera": "Modern, premium, and analytical, evoking the clarity of a well-designed newspaper data graphic. It feels precise and informative, suitable for serious subjects.",
+  "elementoVisual": "A stylized, flat 2D graphic representing a funnel or a flow, rendered with clean lines and simple shapes. It uses abstract points or particles to illustrate quantity or progression, with the hero text integrated as a key label or title within this data visualization.",
+  "composicoes": [
+   "Hero text is large and centered at the top, with the funnel graphic filling the bottom two-thirds, showing a flow of abstract points.",
+   "Hero text is aligned left, large, and positioned in the upper half, with a vertical flow graphic occupying the right side of the post.",
+   "Hero text is small and placed in the bottom left corner, while a wide, shallow funnel graphic spans the top two-thirds of the post, with abstract points flowing through it.",
+   "Hero text is centered horizontally in the middle of the post, with a dynamic, angled flow graphic emerging from behind it and extending to the edges.",
+   "Hero text is large and occupies the entire left half of the post, with a simplified, single-path flow graphic running vertically down the right half, filled with abstract points."
+  ],
+  "tipografia": "A single sans-serif type family, similar to a newspaper grotesque, is used throughout. Titles and key numbers are bold (800 weight), while labels and details are medium (600-700 weight). Tracking is tight for titles, slightly wider for uppercase labels, and numbers use tabular lining figures.",
+  "textura": "A warm light background with a subtle grid of faint, dark points, mimicking textured paper. Graphic elements are rendered with clean, flat surfaces and crisp edges.",
+  "luz": "Even, soft, diffused lighting that highlights the flat graphic elements without creating harsh shadows, suggesting a well-lit studio or natural light.",
+  "papeisDasCores": "The background is a warm light tone, with the majority of text and graphic outlines in a dark tone; a vibrant accent color is used sparingly for 'problem' elements, and a contrasting accent color for 'solution' elements.",
+  "evitar": "Do not use emojis, social media icons, logos, flying currency symbols, 3D arrows, glowing effects, outlines on letters, gradients, flashes, or 'impact zooms'.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-guia": {
+  "nomeDoEstilo": "Guide Path Tutorial",
+  "atmosfera": "Clear, structured, and instructional, this style conveys a modern, premium tutorial experience. It feels like a digital guide, emphasizing clarity and progression.",
+  "elementoVisual": "A stylized, flat graphic of a winding path or road, with numbered markers and abstract shapes representing steps or concepts. This path visually guides the eye through the hero sentence, which is integrated as a key step or destination.",
+  "composicoes": [
+   "Hero text is large and centered, with the visual path element framing it from the top and bottom, receding into the background.",
+   "Hero text is aligned left at the top, while the visual path element occupies the entire lower half, with one prominent marker highlighting the text's concept.",
+   "The visual path element is a large, abstract shape filling the background, with the hero text placed within its boundaries, scaled to fit.",
+   "Hero text is small and positioned at the bottom right, with the visual path element dominating the upper two-thirds, featuring a single, large, central marker.",
+   "The visual path element is a vertical stack of abstract, numbered blocks on the left, with the hero text aligned right, large and prominent, next to the highlighted block."
+  ],
+  "tipografia": "A bold, wide geometric sans serif in uppercase for the main hero text, with generous tracking. Supporting text, if any, uses a lighter weight of the same sans serif or a contrasting handwritten script for subtle emphasis.",
+  "textura": "Clean, flat digital surfaces with no visible grain or paper texture. Elements have sharp edges and a subtle, soft drop shadow for minimal depth.",
+  "luz": "Even, bright, and diffuse lighting, creating a high-key scene with minimal shadows, emphasizing clarity and readability.",
+  "papeisDasCores": "A light background dominates, with dark text for primary information. A single warm accent color is used sparingly for highlights and key markers, and a distinct accent for interactive elements.",
+  "evitar": "Do not use filters, vignettes, blur, or glow effects. Avoid text with outlines, hand-drawn interfaces, or more than one brand accent color.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-herbario": {
+  "nomeDoEstilo": "Botanical Plate Herbarium",
+  "atmosfera": "A serious and delicate aesthetic, reminiscent of an old botanical book or museum exhibit. It conveys a premium, timeless quality.",
+  "elementoVisual": "Detailed pen and ink illustrations of botanical elements, such as plants, roots, soil, water, or growth stages, rendered with scientific precision. These illustrations are accented with soft watercolor washes, depicting the subject matter in a cutaway or cross-section view.",
+  "composicoes": [
+   "Hero text centered at the top, with a large botanical illustration filling the lower two-thirds of the post, leaving ample negative space around the text.",
+   "Hero text aligned left in the upper half, with a smaller, detailed botanical illustration positioned on the right, balanced by negative space.",
+   "Hero text placed in the lower third, with a large, central botanical illustration dominating the upper two-thirds, allowing the text to anchor the image.",
+   "Hero text integrated within a large, stylized botanical element that fills the entire post, with the text appearing as if part of the illustration itself.",
+   "Hero text in the upper right corner, with a full-bleed botanical illustration of a cutaway pot, showing internal structures, filling the rest of the post."
+  ],
+  "tipografia": "A high contrast serif family is used for all text: a bold weight for titles and hero text, and a medium italic weight for labels and details. A spaced uppercase variant of the same family is used for small labels and medallions, maintaining a consistent, editorial feel.",
+  "textura": "The post features a cool, light background with a subtle, fibrous paper texture, suggesting an aged botanical page. Illustrations have the irregular edges of watercolor washes.",
+  "luz": "The scene is lit with a soft, even light, creating minimal, gentle shadows only for elements like layered paper cards, enhancing depth without harshness.",
+  "papeisDasCores": "The background is a cool light value, with dark text and illustration outlines. A single accent color, a deep earthy tone, is used for highlights and key elements, while muted, naturalistic washes are reserved for within the illustrations.",
+  "evitar": "Do not use decorative gradients, bright glows behind elements, text outlines, emojis, strong shadows, or saturated colors. Avoid any 'flat' illustration styles or modern icons.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-iceberg": {
+  "nomeDoEstilo": "Deep Dive Iceberg",
+  "atmosfera": "Exploratory and premium, evoking a sense of discovery and hidden knowledge. It feels contemporary and clean, designed for impactful educational content.",
+  "elementoVisual": "A stylized 3D iceberg with visible layers, partially submerged in water. Each layer of the iceberg can contain a subject-related image or texture, visually representing a deeper level of information. The hero text is integrated into the ice or water, appearing as if part of the environment.",
+  "composicoes": [
+   "Hero text is large and centered on the upper iceberg, with a relevant image filling a lower ice block. The background shows the upper part of the iceberg and light water.",
+   "Hero text is aligned left, large, and partially submerged in the water, with a smaller image filling an ice block on the right. The background shows deeper water and more of the iceberg's submerged layers.",
+   "Hero text is small and positioned at the bottom, with a large, central image filling a prominent ice block. The background is mostly deep water, with only the tip of the iceberg visible.",
+   "Hero text is split into two lines, with the first line on an upper ice block and the second on a lower one, both filled with related textures. The background shows the full iceberg from surface to mid-depth.",
+   "Hero text is vertically stacked on the left, with a series of small, stacked images filling ice blocks on the right. The background depicts the iceberg descending into very dark water."
+  ],
+  "tipografia": "A wide, legible geometric sans-serif like Outfit is used for all text, with heavy weights (800) for titles and names, and medium weights (700) for details. A monospaced sans-serif like Overpass Mono is reserved for numerical elements, all uppercase with normal tracking.",
+  "textura": "Smooth, cool surfaces for ice and water, with subtle gradients and light rays suggesting depth. The water has a gentle ripple effect, and the ice has a clean, polished appearance.",
+  "luz": "The scene is lit from above, with light rays penetrating the water, creating a gradient from bright near the surface to dark in the depths.",
+  "papeisDasCores": "The background transitions from light cool to very dark cool, with light cool elements for ice. Dark text is used, and a warm accent color highlights key information and emphasis.",
+  "evitar": "Do not reorder the conceptual levels, exceed six levels in the iceberg, or use the warm accent color inconsistently across different moments. Avoid any text that names tools or software on screen.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-ignicao": {
+  "nomeDoEstilo": "Ignition Dashboard Display",
+  "atmosfera": "A modern, precise, and technical aesthetic, evoking a premium car's dashboard at night. It feels sophisticated and highly functional.",
+  "elementoVisual": "Stylized, flat vector illustrations of car dashboard elements. These include a central screen, a rearview mirror shape, or a side mirror shape, filled with a subject-related abstract scene, texture, or data visualization. Other elements like gauges, warning lights, or a top-down road map are rendered as clean line art.",
+  "composicoes": [
+   "Hero text is centered on a dark background, with a large central screen shape below it filled with a relevant abstract image.",
+   "Hero text is positioned top-left, with a large rearview mirror shape dominating the right side, filled with a subject-related texture.",
+   "Hero text is bottom-right, with a prominent speedometer and tachometer graphic on the left, and a small, filled side mirror shape in the top-right corner.",
+   "Hero text is centered within a large, dark central screen shape, which is itself filled with a subtle, abstract background texture.",
+   "Hero text is placed above a stylized top-down road map graphic, with a series of small, illuminated warning light icons arranged horizontally below the map."
+  ],
+  "tipografia": "A single technical geometric sans-serif typeface with open curves and straight corners is used, like Tomorrow. Text is always uppercase, with labels having wide tracking, and weights ranging from medium to bold for hierarchy.",
+  "textura": "A subtle, matte dark background with a barely visible plastic grain, contrasted with smooth, dark glass-like surfaces and clean metal accents.",
+  "luz": "The scene is lit with a low, ambient light from the background, with specific elements appearing to glow from within, creating sharp contrast.",
+  "papeisDasCores": "The dark background color dominates, with light, warm text and graphic elements. Accent colors are used sparingly for alerts (warm, vibrant) or directional cues (cool, vibrant).",
+  "evitar": "Do not use any colored gradients, bright backlights behind elements, outlines on letters, or 'neon' strips. Avoid any real car logos, photos of actual dashboards, or 'impact zoom' effects.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-impacto": {
+  "nomeDoEstilo": "Impactful Sports Poster",
+  "atmosfera": "Energetic, direct, and modern, evoking the feel of a high-performance sports advertisement. It projects a premium, no-nonsense attitude.",
+  "elementoVisual": "A subject-related abstract texture or scene fills the space where the presenter would be. This element is rendered flat, with sharp edges, and serves as a backdrop or container for the hero text.",
+  "composicoes": [
+   "Hero text is large and stacked on the left, with a full-height visual element on the right, leaving minimal negative space.",
+   "Hero text is centered and stacked, with the visual element as a large background shape behind it, scaled to fill the frame.",
+   "Hero text is large and stacked on the right, with a full-height visual element on the left, leaving minimal negative space.",
+   "Hero text is small and positioned at the top, with a large, central visual element below it that fills most of the frame.",
+   "Hero text is large and stacked at the bottom, with a smaller visual element in the top right corner, leaving significant negative space above the text."
+  ],
+  "tipografia": "A bold, wide geometric sans-serif in uppercase for the main words, with tight tracking. A fixed-width monospace font is used for numbers or list markers, maintaining consistent character width.",
+  "textura": "The surfaces are completely flat and smooth, like a freshly printed poster. There is no grain, paper texture, or glass effect.",
+  "luz": "The scene is lit with a flat, even light, creating no shadows or depth, emphasizing a graphic, two-dimensional appearance.",
+  "papeisDasCores": "A dark background dominates, with light text for readability. A single, vibrant accent color is used sparingly for highlights, lines, and active elements.",
+  "evitar": "Do not use gradients, soft shadows, outlines, glows, or a second accent color. Avoid any visual elements that suggest movement, such as blurs or streaks.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-janelas": {
+  "nomeDoEstilo": "Clean Desktop Interface",
+  "atmosfera": "A modern, premium, and functional aesthetic, evoking a calm and precise digital environment. It feels like a well-designed operating system, not a flashy tech video.",
+  "elementoVisual": "A subject-related image, scene, or texture fills a prominent window shape, replacing the presenter. This window is rendered with a subtle soft shadow, suggesting depth on a flat desktop. Other interface elements like app windows or cards may also contain relevant imagery or textures.",
+  "composicoes": [
+   "Hero text is large and centered, with a main visual element as a large window at the top, leaving ample negative space below.",
+   "Hero text is positioned in the lower third, with a large, full-width visual element window occupying the upper two-thirds of the post.",
+   "Hero text is integrated within a smaller, central window, while a large, abstract visual element fills the entire background.",
+   "Hero text is placed in a small, focused window in the bottom left, with a dominant, large visual element window filling the rest of the canvas.",
+   "Hero text is presented as a title within a top window, with a secondary visual element as a card below, surrounded by generous negative space."
+  ],
+  "tipografia": "A highly legible geometric sans-serif (like Atkinson Hyperlegible Next) is used for interface text, with a monospaced sans-serif (like JetBrains Mono) for numerical values or key combinations. Text uses weights from medium to bold, with normal tracking, and a clear hierarchy of sizes from small labels to large hero text.",
+  "textura": "Surfaces are smooth and clean, with a subtle, soft shadow under windows and cards, suggesting slight elevation. Elements appear to float gently above a textured background.",
+  "luz": "The scene is evenly lit with a soft, ambient light, creating gentle shadows that define depth without harshness. The overall impression is bright and clear.",
+  "papeisDasCores": "The background uses a dominant dark-cool color, while interface elements like windows are light. Text is primarily dark, with a single vibrant accent color highlighting key information or interactive elements.",
+  "evitar": "Do not include any glowing effects, neon elements, gradients, glitch animations, or falling code. Avoid any real or fake logos, emojis, or colored icons; all icons should be simple line drawings.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-kit": {
+  "nomeDoEstilo": "Overhead Kit Assembly",
+  "atmosfera": "Organized, practical, and inviting. This style evokes a sense of calm discovery, like a well-prepared workspace.",
+  "elementoVisual": "A flat lay composition of various generic items, objects, or abstract shapes, each resting on a light paper card. A thin dotted line connects each card to a smaller, distinct label card, suggesting a clear relationship between the item and its description.",
+  "composicoes": [
+   "Hero text is centered at the top, above a single large item card and its label, with ample negative space.",
+   "Hero text is aligned left, with two item cards and their labels arranged vertically on the right, filling the space.",
+   "Hero text is placed at the bottom, with a grid of four item cards and labels occupying the upper two-thirds of the post.",
+   "Hero text is integrated within a large, central item card, surrounded by smaller, supporting label cards.",
+   "Hero text is in the upper right, balanced by a single prominent item card and label in the lower left, with a diagonal dotted line connecting them."
+  ],
+  "tipografia": "A single robust geometric sans-serif family is used, with heavy weights for the main hero text and item names, and medium weights for details. Text is set in title case or sentence case, with normal tracking.",
+  "textura": "The background features a warm, light wood grain with a subtle soft highlight. Paper cards and labels have a slightly textured, matte finish, with distinct, soft shadows underneath.",
+  "luz": "Soft, diffused overhead lighting creates gentle, realistic shadows beneath all elements, suggesting a bright, even environment.",
+  "papeisDasCores": "A warm, light background dominates, with dark text for readability. A single cool accent color is used sparingly for connecting lines and subtle highlights.",
+  "evitar": "Do not use condensed fonts, text outlines, or any bright, glossy effects. Avoid any elements that suggest motion blur or dynamic transitions, as this is a still image.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-laboratorio": {
+  "nomeDoEstilo": "Hand-Drawn Lab Notes",
+  "atmosfera": "Educational, analytical, and meticulously crafted, evoking a vintage scientific notebook. It feels premium and thoughtful, adaptable to any subject.",
+  "elementoVisual": "The core visual is a hand-drawn, illustrative diagram or scene, rendered as if sketched in pencil and then inked or colored. This element fills the space where the presenter's photo would be, visually representing the hero sentence's concept. It can be a technical cutaway, a symbolic landscape, or an abstract representation.",
+  "composicoes": [
+   "Hero text is large and centered at the top, with the visual element filling the bottom half of the post, framed by a hand-drawn circle.",
+   "Hero text is aligned left at the top, with the visual element occupying the upper right quadrant, enclosed in a hand-drawn circle.",
+   "Hero text is aligned right at the top, with the visual element occupying the upper left quadrant, enclosed in a hand-drawn circle.",
+   "Hero text is small and centered at the bottom, with the visual element filling the entire upper portion of the post, depicting a horizon line.",
+   "Hero text is large and centered, with the visual element as a small, central, hand-drawn circle, surrounded by ample negative space."
+  ],
+  "tipografia": "The hero text uses a legible, school-style handwritten typeface for a personal touch, with varying sizes for hierarchy. Supporting elements, like figure labels, use a monospaced typeface, mimicking printed notes.",
+  "textura": "The background is a light, warm paper texture with a subtle grid pattern, giving the impression of graph paper. Hand-drawn elements feature a light, fixed tremor and subtle colored pencil hatching over filled areas.",
+  "luz": "The scene is evenly lit, as if under a soft, diffused light source, with minimal shadows to maintain a flat, notebook-like appearance.",
+  "papeisDasCores": "The background is a light, warm tone, with dark text for readability. A primary accent color highlights key information, while a secondary accent color indicates warnings or contrasts. Light warm tones are used for light sources.",
+  "evitar": "Do not include any shiny effects, text outlines, gradients outside of specific sky depictions, or emojis. Avoid stock photos or pre-made library icons, as all visuals must appear hand-drawn and integrated into the notebook aesthetic.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-lookbook": {
+  "nomeDoEstilo": "Editorial Catalog Layout",
+  "atmosfera": "Sophisticated and timeless, evoking a high-end fashion magazine. It feels premium and carefully curated, like a printed editorial.",
+  "elementoVisual": "A subject-related textured image or scene fills a defined area, replacing the presenter. This could be a close-up of a relevant material, a stylized abstract scene, or a detailed illustration, rendered with a flat, graphic quality to integrate seamlessly with the paper-like background.",
+  "composicoes": [
+   "Hero text is large and centered, with a large, framed visual element below it, filling the lower half of the post.",
+   "Hero text is aligned to the top left, with a large, vertical visual element filling the right two-thirds of the post.",
+   "Hero text is aligned to the bottom right, with a large, vertical visual element filling the left two-thirds of the post.",
+   "Hero text is centered at the top, above a wide, horizontal visual element that occupies the middle of the post, with ample negative space above and below.",
+   "Hero text is integrated within a collage of multiple smaller, rotated visual elements, each with a thin border, arranged dynamically across the post."
+  ],
+  "tipografia": "Elegant high-contrast serif like Playfair Display for main titles, numerals, and the hero sentence, often in italics for emphasis. A clean, wide-tracked geometric sans like IBM Plex Sans is used for smaller labels and details, typically in uppercase with generous letter spacing.",
+  "textura": "The dominant texture is that of natural, slightly coarse paper, with subtle shadows suggesting depth for layered elements. Fabric samples or raw paper textures are used for specific visual elements.",
+  "luz": "Soft, diffused light with gentle, subtle shadows, mimicking natural light on printed paper. The overall scene is evenly lit, avoiding harsh contrasts.",
+  "papeisDasCores": "A light, warm background color dominates, with dark text for primary information. A single, deep accent color is used sparingly for key numerals or highlights, never tinting images.",
+  "evitar": "Do not add emojis, stickers, adhesive tape, glowing effects behind elements, letter outlines, colorful gradients, or progress bars. Avoid any transitions that bounce or shimmer.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-lousa": {
+  "nomeDoEstilo": "Chalkboard Lecture Notes",
+  "atmosfera": "Educational and focused, with a classic, artisanal feel. It conveys a premium, clear explanation.",
+  "elementoVisual": "A hand-drawn illustration or diagram, rendered in a chalk-like style, fills the main chalkboard area. Where the presenter's window would be, a subject-related texture or abstract image is contained within a chalk-scratched frame. The visual element directly supports the hero text, often as a structured 'account' or 'equation' of ideas.",
+  "composicoes": [
+   "Hero text is large and centered at the top, with the framed visual element in the upper right corner, and supporting chalk-drawn elements below.",
+   "The framed visual element is large and centered at the top, with the hero text positioned below it, filling the width of the chalkboard.",
+   "Hero text is vertically stacked on the left, with the framed visual element occupying the entire right half of the post, scaled to fit.",
+   "The framed visual element is small and positioned in the bottom left, with the hero text dominating the upper two-thirds of the post, centered.",
+   "Hero text is presented as a single large word or phrase, centrally placed, with the framed visual element appearing as a subtle background texture behind it, slightly desaturated."
+  ],
+  "tipografia": "A rounded, wide, handwritten-style sans serif is used for all main text, with a medium weight. Labels and smaller details use a highly legible geometric sans serif in uppercase with wide tracking. Numbers and specific symbols are rendered as distinct, hand-drawn chalk strokes.",
+  "textura": "The background is a dark, almost black chalkboard with a subtle, fixed texture of erased chalk dust. All text and drawn elements have a light, irregular chalk edge and a consistent grain.",
+  "luz": "The scene is evenly lit, suggesting a well-lit classroom, with no harsh shadows or strong directional light. The chalk elements appear to glow softly against the dark background.",
+  "papeisDasCores": "The background is dark, the main text is light, and one specific accent color is reserved for the key subject of the moment. A secondary accent is used only for errors or alerts.",
+  "evitar": "Do not include any gradients, text outlines, long shadows, emojis, stickers, or stock photos. Avoid any elements that suggest a digital screen or UI, such as progress bars or glowing effects behind elements.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-manchete": {
+  "nomeDoEstilo": "Headline News Reel",
+  "atmosfera": "Sober and informative, evoking a modern news broadcast aesthetic. It feels current and direct, suitable for serious or impactful messages.",
+  "elementoVisual": "A high-resolution, subject-related photographic image or realistic illustration fills the top portion of the post. This image is always edge-to-edge, depicting the core idea of the sentence without abstract elements or heavy stylization.",
+  "composicoes": [
+   "The hero text is centered in a pill shape, straddling the horizontal divide, with the visual element filling the top and a solid background below.",
+   "The hero text is centered in a pill shape, straddling the horizontal divide, with the visual element filling the top and a subtle texture below.",
+   "The hero text is centered in a pill shape, positioned entirely within the visual element, which fills the entire post.",
+   "The hero text is centered in a pill shape, positioned entirely within the solid background, with the visual element filling the top portion.",
+   "The hero text is large and centered, with the visual element filling the top portion and a solid background below, no pill shape."
+  ],
+  "tipografia": "A single robust geometric sans-serif typeface, like Manrope, is used throughout. The hero text is uppercase, medium to large scale, with normal tracking, set within a distinct pill shape. Any secondary text would be smaller, lowercase, and placed subtly.",
+  "textura": "The visual element features smooth, realistic photographic textures, while the background below is a clean, flat surface. There is no added grain, paper, or glass effect.",
+  "luz": "The visual element is brightly and evenly lit, ensuring clarity and detail. The overall scene maintains a consistent, natural light quality.",
+  "papeisDasCores": "The background is a dark color, the text is light, and a single accent color is used for the pill-shaped hero text container.",
+  "evitar": "Do not use filters, vignettes, or any color tinting on the visual element. Avoid zoom effects, transitions, or large text placed directly over the main image area outside of the designated pill shape.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-manifesto": {
+  "nomeDoEstilo": "Bold Typographic Manifesto",
+  "atmosfera": "Direct, impactful, and premium. Evokes a modern, authoritative statement.",
+  "elementoVisual": "A subject-related abstract texture or scene completely fills the giant letterforms of the hero word, acting as a window into the idea. This element is rendered flat, integrated seamlessly with the typography.",
+  "composicoes": [
+   "Hero text is centered vertically, with the main word as a large visual element, and supporting lines of text stacked above and below it, leaving ample negative space.",
+   "The hero word as a visual element is positioned prominently at the top, with the rest of the sentence stacked below it, creating a strong vertical hierarchy.",
+   "The hero word as a visual element is placed at the bottom, with the preceding lines of text stacked above it, grounding the composition.",
+   "The hero word as a visual element is large and off-center, balanced by supporting text in a smaller scale on the opposite side, creating dynamic tension.",
+   "A pure typographic layout where the hero word is a large, solid block of text, with no visual element, and the rest of the sentence is integrated around it."
+  ],
+  "tipografia": "A wide, heavy geometric sans-serif in uppercase is used for all main text, with tight tracking and a fixed word spacing. A monospaced sans-serif in uppercase with wide tracking is used for smaller labels and details, creating clear hierarchy.",
+  "textura": "Surfaces are flat and solid, with no visible grain or paper texture. A subtle, very faded 'pencil sketch' effect is used for secondary text before it becomes solid.",
+  "luz": "The scene is evenly lit, with a soft, localized light around the visual element area, ensuring clarity and focus without harsh shadows.",
+  "papeisDasCores": "The background color dominates, with light text for readability and a single accent color used sparingly for emphasis on key words or graphic elements.",
+  "evitar": "Do not use emojis, stickers, text outlines, colored shadows, glows behind elements, gradients, progress bars, or any extra transitions.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-mapa": {
+  "nomeDoEstilo": "Hand-Drawn Idea Map",
+  "atmosfera": "Organized, educational, and approachable. It evokes the feeling of a carefully crafted study guide or a personal notebook, offering a premium yet accessible learning experience.",
+  "elementoVisual": "The central visual element is a conceptual diagram, resembling a hand-drawn mind map, flow chart, or a technical illustration. It is rendered with a clean, flat aesthetic, using lines and shapes that appear sketched with ink and pencil on paper. This element visually represents the core idea of the hero sentence, with its components (nodes, branches, curves, steps) illustrating the relationships or sequence of the text.",
+  "composicoes": [
+   "Hero text is large and centered, with a smaller, illustrative diagram below it, filling the lower half of the post.",
+   "Hero text is aligned to the top left, with a large, detailed diagram filling the entire right two-thirds of the post.",
+   "Hero text is integrated within a central diagram node, surrounded by smaller, branching elements that extend across the post.",
+   "Hero text is placed in a prominent block on the left, with a dynamic, illustrative curve or chart filling the right side.",
+   "Hero text is positioned at the bottom, with a large, abstract diagram filling the upper three-quarters of the post, suggesting a foundational concept."
+  ],
+  "tipografia": "Titles and key phrases use a heavy slab serif, like a textbook heading, in varying sizes to establish hierarchy. Supporting text, labels, and smaller details use a medium-weight geometric sans-serif, often in uppercase with wide tracking for clarity.",
+  "textura": "The background features a subtle, light-colored paper texture with a faint grid of dots, giving the impression of a physical notebook page.",
+  "luz": "The scene is evenly lit with a soft, diffused light, mimicking natural daylight on a desk, ensuring no harsh shadows or reflections.",
+  "papeisDasCores": "The background is a light, cool tone; primary text and lines are a dark, cool tone; secondary elements are lighter, desaturated cool tones; and a single bright, warm accent color highlights key information.",
+  "evitar": "Do not use emojis, pre-made icons, logos, glowing effects behind elements, text outlines, gradients, photographic images, or 3D illustrations. Avoid any transitions or elements that suggest motion.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-medida": {
+  "nomeDoEstilo": "Measured Quantity Lab",
+  "atmosfera": "Clean, precise, and educational, evoking a modern scientific or culinary lab. It feels premium and meticulously organized.",
+  "elementoVisual": "A stylized 3D object, representing the subject, rests on a light background. Next to it, a clear glass or container holds multiple 3D units, visually representing a quantity. A thin reference line is drawn around the container, extending to a label.",
+  "composicoes": [
+   "Hero text centered at the top, visual element filling the middle, a textured background element at the bottom.",
+   "Hero text aligned left on the upper half, visual element scaled large and positioned right, with ample negative space.",
+   "Hero text in a prominent block on the left, visual element contained within a smaller block on the right, both on a light background.",
+   "Hero text small and placed below the visual element, which dominates the upper two-thirds of the post, with a subtle accent in the top right.",
+   "Hero text split into two lines, with the first line large and centered above the visual element, and the second line smaller and below it, all on a uniform background."
+  ],
+  "tipografia": "Sora, a geometric sans-serif, is used for numbers and main text: heavy weight for numbers and titles, medium for items, and regular for details, with tight tracking. Fraunces, an italic high-contrast serif, is reserved for short labels and block titles, never for paragraphs.",
+  "textura": "The background features a light, warm, subtly textured paper surface. Objects are rendered with realistic materials like brushed aluminum, clear glass with Fresnel reflections, and matte paper, all with a light grain.",
+  "luz": "The scene is lit with clear studio lighting, featuring softbox reflections on glass and subtle contact shadows for objects, creating a bright and clean look.",
+  "papeisDasCores": "A light, warm background dominates, with dark text for primary information and a deep accent color for emphasis. A cool light accent is used for liquids or highlights, and a strong alert color is reserved only for 'over the limit' indicators.",
+  "evitar": "Do not show numbers that were not explicitly stated, or invent references. Never use real brand names on labels or objects. Do not leave the main background area empty; fill any gaps with a relevant visual block or return to a full-frame visual.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-mosaico": {
+  "nomeDoEstilo": "Modular Tile Magazine",
+  "atmosfera": "Structured, clean, and modern, evoking a premium magazine layout with organized information.",
+  "elementoVisual": "A conceptual graphic illustrating an idea broken into parts, rendered as a segmented disk or a grid of icon-filled tiles. This element fills a prominent rounded tile, replacing the presenter's frame and visually representing the sentence's core concept.",
+  "composicoes": [
+   "Hero text centered in a large tile, with a smaller conceptual graphic tile below it, leaving ample negative space.",
+   "Hero text in a wide tile at the top, with the conceptual graphic filling a large tile below, offset to one side.",
+   "A dominant conceptual graphic tile occupying the top two-thirds, with the hero text in a smaller tile positioned at the bottom.",
+   "Hero text in a tall, narrow tile on one side, with the conceptual graphic filling a large square tile on the opposite side.",
+   "The conceptual graphic as a large, central element, with the hero text integrated into a smaller, adjacent tile or overlaid within a clear area of the graphic."
+  ],
+  "tipografia": "Titles, numbers, and fractions use a bold, slightly condensed geometric sans-serif with tight tracking. Labels, support text, and footnotes use a medium-weight humanist sans-serif with standard tracking. Typographic fractions are custom-rendered with a numerator, an inclined bar, and a denominator.",
+  "textura": "Flat, solid color surfaces with no gradients, shadows, or grain, resembling smooth, matte tiles with visible grout lines.",
+  "luz": "Even, soft ambient light, ensuring all surfaces are uniformly lit without harsh shadows or highlights.",
+  "papeisDasCores": "The background uses a light, warm neutral, while tiles use a mix of dark and light brand colors, with one accent color for key numbers or highlights; photos are never tinted.",
+  "evitar": "Do not use emojis, stickers, continuous zoom, shadows, glows, text outlines, gradients, or stock photos. Avoid any elements that suggest motion or video UI.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-multicamera": {
+  "nomeDoEstilo": "Structured Minimalist Studio",
+  "atmosfera": "Professional, clean, and highly organized, evoking a well-produced educational or informational broadcast. It feels contemporary and premium, designed for clear communication.",
+  "elementoVisual": "A subject-related image, scene, or texture fills the background or a prominent panel, rendered as a realistic photograph or a clean, flat illustration. This element visually reinforces the hero sentence without being literal or overly decorative, always generic and adaptable to any topic.",
+  "composicoes": [
+   "The hero text is large and centered, with the visual element as a full background image, slightly darkened to ensure text legibility.",
+   "The hero text is positioned in a dark, opaque panel at the bottom, with the visual element filling the entire upper two-thirds of the post.",
+   "The hero text is placed in the upper left corner, with the visual element as a large, central graphic that occupies most of the post's area, leaving negative space around the text.",
+   "A dark, wide horizontal panel at the bottom contains the hero text, while the visual element is a full-bleed background image, subtly visible behind the panel.",
+   "The hero text is presented as a single, large word or phrase, centrally placed, with the visual element subtly integrated as a textured background or a soft, abstract pattern behind it."
+  ],
+  "tipografia": "A robust, modern geometric sans-serif font is used, primarily in medium to bold weights. Key words are larger and bolder, while supporting text is slightly lighter in weight and value, maintaining a clear hierarchy.",
+  "textura": "Surfaces are smooth and clean, with subtle depth provided by soft shadows on panels and text. No visible grain, paper texture, or glass effects.",
+  "luz": "The scene is evenly lit, with a focus on clarity and legibility. Light text on dark backgrounds is common, with a single, bright accent color for emphasis.",
+  "papeisDasCores": "Dark tones dominate for backgrounds and panels, light tones are reserved for all text, and a single vibrant accent color is used sparingly for highlights.",
+  "evitar": "Do not apply any filters, color overlays, vignettes, blur, or brightness adjustments to the visual element. Avoid text with outlines, and never use more than one accent color.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-narrador": {
+  "nomeDoEstilo": "Archival Narrative Still",
+  "atmosfera": "A serious, premium, and archival aesthetic. It evokes a sense of historical documentation and thoughtful storytelling.",
+  "elementoVisual": "A single, full-bleed historical photograph, engraving, or stylized illustration fills the entire frame. This visual element directly represents the subject of the hero text, rendered with a subtle dark overlay at the top and bottom.",
+  "composicoes": [
+   "Hero text is large and centered at the top, with a smaller contextual line above it, over a full-bleed image.",
+   "Hero text is large and centered at the bottom, with a smaller contextual line above it, over a full-bleed image.",
+   "Hero text is large and left-aligned in the upper half, with a smaller contextual line above it, over a full-bleed image.",
+   "Hero text is large and right-aligned in the lower half, with a smaller contextual line above it, over a full-bleed image.",
+   "Hero text is large and centered, with a smaller contextual line above it, on a solid background, with a small, square subject-related image in the upper left corner."
+  ],
+  "tipografia": "Elegant high contrast serif like Playfair Display is used for the main hero text, often in title case. A clean, geometric sans serif like Figtree is used for smaller contextual text, typically in uppercase with wide tracking.",
+  "textura": "The background image has a subtle, dark, cool-toned overlay at the top and bottom, creating a soft vignette effect. Surfaces are smooth, without noticeable grain or paper texture.",
+  "luz": "The scene is lit with a soft, diffused light, creating a slightly subdued and dramatic atmosphere. There are no harsh shadows or bright highlights.",
+  "papeisDasCores": "A dark, cool-toned background dominates, with light text for readability. A single, warm accent color is used sparingly for emphasis, such as a thin line or a key word.",
+  "evitar": "Do not use any filters, LUTs, vignettes, blur, or color shifts on the image. Avoid text with outlines, multiple accent colors, or any shaking, rotating, or flashing effects.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-niveis": {
+  "nomeDoEstilo": "Tiered Comparison Cards",
+  "atmosfera": "Modern, structured, and informative. This style conveys a premium, organized approach to presenting comparative information.",
+  "elementoVisual": "Three distinct, slightly rounded rectangular cards are arranged side-by-side across the top of the post. Each card contains a subject-related image, scene, or texture that visually represents one level of comparison, filling its shape completely. The main hero sentence is placed below these cards, relating to the overall comparison.",
+  "composicoes": [
+   "The hero text is centered horizontally below the three cards, which occupy the top third of the post, with the main visual element filling the bottom two-thirds.",
+   "The hero text is left-aligned in the middle of the post, with the three cards scaled down and left-aligned at the top, leaving significant negative space on the right.",
+   "The hero text is large and centered, overlapping slightly with the bottom edge of the three cards, which are scaled to fill the top half of the post.",
+   "The three cards are stacked vertically on the left side, with the hero text right-aligned and large, filling the remaining space.",
+   "The hero text is small and bottom-centered, with the three cards arranged in a diagonal line across the top two-thirds of the post, creating dynamic negative space."
+  ],
+  "tipografia": "A strong, geometric sans-serif typeface in a heavy weight is used for the hero text, set in uppercase with generous tracking. The text below each card uses the same typeface, also uppercase, but smaller to serve as a label.",
+  "textura": "The cards feature smooth, clean surfaces with subtly rounded corners, casting a soft, dark shadow. The overall background is flat and clean.",
+  "luz": "The scene is evenly lit with a soft, diffused light, highlighting the clean edges and surfaces without harsh shadows or strong directional light.",
+  "papeisDasCores": "The background is a dominant dark value, with light text for high contrast. The cards use a light background, and one thin accent is used for subtle separation or emphasis.",
+  "evitar": "Do not include any UI elements like 'Follow' buttons or 'Comment' pills. Avoid any animated transitions or effects that suggest video, maintaining a purely static presentation.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-oferta": {
+  "nomeDoEstilo": "Premium Offer Page",
+  "atmosfera": "A premium, sober, and organized aesthetic, reminiscent of a physical, well-designed document or a carefully crafted product catalog.",
+  "elementoVisual": "The core visual element is a stack of thick, slightly offset paper cards, each presenting a distinct idea or feature. These cards feature a square inset on the left, which is filled with a subject-related abstract texture, a stylized 3D object, or a clean product photo on a light background. A prominent price card with a perforated top edge and a circular guarantee stamp are also key elements.",
+  "composicoes": [
+   "The hero text is centered on a large price card, with a stack of smaller feature cards above it, and a guarantee stamp to the right, all on a light background.",
+   "The hero text is large and left-aligned on a price card, with a single feature card above it, and a horizontal timeline element below, all on a light background.",
+   "The hero text is integrated into a large, central button, with a single feature card above and a guarantee stamp to the upper right, on a light background.",
+   "The hero text is small and positioned on a feature card, which is part of a tall stack of cards filling the upper half of the post, with ample negative space below.",
+   "The hero text is centered on a price card, which is positioned in the upper right, with a large guarantee stamp filling the lower left and a subtle background pattern."
+  ],
+  "tipografia": "A single geometric sans-serif type family is used throughout. Titles and prices use a heavy weight with tight tracking, while labels and details use medium weights with slightly wider tracking. Numbers in prices are tabular figures, with currency symbols scaled smaller.",
+  "textura": "The background features a subtle, light-on-light certificate engraving pattern of crossing wavy lines. Cards have a smooth, matte paper texture with soft, dark shadows, suggesting depth.",
+  "luz": "The scene is lit with soft, even, ambient light, creating gentle shadows that define the edges and slight elevation of the paper elements.",
+  "papeisDasCores": "The background is light, with dark text and subtle dark details. A deep accent color is used for key information like prices, stamps, and buttons, with a lighter accent for secondary elements. A single contrasting accent is reserved exclusively for a strikethrough effect.",
+  "evitar": "Do not use black with a metallic accent, bright promotional yellows and reds, neon, rainbow gradients, dark stage backgrounds, or flashing signs. Avoid any elements that suggest a casino or discount store.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-orbita": {
+  "nomeDoEstilo": "Cosmic Scale Explainer",
+  "atmosfera": "Educational, sophisticated, and expansive. It evokes a sense of wonder and discovery, presenting complex ideas with clarity and a premium feel.",
+  "elementoVisual": "A stylized 3D deep space scene with celestial bodies or abstract objects representing concepts. Light paths and subtle glows illustrate connections or journeys between elements, with one element often appearing to 'ignite' or 'dim'. The hero text is integrated into this cosmic environment.",
+  "composicoes": [
+   "Hero text centered at the top, a large 3D 'origin' object top-left, a smaller 'destination' object mid-right, with a light path connecting them.",
+   "Hero text aligned left in the upper half, a single prominent 3D celestial body or abstract form filling the right half of the post.",
+   "Hero text centered in the middle, with a subtle 3D texture or abstract pattern filling the entire background, creating a sense of depth.",
+   "Hero text top-left, with a cluster of 2-4 smaller 3D objects arranged in the lower right, each with a subtle glow.",
+   "Hero text large and centered, with a single, highly detailed 3D object or scene filling the bottom half, creating a strong focal point."
+  ],
+  "tipografia": "A robust geometric sans serif, like Sora, is used for all readable text, with heavier weights for titles and slightly tighter tracking. A monospaced sans serif, like IBM Plex Mono, is reserved for numbers, clocks, and counters, maintaining a technical precision.",
+  "textura": "The background features a subtle, deep space gradient with fine star fields and a faint, diffuse galactic band. Objects have a smooth, slightly granular surface with soft light interaction.",
+  "luz": "The scene is predominantly dark with a single warm light source creating highlights and soft glows on the primary visual elements.",
+  "papeisDasCores": "A dark background dominates, with light text for readability and a single warm accent color used for key highlights and visual elements.",
+  "evitar": "Do not use more than one accent color, avoid any color filters or halos on images, and ensure no real logos or brand names appear. Numbers must be purely illustrative unless explicitly provided.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-painel": {
+  "nomeDoEstilo": "Calm Data Dashboard",
+  "atmosfera": "Precise, analytical, and premium, evoking a modern financial report or a high-tech data display. The aesthetic is clean and functional, prioritizing clarity over embellishment.",
+  "elementoVisual": "Abstract data visualizations, such as clean line graphs, segmented bar charts, or indicator cards, fill the space where a presenter would be. These elements are rendered as flat, vector-like graphics with subtle depth, illustrating trends or proportions related to the hero sentence.",
+  "composicoes": [
+   "Hero text centered large, with a full-width abstract data visualization below it, filling the lower two-thirds of the post.",
+   "Hero text aligned top-left, with a large, square data visualization filling the bottom-right, leaving generous negative space.",
+   "Hero text small and bottom-right, with a full-bleed, subtle grid pattern background and a single, prominent data indicator card centered.",
+   "Hero text stacked vertically on the left, with a series of smaller, numbered indicator cards arranged in a column on the right.",
+   "Hero text as a large, single line across the top, with a wide, horizontal bar chart spanning the full width below it, showing segmented progress."
+  ],
+  "tipografia": "A modern geometric sans-serif (like Geist) is used for primary text in medium and semi-bold weights, while a monospaced sans-serif (like Geist Mono) is reserved for all numbers, uppercase labels, and subtle details. Numbers are prominent, with currency symbols or units rendered smaller and lighter next to the main digits.",
+  "textura": "Surfaces are smooth and flat, with no visible grain or paper texture. A very subtle, almost imperceptible gradient may appear under graphic lines, suggesting depth without overt texture.",
+  "luz": "The scene is evenly lit, creating a clear, shadowless presentation. There are no dramatic highlights or deep shadows, maintaining a consistent, flat aesthetic.",
+  "papeisDasCores": "The background is a dark, cool tone, providing a strong contrast for light text and primary visual elements. An energetic accent color highlights positive data or current items, while a warm accent is used for labels and markers; a soft, neutral tone forms the base for other elements.",
+  "evitar": "Do not use any bright glows, colorful gradients, or outlined letters. Avoid any elements that bounce, spin, or shake, as well as any visual noise or sharp, ringing sounds.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-palco": {
+  "nomeDoEstilo": "Annotated Stage Presentation",
+  "atmosfera": "Clean, modern, and highly informative, this style conveys a premium educational or tutorial feel.",
+  "elementoVisual": "A large, rectangular panel with subtly rounded corners dominates the frame, filled completely by a subject-related image, screenshot, or clean illustration. This visual element is precisely annotated with thin lines, circles, arrows, or highlight bars, directly pointing to specific details mentioned in the hero text.",
+  "composicoes": [
+   "The hero text is large and centered at the top, with the visual element filling the lower two-thirds of the post, featuring a single prominent annotation.",
+   "The visual element fills the entire background, with the hero text positioned in a clear, negative space area at the bottom, accompanied by a small, focused annotation.",
+   "The visual element is a large, central square, with the hero text placed in a narrow band above it, and multiple small annotations distributed across the image.",
+   "The hero text is aligned to the left in the upper third, while the visual element occupies the remaining space below, showcasing a single, large highlight bar.",
+   "The visual element is split into two horizontal sections, each with its own content and annotation, with the hero text centered between them."
+  ],
+  "tipografia": "A highly legible geometric sans-serif typeface is used, with key words in a heavier weight (800) and the rest in a medium weight (600). Text is set in title case or sentence case, with normal tracking, establishing a clear hierarchy between the main sentence and any smaller labels.",
+  "textura": "Surfaces are smooth and flat, with subtle, soft shadows creating minimal depth. There is no visible grain or paper texture.",
+  "luz": "The scene is evenly lit with a soft, diffused light, ensuring all elements are clearly visible without harsh shadows or bright spots.",
+  "papeisDasCores": "A dark background dominates, with light text for readability. A single, distinct accent color is used sparingly for annotations and highlights.",
+  "evitar": "Do not use any filters, color overlays, vignettes, blur, or excessive brightness on any image. Avoid text with outlines, more than one accent color, or any element that shakes, rotates, flashes, or bounces.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-planilha": {
+  "nomeDoEstilo": "Grid Sheet Clarity",
+  "atmosfera": "Modern, precise, and highly organized, evoking a premium yet accessible feel. It presents information with structured clarity, like a well-designed data sheet.",
+  "elementoVisual": "A subject-related abstract texture or scene fills the merged cell shape, rendered with a flat, graphic quality. This element visually represents the core idea of the sentence, integrating seamlessly into the grid structure.",
+  "composicoes": [
+   "Hero text occupies a large merged cell at the top, with the visual element filling a smaller merged cell at the bottom. The grid provides ample negative space.",
+   "The visual element fills a prominent merged cell on the left, while the hero text is contained within a smaller merged cell on the right, aligned with the grid.",
+   "Hero text is centered in a large merged cell, with the visual element appearing as a subtle background texture within the same cell. The grid is visible around the edges.",
+   "A tall, narrow visual element fills a merged cell on the right, balanced by the hero text in a wide merged cell on the left. The grid provides a structured backdrop.",
+   "The hero text is presented in a central, wide merged cell, with the visual element filling a smaller, square merged cell below it. The overall composition emphasizes the grid."
+  ],
+  "tipografia": "A clean, functional sans serif for interface elements and main text, with tabular numbers, in medium to bold weights. A monospaced font is used for formula-like text or addresses, maintaining a precise, technical feel.",
+  "textura": "Surfaces are smooth and flat, resembling digital interface elements with crisp, defined lines. There is no visible paper grain, glass effect, or depth beyond flat layers.",
+  "luz": "The scene is evenly lit with a cool, ambient light, ensuring all elements are clearly visible without harsh shadows or highlights.",
+  "papeisDasCores": "The background is dominated by light tones, with dark text for readability. A single accent color is used sparingly for highlights, active states, and key elements.",
+  "evitar": "Do not use gradients, neon effects, or a second strong color. Avoid any 3D graphics, drop shadows on text, or illustrative elements that do not fit the flat, graphic style.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-planta": {
+  "nomeDoEstilo": "Architectural Blueprint Precision",
+  "atmosfera": "Precise, calm, and analytical, evoking the meticulousness of an architect's drafting board. This style feels premium and timeless, like a classic technical drawing.",
+  "elementoVisual": "A technical line drawing, such as a floor plan, elevation, or diagram, rendered with clean lines and geometric shapes. This drawing visually represents the core idea of the sentence, with elements like rooms or pathways illustrating stages or components.",
+  "composicoes": [
+   "Hero text centered at the top, with a large technical drawing filling the lower two-thirds of the post, featuring ample negative space around the drawing.",
+   "Hero text aligned to the left in the upper quarter, with a detailed technical drawing occupying the right two-thirds, scaled to show intricate parts.",
+   "Hero text positioned in the bottom third, with a large, simplified technical drawing filling the entire upper two-thirds, using negative space to highlight key areas.",
+   "Hero text placed vertically along the left edge, with a complex technical drawing filling the majority of the post, scaled to reveal many interconnected elements.",
+   "Hero text in the center of the post, surrounded by a stylized technical drawing that acts as a frame or background element, with balanced negative space."
+  ],
+  "tipografia": "A geometric sans-serif for titles and large numbers (light to regular weight), and a monospaced sans-serif in uppercase with wide tracking for technical labels and dimensions (medium weight). Hierarchy is established by size and weight, with key phrases in a slightly bolder weight.",
+  "textura": "A smooth, light background resembling drafting paper with a subtle, almost invisible grid pattern. Line art is crisp and flat, without gradients or shadows.",
+  "luz": "Even, soft ambient light, as if from an overhead drafting lamp, creating no harsh shadows and maintaining a flat, clean appearance.",
+  "papeisDasCores": "The background is a light, warm tone, with dark lines and text dominating the composition. A single accent color is used sparingly to highlight the most important element or current focus.",
+  "evitar": "No gradients, shadows, glows, crumpled paper textures, emojis, or stickers. Avoid any elements that suggest motion, such as blurs or dynamic effects.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-plantao": {
+  "nomeDoEstilo": "Sober News Explainer",
+  "atmosfera": "A sober, firm, and authoritative tone, reminiscent of a well-produced TV news segment. It conveys a premium, informative feel.",
+  "elementoVisual": "A flat, stylized illustration or graphic element, rendered with firm lines and solid shapes. This element fills the space, visually representing the core idea of the hero text, often with a 'before and after' or 'value change' concept.",
+  "composicoes": [
+   "Hero text centered in a wide, light horizontal bar at chest height, with a smaller dark bar below for context, all over a subject-related image filling the background.",
+   "Hero text in a large, light horizontal bar at chest height, with a thin accent bar above, all over a subject-related image filling the background.",
+   "Hero text in a large, light horizontal bar at the top of the lower half, with a subject-related graphic filling the entire lower half, separated by a thin accent line.",
+   "Hero text in a large, light horizontal bar at the top of the lower half, with a subject-related graphic element centered and scaled to fill the lower half, leaving negative space around it.",
+   "Hero text in a large, light horizontal bar at chest height, with a subject-related image filling the background, and a small, dark horizontal bar at the very bottom."
+  ],
+  "tipografia": "A single wide grotesque sans-serif family is used. Key words and values are bold uppercase (weight 900), while labels and supporting text are uppercase with wide tracking (weight 800). Auxiliary text uses a medium weight (600-700), maintaining a clear hierarchy.",
+  "textura": "The background features a subtle, fine grid pattern, suggesting a 'data wall'. Graphic elements are flat, with firm lines, rounded tips, and simple geometric shapes.",
+  "luz": "The scene is evenly lit, with a clear distinction between dark background areas and light text/graphic elements, ensuring high contrast and readability.",
+  "papeisDasCores": "A dark background dominates, with light text for readability. A saturated accent color is used sparingly for emphasis, and a single distinct alert color is reserved for warnings.",
+  "evitar": "Do not include emojis, brand logos, spinning globes, 'BREAKING NEWS' banners, sirens, glows behind elements, text outlines, gradients, flashes, or 'impact zoom' effects. Never use stock photos instead of flat, stylized drawings.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-prompt": {
+  "nomeDoEstilo": "Tactile Prompt Blocks",
+  "atmosfera": "Organized, clear, and calm. This style evokes a modern, premium educational feel.",
+  "elementoVisual": "The core visual element is a stack of up to four distinct, solid-colored blocks, each with a rounded top and a 'tooth' cutout at the bottom, designed to interlock. Each block features a simple line icon within a translucent pill and the hero sentence text. The blocks represent ideas building upon each other.",
+  "composicoes": [
+   "The hero text is centered within a single large block that fills most of the frame, with a subtle subject-related texture filling the block's icon area.",
+   "The hero text is split across two stacked blocks, centered vertically, with a subject-related image filling the icon area of each block.",
+   "The hero text is contained within a single block positioned in the lower third, with a large, abstract subject-related texture filling the upper two-thirds of the frame.",
+   "The hero text is distributed across three stacked blocks, aligned to the left, with a subtle subject-related pattern filling the icon area of each block.",
+   "A single block with the hero text is placed in the upper half, with a subject-related scene rendered in a soft, diffused style filling the lower half of the frame."
+  ],
+  "tipografia": "A legible humanist sans-serif with distinct uppercase 'I' and 'L' is used for main titles and body text, in medium to bold weights. A monospaced sans-serif is used for smaller labels and numbers, always in uppercase and with wide tracking. Hierarchy is established by size and weight.",
+  "textura": "Surfaces are smooth and clean, with soft shadows under elements to suggest depth. There is no visible grain or paper texture.",
+  "luz": "The scene is evenly lit with a cool, ambient light, creating soft, short shadows under raised elements.",
+  "papeisDasCores": "The background is a light cool neutral. Main text is a dark neutral. Accent colors are used exclusively for the distinct 'piece' blocks, with each block having a solid accent color, a slightly darker version for text within it, and a lighter version for small chips.",
+  "evitar": "Do not use any glowing effects, neon, particles, digital brain imagery, falling code, or colorful gradients. Avoid any form of bounce, spin, or shake in elements.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-pronuncia": {
+  "nomeDoEstilo": "Diction Studio Editorial",
+  "atmosfera": "Clean, modern, and educational, evoking a premium editorial feel. It is precise and focused, suitable for serious subjects.",
+  "elementoVisual": "A stylized, abstract sound wave or phonetic diagram, rendered as a flat graphic or subtle 3D form, fills the space where the presenter's face would be. This element visually represents the core idea of sound or structure related to the hero sentence.",
+  "composicoes": [
+   "Hero text large and centered, with the abstract sound wave element subtly behind it, scaled to fit the text's width.",
+   "Hero text aligned left at the top, with the abstract sound wave element filling the bottom two-thirds of the post, scaled large.",
+   "Hero text small and bottom-right, with the abstract sound wave element filling the entire background at a low opacity.",
+   "Hero text in a prominent vertical stack on the left, with the abstract sound wave element as a strong, contained shape on the right.",
+   "Hero text centered horizontally in the middle, with the abstract sound wave element as a thin, horizontal band above and below the text."
+  ],
+  "tipografia": "A bold, wide-tracked geometric sans-serif for the main words, with a slightly condensed weight for supporting text. Phonetic symbols use a distinct, legible serif. Labels are uppercase with generous tracking.",
+  "textura": "Surfaces are smooth and clean, with a subtle, almost imperceptible fine grain or soft matte finish. No paper or glass effects.",
+  "luz": "Even, soft ambient light, creating minimal shadows and a flat, graphic appearance. The scene is brightly lit without harsh contrasts.",
+  "papeisDasCores": "A deep, cool background dominates, with light, warm text for readability, and a vibrant, warm accent color used sparingly for key highlights and graphic elements.",
+  "evitar": "Do not use emojis, any form of UI chrome, or any element that suggests a video frame. Avoid any visual representation of a person or a literal mouth. Do not use narrow columns or leave empty frames.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-pulso": {
+  "nomeDoEstilo": "Athletic Digital Interface",
+  "atmosfera": "Modern, precise, and clean, evoking a premium athletic app or device. It feels contemporary and highly functional.",
+  "elementoVisual": "A stylized, abstract representation of measurement, progress, or a state, rendered with clean lines and subtle depth. This element fills the space where a person would be, often within a circular or rectangular frame, and visually interacts with surrounding graphic indicators.",
+  "composicoes": [
+   "Hero text is centered below a large circular visual element, which is centrally placed and surrounded by graphic indicators.",
+   "Hero text is left-aligned in a prominent rectangular card at the bottom, with a smaller circular visual element positioned in the top left corner of the post.",
+   "Hero text is large and centered, with a wide rectangular visual element spanning the full width of the post below it, containing internal graphic divisions.",
+   "Hero text is placed in the top half, with a dynamic, illustrative path or route visual element drawing across the bottom half of the post.",
+   "Hero text is centrally aligned and large, with a prominent, full-height rectangular visual element on the left side, containing a vertical scale or progress bar."
+  ],
+  "tipografia": "Titles and numbers use a robust, normal-width geometric sans-serif, like Bai Jamjuree, with tight tracking. Labels and smaller details use a slightly heavier, wide-tracked uppercase sans-serif, like Reddit Sans, for clear hierarchy.",
+  "textura": "The background is a very light, warm tone with subtle, almost imperceptible contour lines. Cards are smooth and white with soft, low shadows. The main visual element has a matte, dark surface.",
+  "luz": "The scene is evenly lit with a soft, ambient light, highlighting the clean surfaces and graphic elements without harsh shadows or reflections.",
+  "papeisDasCores": "The background is very light, with dark text. Five distinct accent colors are used for graphic indicators, representing different zones or states, with one primary accent color dominating for neutral or key information.",
+  "evitar": "Do not use gradients, neon glows, extra colors beyond the defined accent palette, or any form of digital UI chrome. Avoid any elements that suggest an analog clock, satellite maps, or overly complex 3D renderings.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-quiz": {
+  "nomeDoEstilo": "Quiz Show Clean",
+  "atmosfera": "Modern, educational, and premium, evoking a sophisticated TV quiz show. It feels current and engaging, designed for broad appeal.",
+  "elementoVisual": "Stylized, clean 3D illustrations or high-quality transparent PNG photos of objects fill the card shapes. These elements are generic and directly relate to the sentence's subject, rendered with a slight shadow for depth.",
+  "composicoes": [
+   "Hero text centered at the top, a large visual element below it filling the lower two-thirds of the post, with ample negative space around.",
+   "Hero text aligned left in the upper quarter, a grid of four smaller visual elements in the middle, and a single accent line at the bottom.",
+   "Hero text in the center, flanked by two tall, narrow visual elements, with a subtle accent ring graphic in the background.",
+   "Hero text as a prominent banner across the top, with a single large visual element occupying the entire lower section of the post.",
+   "Hero text in the lower third, with a single, abstract visual element filling the upper two-thirds, featuring a small accent checkmark graphic."
+  ],
+  "tipografia": "A single geometric sans-serif family is used, with strong hierarchy. Key phrases use heavy weight and slightly tight tracking, while supporting text uses medium weights with standard tracking. Uppercase is reserved for short labels.",
+  "textura": "Smooth, clean surfaces dominate, with soft, subtle shadows giving a sense of depth to cards and elements. The background features faint, dashed line work.",
+  "luz": "The scene is evenly lit with a bright, cool light source, creating soft, diffused shadows. A central brighter area suggests a studio light.",
+  "papeisDasCores": "A light background dominates, with dark text and details. A vibrant accent color is used for emphasis and interactive elements, while a specific bright color highlights correct answers.",
+  "evitar": "Do not use any elements that suggest a casino, such as roulette wheels, flashing lights, coins, or neon colors. Avoid any gradients, dark backgrounds, or busy patterns.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-raiox": {
+  "nomeDoEstilo": "Luminous Diagnostic Report",
+  "atmosfera": "Clinical, precise, and educational, evoking a sense of scientific clarity and modern expertise.",
+  "elementoVisual": "A stylized anatomical diagram, like an X-ray, rendered in luminous lines against a dark background. This diagram illustrates a generic system, object, or concept, with specific points highlighted to represent 'tension' or 'correction' related to the hero sentence.",
+  "composicoes": [
+   "Hero text centered at the top, with a large, detailed anatomical diagram filling the bottom two-thirds of the post.",
+   "Hero text aligned left in the middle, with the anatomical diagram positioned on the right, scaled to fill the remaining vertical space.",
+   "Hero text in a prominent block on the left, with the anatomical diagram as a smaller, focused element on the right, surrounded by negative space.",
+   "Hero text spanning the full width at the bottom, with the anatomical diagram occupying the upper two-thirds of the post, slightly off-center.",
+   "Hero text vertically stacked on the left, with the anatomical diagram as a large, central element, slightly overlapping the text block."
+  ],
+  "tipografia": "A humanistic sans-serif with a distinctive serifed uppercase 'I' for main titles and key phrases, used in bold and regular weights. A wide-tracked geometric monospaced sans-serif is used for smaller labels and annotations, in medium to bold weights, all uppercase.",
+  "textura": "A subtle film grain over a deep, dark background, with the main visual element rendered in glowing, crisp lines, suggesting light through a negative film.",
+  "luz": "The scene is dimly lit, with the primary light source emanating from the visual elements themselves, creating a cool, soft glow against the dark background.",
+  "papeisDasCores": "The background is dark, the main text is light, and a cool accent color is used for corrected elements and measurements, with a contrasting warm accent color reserved solely for points of tension.",
+  "evitar": "Do not include any human figures, real-world photographs, gradient color fills, or any UI elements like buttons or progress bars. Avoid any text other than the hero sentence.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-ranking": {
+  "nomeDoEstilo": "Bold Ranking Scoreboard",
+  "atmosfera": "Structured and clear, this style evokes a modern sports scoreboard or game show. It feels energetic and direct, designed for immediate comprehension.",
+  "elementoVisual": "A subject-related image, scene, or texture fills a square thumbnail within each rank's card. For the top rank, a large, stylized question mark with a subtle glow fills its card until revealed. If no image is available, a solid accent-colored card with text replaces the image.",
+  "composicoes": [
+   "Hero text is centered at the bottom, with a large scoreboard filling the top two-thirds, featuring a prominent, full-width accent banner at its top.",
+   "Hero text is large and centered vertically, with a single rank card (the 'revealed' one) positioned prominently in the upper right, scaled to draw attention.",
+   "Hero text is in the upper left, with a full-height, narrow scoreboard on the right showing all rank cards, with the top rank highlighted by a distinct border.",
+   "Hero text is small and bottom-aligned, with a single, large, full-screen image filling the entire post, featuring a small, transparent overlay for the rank number in the corner.",
+   "Hero text is centered in the middle, surrounded by a grid of small, square image thumbnails, each representing a rank, with one highlighted by an accent border."
+  ],
+  "tipografia": "A single wide geometric sans-serif family with slightly rounded corners and strong numerals is used throughout. Numbers, names, and titles are in heavy uppercase, while details use a slightly lighter weight.",
+  "textura": "Surfaces are flat and clean, with hard, short shadows beneath graphic elements, giving a sense of layered pieces on a scoreboard. No grain or paper textures.",
+  "luz": "The scene is brightly and evenly lit, with a focused, directional light beam highlighting the top rank's card upon its reveal.",
+  "papeisDasCores": "A dark background color dominates the scoreboard, with light text and card backgrounds. A bright, high-contrast accent color is used for key elements like the number stamp, the current rank's card, and the reveal focus.",
+  "evitar": "Do not use condensed fonts, text outlines, or blurred text shadows. Avoid any glitter, sparkle, or soft gradient effects behind elements.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-reacao": {
+  "nomeDoEstilo": "Guided Reaction Card",
+  "atmosfera": "A structured, informative, and direct style, designed for clear communication. It conveys a professional and versatile premium feel, adaptable to any subject.",
+  "elementoVisual": "A wide, rounded rectangular panel at the bottom is filled with a subject-related image or texture, replacing the presenter. This element grounds the composition and provides a visual anchor for the hero text, which appears on a card above it.",
+  "composicoes": [
+   "The hero text card is centered horizontally and vertically above the visual element, with the visual element filling the bottom third of the post.",
+   "The hero text card is aligned to the top third, with the visual element filling the bottom two-thirds of the post.",
+   "The hero text card is small and centered on the left, with the visual element filling the entire right half of the post.",
+   "The hero text card is large and fills the top half, with the visual element filling the bottom half, both centered horizontally.",
+   "The hero text card is small and positioned in the lower left corner, with the visual element filling the entire background, subtly behind the card."
+  ],
+  "tipografia": "A single wide geometric sans-serif family with slightly rounded corners is used throughout. Titles and numbers use a heavy weight, items and comments use a bold weight, and supporting text uses medium to regular weights. Text is set in mixed case for readability, with short labels in uppercase, and tracking is standard.",
+  "textura": "The background features a subtle, dark, cool-toned surface with fine, light speckles. Cards have a smooth, matte finish with soft, diffused shadows underneath, suggesting slight elevation.",
+  "luz": "The scene is evenly lit with soft, ambient light, creating gentle shadows beneath elements without harsh highlights or deep contrast.",
+  "papeisDasCores": "A dark, cool background dominates, with light-toned cards for primary text. A dark accent is used for specific card types, and a warm, bright accent highlights key words or calls to action.",
+  "evitar": "Do not imitate the visual style of any real social media platform or news outlet. Avoid using more than one primary text card visible at a time, or placing the visual element in a narrow column next to the text content.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-receita": {
+  "nomeDoEstilo": "Illustrated Recipe Card",
+  "atmosfera": "A warm, inviting, and meticulously organized aesthetic, reminiscent of a cherished, hand-written recipe card. It conveys a sense of refined simplicity and comfort.",
+  "elementoVisual": "A stylized, top-down illustration of a generic container (like a pan or bowl) with abstract contents, rendered with clean lines and flat shapes. This central illustration serves as a visual metaphor for the subject, with elements inside representing ideas or components.",
+  "composicoes": [
+   "Hero text centered at the top, a large illustrative container fills the middle, with a small subject-related image in a rounded frame at the top right.",
+   "Hero text aligned left in the upper third, a large illustrative container fills the bottom two-thirds, with a small subject-related image in a rounded frame at the top right.",
+   "Hero text large and centered, overlaid on a full-bleed subject-related image, with a small rounded frame containing a texture at the top right.",
+   "Hero text in the lower third, a large illustrative container fills the top two-thirds, with a small subject-related image in a rounded frame at the top left.",
+   "Hero text aligned right in the middle, a large illustrative container fills the bottom half, with a small subject-related image in a rounded frame at the top left."
+  ],
+  "tipografia": "Titles and numbers use an elegant high-contrast serif with droplet terminals, while labels and annotations use a matching text-optimized serif. Hierarchy is established through size and true italics, not varied weights.",
+  "textura": "The primary surface is a light, warm paper texture with subtle pinstripes, set against a dark, cool background resembling a tabletop.",
+  "luz": "The scene is evenly lit with a soft, diffused light, creating gentle shadows for depth without harsh highlights.",
+  "papeisDasCores": "The light, warm background dominates, with dark text and outlines. A single, distinct accent color is used sparingly for highlights, checkmarks, and specific illustrative elements.",
+  "evitar": "Do not use gradients, bright glows behind elements, outlines on text, emojis, stickers, or strong photographic textures. Avoid any visual elements that appear to be in motion or imply video playback.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-respiro": {
+  "nomeDoEstilo": "Calm Diary Page",
+  "atmosfera": "A serene, introspective mood, reminiscent of a personal journal entry at dusk. The aesthetic is premium, emphasizing calm and measured reflection.",
+  "elementoVisual": "A soft, organic, layered shape, rendered in three flat tones of the accent color, with subtly undulating edges. This shape, never a perfect circle, is the central visual metaphor, representing concepts like growth, containment, or depletion related to the hero sentence.",
+  "composicoes": [
+   "Hero text is centered, large, with the organic shape behind it, slightly off-center and scaled to fill most of the background. Ample negative space surrounds the text.",
+   "Hero text is aligned left, large, with the organic shape scaled smaller and positioned to the right, acting as a visual counterpoint. The background is mostly clear.",
+   "Hero text is small, bottom-aligned, with the organic shape dominating the upper two-thirds of the post, scaled large and centrally placed. The background is a solid field.",
+   "Hero text is top-aligned, medium size, with the organic shape scaled to a medium size and positioned at the bottom, creating a visual anchor. Negative space is balanced.",
+   "Hero text is split into two lines, left-aligned, with a smaller organic shape placed above the text, acting as an introductory element. The background is clean and open."
+  ],
+  "tipografia": "Elegant, soft serif like Newsreader for key words and numbers, in medium weight. A legible, handwritten script like Caveat for secondary notes, in a heavier weight. Text is never condensed, with careful tracking and clear hierarchy.",
+  "textura": "The surface evokes a soft, slightly textured paper, like linen, with a subtle, almost imperceptible grain. There are no glossy or reflective elements.",
+  "luz": "The scene is lit with a soft, diffused light, suggesting late afternoon or early evening, creating no harsh shadows or bright highlights.",
+  "papeisDasCores": "A warm light background dominates, with dark text for primary information and a slightly lighter dark text for secondary notes. A warm accent color is used for the organic shape and subtle highlights.",
+  "evitar": "Do not include any bright, shiny, or fast-moving elements. Avoid hard cuts, sudden flashes, or any visual noise. No gradients, strong shadows, or stock photos are permitted.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-roteiro": {
+  "nomeDoEstilo": "Hand-Drawn Journey Map",
+  "atmosfera": "A nostalgic, artisanal mood, evoking a premium travel journal. It feels like a carefully planned itinerary coming to life on paper.",
+  "elementoVisual": "A stylized, hand-drawn map of an abstract location, rendered with contour lines and blocky districts. The map features a winding path marked by numbered pins, with a subject-related illustration or texture filling a paper postcard shape that travels along the route. This visual element serves as a backdrop for the hero text, which is integrated into the map's narrative.",
+  "composicoes": [
+   "Hero text is centered on a large paper card, with a small map element in the top corner and a single pin.",
+   "Hero text is placed next to a prominent, numbered pin on a large map, with the postcard element in the opposite corner.",
+   "Hero text is integrated into a 'ticket' or 'card' element at the bottom, with a zoomed-out map showing the full route above.",
+   "Hero text is presented as a 'stamp' or 'seal' on a paper element, overlaid on a section of the map with a single destination pin.",
+   "Hero text is the title of a large, central paper card, with a small, illustrative icon related to the text placed above it."
+  ],
+  "tipografia": "Elegant, high-contrast serif like Fraunces is used for key words, names, and titles, often in medium to bold weight, sometimes italicized for emphasis. A humanist sans-serif like Fira Sans is used for labels, chips, and details, typically in uppercase with wide tracking.",
+  "textura": "The post features a tactile quality of paper and sand, with subtle grain and soft shadows suggesting layers of paper on a surface. Elements appear as if sketched with pencil and then inked.",
+  "luz": "The scene is lit with a soft, ambient light, suggesting a bright, natural setting that gradually shifts from a cool light to a slightly warmer light, mimicking the progression of a day.",
+  "papeisDasCores": "A light warm background dominates, complemented by very light paper elements and a light cool background for water or sky. A dark accent color is used for main text, routes, pins, and stamps, with a warm accent color reserved for specific highlights. Muted accent is used for elements yet to be 'inked'.",
+  "evitar": "Do not use real-world maps, stock photos, generic arrows, progress bars, or any elastic, shaky, or flashing animations. Avoid adding emojis or stickers, and do not place paper elements over other paper elements during transitions.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-rotulo": {
+  "nomeDoEstilo": "Technical Label Anatomy",
+  "atmosfera": "This style evokes a classic, calm, and premium feel, like examining a detailed printed technical sheet with a magnifying glass. It's designed to feel like a timeless, authoritative document.",
+  "elementoVisual": "A central oval shape, reminiscent of a bottle label's cameo, is filled completely with a subject-related abstract texture or scene. This element is surrounded by graphic fields, and a static magnifying glass graphic highlights one specific field on the label.",
+  "composicoes": [
+   "Hero text is centered on the main label, with the visual element oval above it and the technical sheet block below, all scaled to fill the post. Negative space is minimal.",
+   "Hero text is aligned left at the top, with the visual element oval to its right, and the technical sheet block occupying the lower half of the post. Negative space is balanced.",
+   "Hero text is large and centered within the technical sheet block, which fills the bottom two-thirds of the post, while the visual element oval is small at the top. Negative space is generous at the top.",
+   "Hero text is positioned within the magnifying glass graphic, which highlights a field on the main label, with the visual element oval placed prominently to the side. Negative space is used to frame the main label.",
+   "Hero text is a single line at the very bottom, with the visual element oval dominating the upper half of the post, and a simplified technical sheet block below it. Negative space is balanced around the main elements."
+  ],
+  "tipografia": "The style uses an elegant high-contrast serif for the main label name and large numbers, and a classic text serif for all other information. Hierarchy is established through size, uppercase, and true italics, with consistent tracking and no condensed fonts.",
+  "textura": "The surfaces mimic a warm light paper texture for the label and technical sheet, with a subtle dark background suggesting glass. All lines and text appear as crisp ink on paper.",
+  "luz": "The scene is evenly lit with a soft, diffused light, creating minimal shadows and emphasizing the flat, printed quality of the elements.",
+  "papeisDasCores": "The warm light background dominates, with dark text and lines. A single accent color is used sparingly for highlights, numbers, and specific graphic elements.",
+  "evitar": "Do not add decorative gradients, bright glows behind elements, text outlines, emojis, or strong textures. Avoid any illustrations that are not simple line drawings.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-tatica": {
+  "nomeDoEstilo": "Tactical Board Analysis",
+  "atmosfera": "Professional, analytical, and dynamic, evoking a high-production sports broadcast. It feels modern and authoritative, suitable for explaining complex ideas clearly.",
+  "elementoVisual": "A stylized tactical board, rendered as chalk on a dark, textured field. It features abstract, round tokens, dashed lines for movement, solid lines for emphasis, and glowing zones, all arranged to illustrate a concept or process.",
+  "composicoes": [
+   "Hero text is large and centered, with the tactical board as a full background image, slightly desaturated to let the text stand out.",
+   "Hero text is positioned in a prominent dark banner at the bottom, while the tactical board fills the upper two-thirds of the post, with key elements scaled large.",
+   "Hero text is placed in a dark, wide banner on the left, with the tactical board occupying the remaining space on the right, featuring a single large, central token.",
+   "Hero text is small and aligned to the top left, with the tactical board filling the entire background, showcasing a complex diagram with multiple elements.",
+   "Hero text is vertically stacked on the right side, with a large, abstract visual element from the tactical board (e.g., a glowing zone or a prominent arrow) filling the left side."
+  ],
+  "tipografia": "A wide, heavy geometric sans-serif in uppercase is used for titles and numbers, conveying a strong, impactful presence. Supporting text uses the same family in a regular weight, maintaining clarity and hierarchy.",
+  "textura": "The background has a subtle, dark field texture, resembling a finely cut playing surface. All graphic elements appear as if drawn with light chalk, with clean edges and no rough grain.",
+  "luz": "The scene is evenly lit with a slight directional emphasis that highlights the chalk-like elements on the dark background, creating a subtle sense of depth.",
+  "papeisDasCores": "The primary background is dark, with light text and lines for clarity. A single warm light accent color is used sparingly for emphasis on key elements, while very dark elements provide contrast.",
+  "evitar": "Do not use any gradients, colored shadows, double frames, or excessive brightness. Avoid any 'impact zoom' or 'bounce' animations, as all movements must be decisive and settle without extra flourishes.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-tela-viva": {
+  "nomeDoEstilo": "Live Screen Demonstration",
+  "atmosfera": "Modern, functional, and direct. This style conveys a premium, educational feel, suitable for demonstrating digital content.",
+  "elementoVisual": "A subject-related screenshot or web page capture fills a prominent rounded rectangular frame. This image is a static representation of the content being discussed, serving as the primary visual anchor for the hero text.",
+  "composicoes": [
+   "The hero text sits centered within a white label box, which overlaps the bottom edge of the large visual element positioned in the upper half of the post.",
+   "The hero text is large and centered, with the visual element scaled down and placed in the top third, leaving significant negative space below.",
+   "The visual element occupies the entire top half of the post, with the hero text in a white label box positioned below it, centered horizontally.",
+   "The visual element is a full-width band across the middle, with the hero text in a white label box above it, and ample negative space below.",
+   "The visual element is a smaller, square-ish shape in the top-left, with the hero text in a white label box occupying the remaining space in the top half, leaving the bottom half as negative space."
+  ],
+  "tipografia": "A single geometric sans-serif family is used throughout. The hero text in the label is extra bold, uppercase, and tightly tracked, while any supporting text within the visual element uses varying weights of the same family.",
+  "textura": "Surfaces are clean and flat, with sharp edges and subtle shadows under the visual element and label, suggesting depth without heavy textures.",
+  "luz": "The scene is evenly lit, with a soft, diffused light source creating minimal shadows and maintaining clarity on all elements.",
+  "papeisDasCores": "The background uses a dark, cool tone, providing contrast for the light visual element and label. The label and main text are light, with a single accent color used sparingly for emphasis within the visual element.",
+  "evitar": "Do not use any filters, vignettes, glows, or color overlays on the visual element. Avoid animated zooms, outlined text, emojis, or any fake UI elements.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-terco": {
+  "nomeDoEstilo": "Divided Stage Minimal",
+  "atmosfera": "Sober, organized, and clear. This style conveys a premium, instructional, and structured feel.",
+  "elementoVisual": "The visual element is a direct, generic representation of the core concept, rendered as a flat illustration, a clean photograph, or a pure typographic card. It fills the top section of the post, directly illustrating the hero sentence.",
+  "composicoes": [
+   "The hero text is centered in the lower two-thirds, with the visual element filling the top third at a medium scale, leaving ample negative space.",
+   "The hero text is left-aligned in the lower two-thirds, with the visual element filling the top third at a large scale, slightly cropped.",
+   "The hero text is right-aligned in the lower two-thirds, with the visual element filling the top third at a small scale, surrounded by negative space.",
+   "The hero text is stacked and centered in the lower two-thirds, with the visual element filling the top third, featuring a prominent number or icon.",
+   "The hero text is placed as a single line at the bottom of the lower two-thirds, with the visual element filling the top third, showcasing a detailed scene."
+  ],
+  "tipografia": "A wide geometric sans-serif is used throughout. Titles and numbers are extra bold, while body text is medium to bold. Uppercase is used for small, high-level text, with generous tracking.",
+  "textura": "Surfaces are clean and flat, with no discernible grain or paper texture. Depth is minimal, primarily achieved through clear separation of elements.",
+  "luz": "The scene is evenly lit with a cool, ambient light, ensuring high contrast between text and background without harsh shadows or highlights.",
+  "papeisDasCores": "A dark background dominates the top section, with light text and a single accent color used for highlights like numbers or underlines. The lower section uses a dark background with light text.",
+  "evitar": "Do not use filters, vignettes, blur, or color overlays on any images. Avoid text with outlines, condensed fonts, or more than one accent color. No shaking, rotating, flashing, or bouncing effects.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-tese": {
+  "nomeDoEstilo": "Direct Opinion Split Screen",
+  "atmosfera": "Journalistic and authoritative, this style feels contemporary and direct. It aims for clear communication with a premium, no-frills aesthetic.",
+  "elementoVisual": "A subject-related photographic image or detailed illustration fills the upper half of the frame. This element directly supports the hero sentence, acting as visual evidence or context.",
+  "composicoes": [
+   "The hero text is centered in the lower half, with the visual element filling the entire upper half.",
+   "The hero text is large and centered in the upper half, with the visual element filling the entire lower half.",
+   "The hero text is left-aligned in the upper half, with the visual element filling the entire lower half.",
+   "The hero text is right-aligned in the lower half, with the visual element filling the entire upper half.",
+   "The hero text is small and centered at the bottom, with the visual element filling the entire frame above it."
+  ],
+  "tipografia": "A single robust sans-serif font is used, with varying weights from medium to extra-bold. Hero text is typically uppercase or title case, large, and tightly tracked to fill its space.",
+  "textura": "Surfaces are clean and smooth, without visible grain or paper textures. The overall impression is digital and polished.",
+  "luz": "The scene is evenly lit, with a neutral light source that avoids harsh shadows or dramatic contrasts, ensuring clarity and readability.",
+  "papeisDasCores": "A dark background color dominates, with light text for high contrast. No accent colors are used; all elements adhere to the primary dark and light brand palette.",
+  "evitar": "Do not use any filters, vignettes, blurs, or color overlays on the visual element. Avoid any decorative boxes, frames, or colored highlights around text or images.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-torre": {
+  "nomeDoEstilo": "Night City Tower",
+  "atmosfera": "Premium, sophisticated, and architectural, evoking a modern, high-end feel. It suggests precision and structured growth.",
+  "elementoVisual": "A stylized 3D night city scene, often featuring a prominent, sleek tower that visually represents a numerical concept. Other elements include a 3D map with a highlighted route or a cutaway floor plan with illuminated sections, all rendered with clean lines and subtle depth.",
+  "composicoes": [
+   "Hero text is large and centered at the top, with a wide, rounded frame below it filled by a relevant scene or texture.",
+   "Hero text is aligned left in a prominent column, with a tall, slender 3D tower dominating the right side of the post.",
+   "Hero text is integrated into a 3D map, with a glowing route leading to a specific point, occupying the upper half of the post.",
+   "Hero text is placed above a detailed, angled 3D floor plan, where specific sections are subtly highlighted.",
+   "Hero text is positioned next to a hanging, metallic price tag graphic, with a dark, abstract texture filling the background."
+  ],
+  "tipografia": "Large numbers and key names use an elegant, high-contrast serif typeface like Cormorant Garamond, wide-tracked and well-spaced. Labels and secondary text use a geometric sans-serif like Manrope, often uppercase and widely tracked, while titles and main phrases use a robust sans-serif like Sora with slightly tighter tracking.",
+  "textura": "Smooth, clean surfaces with subtle 3D rendering, minimal grain, and soft shadows, suggesting polished metal, glass, and architectural materials.",
+  "luz": "A cool, ambient night sky light with warm amber backlighting, creating deep shadows and illuminated highlights, often with a subtle moon glow.",
+  "papeisDasCores": "The background is predominantly dark, text is light, and a single, refined accent color is used sparingly for highlights, never tinting images.",
+  "evitar": "Do not include any real brand logos or map prints, avoid placing text too close to the margins, and never show two large visual blocks simultaneously.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-transformacao": {
+  "nomeDoEstilo": "Before After Transformation",
+  "atmosfera": "Calm, precise, and practical, evoking a modern home magazine aesthetic.",
+  "elementoVisual": "A large, high-quality photograph or illustration split vertically, showing a 'before' state on one side and an 'after' state on the other, with a clear dividing line. This split image serves as the primary visual, illustrating the transformation related to the hero sentence.",
+  "composicoes": [
+   "The hero text sits on a light rectangular card placed over a large, full-frame subject-related image, centered vertically.",
+   "The hero text sits on a light rectangular card over a split 'before and after' image, with a small subject-related image in a wide rectangular frame at the bottom.",
+   "The hero text sits on a light rectangular card over a split 'before and after' image, with numbered circular markers highlighting specific areas of the 'after' state.",
+   "The hero text sits on a light rectangular card over a full-frame subject-related image, with a small subject-related image in a rounded window at the bottom center.",
+   "The hero text sits on a light rectangular card over a split 'before and after' image, with the 'before' and 'after' labels prominently displayed in uppercase at the top of each section."
+  ],
+  "tipografia": "A single wide, rounded geometric sans-serif family is used: extra bold for main words, bold for definitions, and medium for details. Labels like 'BEFORE' and 'AFTER' are uppercase with wide tracking.",
+  "textura": "The background features a subtle linen texture, with light, smooth paper-like cards for text. Soft, diffused shadows add depth without harshness.",
+  "luz": "The scene is lit with soft, ambient light, creating gentle shadows without harsh highlights or direct light sources.",
+  "papeisDasCores": "A dark background color dominates, with light text on light cards; a specific accent color highlights the 'after' state, markers, and emphasized words.",
+  "evitar": "Do not use photos that do not align visually, do not zoom into logos or small text, and do not place two markers in the same location.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-versus": {
+  "nomeDoEstilo": "Versus Fight Arena",
+  "atmosfera": "Dynamic and assertive, like a sports poster or a fight card. It conveys a sense of direct competition and clear decision-making.",
+  "elementoVisual": "The primary visual element is a split-screen arena with two inclined panels, each filled with a subject-related image, scene, or texture. These images represent the two competing options, facing each other across a diagonal divide. Smaller, circular icons or images may appear for specific criteria or profiles, rendered as if on light paper.",
+  "composicoes": [
+   "The hero text sits large and centered, with two inclined panels filling the background, each containing a distinct visual element.",
+   "The hero text is positioned on a central, light-colored card, flanked by two vertical bars on a dark background, each bar topped with a small visual element.",
+   "A large visual element fills one inclined panel, with the hero text placed prominently on the opposing inclined panel, both on a dark background.",
+   "The hero text is small and centered at the top, with two large, distinct visual elements filling the lower two-thirds of the post, separated by a diagonal line.",
+   "The hero text is presented as a large, bold statement across the middle, with a single, abstract visual element subtly integrated into the background behind it, maintaining the diagonal split."
+  ],
+  "tipografia": "A single, wide, and firm geometric sans-serif family is used throughout, evoking a fight poster aesthetic. Key words, titles, and scores use extra bold italic uppercase, while supporting text uses a medium italic weight, all with generous tracking.",
+  "textura": "Surfaces have a hard, printed poster feel with short, sharp shadows under elements. A subtle, diagonal line pattern provides a sense of motion in the dark background.",
+  "luz": "The scene is lit with strong, direct light, creating distinct, hard shadows. There is no soft glow or diffused light.",
+  "papeisDasCores": "A dark background dominates, with a primary accent for one side, a secondary accent for the other, and a warm light tertiary accent for key highlight elements; light elements use a light background with dark text.",
+  "evitar": "Do not use condensed fonts, text outlines, or blurred text shadows. Avoid any decorative icons or emojis outside of the designated criterion icons, and do not use any brand names or tool names on screen.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-viral": {
+  "nomeDoEstilo": "Viral Retention Dynamic",
+  "atmosfera": "Modern, high-contrast, and dynamic, designed for maximum attention. It conveys a premium, impactful feel adaptable to any subject.",
+  "elementoVisual": "Subject-related imagery, either a full-bleed photograph or a detailed illustration, rendered sharply and clearly. It can also be a stylized 3D object presented as a floating card, always filling its designated shape completely.",
+  "composicoes": [
+   "Full-bleed image with hero text centered in the lower half, occupying significant negative space.",
+   "Image fills the top half of the post, with the hero text centered below it, separated by a thin accent line.",
+   "A floating visual element, like a detailed object or scene, is placed in the upper half, with the hero text centered below.",
+   "A large, impactful hero text is centered, with a smaller, subtle background texture or pattern related to the subject.",
+   "Hero text is presented as a large, bold number or key phrase, with a supporting visual element subtly integrated into the background or as a small accent."
+  ],
+  "tipografia": "A single wide, full-stroke geometric sans-serif family is used throughout. Key words, numbers, and titles are heavy weight and uppercase, while supporting text uses medium weights. Tracking is normal, and hierarchy is established by size and weight.",
+  "textura": "Surfaces are generally smooth and clean, with minimal grain. Backgrounds are deep and dark, providing strong contrast for light text and accent elements.",
+  "luz": "The lighting is direct and clear, emphasizing the subject with strong contrast. Visual elements are well-lit, avoiding soft or diffused scenes.",
+  "papeisDasCores": "The background is predominantly dark, text is light, and a vibrant accent color is used for highlights and key elements, never tinting photos.",
+  "evitar": "Do not use more than three words in the hero text, or split it into two lines. Avoid any decorative icons or emojis, and never change the accent color for different moments.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-visor": {
+  "nomeDoEstilo": "Precise Viewfinder Aesthetic",
+  "atmosfera": "A modern, minimalist, and highly functional aesthetic, evoking the precision of a professional camera interface. It feels premium and understated.",
+  "elementoVisual": "A simple, illustrative scene or texture, rendered with soft shadows and warm neutral tones, fills the main visual area. This element metaphorically represents the subject being 'adjusted' or 'focused on', directly relating to the hero sentence.",
+  "composicoes": [
+   "The hero text is large and centered, with a subtle visual element filling the background, slightly desaturated.",
+   "The hero text is aligned to the top left, with a prominent visual element occupying the bottom two-thirds of the post.",
+   "A large, abstract visual element dominates the left side, with the hero text stacked vertically on the right, using ample negative space.",
+   "The hero text is positioned in the bottom third, with a full-bleed, subtly textured visual element above it, suggesting a 'before' or 'after' state.",
+   "The hero text is split into two lines, with the first line large and top-aligned, and the second line smaller and bottom-aligned, framing a central, focused visual element."
+  ],
+  "tipografia": "Titles use a strong, clean geometric sans-serif in medium to bold weights, with a distinct lowercase 'l'. Supporting text and numerical elements use a wide-tracked monospaced sans-serif, often in uppercase, for a technical, precise feel. Hierarchy is established through size and weight.",
+  "textura": "Surfaces are smooth, with a subtle, dark, translucent glass-like overlay that creates depth, allowing the background visual element to show through softly.",
+  "luz": "The scene is lit with soft, diffused light, creating gentle shadows and a sense of depth without harsh contrasts.",
+  "papeisDasCores": "A dark background dominates, with light text for readability. A single, cool accent color is used sparingly for emphasis or to highlight key elements.",
+  "evitar": "Do not add any glow effects, letter outlines, emojis, colorful gradients, camera shake, full white flashes, or 'REC' indicators. Avoid any elements that suggest a fake or overly decorated interface.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-wireframe": {
+  "nomeDoEstilo": "Wireframe Design Canvas",
+  "atmosfera": "Precise, measured, and calm, evoking a professional design review environment.",
+  "elementoVisual": "A stylized, flat illustration or graphic representation of the subject matter, rendered within the mobile phone screen or a design frame. This element evolves from a minimalist wireframe sketch with placeholder shapes to a clean, fully rendered graphic using the brand's palette. The 'comment pin' shape, where the presenter would be, is filled with a related abstract texture or a close-up detail of the subject, maintaining the flat, graphic style.",
+  "composicoes": [
+   "Hero text is large and centered, with a wireframe mobile phone or design frame on the left, showing a subject-related graphic. The 'comment pin' shape is in the upper right.",
+   "Hero text is aligned to the top left, with a large, clean page graphic filling the right two-thirds of the post. The 'comment pin' shape is in the bottom left.",
+   "Hero text is small and bottom-aligned, with a full-bleed wireframe graphic of the subject occupying most of the canvas. The 'comment pin' shape is in the upper right.",
+   "Hero text is vertically stacked on the left, with a split layout showing a wireframe graphic on the left half and a clean page graphic on the right half. The 'comment pin' shape is in the upper right.",
+   "Hero text is integrated into a large, clean page graphic that fills the entire post, with the 'comment pin' shape subtly placed as an accent in one corner."
+  ],
+  "tipografia": "A clear, legible sans-serif for interface elements and titles, with a distinct 'I' and 'l' to avoid confusion. A monospaced font is used for measurements and numerical data, while a high-contrast serif is reserved for key promises or brand statements. Hierarchy is established through size and weight, with titles being large and text remaining highly readable.",
+  "textura": "A dark background with a subtle grid of light points, mimicking a design canvas. Surfaces are flat and clean, with no visible grain or paper texture, emphasizing digital precision.",
+  "luz": "The scene is evenly lit with a soft, diffused light, creating minimal shadows and maintaining a clean, technical aesthetic.",
+  "papeisDasCores": "The dark background dominates, with light text for readability. A single accent color is used for revision marks and to highlight resolved elements, while the brand's primary color fills the 'clean page' elements.",
+  "evitar": "Do not include any glowing effects, neon, gradients, spinning 3D mockups, or emojis. Avoid any real or fake UI elements like logos, browser bars, or toolbars that are not part of the core design canvas aesthetic. Do not use any color other than the designated accent for revision marks.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ },
+ "modelo-yap": {
+  "nomeDoEstilo": "Clean Informative Card",
+  "atmosfera": "Professional and direct, this style conveys information clearly and soberly. It feels modern and trustworthy, suitable for educational or financial content.",
+  "elementoVisual": "A stylized, flat graphic illustration or a clean product photograph fills the card-like shapes. The visual element directly represents the subject of the hero sentence, rendered with a slightly soft, rounded aesthetic.",
+  "composicoes": [
+   "The hero text is centered at the bottom, with a large illustrative card filling the top two-thirds of the post.",
+   "The hero text is aligned left in the middle, with a smaller illustrative card positioned to the right, leaving ample negative space.",
+   "A large illustrative card occupies the entire background, with the hero text overlaid in the lower center, highlighted by a subtle accent strip.",
+   "The hero text is large and centered, with a small, square illustrative card placed in the upper left corner, acting as an emblem.",
+   "The hero text is split into two lines, left-aligned at the top, with a prominent illustrative card filling the bottom half of the post."
+  ],
+  "tipografia": "A wide, geometric sans-serif typeface, like Plus Jakarta Sans, is used throughout. Key words in the hero text are rendered in a bold, heavy weight, while supporting text uses a medium weight, all in uppercase or title case with normal tracking.",
+  "textura": "Surfaces are smooth and clean, resembling matte paper or a soft digital render. Subtle, soft shadows give depth to card elements.",
+  "luz": "The scene is evenly lit with a soft, diffused light, creating gentle shadows and maintaining a bright, clear appearance.",
+  "papeisDasCores": "The background is a light, warm tone, with dark text for primary information and a single, vibrant accent color used sparingly for highlights and underlines.",
+  "evitar": "Do not use any filters, vignettes, blur, or color overlays on images. Avoid text with outlines, more than one accent color, or any elements that shake, spin, or flash.",
+  "soTipografico": false,
+  "fonte": "estilo.md + SKILL.md + quadros.jpg"
+ }
+}
