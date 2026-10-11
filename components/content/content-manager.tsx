@@ -57,6 +57,7 @@ import { lerAberturaIa } from "@/lib/media/estado-da-abertura-ia";
 import { lerMontagem } from "@/lib/media/estado-da-montagem";
 import { TentarMontagem } from "@/components/video/tentar-montagem";
 import { AvisoDaMontagem, type FalhaDaMontagem } from "@/components/video/aviso-da-montagem";
+import { AvisoDaCapa, type CapaQueFalhou } from "@/components/video/aviso-da-capa";
 import { alcanceDaReprovacao, rotuloDaReprovacao, avisoDaReprovacao, ESTADOS_MORTOS } from "@/lib/content/reprovacao";
 import { JanelaDeReprovacao, type ResultadoNaTela } from "@/components/posts/janela-de-reprovacao";
 import { EstadoDaReprovacaoNoCard } from "@/components/posts/estado-da-reprovacao";
@@ -176,6 +177,8 @@ interface ContentManagerProps {
    * cliente achava que a edição tinha terminado.
    */
   falhasDaMontagem?: FalhaDaMontagem[];
+  /** As capas de corte que pararam no estilo escolhido (11/10), com o "Tentar de novo". */
+  capasQueFalharam?: CapaQueFalhou[];
   /**
    * Quem vê é o dono do projeto (07/10): só ele apaga o vídeo que parou. O
    * membro da equipe descarta o aviso, só para ele.
@@ -4671,7 +4674,7 @@ function CardDetailModal({ card, agentRow, projectId, socialAccounts, onClose, o
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function ContentManager({ projectId, projectName, initialCards, activeRun, lastFailedRun, socialAccounts, videos, videoEstilo, videoMusica, videoTermos, videoSemana, postFrequency, postsDaSemana, falhasDaMontagem, souDono = false }: ContentManagerProps) {
+export function ContentManager({ projectId, projectName, initialCards, activeRun, lastFailedRun, socialAccounts, videos, videoEstilo, videoMusica, videoTermos, videoSemana, postFrequency, postsDaSemana, falhasDaMontagem, capasQueFalharam, souDono = false }: ContentManagerProps) {
   const [selectedMonday, setSelectedMonday] = useState<Date>(getMonday(new Date()));
   const [cards, setCards] = useState<CampaignCard[]>(initialCards);
   const [postsSemana, setPostsSemana] = useState<PostParaEstado[]>(postsDaSemana ?? []);
@@ -6224,6 +6227,11 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
           vídeo, que ainda diz "pronto" quando a edição de fala chegou. */}
       {falhasDaMontagem?.length ? (
         <AvisoDaMontagem falhas={falhasDaMontagem} aoPedir={() => void loadCardsForWeek(weekStartIso)} />
+      ) : null}
+
+      {/* A capa do corte que parou no estilo escolhido (11/10): nunca outro estilo, o "Tentar de novo" no mesmo. */}
+      {capasQueFalharam?.length ? (
+        <AvisoDaCapa falhas={capasQueFalharam} aoPedir={() => void loadCardsForWeek(weekStartIso)} />
       ) : null}
 
       {/* A JORNADA, em janela e em passos, no lugar do painel que abria dentro

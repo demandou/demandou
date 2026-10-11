@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
-// A reserva (o caminho de hoje para o que faltou) roda depois da resposta e leva minutos por grupo.
+// A segunda tentativa no mesmo estilo (o que faltou, pela IA) roda depois da resposta e leva minutos por grupo.
 export const maxDuration = 800;
 
 import { after, NextRequest, NextResponse } from "next/server";
 import { corpoAssinadoConfere, CABECALHO_ASSINATURA } from "@/lib/media/worker-token";
 import { lerCallbackDaArte } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
-import { concluirArteNoModelo, desenharPeloCaminhoDeHoje } from "@/lib/media/editor-do-curso/arte-pelo-modelo-servidor";
+import { concluirArteNoModelo, desenharNoMesmoEstilo } from "@/lib/media/editor-do-curso/arte-pelo-modelo-servidor";
 import { lerRetornoDaCapa } from "@/lib/media/capa-pelo-modelo";
 import { concluirCapaNoModelo, reservaDasCapas } from "@/lib/media/capa-pelo-modelo-servidor";
 
@@ -18,8 +18,8 @@ import { concluirCapaNoModelo, reservaDasCapas } from "@/lib/media/capa-pelo-mod
  * vão para os posts do cliente. O lote volta no próprio corpo (`retorno`), e só
  * os posts que ainda esperam aquele lote recebem a arte.
  *
- * O que faltou (peça que não saiu, lote que falhou, worker que reiniciou) vai
- * para o caminho de hoje DEPOIS da resposta: nenhum post fica sem arte.
+ * O que faltou (peça que não saiu, lote que falhou, worker que reiniciou) vai à
+ * segunda tentativa no MESMO estilo DEPOIS da resposta; sem sair, falha técnica com "Tentar de novo".
  */
 export async function POST(req: NextRequest) {
   const corpoCru = await req.text();
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (!cb.ok) console.error(`[arte-callback] lote ${cb.lote}: ${cb.erro}`);
   if (cb.avisos.length) console.warn(`[arte-callback] lote ${cb.lote}: ${cb.avisos.join(" | ").slice(0, 600)}`);
   // AS CAPAS (11/10, lib/media/capa-pelo-modelo.ts): o lote "capa-..." vai para
-  // a capa do completo ou dos cortes, e o que faltou, para o caminho de hoje.
+  // a capa do completo ou dos cortes, e o que faltou, à segunda tentativa no mesmo estilo.
   const daCapa = lerRetornoDaCapa(bruto);
   if (daCapa) {
     const r = await concluirCapaNoModelo(cb, daCapa);
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const projectId = r.projectId;
     after(async () => {
       for (const g of r.reserva) {
-        await desenharPeloCaminhoDeHoje(projectId, g.postIds, g.motivo).catch((e) => console.error(`[arte-callback] reserva do lote ${cb.lote} falhou:`, e));
+        await desenharNoMesmoEstilo(projectId, g.postIds, g.motivo, { tentativas: 1 }).catch((e) => console.error(`[arte-callback] segunda tentativa do lote ${cb.lote} falhou:`, e));
       }
     });
   }

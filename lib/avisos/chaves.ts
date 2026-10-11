@@ -70,6 +70,7 @@ export const PREFIXOS_DAS_TELAS = [
   "sugestao",
   "estilo-aguardando",
   "arte-falhou",
+  "capa-falhou",
   "andamento-parado",
   "peca-falhou",
   "nao-revisado",
@@ -338,6 +339,11 @@ export function chaveDoEstiloAguardando(projectId: string, lote: string | null |
 /** A arte que não saiu: a marca é `arteFalhou.em` (lib/modelos-de-arte/espera-da-identidade.ts). */
 export function chaveDaArteQueFalhou(postId: string, em: string | null | undefined): string | null {
   return montar("arte-falhou", postId, em);
+}
+
+/** A capa no estilo escolhido que parou (11/10): por vídeo, alvo (o completo ou o corte) e a marca da falha. */
+export function chaveDaCapaQueFalhou(videoJobId: string, alvo: "completo" | number, em: string | null | undefined): string | null {
+  return montar("capa-falhou", videoJobId, alvo, em);
 }
 
 export function chaveDoAndamentoParado(runId: string, dia: number | string, fase: string): string | null {

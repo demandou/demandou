@@ -73,7 +73,7 @@ export async function refazerPeca(args: {
    */
   instrucao?: string;
 }): Promise<
-  | { ok: true; post: { id: string; content: string; imageUrl: string | null }; custo: number; arteRefeita: boolean; cortesia?: string; aguardandoIdentidade?: boolean }
+  | { ok: true; post: { id: string; content: string; imageUrl: string | null }; custo: number; arteRefeita: boolean; cortesia?: string; aguardandoIdentidade?: boolean; arteParou?: boolean }
   | ({ ok: false } & FalhaAoRefazer)
 > {
   const post = await prisma.post.findUnique({
@@ -183,17 +183,28 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
    * hoje sozinho. Regra que não vale, ou worker que não aceitou: o de hoje, aqui.
    */
   let metadataDoModelo: Record<string, unknown> | null = null;
+  /**
+   * A ARTE NO ESTILO QUE PAROU (11/10, nunca trocar o estilo sozinho): a peça
+   * com estilo escolhido que não saiu nas duas tentativas fica como falha
+   * técnica ("Tentar de novo" no quadro), nunca no caminho de antes. Cobra só o
+   * texto; a arte é cobrada quando sair.
+   */
+  let arteParou = false;
   if (GERA_ARTE.has(post.mediaType ?? "")) {
     const { refazerArteNoModelo } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
     const noModelo = await refazerArteNoModelo({ post, texto: limpo.texto, nicho: post.project.niche }).catch((e) => {
-      console.warn(`[refazer] a arte pelo modelo não saiu para ${post.id} (vale o caminho de hoje):`, e instanceof Error ? e.message : e);
+      console.warn(`[refazer] a regra do estilo não foi lida para ${post.id} (vale o caminho de hoje):`, e instanceof Error ? e.message : e);
       return null;
     });
     if (noModelo) {
       metadataDoModelo = noModelo.metadata;
-      arteRefeita = true;
-      // Pela IA (11/10) a arte já vem pronta; pelo template, entra pelo callback do worker.
-      if (noModelo.imagem) novaImagem = noModelo.imagem;
+      if (noModelo.falhou) {
+        arteParou = true;
+      } else {
+        arteRefeita = true;
+        // Pela IA (11/10) a arte já vem pronta; pelo template, entra pelo callback do worker.
+        if (noModelo.imagem) novaImagem = noModelo.imagem;
+      }
     }
   }
   if (GERA_ARTE.has(post.mediaType ?? "") && !metadataDoModelo) {
@@ -241,7 +252,7 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
       if (ehIdentidadeNaoAprovada(e)) aguardandoIdentidade = true;
     }
   }
-  const custoCobrado = aguardandoIdentidade ? custoDeRefazerPeca({ mediaType: "text" }) : custo;
+  const custoCobrado = aguardandoIdentidade || arteParou ? custoDeRefazerPeca({ mediaType: "text" }) : custo;
 
   try {
     await debitar({
@@ -251,7 +262,7 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
       operation: "refazer_peca",
       projectId: post.projectId,
       refId: `${post.id}:${Date.now()}`,
-      note: `Peça de ${NOME_DA_REDE[post.platform] ?? post.platform} refeita${arteRefeita ? " com arte nova" : aguardandoIdentidade ? " (arte aguardando a identidade visual, cobrada quando sair)" : ""}`,
+      note: `Peça de ${NOME_DA_REDE[post.platform] ?? post.platform} refeita${arteRefeita ? " com arte nova" : aguardandoIdentidade ? " (arte aguardando a identidade visual, cobrada quando sair)" : arteParou ? " (a arte no estilo não saiu desta vez; cobrada quando sair)" : ""}`,
       cortesia: cortesia ?? undefined,
     });
   } catch (e) {
@@ -318,5 +329,5 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
   // O custo devolvido e o COBRADO, e nao o de tabela: a tela que diz "custou
   // 57" depois de nao cobrar nada estaria mentindo para o cliente sobre o
   // proprio extrato dele.
-  return { ok: true, post: atualizado, custo: cortesia ? 0 : custoCobrado, arteRefeita, cortesia: cortesia?.motivo, ...(aguardandoIdentidade ? { aguardandoIdentidade: true } : {}) };
+  return { ok: true, post: atualizado, custo: cortesia ? 0 : custoCobrado, arteRefeita, cortesia: cortesia?.motivo, ...(aguardandoIdentidade ? { aguardandoIdentidade: true } : {}), ...(arteParou ? { arteParou: true } : {}) };
 }

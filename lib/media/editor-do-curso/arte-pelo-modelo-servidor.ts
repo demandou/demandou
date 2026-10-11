@@ -21,13 +21,14 @@ import {
   type PecaDoLote,
   type PostDoLote,
 } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
-import { arteDoModeloPelaIa, promptDeEstiloDoModelo } from "@/lib/media/editor-do-curso/arte-pela-ia";
+import { estiloDasArtesDoProjeto, estiloVaiPelaIa, promptDeEstiloDoModelo } from "@/lib/media/editor-do-curso/arte-pela-ia";
+import { TENTATIVAS_NO_ESTILO } from "@/lib/media/editor-do-curso/arte-pela-ia-servidor";
 
 /**
  * O LADO DO SERVIDOR DAS ARTES PELO MODELO DO CURSO (10/10/2026). As decisões
  * puras estão em arte-pelo-modelo.ts; aqui, o que lê e grava: a regra do
- * projeto, o pedido ao worker, o callback nos posts, a reserva (o caminho de
- * hoje) e o vigia do lote que não voltou.
+ * projeto, o pedido ao worker, o callback nos posts, a segunda tentativa no
+ * mesmo estilo (nunca o caminho de antes) e o vigia do lote que não voltou.
  */
 
 const PENDENTE = ["draft", "scheduled", "failed"];
@@ -36,25 +37,44 @@ export type RegraDoProjeto = { modelo: string; modo: "mestre" | "por-post" };
 
 /**
  * A regra do projeto (ARTE_PELO_MODELO=1, modelo do curso que serve às artes e
- * nenhum estilo próprio do cliente na frente) e o padrão dos posts. Null:
- * vale o caminho de hoje.
+ * nenhum estilo próprio do cliente na frente) e o padrão dos posts. Null: o
+ * projeto não tem estilo escolhido, e vale o caminho de hoje.
  */
 export async function regraDaArtePeloModelo(projectId: string): Promise<RegraDoProjeto | null> {
   const ligada = arteDoModeloLigada();
   if (!ligada) return null;
-  const { modeloDoCursoDoProjeto } = await import("@/lib/media/editor-do-curso/no-corte");
-  const modelo = await modeloDoCursoDoProjeto(projectId).catch(() => null);
-  if (!modelo) return null;
+  const { modeloDoCursoDoProjeto, escolhaDoEditorDoProjeto, estiloProprioValeSobreOModelo } = await import("@/lib/media/editor-do-curso/no-corte");
+  // A EDIÇÃO SOB MEDIDA ESCOLHIDA MANDA NAS ARTES E NAS CAPAS (11/10): a opção
+  // (Maquete 3D, Recorte, Gráficos, ou a genérica), sempre pela IA, com o
+  // prompt dela. NUNCA o modelo de reserva gravado junto (em 11/10 a Maquete 3D
+  // saiu Anatomia): nem com a IA desligada, nem com o modelo de reserva servindo.
+  const escolha = await escolhaDoEditorDoProjeto(projectId).catch(() => ({ escolhido: null, reserva: null }));
+  const sobMedida = estiloDasArtesDoProjeto(escolha.escolhido);
   // O "Meu estilo" confirmado que não saiu do modelo é o estilo próprio do cliente: ele manda.
   // Só se confirmado depois da escolha do modelo (10/10, noite).
-  const { estiloProprioValeSobreOModelo } = await import("@/lib/media/editor-do-curso/no-corte");
   const estiloProprio = await estiloProprioValeSobreOModelo(projectId).catch(() => false);
+  const { lerModoDosPosts } = await import("@/lib/estilo-dos-posts/design-mestre");
+  if (sobMedida) {
+    if (estiloProprio) return null;
+    return { modelo: sobMedida, modo: await lerModoDosPosts(projectId).catch(() => "mestre" as const) };
+  }
+  // O MODELO DO CURSO ESCOLHIDO. Pela IA (o padrão), o estilo dele desenha toda
+  // peça, inclusive o modelo que pede material ou entradas de fora: o prompt de
+  // estilo não depende delas, e trocar para o caminho de antes seria trocar o
+  // estilo sozinho (11/10). Pelo template do worker, só o modelo que serve às artes.
+  const escolhido = escolha.escolhido;
+  const pelaIa = estiloVaiPelaIa(escolhido);
+  const modelo = pelaIa ? escolhido : await modeloDoCursoDoProjeto(projectId).catch(() => null);
+  if (!modelo) return null;
+  if (pelaIa) {
+    if (estiloProprio) return null;
+    return { modelo, modo: await lerModoDosPosts(projectId).catch(() => "mestre" as const) };
+  }
   const r = decidirArtePeloModelo({ ligada, modelo, estiloProprio });
   if (!r.usa) {
     console.log(`[arte-no-modelo][${projectId}] caminho de hoje: ${r.motivo}`);
     return null;
   }
-  const { lerModoDosPosts } = await import("@/lib/estilo-dos-posts/design-mestre");
   const modo = await lerModoDosPosts(projectId).catch(() => "mestre" as const);
   return { modelo: r.modelo, modo };
 }
@@ -195,16 +215,18 @@ export async function enviarLoteAoWorker(o: { chave: string; projectId: string; 
 
 /**
  * Manda a coleta de uma execução ao worker: um pedido por lote (normalmente
- * um só). Lote recusado, ou a base do pedido que não saiu, vai para o caminho
- * de hoje na hora: o post não fica esperando um trabalho que não existe.
+ * um só). Lote recusado, ou a base do pedido que não saiu, vai na hora à
+ * segunda tentativa no MESMO estilo (pela IA): o post não fica esperando um
+ * trabalho que não existe, e nunca cai no caminho de antes.
  */
 export async function despacharColeta(o: { projectId: string; runId: string | null; modelo: string; coleta: ColetaDoModelo; videoJobId?: string | null }): Promise<{ enviados: number; reserva: number }> {
   const lotes = o.coleta.lotes.filter((l) => l.pecas.length);
   if (!lotes.length) return { enviados: 0, reserva: 0 };
   // PELA IA DE IMAGEM (11/10): o modelo com prompt de estilo não vai ao template
-  // do worker. As artes saem numa função à parte do app (a rota tem o prazo dela
-  // e a esteira não espera os minutos das imagens); a rota fora do ar desenha aqui.
-  if (arteDoModeloPelaIa() && promptDeEstiloDoModelo(o.modelo)) {
+  // do worker (a edição sob medida, sempre). As artes saem numa função à parte do
+  // app (a rota tem o prazo dela e a esteira não espera os minutos das imagens);
+  // a rota fora do ar desenha aqui.
+  if (estiloVaiPelaIa(o.modelo)) {
     let enviados = 0;
     for (const lote of lotes) {
       const r = await pedirArtesPelaIa(o.projectId, lote.chave);
@@ -235,7 +257,7 @@ export async function despacharColeta(o: { projectId: string; runId: string | nu
       continue;
     }
     reserva++;
-    console.error(`[arte-no-modelo][${o.projectId}] lote ${lote.chave} recusado, vai pelo caminho de hoje: ${r.erro}`);
+    console.error(`[arte-no-modelo][${o.projectId}] lote ${lote.chave} recusado; segunda tentativa no mesmo estilo, pela IA: ${r.erro}`);
     await reservaDoLote(o.projectId, lote.chave, `o worker não aceitou as peças (${r.erro.slice(0, 120)})`);
   }
   return { enviados, reserva };
@@ -264,11 +286,11 @@ async function pedirArtesPelaIa(projectId: string, lote: string): Promise<{ ok: 
   }
 }
 
-/** Desenha os posts que ainda esperam um lote, pela IA (o que ela não fizer, pelo caminho de hoje). */
+/** Desenha os posts que ainda esperam um lote, pela IA no estilo (duas tentativas; o que não sair fica como falha técnica). */
 export async function desenharLotePelaIa(projectId: string, lote: string): Promise<{ feitos: number; falhas: number }> {
   const posts = (await postsDoLote(lote, projectId)).filter((p) => arteNoModeloDe(p.metadata)?.pendente && !p.imageUrl);
   if (!posts.length) return { feitos: 0, falhas: 0 };
-  return desenharPeloCaminhoDeHoje(projectId, posts.map((p) => p.id), "a arte pela IA não saiu");
+  return desenharNoMesmoEstilo(projectId, posts.map((p) => p.id), "a arte pela IA não saiu", { tentativas: TENTATIVAS_NO_ESTILO });
 }
 
 const SELECT_DO_POST = { id: true, projectId: true, platform: true, mediaType: true, imageUrl: true, runId: true, dayOfWeek: true, metadata: true, content: true, status: true } as const;
@@ -285,20 +307,23 @@ async function postsDoLote(lote: string, projectId?: string | null) {
 function fecharArte(meta: unknown, extra: Record<string, unknown>): Record<string, unknown> {
   const m = (meta && typeof meta === "object" ? { ...(meta as Record<string, unknown>) } : {}) as Record<string, unknown>;
   const arte = (m.arteNoModelo && typeof m.arteNoModelo === "object" ? m.arteNoModelo : {}) as Record<string, unknown>;
-  return { ...m, arteNoModelo: { ...arte, pendente: false, ...extra } };
+  const fechado: Record<string, unknown> = { ...arte, pendente: false, ...extra };
+  // O campo pedido como null SAI (11/10): "reserva" e "reservaFalhou" só existem enquanto valem.
+  for (const [k, v] of Object.entries(extra)) if (v === null) delete fechado[k];
+  return { ...m, arteNoModelo: fechado };
 }
 
-/** Os posts pendentes de um lote vão todos para o caminho de hoje (lote recusado, ou falha geral). */
+/** Os posts pendentes de um lote recusado vão todos à segunda tentativa no MESMO estilo (pela IA). */
 async function reservaDoLote(projectId: string, lote: string, motivo: string): Promise<void> {
   const posts = (await postsDoLote(lote, projectId)).filter((p) => arteNoModeloDe(p.metadata)?.pendente && !p.imageUrl);
   if (!posts.length) return;
   await marcarReserva(posts.map((p) => p.id), motivo);
-  await desenharPeloCaminhoDeHoje(projectId, posts.map((p) => p.id), motivo);
+  await desenharNoMesmoEstilo(projectId, posts.map((p) => p.id), motivo, { tentativas: 1 });
 }
 
 /**
- * O post vai para a reserva: o motivo fica gravado (um callback repetido não
- * manda o mesmo post duas vezes ao caminho de hoje) e o "fazendo" ganha 30 min.
+ * O post vai para a segunda tentativa no mesmo estilo: o motivo fica gravado
+ * (um callback repetido não manda o mesmo post duas vezes) e o "fazendo" ganha 30 min.
  * Continua pendente até a reserva sair: se a reserva morrer no meio (a função
  * que roda depois da resposta tem teto), o vigia a refaz depois do prazo.
  */
@@ -317,7 +342,7 @@ export async function marcarReserva(postIds: string[], motivo: string): Promise<
  * O CALLBACK NOS POSTS: cada post pendente do lote recebe a imagem das suas
  * peças (o carrossel, as lâminas na ordem), a legenda ganha os créditos das
  * fotos de banco, a espera sai, e o card da Diana do dia mostra a arte. O que
- * faltou volta em `reserva`, para a rota desenhar pelo caminho de hoje depois
+ * faltou volta em `reserva`, para a rota desenhar no MESMO estilo (pela IA) depois
  * de responder (cada grupo leva minutos).
  */
 export async function concluirArteNoModelo(cb: CallbackDaArte): Promise<{ projectId: string | null; preenchidos: number; reserva: Array<{ postIds: string[]; motivo: string }>; ignorados: number }> {
@@ -380,37 +405,44 @@ async function cardsDaDianaDoLote(feitos: Array<{ postId: string; imageUrl: stri
   }
 }
 
+/** A frase do cliente para a arte no estilo escolhido que não saiu (o quadro junta "Nada foi cobrado."). */
+export const MOTIVO_DA_ARTE_QUE_PAROU = "A arte no estilo que você escolheu não saiu desta vez. Toque em Tentar de novo: ela recomeça no mesmo estilo";
+
 /**
- * A RESERVA: o caminho de hoje para os posts que a arte do modelo não
- * preencheu, o MESMO desenho da semana do vídeo (`arteDoDia` com a frase e as
- * lâminas gravadas no post, e o infográfico pelo Nano Banana com o conteúdo
- * gravado), sem cobrar de novo (a arte da semana já estava no pacote; o refazer
- * já cobrou). Um grupo por dia; o que não sair fica com a falha e o "Tentar de
- * novo" do quadro, nunca em "fazendo" eterno.
+ * NUNCA TROCAR O ESTILO SOZINHO (11/10, regra do Bruno). Os posts que a arte
+ * do modelo não preencheu (o template que recusou, o lote que falhou ou não
+ * voltou no prazo, a IA que não desenhou) saem no MESMO estilo pela IA de
+ * imagem, `tentativas` vezes (1 quando o template do worker já foi a primeira;
+ * 2 quando a IA é o caminho). O que não sair fica como falha técnica, com o
+ * "Tentar de novo" do quadro e sem cobrança (a arte da semana já estava no
+ * pacote; o refazer cobra a arte só quando ela sai). O caminho de antes (a arte
+ * genérica da direção de arte) e o modelo de reserva não entram mais. Um grupo
+ * por dia; três dias por vez (pela IA cada dia leva de 1 a 3 minutos).
  */
-export async function desenharPeloCaminhoDeHoje(projectId: string, postIds: string[], motivo: string): Promise<{ feitos: number; falhas: number }> {
+export async function desenharNoMesmoEstilo(projectId: string, postIds: string[], motivo: string, o: { tentativas?: number } = {}): Promise<{ feitos: number; falhas: number }> {
   const posts = await prisma.post.findMany({ where: { id: { in: postIds }, projectId, imageUrl: null, status: { in: PENDENTE } }, select: { ...SELECT_DO_POST, imagePrompt: true } });
   const grupos = new Map<string, typeof posts>();
   for (const p of posts) {
     const k = chaveDoGrupo({ postId: p.id, runId: p.runId, dayOfWeek: p.dayOfWeek, mediaType: p.mediaType ?? "image" });
     grupos.set(k, [...(grupos.get(k) ?? []), p]);
   }
+  const projeto = await prisma.project.findUnique({ where: { id: projectId }, select: { niche: true } });
+  const nicho = projeto?.niche ?? null;
   let feitos = 0;
   let falhas = 0;
-  // Três dias por vez (11/10): pela IA cada dia leva de 1 a 3 minutos, e a semana em fila passaria do prazo da função.
   const fila = [...grupos.values()];
   const um = async (grupo: (typeof fila)[number]) => {
     try {
-      await desenharGrupo(projectId, grupo, motivo);
+      await desenharGrupoNoEstilo(projectId, grupo, nicho, { tentativas: o.tentativas });
       feitos++;
     } catch (e) {
       falhas++;
       const erro = e instanceof Error ? e.message : String(e);
-      console.error(`[arte-no-modelo][${projectId}] a reserva de ${grupo.map((p) => p.id).join(",")} falhou: ${erro}`);
+      console.error(`[arte-no-modelo][${projectId}] ${grupo.map((p) => p.id).join(",")} não saiu no estilo escolhido (${motivo.slice(0, 120)}; ${erro}); para como falha técnica, sem trocar o estilo`);
       // A falha que o quadro mostra, com o "Tentar de novo"; o lote fecha (o vigia não insiste).
       for (const p of grupo) {
         const atual = await prisma.post.findUnique({ where: { id: p.id }, select: { metadata: true } });
-        if (atual) await prisma.post.update({ where: { id: p.id }, data: { metadata: fecharArte(marcarFalha(atual.metadata, erro), { reservaFalhou: erro.slice(0, 300) }) as Prisma.InputJsonValue } }).catch(() => {});
+        if (atual) await prisma.post.update({ where: { id: p.id }, data: { metadata: fecharArte(marcarFalha(atual.metadata, MOTIVO_DA_ARTE_QUE_PAROU), { reservaFalhou: erro.slice(0, 300) }) as Prisma.InputJsonValue } }).catch(() => {});
       }
     }
   };
@@ -421,148 +453,136 @@ export async function desenharPeloCaminhoDeHoje(projectId: string, postIds: stri
   return { feitos, falhas };
 }
 
+/**
+ * O "TENTAR DE NOVO" DO QUADRO para a arte no estilo que parou
+ * (lib/media/artes-aguardando-identidade.ts): o grupo volta ao MESMO estilo,
+ * com duas tentativas. Devolve quantos posts receberam a arte; lança quando
+ * não sai (quem chama grava a falha de novo).
+ */
+export async function redesenharNoEstilo(projectId: string, postIds: string[]): Promise<number> {
+  const posts = await prisma.post.findMany({ where: { id: { in: postIds }, projectId, imageUrl: null, status: { in: PENDENTE } }, select: { ...SELECT_DO_POST, imagePrompt: true } });
+  if (!posts.length) return 0;
+  const projeto = await prisma.project.findUnique({ where: { id: projectId }, select: { niche: true } });
+  return desenharGrupoNoEstilo(projectId, posts, projeto?.niche ?? null, { tentativas: TENTATIVAS_NO_ESTILO });
+}
+
+/** O estilo gravado no post (o modelo do curso ou a opção sob medida da semana), ou null. */
+export function estiloGravadoNoPost(meta: unknown): string | null {
+  const m = (meta ?? {}) as { arteNoModelo?: { modelo?: unknown } };
+  return typeof m.arteNoModelo?.modelo === "string" && m.arteNoModelo.modelo ? m.arteNoModelo.modelo : null;
+}
+
 type PostDaReserva = { id: string; platform: string; mediaType: string | null; runId: string | null; dayOfWeek: number | null; metadata: unknown; content: string; imagePrompt: string | null };
 
 /**
- * O GRUPO PELA IA DE IMAGEM (11/10, arte-pela-ia.ts): o post cujo projeto tem
- * modelo do curso com prompt de estilo sai do Nano Banana Pro no estilo do
- * modelo, com o texto exato e as cores da marca. True quando preencheu; false
- * quando a IA não vale ou não saiu (o caminho de hoje desenha em seguida).
+ * O que o vídeo dá à arte pela IA (11/10): a transcrição (o assunto de cada peça
+ * sai do trecho dela) e, no estilo que pede a pessoa, um quadro nítido da
+ * gravação (a regra da capa nítida). Sem vídeo, nada; falha não derruba a arte.
  */
-async function desenharGrupoPelaIa(projectId: string, posts: PostDaReserva[], nicho: string | null): Promise<boolean> {
+export async function falaEFotoDoVideo(videoJobId: string | null | undefined, querFoto: boolean): Promise<{ fala: string | null; fotoDaPessoa: string | null }> {
+  if (!videoJobId) return { fala: null, fotoDaPessoa: null };
+  const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { transcript: true } }).catch(() => null);
+  const t = video?.transcript as { text?: unknown } | string | null | undefined;
+  const fala = typeof t === "string" ? t : typeof t?.text === "string" ? t.text : null;
+  let fotoDaPessoa: string | null = null;
+  if (querFoto) {
+    try {
+      const { quadrosNitidosDoVideo } = await import("@/lib/media/quadros-nitidos");
+      const { lerMidia } = await import("@/lib/media/storage");
+      const [q] = await quadrosNitidosDoVideo(videoJobId, { quantos: 1, alvo: { largura: 1080, altura: 1350 } });
+      const buf = q?.url ? await lerMidia(q.url) : null;
+      if (buf) fotoDaPessoa = `data:image/jpeg;base64,${buf.toString("base64")}`;
+    } catch (e) {
+      console.warn(`[arte-no-modelo] o quadro nítido da pessoa não veio (a arte sai sem pessoa): ${e instanceof Error ? e.message : e}`);
+    }
+  }
+  return { fala, fotoDaPessoa };
+}
+
+/**
+ * O GRUPO NO ESTILO PELA IA DE IMAGEM (11/10, arte-pela-ia.ts): o post sai do
+ * Nano Banana Pro no estilo gravado nele (o modelo do curso ou a opção sob
+ * medida), com o texto exato e as cores da marca, `tentativas` vezes. Devolve
+ * quantos posts receberam a arte; lança quando não sai, nunca troca o estilo.
+ */
+async function desenharGrupoNoEstilo(projectId: string, posts: PostDaReserva[], nicho: string | null, o: { tentativas?: number } = {}): Promise<number> {
   const base = posts[0];
-  const meta = (base.metadata ?? {}) as { frase?: string; slides?: unknown; infografico?: unknown; arteNoModelo?: { modelo?: string; origem?: string } };
-  const modelo = meta.arteNoModelo?.modelo;
-  if (!arteDoModeloPelaIa() || !promptDeEstiloDoModelo(modelo)) return false;
+  const meta = (base.metadata ?? {}) as { frase?: string; slides?: unknown; infografico?: unknown; videoJobId?: string; arteNoModelo?: { modelo?: string; origem?: string } };
+  const modelo = estiloGravadoNoPost(base.metadata);
+  if (!modelo || !promptDeEstiloDoModelo(modelo)) throw new Error(`o estilo ${modelo ?? "(nenhum gravado no post)"} não tem o prompt de estilo para a IA desenhar`);
   const tipo = base.mediaType === "carousel" || base.mediaType === "infographic" ? base.mediaType : "image";
   // O refazer de carrossel é uma imagem só (a manchete), como hoje.
   const refazer = meta.arteNoModelo?.origem === "refazer";
   const mediaType = tipo === "carousel" && refazer ? "image" : tipo;
-  try {
-    const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
-    const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
-    const marca = await marcaDaArte(projectId, { runId: base.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(posts) });
-    const porRede = await desenharPelaIa({
-      projectId,
-      runId: base.runId,
-      modelo: modelo!,
-      mediaType,
-      redes: posts.map((p) => p.platform),
-      frase: typeof meta.frase === "string" ? meta.frase : null,
-      slides: Array.isArray(meta.slides) ? meta.slides.filter((s): s is string => typeof s === "string") : null,
-      infografico: (meta.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null,
-      textoDoPost: base.content,
-      dia: base.dayOfWeek,
-      nicho,
-      marca,
-    });
-    const agora = new Date().toISOString();
-    for (const p of posts) {
-      const nova = porRede[p.platform];
-      if (!nova) continue;
-      const metaNova = fecharArte(semEspera(p.metadata), { feitoEm: agora, reserva: null, pelaIa: true });
-      await prisma.post.updateMany({ where: { id: p.id, imageUrl: null }, data: { imageUrl: nova, metadata: metaNova as Prisma.InputJsonValue } });
-      await atualizarCards(p.id, { imagem: nova, conteudo: null, refazer });
-    }
-    if (!refazer && base.runId && base.dayOfWeek) {
-      const { artePrincipal } = await import("@/lib/media/arte-por-rede");
-      const principal = artePrincipal(porRede);
-      if (principal) {
-        const cards = await prisma.campaignCard.findMany({ where: { runId: base.runId, dayOfWeek: base.dayOfWeek, cardType: "media" }, select: { id: true, metadata: true } }).catch(() => []);
-        for (const c of cards) await prisma.campaignCard.update({ where: { id: c.id }, data: { mediaUrl: principal, metadata: semEspera(c.metadata) as Prisma.InputJsonValue } }).catch(() => {});
-      }
-    }
-    console.log(`[arte-no-modelo][${projectId}] ${posts.length} post(s) ${base.mediaType} pela IA no estilo de ${modelo}`);
-    return true;
-  } catch (e) {
-    // Sem saldo não troca de caminho calado: o erro sobe (a fila espera o saldo), como toda arte.
-    const { ehSemSaldoDaOpenAI } = await import("@/lib/media/gpt-image");
-    if (ehSemSaldoDaOpenAI(e)) throw e;
-    console.warn(`[arte-no-modelo][${projectId}] a IA não desenhou ${posts.map((p) => p.id).join(",")} (vai pelo caminho de hoje): ${e instanceof Error ? e.message : e}`);
-    return false;
+  const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
+  const { desenharPelaIa, noMesmoEstilo } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+  const marca = await marcaDaArte(projectId, { runId: base.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(posts) });
+  const doVideo = await falaEFotoDoVideo(meta.videoJobId, Boolean(promptDeEstiloDoModelo(modelo)?.pessoa));
+  // O refazer que parou (11/10) não guarda a frase velha: a peça sai da legenda nova do post.
+  let frase = typeof meta.frase === "string" && meta.frase.trim() ? meta.frase : null;
+  let infografico = (meta.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null;
+  const novo: Record<string, unknown> = {};
+  if (mediaType === "image" && !frase) {
+    const { mancheteDaPeca } = await import("@/lib/media/peca-de-feed");
+    frase = (await mancheteDaPeca({ textoDoPost: base.content, estiloVisual: base.imagePrompt ?? "", nicho, projectId, runId: base.runId ?? undefined })).manchete;
+    novo.frase = frase;
   }
-}
-
-async function desenharGrupo(projectId: string, posts: PostDaReserva[], motivo: string): Promise<void> {
-  const base = posts[0];
-  const meta = (base.metadata ?? {}) as { videoJobId?: string; frase?: string; slides?: unknown; infografico?: unknown; arteNoModelo?: { origem?: string } };
-  const runId = base.runId;
-  const projeto = await prisma.project.findUnique({ where: { id: projectId }, select: { niche: true } });
-  const nicho = projeto?.niche ?? null;
-  if (await desenharGrupoPelaIa(projectId, posts, nicho)) return;
-  const run = runId ? await prisma.pipelineRun.findUnique({ where: { id: runId }, select: { config: true } }).catch(() => null) : null;
-  const { direcaoDaPeca } = await import("@/lib/media/direcao-de-arte");
-  const { marcaDaArte, marcaDaLaminaComFoto } = await import("@/lib/media/arte-com-frase");
-  const { formatoDaPeca } = await import("@/lib/media/formatos-das-redes");
-  const { artePrincipal } = await import("@/lib/media/arte-por-rede");
-  const direcao =
-    runId && base.dayOfWeek
-      ? await direcaoDaPeca({ projectId, runId, dayOfWeek: base.dayOfWeek, infografico: base.mediaType === "infographic", preferido: (run?.config as { mediaStyle?: string } | null)?.mediaStyle }).catch(() => null)
-      : null;
-  const estilo = direcao?.styleHint ?? base.imagePrompt ?? "";
-  // A marca da semana: o modelo e as fotos gravados no post (o mestre aprova o post).
-  const marca = await marcaDaArte(projectId, { runId: runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(posts), fotosDoPost: fotosGravadasNosPosts(posts) });
-  const video = { id: meta.videoJobId, projectId, project: { niche: nicho } };
-  const ctx = { projectId, runId: runId ?? "" };
-  const porRede: Record<string, string> = {};
-  const refazer = meta.arteNoModelo?.origem === "refazer";
-  if (base.mediaType === "infographic") {
-    const conteudo = meta.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined;
-    if (!conteudo?.title) throw new Error("o infográfico não tem o conteúdo gravado no post");
-    const { produzirArtePorRede } = await import("@/lib/media/arte-por-rede");
-    const { pedidoDoInfografico } = await import("@/lib/media/infographic");
-    const arte = await produzirArtePorRede({
-      redes: posts.map((p) => p.platform),
-      textoDoPost: base.content,
-      projectId,
-      runId: runId ?? undefined,
-      ...pedidoDoInfografico(conteudo, { estilo: direcao?.estilo.prompt ?? "", paleta: direcao?.paleta ?? "", marca }, { nicho, ctx: { projectId, runId: runId ?? undefined, operation: "infografico" } }),
-    });
-    Object.assign(porRede, arte.porRede);
-  } else if (base.mediaType === "carousel" && !refazer) {
-    const { arteDoDia } = await import("@/lib/media/pecas-da-semana");
-    const slides = Array.isArray(meta.slides) ? meta.slides.filter((s): s is string => typeof s === "string" && s.trim().length > 0) : [];
-    if (!slides.length) throw new Error("o carrossel não tem as frases das lâminas gravadas");
-    const formato = formatoDaPeca(base.platform, "carousel");
-    const urls = await Promise.all(slides.map((frase, i) => arteDoDia(video, frase, estilo, formato, ctx, slides[0], marcaDaLaminaComFoto(marca, i, slides.length))));
-    for (const p of posts) porRede[p.platform] = urls.join("|");
-  } else {
-    const { arteDoDia } = await import("@/lib/media/pecas-da-semana");
-    const frase = typeof meta.frase === "string" && meta.frase.trim() ? meta.frase.trim() : null;
-    if (!frase) throw new Error("a foto do dia não tem a frase gravada no post");
-    // Uma geração por proporção; as redes da mesma proporção recebem a mesma arte (o refazer de carrossel: uma imagem, como hoje).
-    const tipo = base.mediaType === "carousel" ? "carousel" : "image";
-    const porProporcao = new Map<string, Promise<string>>();
-    for (const p of posts) {
-      const f = formatoDaPeca(p.platform, tipo);
-      if (!porProporcao.has(f.proporcao)) porProporcao.set(f.proporcao, arteDoDia(video, frase, estilo, f, ctx, undefined, marca));
-      porRede[p.platform] = await porProporcao.get(f.proporcao)!;
-    }
+  if (mediaType === "infographic" && !infografico?.title) {
+    const chave = process.env.GEMINI_API_KEY;
+    if (!chave) throw new Error("GEMINI_API_KEY não configurada");
+    const { extrairConteudoDoInfografico } = await import("@/lib/media/infographic");
+    infografico = await extrairConteudoDoInfografico(base.content, nicho ?? "negocios", chave, { projectId });
+    novo.infografico = infografico;
   }
+  const porRede = await noMesmoEstilo(
+    () =>
+      desenharPelaIa({
+        projectId,
+        runId: base.runId,
+        modelo,
+        mediaType,
+        redes: posts.map((p) => p.platform),
+        frase,
+        slides: Array.isArray(meta.slides) ? meta.slides.filter((s): s is string => typeof s === "string") : null,
+        infografico,
+        textoDoPost: base.content,
+        dia: base.dayOfWeek,
+        nicho,
+        marca,
+        ...doVideo,
+      }),
+    { tentativas: o.tentativas, rotulo: `arte ${posts.map((p) => p.id).join(",")} no ${modelo}` }
+  );
+  if (!posts.some((p) => porRede[p.platform])) throw new Error("a IA não devolveu a arte de nenhuma rede do dia");
   const agora = new Date().toISOString();
+  let gravados = 0;
   for (const p of posts) {
     const nova = porRede[p.platform];
     if (!nova) continue;
-    const metaNova = fecharArte(semEspera(p.metadata), { reserva: motivo.slice(0, 300), reservaFeitaEm: agora });
-    await prisma.post.updateMany({ where: { id: p.id, imageUrl: null }, data: { imageUrl: nova, metadata: metaNova as Prisma.InputJsonValue } });
+    const metaNova = fecharArte({ ...semEspera(p.metadata), ...novo }, { feitoEm: agora, reserva: null, reservaFalhou: null, pelaIa: true });
+    const r = await prisma.post.updateMany({ where: { id: p.id, imageUrl: null }, data: { imageUrl: nova, metadata: metaNova as Prisma.InputJsonValue } });
+    gravados += r.count;
     await atualizarCards(p.id, { imagem: nova, conteudo: null, refazer });
   }
-  if (!refazer && runId && base.dayOfWeek) {
+  if (!refazer && base.runId && base.dayOfWeek) {
+    const { artePrincipal } = await import("@/lib/media/arte-por-rede");
     const principal = artePrincipal(porRede);
     if (principal) {
-      const cards = await prisma.campaignCard.findMany({ where: { runId, dayOfWeek: base.dayOfWeek, cardType: "media" }, select: { id: true, metadata: true } }).catch(() => []);
+      const cards = await prisma.campaignCard.findMany({ where: { runId: base.runId, dayOfWeek: base.dayOfWeek, cardType: "media" }, select: { id: true, metadata: true } }).catch(() => []);
       for (const c of cards) await prisma.campaignCard.update({ where: { id: c.id }, data: { mediaUrl: principal, metadata: semEspera(c.metadata) as Prisma.InputJsonValue } }).catch(() => {});
     }
   }
-  console.log(`[arte-no-modelo][${projectId}] reserva desenhada (${posts.length} post(s), ${base.mediaType}): ${motivo.slice(0, 160)}`);
+  console.log(`[arte-no-modelo][${projectId}] ${posts.length} post(s) ${base.mediaType} pela IA no estilo de ${modelo}`);
+  return gravados;
 }
+
 
 /**
  * O VIGIA DOS LOTES QUE NÃO VOLTARAM (cron da fila): post pendente cujo prazo
  * passou. Antes de desistir, pergunta ao worker (`/vivo` com a chave do lote):
  * rodando ou esperando a vez, o prazo cresce 30 min (até o teto de 6 h);
- * ausente ou fora do ar, o lote vai para o caminho de hoje. Poucos lotes por
- * passada: cada reserva leva minutos.
+ * ausente ou fora do ar, o lote vai à segunda tentativa no MESMO estilo (pela IA). Poucos lotes por
+ * passada: cada tentativa leva minutos. O lote pela IA que morreu no meio volta às duas tentativas.
  */
 export async function vigiarArtesNoModelo(o: { maximo?: number } = {}): Promise<{ olhados: number; estendidos: number; reserva: number }> {
   const posts = await prisma.post.findMany({
@@ -571,13 +591,13 @@ export async function vigiarArtesNoModelo(o: { maximo?: number } = {}): Promise<
     take: 80,
   });
   const agora = Date.now();
-  const porLote = new Map<string, { projectId: string; ids: string[]; desde: number; naReserva: boolean }>();
+  const porLote = new Map<string, { projectId: string; ids: string[]; desde: number; naReserva: boolean; pelaIa: boolean }>();
   for (const p of posts) {
     const a = arteNoModeloDe(p.metadata);
     const ate = Date.parse(String((p.metadata as { gerandoArte?: { ate?: unknown } } | null)?.gerandoArte?.ate ?? ""));
     // Sem prazo legível, conta como vencido: "fazendo" sem fim é o que este vigia existe para impedir.
     if (!a || ate >= agora) continue;
-    const l = porLote.get(a.lote) ?? { projectId: p.projectId, ids: [], desde: Date.parse(a.desde) || agora, naReserva: false };
+    const l = porLote.get(a.lote) ?? { projectId: p.projectId, ids: [], desde: Date.parse(a.desde) || agora, naReserva: false, pelaIa: estiloVaiPelaIa(estiloGravadoNoPost(p.metadata)) };
     l.ids.push(p.id);
     // A reserva que já tinha começado e não terminou (a função que roda depois da resposta morreu): refaz direto.
     if (a.reserva) l.naReserva = true;
@@ -598,25 +618,30 @@ export async function vigiarArtesNoModelo(o: { maximo?: number } = {}): Promise<
       continue;
     }
     reserva++;
-    console.warn(`[arte-no-modelo][${l.projectId}] lote ${lote} sem callback no prazo e fora do worker: caminho de hoje`);
+    console.warn(`[arte-no-modelo][${l.projectId}] lote ${lote} sem callback no prazo e fora do worker: segunda tentativa no mesmo estilo`);
     await marcarReserva(l.ids, "a arte do modelo não voltou no prazo");
-    await desenharPeloCaminhoDeHoje(l.projectId, l.ids, "a arte do modelo não voltou no prazo");
+    await desenharNoMesmoEstilo(l.projectId, l.ids, "a arte do modelo não voltou no prazo", { tentativas: l.pelaIa ? TENTATIVAS_NO_ESTILO : 1 });
   }
   return { olhados: porLote.size, estendidos, reserva };
 }
 
 /**
- * O REFAZER DE UMA PEÇA (lib/pipeline/refazer-peca.ts) pelo modelo: a peça da
- * semana do vídeo que segue a regra vai ao worker num lote de UMA peça (a
- * manchete do texto novo; o infográfico, o conteúdo extraído dele). Devolve o
- * metadata do post já marcado "gerando", ou null para o refazer seguir o
- * caminho de hoje (regra que não vale, worker que não aceitou).
+ * O REFAZER DE UMA PEÇA (lib/pipeline/refazer-peca.ts) no ESTILO ESCOLHIDO: a
+ * peça da semana do vídeo que segue a regra sai no mesmo estilo (a manchete do
+ * texto novo; o infográfico, o conteúdo extraído dele). Pela IA (o padrão, e
+ * sempre na edição sob medida), aqui mesmo, com duas tentativas; pelo template,
+ * num lote de UMA peça no worker (recusado, a segunda tentativa pela IA).
+ *
+ * Devolve null SÓ quando a peça não segue estilo nenhum (regra que não vale):
+ * aí o refazer desenha pelo caminho de hoje. Com estilo, nunca: a arte que não
+ * sair volta em `falhou`, com o metadata da falha técnica ("Tentar de novo" no
+ * quadro, `cobrarAoSair`: o refazer cobra só o texto, e a arte quando sair).
  */
 export async function refazerArteNoModelo(o: {
   post: { id: string; projectId: string; platform: string; mediaType: string | null; runId: string | null; metadata: unknown; imagePrompt: string | null };
   texto: string;
   nicho: string | null;
-}): Promise<{ metadata: Record<string, unknown>; imagem?: string } | null> {
+}): Promise<{ metadata: Record<string, unknown>; imagem?: string; falhou?: string } | null> {
   if (!arteDoModeloLigada()) return null;
   const meta = (o.post.metadata ?? {}) as Record<string, unknown>;
   if (meta.origem !== "video") return null;
@@ -626,60 +651,92 @@ export async function refazerArteNoModelo(o: {
   if (!regra) return null;
   const fotos = fotosGravadasNosPosts([o.post]);
   if (!diaVaiPeloModelo({ formato, modeloDoDia: modeloGravadoNosPosts([o.post]), modo: regra.modo, fotosDoDia: fotos?.length ?? 0 })) return null;
-  let peca: PecaDoLote;
-  let extra: Record<string, unknown>;
   const formatoDoPost = formatoNoModelo(o.post.platform, formato);
-  if (formato === "infographic") {
-    const chave = process.env.GEMINI_API_KEY;
-    if (!chave) return null;
-    const { extrairConteudoDoInfografico } = await import("@/lib/media/infographic");
-    const conteudo = await extrairConteudoDoInfografico(o.texto, o.nicho ?? "negocios", chave, { projectId: o.post.projectId });
-    peca = { tipo: "infografico", texto: textoDoInfograficoNoModelo(conteudo), formatos: [formatoDoPost] };
-    extra = { infografico: conteudo };
-  } else {
-    const { mancheteDaPeca } = await import("@/lib/media/peca-de-feed");
-    const m = await mancheteDaPeca({ textoDoPost: o.texto, estiloVisual: o.post.imagePrompt ?? "", nicho: o.nicho, projectId: o.post.projectId, runId: o.post.runId ?? undefined });
-    peca = { tipo: formato === "carousel" ? "capa" : "post", texto: m.manchete, formatos: [formatoDoPost] };
-    extra = { frase: m.manchete };
+  let extra: Record<string, unknown> = {};
+  // A peça que não saiu no estilo: a falha técnica, sem a frase velha (o "Tentar de novo" tira a manchete do texto novo).
+  const comFalha = (erro: unknown): { metadata: Record<string, unknown>; falhou: string } => {
+    const motivo = (erro instanceof Error ? erro.message : String(erro)).slice(0, 300);
+    console.error(`[arte-no-modelo][${o.post.projectId}] o refazer de ${o.post.id} não saiu no estilo ${regra.modelo} (${motivo}); para como falha técnica, sem trocar o estilo`);
+    const { arteNoModelo: _antiga, frase: _frase, infografico: _info, ...resto } = meta;
+    void _antiga;
+    void _frase;
+    void _info;
+    const agora = new Date().toISOString();
+    const base = { ...resto, ...extra, arteNoModelo: { lote: `refazer-${o.post.id}`, indices: [1], formato: formatoDoPost, modelo: regra.modelo, pendente: false, origem: "refazer", desde: agora, reservaFalhou: motivo, cobrarAoSair: true } };
+    return { metadata: marcarFalha(base, MOTIVO_DA_ARTE_QUE_PAROU), falhou: motivo };
+  };
+  let peca: PecaDoLote;
+  try {
+    if (formato === "infographic") {
+      const chave = process.env.GEMINI_API_KEY;
+      if (!chave) throw new Error("GEMINI_API_KEY não configurada");
+      const { extrairConteudoDoInfografico } = await import("@/lib/media/infographic");
+      const conteudo = await extrairConteudoDoInfografico(o.texto, o.nicho ?? "negocios", chave, { projectId: o.post.projectId });
+      peca = { tipo: "infografico", texto: textoDoInfograficoNoModelo(conteudo), formatos: [formatoDoPost] };
+      extra = { infografico: conteudo };
+    } else {
+      const { mancheteDaPeca } = await import("@/lib/media/peca-de-feed");
+      const m = await mancheteDaPeca({ textoDoPost: o.texto, estiloVisual: o.post.imagePrompt ?? "", nicho: o.nicho, projectId: o.post.projectId, runId: o.post.runId ?? undefined });
+      peca = { tipo: formato === "carousel" ? "capa" : "post", texto: m.manchete, formatos: [formatoDoPost] };
+      extra = { frase: m.manchete };
+    }
+  } catch (e) {
+    return comFalha(e);
   }
   // PELA IA (11/10): o refazer de UMA peça desenha aqui mesmo (uma imagem, um a
-  // dois minutos), e o post sai do refazer já com a arte. Não saiu: o caminho de hoje.
-  if (arteDoModeloPelaIa() && promptDeEstiloDoModelo(regra.modelo)) {
+  // dois minutos), e o post sai do refazer já com a arte. A edição sob medida vai sempre por aqui.
+  const desenharAqui = async (tentativas: number): Promise<{ metadata: Record<string, unknown>; imagem: string }> => {
+    const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
+    const { desenharPelaIa, noMesmoEstilo } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+    const marca = await marcaDaArte(o.post.projectId, { runId: o.post.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts([o.post]) });
+    const doVideo = await falaEFotoDoVideo(typeof meta.videoJobId === "string" ? meta.videoJobId : null, Boolean(promptDeEstiloDoModelo(regra.modelo)?.pessoa));
+    const imagem = await noMesmoEstilo(
+      async () => {
+        const porRede = await desenharPelaIa({
+          projectId: o.post.projectId,
+          runId: o.post.runId,
+          modelo: regra.modelo,
+          mediaType: formato === "infographic" ? "infographic" : "image",
+          redes: [o.post.platform],
+          frase: typeof extra.frase === "string" ? extra.frase : null,
+          infografico: (extra.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null,
+          textoDoPost: o.texto,
+          dia: (o.post as { dayOfWeek?: number | null }).dayOfWeek ?? null,
+          nicho: o.nicho,
+          marca,
+          ...doVideo,
+        });
+        const img = porRede[o.post.platform];
+        if (!img) throw new Error("a IA não devolveu a arte desta rede");
+        return img;
+      },
+      { tentativas, rotulo: `refazer ${o.post.id} no ${regra.modelo}` }
+    );
+    const agora = new Date().toISOString();
+    const { arteNoModelo: _antiga, ...resto } = { ...meta, ...extra } as Record<string, unknown>;
+    void _antiga;
+    return { metadata: semEspera({ ...resto, arteNoModelo: { lote: `refazer-${o.post.id}`, indices: [1], formato: formatoDoPost, modelo: regra.modelo, pendente: false, origem: "refazer", desde: agora, feitoEm: agora, pelaIa: true } }), imagem };
+  };
+  if (estiloVaiPelaIa(regra.modelo)) {
     try {
-      const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
-      const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
-      const marca = await marcaDaArte(o.post.projectId, { runId: o.post.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts([o.post]) });
-      const porRede = await desenharPelaIa({
-        projectId: o.post.projectId,
-        runId: o.post.runId,
-        modelo: regra.modelo,
-        mediaType: formato === "infographic" ? "infographic" : "image",
-        redes: [o.post.platform],
-        frase: typeof extra.frase === "string" ? extra.frase : null,
-        infografico: (extra.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null,
-        textoDoPost: o.texto,
-        dia: (o.post as { dayOfWeek?: number | null }).dayOfWeek ?? null,
-        nicho: o.nicho,
-        marca,
-      });
-      const imagem = porRede[o.post.platform];
-      if (imagem) {
-        const agora = new Date().toISOString();
-        const { arteNoModelo: _antiga, ...resto } = { ...meta, ...extra } as Record<string, unknown>;
-        void _antiga;
-        return { metadata: { ...resto, arteNoModelo: { lote: `refazer-${o.post.id}`, indices: [1], formato: formatoDoPost, modelo: regra.modelo, pendente: false, origem: "refazer", desde: agora, feitoEm: agora, pelaIa: true } }, imagem };
-      }
+      return await desenharAqui(TENTATIVAS_NO_ESTILO);
     } catch (e) {
-      console.warn(`[arte-no-modelo][${o.post.projectId}] o refazer de ${o.post.id} pela IA não saiu (vai pelo caminho de hoje): ${e instanceof Error ? e.message : e}`);
-      return null;
+      return comFalha(e);
     }
   }
+  // PELO TEMPLATE DO WORKER (ARTE_PELO_MODELO_IA=0): a primeira tentativa; recusado, a segunda pela IA no mesmo estilo.
   const chave = `refazer-${o.post.id}-${Date.now().toString(36)}`;
-  const base = await baseDoPedido(o.post.projectId, o.post.runId, { videoJobId: typeof meta.videoJobId === "string" ? meta.videoJobId : null, quantas: 3 });
-  const r = await enviarLoteAoWorker({ chave, projectId: o.post.projectId, runId: o.post.runId, modelo: regra.modelo, pecas: [peca], base });
-  if (!r.ok) {
-    console.warn(`[arte-no-modelo][${o.post.projectId}] o refazer de ${o.post.id} vai pelo caminho de hoje: ${r.erro}`);
-    return null;
+  try {
+    const base = await baseDoPedido(o.post.projectId, o.post.runId, { videoJobId: typeof meta.videoJobId === "string" ? meta.videoJobId : null, quantas: 3 });
+    const r = await enviarLoteAoWorker({ chave, projectId: o.post.projectId, runId: o.post.runId, modelo: regra.modelo, pecas: [peca], base });
+    if (!r.ok) throw new Error(r.erro);
+  } catch (e) {
+    console.warn(`[arte-no-modelo][${o.post.projectId}] o template não aceitou o refazer de ${o.post.id} (${e instanceof Error ? e.message : e}); segunda tentativa no mesmo estilo, pela IA`);
+    try {
+      return await desenharAqui(1);
+    } catch (e2) {
+      return comFalha(e2);
+    }
   }
   return { metadata: marcasDoModelo({ ...meta, ...extra }, { lote: chave, indices: [1], formato: formatoDoPost, modelo: regra.modelo, origem: "refazer" }) };
 }

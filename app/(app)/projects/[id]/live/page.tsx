@@ -8,13 +8,14 @@ import { estaTrabalhando, roteiroPendenteDe } from "@/lib/media/video-state";
 import { roteiroLigado } from "@/lib/media/roteiro-da-edicao";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
 import type { FalhaDaMontagem } from "@/components/video/aviso-da-montagem";
+import type { CapaQueFalhou } from "@/components/video/aviso-da-capa";
 import { estornosDaEdicao, refDoEstorno } from "@/lib/credits/estorno-da-edicao";
 import { extrasDaLinha, gemeosNaFaixa } from "@/lib/media/linha-do-tempo-servidor";
 import { temCapasGeradas } from "@/lib/media/estilos-de-capa";
 import { descreverFalhaDaCampanha } from "@/lib/pipeline/falha-da-campanha";
 import { DescartesProvider } from "@/components/ui/descartar";
 import { descartadasEntre } from "@/lib/avisos/descartes";
-import { chaveDaCampanha, chaveDaMontagem, chaveDaMontagemSegura, listaDasChavesDoVideo } from "@/lib/avisos/chaves";
+import { chaveDaCampanha, chaveDaCapaQueFalhou, chaveDaMontagem, chaveDaMontagemSegura, listaDasChavesDoVideo } from "@/lib/avisos/chaves";
 import { lerPartes } from "@/lib/media/partes-servidor";
 import { partesPorJuntar, resumoDasPartes } from "@/lib/media/partes-da-gravacao";
 
@@ -150,6 +151,20 @@ export default async function LivePage({
       : [];
     return [...completo, ...cortes];
   });
+  // A CAPA DO CORTE QUE PAROU NO ESTILO ESCOLHIDO (11/10): o aviso com o "Tentar de novo" no mesmo estilo.
+  const capasQueFalharam: CapaQueFalhou[] = videos.flatMap((v) =>
+    ((Array.isArray(v.clips) ? v.clips : []) as Array<{ titulo?: string; texto?: { titulo?: string } | null; publicar?: boolean; midia?: { capaFalhou?: { motivo?: string; em?: string } | null } | null }>)
+      .map((t, i) => ({ t, i }))
+      .filter(({ t }) => t?.publicar !== false && Boolean(t?.midia?.capaFalhou?.motivo))
+      .map(({ t, i }) => ({
+        videoJobId: v.id,
+        nome: v.originalName ?? "Gravação",
+        indice: i,
+        titulo: t.texto?.titulo ?? t.titulo ?? null,
+        motivo: t.midia?.capaFalhou?.motivo ?? "",
+        chave: chaveDaCapaQueFalhou(v.id, i, t.midia?.capaFalhou?.em),
+      }))
+  );
   const ligado = roteiroLigado();
   // A linha do tempo inteira já na primeira pintura (02/10): sem isto, a faixa
   // desenhava a linha curta até a primeira consulta trazer os efeitos.
@@ -334,6 +349,7 @@ export default async function LivePage({
   // hidratação, e o Desfazer funciona depois de um refresh). Erro vira vazio.
   const chavesDaTela = [
     ...falhasDaMontagem.map((f) => f.chave),
+    ...capasQueFalharam.map((f) => f.chave),
     lastFailedRun ? chaveDaCampanha(lastFailedRun.id, lastFailedRun.status) : null,
     ...videosNaFaixa.flatMap((v) => ("temTranscricao" in v ? listaDasChavesDoVideo(v) : [])),
   ].filter((c): c is string => Boolean(c));
@@ -369,6 +385,7 @@ export default async function LivePage({
         videoTermos={project.videoTerms}
         videoSemana={project.videoSemana ?? null}
         falhasDaMontagem={falhasDaMontagem}
+        capasQueFalharam={capasQueFalharam}
         souDono={project.userId === userId}
       />
     </DescartesProvider>

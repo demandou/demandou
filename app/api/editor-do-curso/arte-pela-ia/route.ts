@@ -12,7 +12,7 @@ import { desenharLotePelaIa } from "@/lib/media/editor-do-curso/arte-pelo-modelo
  * "o squad está fazendo" com o lote e pede aqui o desenho: a resposta sai na
  * hora (202) e as artes são feitas numa função própria, com o prazo dela, sem
  * segurar a esteira. Assinado pelo próprio app (o mesmo segredo do worker).
- * O que não sair pela IA vai ao caminho de hoje; a função que morrer no meio
+ * O que não sair pela IA (duas tentativas no estilo) fica como falha técnica; a função que morrer no meio
  * deixa os posts pendentes para o vigia da fila.
  */
 export async function POST(req: NextRequest) {

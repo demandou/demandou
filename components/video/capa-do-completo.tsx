@@ -83,11 +83,13 @@ export function CapaDoCompleto({
   // As capas pedidas ao template do modelo do curso (11/10) chegam pelo
   // callback do worker, minutos depois: a tela espera e consulta de novo.
   const noModelo = Boolean(capas?.noModelo?.pendente);
+  // A capa no estilo escolhido que parou (11/10): a tela para de esperar e oferece "Tentar de novo".
+  const falha = !noModelo ? capas?.falha ?? null : null;
   useEffect(() => {
-    if (carregando || (temCapasGeradas(capas) && !noModelo) || gerando) return;
+    if (carregando || ((temCapasGeradas(capas) || falha) && !noModelo) || gerando) return;
     const t = setInterval(() => void carregar(), 8_000);
     return () => clearInterval(t);
-  }, [carregando, capas, gerando, carregar, noModelo]);
+  }, [carregando, capas, gerando, carregar, noModelo, falha]);
 
   const gerar = async (pedido: { estilo?: EstiloDeCapa; clima?: ClimaDaCapa } = {}) => {
     setGerando(true);
@@ -104,7 +106,9 @@ export function CapaDoCompleto({
       const d = (await r.json().catch(() => ({}))) as { capas?: CapasDoCompleto; error?: string };
       if (!r.ok || !d.capas) throw new Error(d.error ?? "Não consegui gerar as capas.");
       setCapas(d.capas);
-      if (d.capas.noModelo?.pendente) {
+      if (d.capas.falha && !d.capas.noModelo?.pendente) {
+        toast.error(d.capas.falha.motivo, { duration: 9_000 });
+      } else if (d.capas.noModelo?.pendente) {
         toast.success("As capas estão sendo montadas no estilo do seu modelo. Aparecem aqui em alguns minutos.");
       } else {
         onEscolhida?.(d.capas.opcoes[d.capas.escolhida]?.url);
@@ -317,7 +321,23 @@ export function CapaDoCompleto({
         </div>
       )}
 
-      {ocupado || !capas ? (
+      {falha && !gerando && (
+        <div className="rounded-lg border border-red-400/40 bg-red-400/5 p-3 space-y-2" data-capa-falhou role="status">
+          <p className="text-xs" style={{ color: "var(--text-primary)" }}>
+            {falha.motivo}
+          </p>
+          <button
+            type="button"
+            disabled={ocupado}
+            onClick={() => void gerar()}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-orange-500 text-white font-semibold hover:bg-orange-600 disabled:opacity-50"
+          >
+            <RefreshCw className="w-3 h-3" /> Tentar de novo
+          </button>
+        </div>
+      )}
+
+      {falha && !gerando && !capas?.opcoes.length ? null : ocupado || !capas ? (
         <div className="flex items-center gap-2 text-xs py-3" style={{ color: "var(--text-muted)" }}>
           <Loader2 className="w-4 h-4 animate-spin" />
           {gerando

@@ -174,8 +174,21 @@ export type CapasDoCompleto = {
     foto: "quadro" | "biblioteca" | "nenhuma";
     frases: Array<{ frase: string; expressao: ExpressaoDaCapa }>;
     feitoEm?: string;
+    /** Antigo (até 11/10): o motivo de o template não ter entregue. Hoje é `templateFalhou`. */
     reserva?: string | null;
+    /** O template do worker não entregou (a segunda tentativa, no mesmo estilo, vem em seguida). */
+    templateFalhou?: string | null;
+    /** "ia": a capa saiu pela IA no estilo escolhido (a edição sob medida, ou a segunda tentativa do modelo). */
+    caminho?: "template" | "ia";
+    /** Na segunda tentativa: o motivo de o template não ter entregue. */
+    tentativaAnterior?: string;
   };
+  /**
+   * A capa no ESTILO ESCOLHIDO que não saiu nas duas tentativas (11/10, nunca
+   * trocar o estilo sozinho): a tela mostra o motivo e "Tentar de novo", que
+   * recomeça no mesmo estilo. Sai quando uma capa nova chega.
+   */
+  falha?: { motivo: string; detalhe: string; em: string; modelo: string } | null;
 };
 
 /**

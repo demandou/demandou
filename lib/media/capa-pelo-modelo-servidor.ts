@@ -21,6 +21,14 @@ import type { CallbackDaArte } from "@/lib/media/editor-do-curso/arte-pelo-model
 
 export type { FotoDaCapa } from "@/lib/media/capa-pelo-modelo";
 
+/** O registro da capa sem as marcas de tentativa que falhou ("reserva", "templateFalhou"): a capa saiu no estilo. */
+function semReserva<T extends { reserva?: unknown; templateFalhou?: unknown }>(p: T): Omit<T, "reserva" | "templateFalhou"> {
+  const { reserva: _r, templateFalhou: _t, ...resto } = p;
+  void _r;
+  void _t;
+  return resto;
+}
+
 /**
  * A FOTO DA CAPA: o quadro NÍTIDO da gravação (o crivo do worker, com o
  * destino da capa); sem quadro bom, a foto da pessoa da Biblioteca de
@@ -54,7 +62,7 @@ export async function regraDaCapaPeloModelo(projectId: string): Promise<{ modelo
  * A CAPA DO COMPLETO PELO MODELO: as duas frases como duas peças "capa" em
  * 16:9, a pessoa do quadro nítido ao lado (ou a da Biblioteca, ou nenhuma) e o
  * logo. Devolve o `noModelo` para gravar nas capas, ou null quando o worker
- * não aceitou (quem chama segue pelo caminho de hoje).
+ * não aceitou (quem chama faz a segunda tentativa no mesmo estilo, pela IA).
  */
 export async function pedirCapaDoCompletoNoModelo(o: {
   videoJobId: string;
@@ -81,7 +89,7 @@ export async function pedirCapaDoCompletoNoModelo(o: {
     retorno: { alvo: "completo", videoJobId: o.videoJobId },
   });
   if (!r.ok) {
-    console.warn(`[capa-no-modelo][${o.videoJobId}] o worker não aceitou a capa do completo, vai pelo caminho de hoje: ${r.erro}`);
+    console.warn(`[capa-no-modelo][${o.videoJobId}] o worker não aceitou a capa do completo; segunda tentativa no mesmo estilo, pela IA: ${r.erro}`);
     return null;
   }
   console.log(`[capa-no-modelo][${o.videoJobId}] capa do completo no ${o.modelo} (lote ${chave}, foto: ${foto.origem})`);
@@ -92,7 +100,7 @@ export async function pedirCapaDoCompletoNoModelo(o: {
  * AS CAPAS DOS CORTES PELO MODELO: uma peça "capa" 9:16 por corte, com a frase
  * da capa, o quadro nítido onde o modelo põe a pessoa e o logo. Grava em cada
  * corte `midia.capaNoModelo` (o lote e a peça). Devolve os cortes que foram,
- * ou [] quando o worker não aceitou (quem chama compõe pelo caminho de hoje).
+ * ou [] quando o worker não aceitou (quem chama faz a segunda tentativa no mesmo estilo, pela IA).
  */
 export async function pedirCapasDosCortesNoModelo(o: {
   videoJobId: string;
@@ -115,7 +123,7 @@ export async function pedirCapasDosCortesNoModelo(o: {
     retorno: { alvo: "cortes", videoJobId: o.videoJobId, cortes },
   });
   if (!r.ok) {
-    console.warn(`[capa-no-modelo][${o.videoJobId}] o worker não aceitou as capas dos cortes, vão pelo caminho de hoje: ${r.erro}`);
+    console.warn(`[capa-no-modelo][${o.videoJobId}] o worker não aceitou as capas dos cortes; segunda tentativa no mesmo estilo, pela IA: ${r.erro}`);
     return [];
   }
   const { fundirNoTrecho } = await import("@/lib/media/revisao-do-corte");
@@ -132,7 +140,7 @@ export async function pedirCapasDosCortesNoModelo(o: {
  * O CALLBACK DAS CAPAS: no completo, as opções novas entram (as fotos da
  * Biblioteca que o cliente pôs ficam) e a primeira vai para o card e o post do
  * YouTube, se o cliente não tinha escolhido uma foto; nos cortes, cada capa vai
- * para o seu corte. O que faltou volta em `reserva` para o caminho de hoje.
+ * para o seu corte. O que faltou volta em `reserva` para a segunda tentativa no mesmo estilo.
  */
 export async function concluirCapaNoModelo(cb: CallbackDaArte, ret: RetornoDaCapa): Promise<{ reserva: { completo: boolean; cortes: number[] }; motivo: string | null }> {
   const video = await prisma.videoJob.findUnique({ where: { id: ret.videoJobId }, select: { id: true, projectId: true, capas: true, clips: true } });
@@ -146,7 +154,7 @@ export async function concluirCapaNoModelo(cb: CallbackDaArte, ret: RetornoDaCap
     const { urls, faltam } = cb.ok ? capasDoCallback(cb.pecas, ret, pend.frases.length) : { urls: [], faltam: [1] };
     if (!urls.length || faltam.length === pend.frases.length) {
       const motivo = cb.erro ?? "o worker não devolveu a capa";
-      await prisma.videoJob.update({ where: { id: video.id }, data: { capas: { ...capas, noModelo: { ...pend, pendente: false, reserva: motivo.slice(0, 300) } } as never } });
+      await prisma.videoJob.update({ where: { id: video.id }, data: { capas: { ...capas, noModelo: { ...pend, pendente: false, templateFalhou: motivo.slice(0, 300) } } as never } });
       return { reserva: { completo: true, cortes: [] }, motivo };
     }
     const novas = cb.pecas
@@ -157,7 +165,7 @@ export async function concluirCapaNoModelo(cb: CallbackDaArte, ret: RetornoDaCap
     const fotoEscolhida = capas.opcoes[capas.escolhida]?.materialId;
     const opcoes = [...novas, ...daBiblioteca];
     const escolhida = fotoEscolhida ? Math.max(0, opcoes.findIndex((op) => op.materialId === fotoEscolhida)) : 0;
-    const atualizadas: CapasDoCompleto = { ...capas, opcoes, escolhida, geradaEm: agora, noModelo: { ...pend, pendente: false, feitoEm: agora, reserva: null } };
+    const atualizadas: CapasDoCompleto = { ...capas, opcoes, escolhida, geradaEm: agora, noModelo: { ...semReserva(pend), pendente: false, feitoEm: agora, caminho: "template" }, falha: null };
     await prisma.videoJob.update({ where: { id: video.id }, data: { capas: atualizadas as never } });
     if (!fotoEscolhida) {
       const { apontarCapaDoCompleto } = await import("@/lib/media/capas-do-completo");
@@ -165,7 +173,7 @@ export async function concluirCapaNoModelo(cb: CallbackDaArte, ret: RetornoDaCap
     }
     return { reserva: { completo: false, cortes: [] }, motivo: null };
   }
-  // Os cortes: cada um que ainda espera este lote recebe a sua capa; o que faltou vai à reserva.
+  // Os cortes: cada um que ainda espera este lote recebe a sua capa; o que faltou vai à segunda tentativa no mesmo estilo.
   const clips = (video.clips as Array<{ midia?: { capaNoModelo?: CapaPendente & { peca?: number } } | null }> | null) ?? [];
   const esperando = ret.cortes.filter((i) => clips[i]?.midia?.capaNoModelo?.lote === ret.lote && clips[i]?.midia?.capaNoModelo?.pendente);
   const { porCorte } = cb.ok ? capasDoCallback(cb.pecas, ret, ret.cortes.length) : { porCorte: new Map<number, string>() };
@@ -176,33 +184,42 @@ export async function concluirCapaNoModelo(cb: CallbackDaArte, ret: RetornoDaCap
     const url = porCorte.get(i);
     if (!url) {
       faltaram.push(i);
-      await fundirNoTrecho(video.id, i, {}, { capaNoModelo: { ...pend, pendente: false, reserva: (cb.erro ?? "faltou a capa deste corte").slice(0, 300) } }).catch(() => {});
+      await fundirNoTrecho(video.id, i, {}, { capaNoModelo: { ...pend, pendente: false, templateFalhou: (cb.erro ?? "faltou a capa deste corte").slice(0, 300) } }).catch(() => {});
       continue;
     }
-    await fundirNoTrecho(video.id, i, {}, { capaArte: { url }, capaNoModelo: { ...pend, pendente: false, feitoEm: agora, reserva: null } }).catch(() => {});
+    await fundirNoTrecho(video.id, i, {}, { capaArte: { url }, capaNoModelo: { ...semReserva(pend), pendente: false, feitoEm: agora, caminho: "template" }, capaFalhou: null }).catch(() => {});
   }
   return { reserva: { completo: false, cortes: faltaram }, motivo: faltaram.length ? cb.erro ?? "faltaram capas" : null };
 }
 
 /**
- * A RESERVA: o caminho de hoje (já com a regra do quadro nítido) para o que o
- * modelo não entregou. Roda depois da resposta do callback.
+ * A SEGUNDA TENTATIVA NO MESMO ESTILO (11/10, nunca trocar o estilo sozinho):
+ * o que o template do modelo não entregou sai pela IA de imagem com o prompt
+ * de estilo do MESMO modelo (uma tentativa: o template foi a primeira). Não
+ * saiu: a capa para como falha técnica com "Tentar de novo". Nunca o caminho de
+ * antes. Roda depois da resposta do callback (ou no vigia).
  */
 export async function reservaDasCapas(videoJobId: string, r: { completo: boolean; cortes: number[] }): Promise<void> {
   if (r.completo) {
     const { gerarCapasDoCompleto } = await import("@/lib/media/capas-do-completo");
-    await gerarCapasDoCompleto(videoJobId, { semModelo: true }).catch((e) => console.error(`[capa-no-modelo][${videoJobId}] a reserva da capa do completo falhou:`, e));
+    await gerarCapasDoCompleto(videoJobId, { segundaTentativa: true }).catch((e) => console.error(`[capa-no-modelo][${videoJobId}] a segunda tentativa da capa do completo falhou:`, e));
   }
   if (r.cortes.length) {
-    const { comporCapasDosCortes } = await import("@/lib/media/capa-do-corte");
-    await comporCapasDosCortes(videoJobId, r.cortes).catch((e) => console.error(`[capa-no-modelo][${videoJobId}] a reserva das capas dos cortes falhou:`, e));
+    const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { projectId: true } });
+    const regra = video ? await regraDaCapaPeloModelo(video.projectId) : null;
+    if (!regra) {
+      console.warn(`[capa-no-modelo][${videoJobId}] o projeto não tem mais estilo escolhido; as capas dos cortes ${r.cortes.join(",")} ficam como estavam`);
+      return;
+    }
+    const { capasDosCortesNoEstilo } = await import("@/lib/media/capa-do-corte");
+    await capasDosCortesNoEstilo(videoJobId, r.cortes, { modelo: regra.modelo, tentativas: 1 }).catch((e) => console.error(`[capa-no-modelo][${videoJobId}] a segunda tentativa das capas dos cortes falhou:`, e));
   }
 }
 
 /**
  * O VIGIA DAS CAPAS QUE NÃO VOLTARAM (cron da fila): pedido de capa pendente
  * além do prazo. Antes de desistir, pergunta ao worker; rodando ou na fila, o
- * prazo vale de novo a partir de agora; fora do worker, vai para a reserva.
+ * prazo vale de novo a partir de agora; fora do worker, vai à segunda tentativa no mesmo estilo.
  */
 export async function vigiarCapasNoModelo(o: { maximo?: number } = {}): Promise<{ olhados: number; reserva: number }> {
   const { aindaEsperaOWorker } = await import("@/lib/media/montagem-no-worker");
@@ -237,10 +254,10 @@ export async function vigiarCapasNoModelo(o: { maximo?: number } = {}): Promise<
     reserva++;
     const { fundirNoTrecho } = await import("@/lib/media/revisao-do-corte");
     if (vencidoCompleto) {
-      await prisma.videoJob.update({ where: { id: v.id }, data: { capas: { ...(v.capas as CapasDoCompleto), noModelo: { ...vencidoCompleto, pendente: false, reserva: "a capa do modelo não voltou no prazo" } } as never } });
+      await prisma.videoJob.update({ where: { id: v.id }, data: { capas: { ...(v.capas as CapasDoCompleto), noModelo: { ...vencidoCompleto, pendente: false, templateFalhou: "a capa do modelo não voltou no prazo" } } as never } });
     }
-    for (const x of cortesVencidos) await fundirNoTrecho(v.id, x.i, {}, { capaNoModelo: { ...x.p, pendente: false, reserva: "a capa do modelo não voltou no prazo" } }).catch(() => {});
-    console.warn(`[capa-no-modelo][${v.id}] lote sem callback no prazo e fora do worker: caminho de hoje`);
+    for (const x of cortesVencidos) await fundirNoTrecho(v.id, x.i, {}, { capaNoModelo: { ...x.p, pendente: false, templateFalhou: "a capa do modelo não voltou no prazo" } }).catch(() => {});
+    console.warn(`[capa-no-modelo][${v.id}] lote sem callback no prazo e fora do worker: segunda tentativa no mesmo estilo`);
     await reservaDasCapas(v.id, { completo: Boolean(vencidoCompleto), cortes: cortesVencidos.map((x) => x.i) });
   }
   return { olhados, reserva };

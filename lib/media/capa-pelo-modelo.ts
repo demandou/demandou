@@ -25,9 +25,15 @@ import type { PecaDoLote } from "@/lib/media/editor-do-curso/arte-pelo-modelo";
  * quadro bom, a foto da pessoa da Biblioteca de materiais; sem as duas, a capa
  * sai só com a tipografia do modelo. Nunca um quadro ruim.
  *
- * O caminho de hoje (lib/media/capas-do-completo.ts e a rota das capas dos
- * cortes) fica de RESERVA: sem modelo do curso, worker que recusa, lote que
- * falha ou não volta no prazo. E já com a regra do quadro nítido.
+ * NUNCA TROCAR O ESTILO SOZINHO (11/10, regra do Bruno). O caminho de hoje
+ * (a composição de lib/media/capa-e-titulo.ts) vale SÓ para o projeto sem
+ * estilo escolhido. Com modelo do curso, o worker que recusa, o lote que falha
+ * ou não volta no prazo levam a capa à SEGUNDA tentativa no MESMO estilo (o
+ * prompt de estilo do modelo pela IA de imagem, lib/media/capa-pela-ia.ts); com
+ * a edição sob medida, a capa já vai pela IA no estilo da opção, com duas
+ * tentativas. Falhou de novo: a capa para como falha técnica (`FalhaDaCapa`),
+ * com "Tentar de novo" e sem cobrança. Nunca o modelo de reserva da edição
+ * sob medida, nunca o template genérico.
  */
 
 export const PREFIXO_DO_LOTE_DA_CAPA = "capa-";
@@ -63,7 +69,7 @@ export function pecasDasCapasDosCortes(cortes: Array<{ indice: number; frase: st
 /** O título da capa sem travessão nem aspas, numa linha só. Puro. */
 export function limparTitulo(t: string): string {
   return String(t ?? "")
-    .replace(/[—–]/g, ",")
+    .replace(/[\u2014\u2013]/g, ",")
     .replace(/["“”]/g, "")
     .replace(/\s+/g, " ")
     .trim()
@@ -93,7 +99,13 @@ export type CapaPendente = {
   /** De onde veio a foto: o quadro nítido da gravação, a Biblioteca, ou nenhuma. */
   foto: "quadro" | "biblioteca" | "nenhuma";
   feitoEm?: string;
+  /** Antigo (até 11/10): o motivo de o template não ter entregue. Hoje é `templateFalhou`. */
   reserva?: string | null;
+  /** O template do worker não entregou (a segunda tentativa, no mesmo estilo, vem em seguida). */
+  templateFalhou?: string | null;
+  /** "ia": a capa saiu pela IA no estilo escolhido. */
+  caminho?: "template" | "ia";
+  tentativaAnterior?: string;
 };
 
 /** Quanto o lote da capa pode esperar antes de o vigia mandar à reserva (o mesmo prazo das artes). */
@@ -175,8 +187,12 @@ export type FotoDaCapa = {
 
 export type TrechoDaCapa = {
   publicar?: boolean;
-  midia?: { capa?: { url?: string } | null; recorte?: { url?: string } | null; capaArte?: { url?: string } | null } | null;
-  texto?: { fraseDaCapa?: string; expressao?: string; cenario?: string } | null;
+  inicio?: number;
+  fim?: number;
+  titulo?: string;
+  ideia?: string;
+  midia?: { capa?: { url?: string } | null; recorte?: { url?: string } | null; capaArte?: { url?: string } | null; capaFalhou?: FalhaDaCapa | null } | null;
+  texto?: { fraseDaCapa?: string; expressao?: string; cenario?: string; titulo?: string; descricao?: string } | null;
 };
 
 /**
@@ -194,15 +210,39 @@ export function baseDaCapaDoCorte(t: TrechoDaCapa, doVideo: FotoDaCapa | null): 
   return { quadroUrl: null, recorteUrl: null };
 }
 
-export type CaminhoDaCapa = "modelo" | "esperando" | "hoje";
+export type CaminhoDaCapa = "modelo" | "ia" | "esperando" | "hoje";
 
 /**
- * Por onde a capa sai: pelo template do modelo (o projeto tem a regra das
- * artes e ninguém forçou a reserva), "esperando" quando um pedido ao modelo
- * ainda está no prazo (pedir de novo seria pagar duas vezes), ou pelo caminho
- * de hoje. Puro.
+ * Por onde a capa sai: pelo caminho de hoje só quando o projeto não tem estilo
+ * escolhido; pela IA no estilo (`pelaIa`: a edição sob medida, ou a segunda
+ * tentativa de um modelo do curso cujo template falhou); "esperando" quando um
+ * pedido ao template ainda está no prazo (pedir de novo seria pagar duas
+ * vezes); senão pelo template do modelo no worker. Puro.
  */
-export function caminhoDaCapa(o: { temRegra: boolean; semModelo?: boolean; pendente?: Pick<CapaPendente, "pendente" | "desde"> | null; agora?: number }): CaminhoDaCapa {
-  if (o.semModelo || !o.temRegra) return "hoje";
+export function caminhoDaCapa(o: { temRegra: boolean; pelaIa?: boolean; pendente?: Pick<CapaPendente, "pendente" | "desde"> | null; agora?: number }): CaminhoDaCapa {
+  if (!o.temRegra) return "hoje";
+  if (o.pelaIa) return "ia";
   return capaAindaEspera(o.pendente ?? null, o.agora ?? Date.now()) ? "esperando" : "modelo";
+}
+
+/** A capa no estilo escolhido que não saiu nas duas tentativas: a falha técnica que a tela mostra com "Tentar de novo". */
+export type FalhaDaCapa = { motivo: string; detalhe: string; em: string; modelo: string };
+
+/** A frase do cliente para a capa que parou (o detalhe técnico fica em `detalhe`, para a equipe). */
+export const MOTIVO_DA_FALHA_DA_CAPA = "A capa no estilo que você escolheu não saiu desta vez. Toque em Tentar de novo: ela recomeça no mesmo estilo. Nada foi cobrado.";
+
+/** Monta a falha técnica da capa. Puro. */
+export function falhaDaCapa(modelo: string, erro: unknown, agora: Date = new Date()): FalhaDaCapa {
+  const detalhe = (erro instanceof Error ? erro.message : String(erro ?? "sem detalhe")).replace(/[\u2014\u2013]/g, ",").slice(0, 300);
+  return { motivo: MOTIVO_DA_FALHA_DA_CAPA, detalhe, em: agora.toISOString(), modelo };
+}
+
+/**
+ * O trecho da fala de um corte (o assunto da capa dele): as palavras da
+ * transcrição entre o início e o fim do corte, até `maximo`. Null sem palavras. Puro.
+ */
+export function falaDoCorte(palavras: Array<{ word: string; start: number; end: number }> | null | undefined, inicio: number | null | undefined, fim: number | null | undefined, maximo = 120): string | null {
+  if (!palavras?.length || typeof inicio !== "number" || typeof fim !== "number" || fim <= inicio) return null;
+  const dentro = palavras.filter((p) => p.end > inicio && p.start < fim).map((p) => p.word.trim()).filter(Boolean);
+  return dentro.length ? dentro.slice(0, maximo).join(" ") : null;
 }
