@@ -2513,7 +2513,11 @@ const servidor = createServer((req, res) => {
     // completo (10/10, plano em blocos de ~150 s): a escrita, o conserto e a
     // revisão de cada bloco, e o passo das imagens nos modelos com imagem,
     // ~15 min por bloco, além do render.
-    const prazoMs = prazoDaMontagem(pedido) + (pedido.completo === true ? Math.ceil((Number(pedido.duracao) || 1200) / 150) * 15 * 60_000 : 45 * 60_000);
+    // O 3D (WebGL por CPU) renderiza devagar: o prazo ganha ~25 min por minuto de vídeo (10/10, noite: o
+    // completo do Torre de 2,4 min foi cortado aos 51 min no meio do render).
+    const { modeloUsaTres } = await import("./modelo/editar-no-modelo.mjs");
+    const extraDoTres = modeloUsaTres(pedido.modelo) ? Math.max(45, Math.ceil(((Number(pedido.duracao) || 120) / 60) * 25)) * 60_000 : 0;
+    const prazoMs = prazoDaMontagem(pedido) + (pedido.completo === true ? Math.ceil((Number(pedido.duracao) || 1200) / 150) * 15 * 60_000 : 45 * 60_000) + extraDoTres;
     const soltar = assincrono
       ? registrarTrabalho({
           videoJobId: destino.videoJobId,

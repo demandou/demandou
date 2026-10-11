@@ -3,7 +3,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symli
 import { writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { opcaoDeFiltro, rodar } from "../ffmpeg.mjs";
+import { opcaoDeFiltro, processoDoTrabalho, rodar } from "../ffmpeg.mjs";
 import { fatiaAtual } from "../capacidade.mjs";
 import {
   BLOCO_ALVO_SEG,
@@ -199,14 +199,30 @@ export function referenciasDoModelo(id) {
 /** Roda um script do projeto com o Node do worker, no diretório do projeto (os scripts exigem). */
 export function rodarNoProjeto(projeto, args, { prazoMs = 20 * 60_000, env = {} } = {}) {
   return new Promise((resolve, reject) => {
-    const p = spawn(process.execPath, args, { cwd: projeto, env: { ...process.env, ...env } });
+    // EM GRUPO (10/10, noite): o render do curso abre o Chrome como filho. Matar só o Node deixava os
+    // Chromes vivos quando o prazo estourava, e o servidor ficava sem processos ("spawn ffprobe EAGAIN"):
+    // a reserva do completo cmv33n6ex nem conseguiu rodar e o vídeo saiu cru.
+    const grupo = process.platform !== "win32";
+    const p = spawn(process.execPath, args, { cwd: projeto, env: { ...process.env, ...env }, detached: grupo });
+    const matarGrupo = () => {
+      try {
+        if (grupo && p.pid) process.kill(-p.pid, "SIGKILL");
+        else p.kill("SIGKILL");
+      } catch {
+        try {
+          p.kill("SIGKILL");
+        } catch {}
+      }
+    };
+    // O prazo do TRABALHO (comPrazoDoTrabalho) também mata o grupo inteiro.
+    processoDoTrabalho({ kill: matarGrupo, once: (ev, f) => p.once(ev, f) });
     let saida = "";
     p.stdout.on("data", (d) => (saida += d));
     p.stderr.on("data", (d) => (saida += d));
     let estourou = false;
     const t = setTimeout(() => {
       estourou = true;
-      p.kill("SIGKILL");
+      matarGrupo();
     }, prazoMs);
     p.on("error", (e) => {
       clearTimeout(t);
@@ -1198,7 +1214,8 @@ export async function renderizarEmPartes(projeto, nome = "video-editado.mp4", { 
   const partes = partesDoRender(plano.duracao, plano.fps, alvoSeg);
   const tres = usaTres(projeto);
   // No 3D, uma parte de cada vez, com duas abas: as partes em paralelo disputavam o processador.
-  const { paralelas, concorrencia } = tres ? { paralelas: 1, concorrencia: Math.max(1, Math.min(2, fatiaAtual().remotion)) } : paralelismoDoRender(fatiaAtual(), partes.length);
+  // 3D: duas partes por vez com duas abas cada e 600 s por quadro (uma por vez deixou o completo longo demais).
+  const { paralelas, concorrencia } = tres ? { paralelas: Math.min(2, partes.length), concorrencia: Math.max(1, Math.min(2, fatiaAtual().remotion)) } : paralelismoDoRender(fatiaAtual(), partes.length);
   const saida = join("out", nome);
   const r = await rodarNoProjeto(projeto, [join(AQUI, "render-em-partes.mjs"), saida], {
     prazoMs: tres ? prazoMs * 2 : prazoMs,
@@ -1339,6 +1356,12 @@ export function limitesDoRender(projeto = null) {
  * servidor o WebGL roda no processador: o completo 16:9 do Torre estourou os
  * 120 s de espera do quadro com as partes em paralelo (cmv303ufi, 10/10).
  */
+/** O modelo (pelo id, na pasta do template) desenha em 3D? */
+export function modeloUsaTres(id) {
+  if (!id) return false;
+  return usaTres(join(AQUI, "..", "..", "modelos", String(id), "template"));
+}
+
 export function usaTres(projeto) {
   try {
     const pkg = JSON.parse(readFileSync(join(projeto, "package.json"), "utf8"));
