@@ -144,8 +144,12 @@ export async function extrasDaLinha(
   const revisao = revisaoVisualLigada();
   const roteiro = roteiroLigado();
   // O EDITOR DO CURSO (10/10, noite): o modelo do projeto e se ele é 3D, para a previsão honesta.
+  // A EDIÇÃO SOB MEDIDA (11/10) antes: o tempo é o dela, nos cortes e no completo (nunca o da reserva).
   const modeloDoCurso = await (async () => {
-    const { editorDoCursoLigado, modeloDoCursoDoProjeto, MODELOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/no-corte");
+    const { editorDoCursoLigado, escolhaDoEditorDoProjeto, modeloDoCursoDoProjeto, MODELOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/no-corte");
+    const { editorAvancadoLigado, ehSobMedida, tecnicaDaOpcao } = await import("@/lib/media/editor-avancado/no-corte");
+    const escolha = await escolhaDoEditorDoProjeto(projectId).catch(() => null);
+    if (escolha && ehSobMedida(escolha.escolhido) && editorAvancadoLigado()) return { tres: tecnicaDaOpcao(escolha.escolhido) === "maquete-3d", sobMedida: true };
     if (!editorDoCursoLigado()) return null;
     const id = await modeloDoCursoDoProjeto(projectId).catch(() => null);
     const m = id ? (MODELOS_DO_CURSO.find((x) => x.id === id) as { three?: boolean } | undefined) : undefined;

@@ -109,14 +109,20 @@ import { normalizarLegenda } from "@/lib/media/legenda-escolhida";
 import { lerVideo as lerVideoParaLeitura, leituraVisaoLigada, medirNoWorker, type RespostaDaMedicao } from "@/lib/media/leitura-do-video";
 import {
   caminhoDoCompleto,
+  caminhoDoCompletoSobMedida,
   completoPeloModeloLigado,
   coresDaMarcaParaOModelo,
+  escolhaDoEditorDoProjeto,
   modeloDoCursoDoProjeto,
   palavrasDoCurso,
   prazoDoCompletoNoModeloMs,
+  prazoDoCompletoSobMedidaMs,
   quemFalaNoProjeto,
   tetoDoPlanoUsd,
+  type CaminhoDoCompleto,
+  type CaminhoDoCompletoSobMedida,
 } from "@/lib/media/editor-do-curso/no-corte";
+import { editorAvancadoLigado, ehSobMedida } from "@/lib/media/editor-avancado/no-corte";
 import { edicaoDaLinguagem } from "@/lib/media/linguagem-da-edicao";
 import {
   demonstracaoNaFala,
@@ -2129,12 +2135,21 @@ export async function avancarMontagemDoCompleto(opcoes: { orcamentoMs?: number }
       // O COMPLETO NO MODELO DO CURSO (10/10) vem antes de todos os caminhos; o
       // de sempre é a reserva (falha, desistência ou sem versão deitada).
       const curso = m.estado === "na-fila" && !esperando && !m.jornada ? await caminhoDoCompletoNoModelo(v, m) : null;
-      if (curso?.caminho === "curso") {
+      if (curso?.caminho === "sob-medida") {
+        // O COMPLETO SOB MEDIDA (11/10): o editor avançado do worker, na opção escolhida, em blocos.
+        r.olhados++;
+        await enviarCompletoAoAvancado(v, m, curso.modelo, curso.tecnica);
+      } else if (curso?.caminho === "parado") {
+        // Sob medida escolhido e sem como fazer (trava desligada): para, nunca vai a outro estilo.
+        r.olhados++;
+        await pararCompletoSobMedida(v.id, m, curso.modelo, curso.motivo);
+      } else if (curso?.caminho === "curso") {
         r.olhados++;
         await enviarCompletoAoModelo(v, m, curso.modelo, curso.versao, curso.formato);
       } else if (m.curso && !m.curso.desistiu && m.estado === "montando") {
         // O worker roda o curso e avisa pelo callback. Passado o prazo, pergunta antes de desistir.
-        if (idade > prazoDoCompletoNoModeloMs(m.fala?.duracao) && !(await aindaEsperaOWorker(v.id, m.chave, idade))) {
+        const prazo = ehSobMedida(m.curso.modelo) ? prazoDoCompletoSobMedidaMs(m.fala?.duracao) : prazoDoCompletoNoModeloMs(m.fala?.duracao);
+        if (idade > prazo && !(await aindaEsperaOWorker(v.id, m.chave, idade))) {
           r.olhados++;
           await desistirDoModeloNoCompleto(v.id, m, "o worker não terminou a edição no modelo no prazo");
         }
@@ -2216,8 +2231,17 @@ export async function avancarMontagemDoCompleto(opcoes: { orcamentoMs?: number }
 
 // ─────────────────────────────── 2a. o completo no modelo do curso ───────────────────────────────
 
-/** O completo vai pelo modelo do curso? A trava, o modelo do projeto com a versão no formato da gravação, o quadro dela e a desistência anterior. */
-async function caminhoDoCompletoNoModelo(v: VideoDoCompleto, m: MontagemDoCompleto) {
+/**
+ * O completo vai pelo modelo do curso? A trava, o modelo do projeto com a versão
+ * no formato da gravação, o quadro dela e a desistência anterior. ANTES DELE, a
+ * edição sob medida escolhida no projeto (11/10): ela vale também para o
+ * completo e nunca cai na reserva dela (a escolha é lida sem engolir erro: um
+ * banco fora do ar pula a passada, em vez de mandar o completo a outro estilo).
+ */
+async function caminhoDoCompletoNoModelo(v: VideoDoCompleto, m: MontagemDoCompleto): Promise<CaminhoDoCompleto | CaminhoDoCompletoSobMedida | null> {
+  const escolha = await escolhaDoEditorDoProjeto(v.projectId);
+  const sobMedida = caminhoDoCompletoSobMedida({ escolhido: escolha.escolhido, avancadoLigado: editorAvancadoLigado(), desistiu: m.curso?.desistiu ?? null });
+  if (sobMedida) return sobMedida;
   if (!completoPeloModeloLigado() || m.curso?.desistiu) return null;
   const modelo = await modeloDoCursoDoProjeto(v.projectId).catch(() => null);
   const r = caminhoDoCompleto({ ligado: true, modelo, desistiu: m.curso?.desistiu ?? null, quadro: m.roteiro?.telas?.quadro ?? null });
@@ -2358,6 +2382,98 @@ async function desistirDoModeloNoCompleto(id: string, lido: MontagemDoCompleto, 
   });
 }
 
+
+/** A letra da identidade do projeto (moderna, impacto, clássica ou amigável), para o kit do editor avançado. */
+async function letraDaMarcaDoProjeto(projectId: string): Promise<string> {
+  const { estadoDaIdentidade } = await import("@/lib/modelos-de-arte/identidade-aprovada");
+  const p = await prisma.project.findUnique({ where: { id: projectId }, select: { colorPalette: true } });
+  return (await estadoDaIdentidade(projectId, p?.colorPalette)).letra;
+}
+
+/**
+ * na-fila -> preparando -> montando: O COMPLETO SOB MEDIDA (11/10) vai ao
+ * worker pela rota do editor avançado (`/editar-avancado` com `completo: true`):
+ * a gravação original com os pedaços mantidos e a fala limpa do completo, a
+ * técnica da opção (null na genérica: o JEV escolhe no primeiro bloco), as cores
+ * e a letra da marca, a trilha do projeto e a rota da cena (`cenaUrl`), onde a IA
+ * mora. O worker mede a gravação e edita no formato dela, em blocos de ~60 s com
+ * teto de US$ 2 por minuto. O estado é o mesmo `curso` do completo no modelo,
+ * com o id da opção: o callback, o prazo, a nova tentativa no mesmo estilo e a
+ * parada com "Tentar de novo" (desistirDoModeloNoCompleto) são os mesmos.
+ */
+async function enviarCompletoAoAvancado(v: VideoDoCompleto, lido: MontagemDoCompleto, modelo: string, tecnica: string | null): Promise<void> {
+  const quadro = lido.roteiro?.telas?.quadro ?? null;
+  const formato: "16:9" | "9:16" = quadro && quadro.altura > quadro.largura ? "9:16" : "16:9";
+  const tomado: MontagemDoCompleto = { ...lido, estado: "preparando", desde: agora(), curso: { ...(lido.curso ?? {}), modelo, versao: modelo, formato, desistiu: null } };
+  if (!(await trocarEstado(v.id, lido, tomado))) return;
+  let atual: MontagemDoCompleto = tomado;
+  try {
+    const gravacao = await prisma.videoJob.findUnique({ where: { id: v.id }, select: { blobUrl: true, durationSec: true, transcript: true } });
+    if (!gravacao?.blobUrl) throw new Error("o vídeo não tem a gravação original");
+    const fala = await falaDoCompletoParaOModelo(v, lido, gravacao);
+    const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://demandou.com").replace(/\/$/, "");
+    // "completo-editado-" no nome: a entrega nunca toma o editado por original (06/10).
+    const chave = `cortes/${v.id}/completo-editado-sob-medida.mp4`;
+    const montando: MontagemDoCompleto = {
+      ...tomado,
+      estado: "montando",
+      desde: agora(),
+      chave,
+      tentativas: (lido.tentativas ?? 0) + 1,
+      esperarAte: null,
+      motivo: null,
+      fala: { palavras: fala.palavras, duracao: fala.duracao },
+    };
+    const corpo = JSON.stringify({
+      chave,
+      videoJobId: v.id,
+      projectId: v.projectId,
+      modelo,
+      ...(tecnica ? { tecnica } : {}),
+      formato,
+      completo: true,
+      sourceUrl: gravacao.blobUrl,
+      inicio: 0,
+      duracao: fala.dur,
+      manter: fala.manter,
+      palavras: palavrasDoCurso(fala.palavras),
+      marca: await quemFalaNoProjeto(v.projectId),
+      cores: await coresDaMarcaParaOModelo(v.projectId).catch(() => null),
+      letra: await letraDaMarcaDoProjeto(v.projectId).catch(() => "moderna"),
+      nicho: v.niche,
+      trilha: v.videoMusicUrl ? { url: v.videoMusicUrl, ...somDaTrilhaDoCompleto(v) } : null,
+      cenaUrl: `${base}/api/editor-avancado/cena`,
+      callbackUrl: `${base}/api/videos/${v.id}/montar-completo-callback`,
+      retorno: { desde: montando.desde },
+    });
+    if (!(await trocarEstado(v.id, tomado, montando))) return;
+    atual = montando;
+    const r = await fetch(`${urlDoWorker()}/editar-avancado`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", [CABECALHO_ASSINATURA]: assinarCorpo(corpo) },
+      body: corpo,
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (r.status !== 202) await desistirDoModeloNoCompleto(v.id, montando, `o worker recusou o pedido (HTTP ${r.status})`);
+  } catch (e) {
+    await desistirDoModeloNoCompleto(v.id, atual, e instanceof Error ? e.message : "falhou");
+  }
+}
+
+/** Sob medida escolhido e sem como fazer agora: o completo para como falha técnica, com "Tentar de novo" (nunca outro estilo). */
+async function pararCompletoSobMedida(id: string, lido: MontagemDoCompleto, modelo: string, motivo: string): Promise<void> {
+  console.warn(`[montagem-do-completo][${id}] completo sob medida parado: ${motivo}`);
+  await trocarEstado(id, lido, {
+    ...lido,
+    estado: "sem-montagem",
+    desde: agora(),
+    tentativas: 0,
+    esperarAte: null,
+    falhaTecnica: true,
+    motivo: "A edição do vídeo completo no estilo que você escolheu não terminou desta vez. Toque em Tentar de novo: ela recomeça no mesmo estilo.",
+    curso: { ...(lido.curso ?? {}), modelo, desistiu: motivo.slice(0, 500) },
+  });
+}
 
 // ─────────────────────────────── 2b. o editor sob medida ───────────────────────────────
 

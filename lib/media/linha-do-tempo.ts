@@ -35,8 +35,11 @@ export type ExtrasDaLinha = {
   efeitosLigados: boolean;
   /** A revisão visual final está ligada. */
   revisaoLigada: boolean;
-  /** O projeto edita pelo modelo do curso (10/10): a previsão usa o tempo dele; `tres` é o modelo em 3D. */
-  modeloDoCurso?: { tres: boolean } | null;
+  /**
+   * O projeto edita pelo modelo do curso (10/10): a previsão usa o tempo dele; `tres` é o modelo em 3D.
+   * `sobMedida` (11/10): a edição sob medida do editor avançado (Maquete 3D, Recorte, Gráficos), com o tempo dela.
+   */
+  modeloDoCurso?: { tres: boolean; sobMedida?: boolean } | null;
   /** A montagem do vídeo completo, quando existe. */
   completo: {
     estado: string | null;
@@ -227,7 +230,28 @@ export function segundosNoModeloDoCurso(d: number | null | undefined, tres: bool
   };
 }
 
-function pesosDoRelogio(relogio: LeituraDaLinha["relogio"], d: number | null, curso?: { tres: boolean } | null): Partial<Record<ChaveDoPasso, number>> {
+/**
+ * A PREVISÃO DA EDIÇÃO SOB MEDIDA (11/10/2026), pelo tempo medido: a cena de
+ * cada bloco de ~60 s é escrita pela IA (~3,5 min, os blocos em paralelo depois
+ * do primeiro), passa nos portões (tsc, bundle e quadros de conferência, ~3 min
+ * por bloco, um bloco de cada vez na máquina) e na revisão; o render da cena
+ * própria leva ~10 s por segundo de vídeo no processador (no i3 local; a prova
+ * de 11/10 está no ESTADO-EDITOR-AVANCADO.md). Pelo alto, como pediu o Bruno.
+ */
+export function segundosNoSobMedida(d: number | null | undefined): { efeitos: number; montagem: number } {
+  const min = (d ?? 600) / 60;
+  return {
+    efeitos: Math.round((5 + 4 * Math.max(1, min)) * 60),
+    montagem: Math.round(Math.max(5, 10 * min) * 60),
+  };
+}
+
+/** Os tempos de efeitos e montagem do editor do projeto: o sob medida, o modelo do curso ou nenhum. */
+function tempoDoEditor(d: number | null | undefined, curso: { tres: boolean; sobMedida?: boolean }): { efeitos: number; montagem: number } {
+  return curso.sobMedida ? segundosNoSobMedida(d) : segundosNoModeloDoCurso(d, curso.tres);
+}
+
+function pesosDoRelogio(relogio: LeituraDaLinha["relogio"], d: number | null, curso?: { tres: boolean; sobMedida?: boolean } | null): Partial<Record<ChaveDoPasso, number>> {
   if (relogio === "gemeo") {
     return { "gemeo-voz": segundosDaEtapa("gemeoVoz", d), "gemeo-pedacos": segundosDaEtapa("gemeoPedacos", d), "gemeo-juntar": segundosDaEtapa("gemeoJuntar", d) };
   }
@@ -242,8 +266,8 @@ function pesosDoRelogio(relogio: LeituraDaLinha["relogio"], d: number | null, cu
     capas: b * 0.1,
     escrevendo: b * 0.1,
     "edicao-da-fala": b * 0.2,
-    efeitos: curso ? segundosNoModeloDoCurso(d, curso.tres).efeitos : segundosDaEtapa("efeitos", d),
-    montagem: curso ? segundosNoModeloDoCurso(d, curso.tres).montagem : segundosDaEtapa("montagem", d),
+    efeitos: curso ? tempoDoEditor(d, curso).efeitos : segundosDaEtapa("efeitos", d),
+    montagem: curso ? tempoDoEditor(d, curso).montagem : segundosDaEtapa("montagem", d),
     revisao: segundosDaEtapa("revisao", d),
   };
 }
@@ -509,7 +533,7 @@ export function faltamAteOFim(v: EntradaDaLinha & { criadoEm: string; inicioDaRo
   const revisao = Boolean(v.linha?.revisaoLigada);
   const curso = v.linha?.modeloDoCurso ?? null;
   const edicao = curso
-    ? segundosDaEtapa("base", v.durationSec) + segundosNoModeloDoCurso(v.durationSec, curso.tres).efeitos + segundosNoModeloDoCurso(v.durationSec, curso.tres).montagem + (revisao ? segundosDaEtapa("revisao", v.durationSec) : 0)
+    ? segundosDaEtapa("base", v.durationSec) + tempoDoEditor(v.durationSec, curso).efeitos + tempoDoEditor(v.durationSec, curso).montagem + (revisao ? segundosDaEtapa("revisao", v.durationSec) : 0)
     : segundosDaEdicao(v.durationSec, { efeitos, revisao });
   const depois = l.relogio === "gemeo" ? segundosDaEtapa("roteiro", v.durationSec) + edicao : l.relogio === "roteiro" ? edicao : 0;
   return { segundos: Math.round(doRelogio + depois), passou: decorrido > l.totalSegundos };
