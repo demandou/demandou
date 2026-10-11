@@ -192,6 +192,8 @@ ${brief ? `\n=== PESQUISA DA CAMPANHA ===\n${brief.slice(0, 12_000)}\n=== FIM DA
     if (noModelo) {
       metadataDoModelo = noModelo.metadata;
       arteRefeita = true;
+      // Pela IA (11/10) a arte já vem pronta; pelo template, entra pelo callback do worker.
+      if (noModelo.imagem) novaImagem = noModelo.imagem;
     }
   }
   if (GERA_ARTE.has(post.mediaType ?? "") && !metadataDoModelo) {
