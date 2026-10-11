@@ -37,13 +37,26 @@ o cabelo melhor que o de selfie usado no vídeo. Numa foto só, o custo não pes
 A máscara ganha borda suave de 2 px e fica só o maior pedaço conectado, para
 não levar almofada e prateleira junto.
 
+## A nitidez (11/10/2026)
+
+O Bruno, em 10/10: "as thumbs estão ficando horríveis, pegando uma imagem
+distorcida da pessoa do vídeo; sempre pegar uma imagem nítida ou não colocar
+foto". A nota acima olhava olho, boca e giro, e nada de nitidez: quadro no
+meio de um gesto (borrão de movimento) ou rosto pequeno ampliado passava. Agora
+cada candidato leva também a NITIDEZ do rosto: a variância do Laplaciano na
+região do rosto, com o rosto levado a 256 px de largura (rosto pequeno ampliado
+até lá perde detalhe e a nota cai, que é o que se quer). Quem DECIDE o quadro
+é worker/src/quadro-nitido.mjs (regra pura, testada): este script só mede.
+
 ## Contrato
 
 Entra (argumento 1, JSON): {"video" ou "imagem", "instantes": [s...],
 "saida": prefixo, "modelo_rosto", "modelo_segmentacao"}.
-Sai (stdout, uma linha JSON): {"instante", "quadro": caminho jpg,
-"recorte": caminho png RGBA, "rosto": caixa em fração, "notas": {...},
-"avaliados": n}.
+Com "video": mede cada instante e sai {"candidatos": [{"instante", "quadro":
+caminho jpg, "largura", "altura", "medida": {...} ou null}], "avaliados": n},
+sem recorte (o recorte vem depois, com "imagem", do quadro escolhido).
+Com "imagem": {"quadro", "recorte": caminho png RGBA, "rosto": caixa em
+fração, "notas": {...}, "largura", "altura"}.
 """
 
 import json
@@ -66,6 +79,29 @@ def ler_quadro(video, instante):
     if not dados:
         return None
     return cv2.imdecode(np.frombuffer(dados, np.uint8), cv2.IMREAD_COLOR)
+
+
+def nitidez_do_rosto(bgr, caixa):
+    """A variância do Laplaciano no rosto, com o rosto em 256 px de largura.
+
+    A caixa ganha 15% de folga (testa e queixo entram). Rosto grande é
+    reduzido (área); rosto pequeno é ampliado (linear) e perde nota, que é o
+    certo: ampliado, ele sai mole na capa do mesmo jeito.
+    """
+    h, w = bgr.shape[:2]
+    fx = caixa["w"] * 0.15
+    fy = caixa["h"] * 0.15
+    x0 = max(0, int((caixa["x"] - fx) * w))
+    y0 = max(0, int((caixa["y"] - fy) * h))
+    x1 = min(w, int((caixa["x"] + caixa["w"] + fx) * w))
+    y1 = min(h, int((caixa["y"] + caixa["h"] + fy) * h))
+    if x1 - x0 < 8 or y1 - y0 < 8:
+        return 0.0
+    cinza = cv2.cvtColor(bgr[y0:y1, x0:x1], cv2.COLOR_BGR2GRAY)
+    escala = 256.0 / cinza.shape[1]
+    modo = cv2.INTER_AREA if escala < 1 else cv2.INTER_LINEAR
+    cinza = cv2.resize(cinza, (256, max(8, int(round(cinza.shape[0] * escala)))), interpolation=modo)
+    return float(cv2.Laplacian(cinza, cv2.CV_64F).var())
 
 
 def nota_do_rosto(detector, bgr):
@@ -94,7 +130,7 @@ def nota_do_rosto(detector, bgr):
     if r.facial_transformation_matrixes:
         m = np.array(r.facial_transformation_matrixes[0])
         giro = float(np.degrees(np.arctan2(m[0][2], m[2][2])))
-    tamanho = caixa["w"] * caixa["h"]
+    tamanho = max(0.0, caixa["w"]) * max(0.0, caixa["h"])
     nota = (
         -3.0 * piscada
         - 2.0 * boca
@@ -108,6 +144,7 @@ def nota_do_rosto(detector, bgr):
         "boca": round(boca, 3),
         "sorriso": round(sorriso, 3),
         "giro": round(giro, 1),
+        "nitidez": round(nitidez_do_rosto(bgr, caixa), 1),
         "caixa": {k: round(v, 4) for k, v in caixa.items()},
     }
 
@@ -148,53 +185,55 @@ def main():
             num_faces=1,
         )
     )
-    segmentador = vision.ImageSegmenter.create_from_options(
-        vision.ImageSegmenterOptions(
-            base_options=BaseOptions(model_asset_path=cfg["modelo_segmentacao"]),
-            output_category_mask=False,
-            output_confidence_masks=True,
-        )
-    )
 
-    melhor = None
-    avaliados = 0
     if cfg.get("imagem"):
-        # Uma imagem pronta (quadro antigo, já guardado): só recorta.
+        # Uma imagem pronta (o quadro já escolhido): mede e recorta.
         bgr = cv2.imread(cfg["imagem"], cv2.IMREAD_COLOR)
-        nota = nota_do_rosto(detector, bgr) if bgr is not None else None
-        melhor = (None, bgr, nota)
-        avaliados = 1
-    else:
-        for t in cfg["instantes"]:
-            bgr = ler_quadro(cfg["video"], t)
-            if bgr is None:
-                continue
-            nota = nota_do_rosto(detector, bgr)
-            avaliados += 1
-            if nota is None:
-                continue
-            if melhor is None or nota["nota"] > melhor[2]["nota"]:
-                melhor = (t, bgr, nota)
-
-    if melhor is None or melhor[1] is None:
-        print(json.dumps({"erro": "nenhum quadro com rosto", "avaliados": avaliados}))
+        if bgr is None:
+            print(json.dumps({"erro": "imagem ilegível", "avaliados": 0}))
+            return
+        nota = nota_do_rosto(detector, bgr)
+        # O segmentador só carrega aqui: a medição dos candidatos não recorta.
+        segmentador = vision.ImageSegmenter.create_from_options(
+            vision.ImageSegmenterOptions(
+                base_options=BaseOptions(model_asset_path=cfg["modelo_segmentacao"]),
+                output_category_mask=False,
+                output_confidence_masks=True,
+            )
+        )
+        quadro = cfg["saida"] + "-quadro.jpg"
+        recorte_png = cfg["saida"] + "-recorte.png"
+        cv2.imwrite(quadro, bgr, [cv2.IMWRITE_JPEG_QUALITY, 92])
+        cv2.imwrite(recorte_png, recortar(segmentador, bgr))
+        print(json.dumps({
+            "instante": None,
+            "quadro": quadro,
+            "recorte": recorte_png,
+            "rosto": nota["caixa"] if nota else None,
+            "notas": nota,
+            "avaliados": 1,
+            "largura": int(bgr.shape[1]),
+            "altura": int(bgr.shape[0]),
+        }))
         return
 
-    instante, bgr, nota = melhor
-    quadro = cfg["saida"] + "-quadro.jpg"
-    recorte_png = cfg["saida"] + "-recorte.png"
-    cv2.imwrite(quadro, bgr, [cv2.IMWRITE_JPEG_QUALITY, 92])
-    cv2.imwrite(recorte_png, recortar(segmentador, bgr))
-    print(json.dumps({
-        "instante": instante,
-        "quadro": quadro,
-        "recorte": recorte_png,
-        "rosto": nota["caixa"] if nota else None,
-        "notas": nota,
-        "avaliados": avaliados,
-        "largura": int(bgr.shape[1]),
-        "altura": int(bgr.shape[0]),
-    }))
+    # Um vídeo: mede cada instante e guarda o quadro em resolução cheia. A
+    # escolha é de quadro-nitido.mjs; o recorte sai depois, só do escolhido.
+    candidatos = []
+    avaliados = 0
+    for i, t in enumerate(cfg["instantes"]):
+        bgr = ler_quadro(cfg["video"], t)
+        if bgr is None:
+            continue
+        avaliados += 1
+        nota = nota_do_rosto(detector, bgr)
+        if nota is None:
+            candidatos.append({"instante": t, "quadro": None, "largura": int(bgr.shape[1]), "altura": int(bgr.shape[0]), "medida": None})
+            continue
+        quadro = f"{cfg['saida']}-c{i}.jpg"
+        cv2.imwrite(quadro, bgr, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        candidatos.append({"instante": t, "quadro": quadro, "largura": int(bgr.shape[1]), "altura": int(bgr.shape[0]), "medida": nota})
+    print(json.dumps({"candidatos": candidatos, "avaliados": avaliados}))
 
 
 if __name__ == "__main__":
