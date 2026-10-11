@@ -34,9 +34,9 @@ Versões: 77 modelos verticais rodam no corte; 19 têm versão 16:9 para o compl
 
 Cada ramo tem na raiz um arquivo ESTADO-*.md com o ponto exato.
 
-1. **Editor avançado inteiro** (ramo worktree-agent-a64c5db6ee08089fe): a rota da cena virando assíncrona (morria aos 800 s da Vercel) e o completo sob medida por blocos de ~60 s.
-2. **Artes e capas das opções sob medida e assunto vindo da fala** (ramo worktree-agent-a94b187ebaa5d01f1).
-3. **Teste de ponta a ponta** (ramo worktree-agent-a7ad27ed4c9a8b7a6): scripts/testes-e2e/ponta-a-ponta.mts.
+1. **Editor avançado inteiro** (ramo worktree-agent-a64c5db6ee08089fe, último 5799894, também em backup/editor-avancado-1010): rota da cena ASSÍNCRONA pronta e provada (escrita em ~3,5 min a ~US$ 0,29 com esforço baixo); completo sob medida PELA METADE (falta o 16:9, o orquestrador por bloco completo-avancado.mjs e a ligação em montagem-do-completo.ts). ATENÇÃO: até essa ligação entrar, o completo de projeto sob medida sai no modelo de reserva, contra a regra; é a primeira coisa a fechar.
+2. **Artes e capas das opções sob medida e assunto vindo da fala** (ramo worktree-agent-a94b187ebaa5d01f1, último c6a99a1): artes prontas e testadas (112 testes); capas pela metade (capaPelaIa pronta, falta ligar em lib/media/capas-do-completo.ts e app/api/videos/[id]/capas/route.ts com lib/media/capa-do-corte.ts, e a prova).
+3. **Teste de ponta a ponta** (ramo worktree-agent-a7ad27ed4c9a8b7a6, último 350bfb5): só o levantamento; o script scripts/testes-e2e/ponta-a-ponta.mts ainda não existe. Caminho do envio: app/api/videos/upload/route.ts (handleUpload, registrarGravacaoEmPartes, despacharPasso em lib/media/piloto-do-servidor.ts); estilo por escolherModeloDoCurso; limpeza por cancelarVideo.
 
 ## O que falta para "pronto" (na ordem)
 
