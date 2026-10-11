@@ -5141,11 +5141,21 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
    */
   async function cancelarPecaDoQuadro(pecaId: string) {
     const card = cardDaPeca.get(pecaId);
+    const postIds = (postsDaPeca.get(pecaId) ?? []).map((p) => p.id);
     if (!card) {
-      toast("Esta peça não tem card para cancelar. Use a aba Posts.");
+      // Sem card (10/10, noite): os posts que ainda não saíram vão para o arquivo, um a um.
+      const vivos = (postsDaPeca.get(pecaId) ?? []).filter((p) => p.status !== "published" && p.status !== "cancelled");
+      if (!vivos.length) {
+        toast("Esta peça não tem nada para cancelar.");
+        return;
+      }
+      const r = await Promise.all(vivos.map((p) => fetch(`/api/posts/${p.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "cancelled" }) }).then((x) => x.ok).catch(() => false)));
+      await loadCardsForWeek(weekStartIso);
+      pedirLeituraDoSino();
+      if (r.every(Boolean)) toast.success(`Peça cancelada. ${vivos.length === 1 ? "O post foi" : `Os ${vivos.length} posts foram`} para o arquivo de Posts.`, { duration: 6000 });
+      else toast.error("Não consegui cancelar todos os posts desta peça. Tente de novo.");
       return;
     }
-    const postIds = (postsDaPeca.get(pecaId) ?? []).map((p) => p.id);
     try {
       const res = await fetch(`/api/campaign-cards/${card.id}/cancelar`, {
         method: "POST",
@@ -5837,7 +5847,9 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
         // CANCELÁVEL pelo cartão (05/10): tem card para cancelar, não está
         // publicada e o squad não está no meio dela (cancelar o que a esteira
         // ainda escreve não a para; para isso existe o cancelar da geração).
-        cancelavel: Boolean(principal) && estado !== "publicado" && estado !== "fazendo",
+        // 10/10, noite: a peça presa em "fazendo" (a revisão da Vera que parou) e a que só tem posts (o card
+        // foi arquivado) também se cancelam; antes elas ficavam no quadro sem saída.
+        cancelavel: Boolean(principal || g.posts.length) && estado !== "publicado",
         midia,
         destinos: [...g.posts]
           .sort((a, b) => ORDEM_DA_REDE.indexOf(a.platform) - ORDEM_DA_REDE.indexOf(b.platform))
@@ -6518,8 +6530,21 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
             const posts = postsDaPeca.get(id) ?? [];
             const link = posts.find((p) => p.externalUrl)?.externalUrl;
             if (link) window.open(link, "_blank", "noopener,noreferrer");
-            else if (posts.length) window.location.href = `/projects/${projectId}/posts`;
-            else toast("Esta peça ainda não tem card para abrir.");
+            else if (posts.length) {
+              // 10/10, noite: em vez de pular para a aba Posts, diz o que houve e oferece apagar ali mesmo.
+              toast(
+                (t) => (
+                  <div className="space-y-2 text-sm">
+                    <p>Esta peça ficou sem card no quadro (a campanha dela foi apagada ou a revisão parou no meio).</p>
+                    <div className="flex gap-2">
+                      <button type="button" className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white" onClick={() => { toast.dismiss(t.id); void cancelarPecaDoQuadro(id); }}>Apagar a peça</button>
+                      <button type="button" className="rounded-md border px-2.5 py-1 text-xs font-semibold" onClick={() => { toast.dismiss(t.id); window.location.href = `/projects/${projectId}/posts`; }}>Ver em Posts</button>
+                    </div>
+                  </div>
+                ),
+                { duration: 12000 }
+              );
+            } else toast("Esta peça ainda não tem card para abrir.");
           }
         }}
       />
