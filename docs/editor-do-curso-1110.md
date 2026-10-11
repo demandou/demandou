@@ -53,3 +53,32 @@ Cada ramo tem na raiz um arquivo ESTADO-*.md com o ponto exato.
 - Reserva automática para outro estilo esconde a falha e entrega errado.
 - Variável da Vercel pelo PowerShell leva quebra de linha.
 - Node como PID 1 no contêiner acumula zumbis; fetch do Node desiste em 5 min sem resposta; função da Vercel morre em 800 s.
+
+## Atualização de 11/10 à noite
+
+### Aprovado pelo Bruno (teste de ponta a ponta na produção)
+- **Recorte com letreiro:** nomes ditos atrás da cabeça (aula 8.2), artes com a pessoa REAL colada em código (a IA faz só fundo e palavra).
+- **Maquete 3D:** a maquete é a cena que a fala nomeia (Marta, Maria, Jesus), não metáfora. Pessoas ainda em cone (aprovado assim; acabamento fica para depois).
+- **Gráficos:** bom quando a fala tem números (vídeo do Ygor); fala sem números vira só cartões.
+- Folhas e vídeos: artefato "Provas do editor novo" (https://claude.ai/artifact/1cAUVnyD1Pt8aEgh8S5iiZ). Custos: "Custos e Margem" (https://claude.ai/artifact/1pRBLUSj3Tm7HonZsrFdg5).
+
+### O que fez passar (não desfazer)
+- EDITOR_AVANCADO_IA=claude-opus-5-5 na Vercel (Opus escreve as cenas).
+- Quem escreve a cena lê a transcrição do VÍDEO INTEIRO e o tema (lib/media/editor-avancado/video-inteiro.ts).
+- Maquete: roteiro declara `objeto` com a palavra dita; o portão confere (worker/src/avancado/portao.mjs).
+- -14 LUFS pelo ffmpeg 7.1 do Remotion (worker/src/avancado/audio-do-mov.mjs): o 5.1 do contêiner não monta o filtro com o PCM do Remotion.
+- Letreiro do kit exige `tamanho` e `largura` e encolhe até caber; MARCA.destaqueTexto (destaque legível) e troca automática de `color: MARCA.destaque` no código devolvido; useAreaLivre para título ao lado da janela.
+- Fila do worker: a montagem que roda não reserva as unidades dos trabalhos (corte e completo juntos).
+- Google SEM SALDO derruba a revisão das cenas e as artes CALADO: olhar o "[aviso-de-saldo]" nos logs antes de diagnosticar qualidade.
+
+### Regras novas do Bruno (11/10)
+- Número em arte: da fala, do material ou de pesquisa com fonte rastreável e no tema (o JEV decide), com rodapé de fonte.
+- A seleção nunca recusa por nicho: fala fora do nicho segue com aviso; sem corte que se sustente, o vídeo segue só como completo (lib/media/select-clips.ts, app/api/videos/[id]/select e roteiro).
+- A frase da arte fala com o PÚBLICO de quem gravou (nunca "você mostra que..."), e número sai inteiro.
+- Os 8 modelos provados estão prontos; não retestar. Nada de agente novo nem Lambda antes de terça (tokens e dinheiro no limite).
+
+### Aberto (próxima conversa)
+1. **Completo sem edição no projeto Demandou** (vídeo cmv4fy2v1001x06l6jad7lf91, vídeo do Ygor, 29 s, zero cortes): o completo foi ao modelo do projeto, modelo-arquivo, e falhou com "Failed to parse URL from undefined"; parou como sem-montagem com Tentar de novo e o vídeo entregue é o cru. Suspeita: o caminho de zero cortes (clips []) deixa algum URL indefinido no envio ao modelo do curso, ou o modelo-arquivo pede material.
+2. Faturas reais (Railway 24 vCPU, Vercel, Supabase, assinaturas) para fechar a margem e decidir créditos.
+3. Restaurar o plano da semana do projeto de teste (está com 2 artes; antigo em scratchpad/semana-do-teste-antes.json da conversa 0d23129a).
+4. Depois de terça: Remotion Lambda (render em paralelo), pessoas estilizadas no kit 3D, novas tentativas de arte no Nano Banana 2, versões 16:9 restantes.

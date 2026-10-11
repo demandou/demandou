@@ -19988,3 +19988,8 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 - Artefato Custos e Margem (versão 26): custo real por crédito medido hoje (R$ 0,013 a 0,022 no sob medida; gêmeo R$ 0,027), créditos certos dos planos (20, 32 e 48 mil), Simples 6%, GPU do RunPod, Claude Max e campos de assinatura. Conclusão: não subir o saldo-base agora; bônus com prazo, sim. PENDENTE do Bruno: faturas reais de Railway (24 vCPU), Vercel, Supabase e assinaturas.
 - Três vídeos crus para o Bruno testar na plataforma em C:\Users\devan\Videos\canal (teste-maquete-3d-tenda-23s, teste-recorte-fe-antes-da-certeza-17s, teste-graficos-consorcio-ygor-29s). Vídeo de até 90 s não pré-marca corte na tela de roteiro.
 - Projeto de teste ainda com o plano da semana de 2 artes; o antigo está em scratchpad/semana-do-teste-antes.json (restaurar quando o Bruno pedir).
+
+## 11/10 ~21h: fim da conversa (estado em docs/editor-do-curso-1110.md, seção "Atualização de 11/10 à noite")
+
+- Publicado depois das 19h50: seleção que nunca recusa por nicho (60bc76a), vídeo sem corte segue só como completo (3ad4dba), roteiro aceita lista de cortes vazia (último commit), arte com número inteiro e voz para o público (aa54050). Vídeos de teste em C:\Users\devan\Videos\canal.
+- ABERTO, começar por aqui: o completo do vídeo cmv4fy2v1001x06l6jad7lf91 (projeto Demandou, modelo-arquivo) saiu SEM edição: "Failed to parse URL from undefined".
