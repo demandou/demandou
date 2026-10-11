@@ -169,7 +169,7 @@ export function promptDaCenaNoModelo(e: Omit<EntradaDaArte, "texto"> & { ideia: 
     `Create the background artwork of a social media image (${e.tipo === "post" ? "a single Instagram feed post" : "an Instagram carousel slide"}) in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering.`,
     `STYLE: ${s.atmosfera} ${s.textura} ${s.luz}`,
     `VISUAL ELEMENT: ${s.elementoVisual} Built from this idea, as a metaphor: ${citar(e.ideia)}${e.nicho ? ` (the world of ${curto(e.nicho, 80)})` : ""}. One strong element.`,
-    `COMPOSITION: the element fills the lower half (or one side) of the frame; keep the upper third as a calm, clean area of plain ${e.cores.fundo} where a headline will be added later in code.`,
+    `COMPOSITION: the element sits in the lower 55% of the frame; the upper 40% is EMPTY, a flat area of plain ${e.cores.fundo}, where a headline will be added later in code. The whole background is ${e.cores.fundo} (this overrides any paper or surface tone named in the style).`,
     `COLORS (the client's brand): dominant field ${e.cores.fundo}; light tones ${e.cores.titulo}; accent ${e.cores.destaque} only in details. ${s.papeisDasCores}`,
     `ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere; arrows, leader lines and callouts are lines and dots only. No people, faces or hands.${frasePedeEquipamento(e.ideia) ? "" : " No camera, microphone, ring light or recording studio."} No empty boxes or frames.`,
     ...(contexto ? [`SUBJECT (context only, never written): ${contexto}`] : []),

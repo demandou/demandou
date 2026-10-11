@@ -108,7 +108,7 @@ export async function pecaDeFrase(
  * aceitar palavra a mais. O book de modelos e o tratamento de cor ficam de fora:
  * a forma é a do modelo do curso e a cor da marca não tinge a cena.
  */
-async function cenaComFraseEmCodigo(
+export async function cenaComFraseEmCodigo(
   p: PecaPelaIa,
   o: { texto: string; tipo: "post" | "capa" | "lamina"; lamina?: number; redes: string[]; contentType: string },
   inj: InjecoesDaArte
@@ -119,7 +119,9 @@ async function cenaComFraseEmCodigo(
   const { comporFraseNaArte } = await import("@/lib/media/arte-com-frase");
   const sharp = (await import("sharp")).default;
   const ctx: ContextoMidia = { projectId: p.projectId, runId: p.runId ?? undefined, operation: OPERACAO_DA_ARTE_PELA_IA };
-  const marca: MarcaDaArte = { ...p.marca, modelos: undefined, modeloFixo: undefined, estiloDoPost: undefined, materiais: undefined, tratamento: null } as MarcaDaArte;
+  // A família "sobrio" com a variante 0 põe a cena na peça inteira e a frase no
+  // terço de cima, a área calma que o prompt da cena pede.
+  const marca: MarcaDaArte = { ...p.marca, familia: "sobrio", variante: 0, modelos: undefined, modeloFixo: undefined, estiloDoPost: undefined, materiais: undefined, tratamento: null } as MarcaDaArte;
   const promptBase = promptDaCenaNoModelo({
     estilo,
     ideia: o.texto,
