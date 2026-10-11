@@ -47,6 +47,31 @@ def gpu():
         return f"sem nvidia-smi ({e})"
 
 
+def rodar_script(e, projeto, t0):
+    """
+    O modo do worker (RENDER_3D_NA_GPU): roda o script do próprio projeto (o
+    scripts/render.mjs do curso, com a conferência do plano e o -14 LUFS) com o
+    gl da GPU em GL_DOS_MODELOS, e sobe o arquivo que ele gerou.
+    """
+    arquivo = os.path.join(projeto, e.get("arquivo") or "out/video-editado.mp4")
+    env = {**os.environ, **{k: str(v) for k, v in (e.get("env") or {}).items()}, "GL_DOS_MODELOS": e.get("gl") or "angle-egl"}
+    t1 = time.time()
+    r = subprocess.run(["node", e.get("script") or "scripts/render.mjs", *[str(a) for a in (e.get("args") or [])]], capture_output=True, text=True, cwd=projeto, env=env)
+    render_s = round(time.time() - t1, 1)
+    if r.returncode != 0 or not os.path.exists(arquivo):
+        return {"erro": f"o script saiu com {r.returncode}: {(r.stderr or r.stdout)[-1500:]}", "gpu": gpu()}
+    duracao = None
+    try:
+        duracao = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", arquivo], capture_output=True, text=True, timeout=60).stdout.strip())
+    except Exception:  # noqa: BLE001
+        pass
+    url = enviar(arquivo, e["saida"]) if (e.get("saida") or {}).get("put_url") else None
+    if not url:
+        return {"erro": "o MP4 não subiu (sem put_url ou sem url na resposta)", "gpu": gpu()}
+    medida = {"gl": env["GL_DOS_MODELOS"], "render_s": render_s, "segundos_de_video": duracao, "render_por_s": round(render_s / duracao, 2) if duracao else None}
+    return {"gpu": gpu(), "medida": medida, "url": url, "segundos_no_endpoint": round(time.time() - t0, 1)}
+
+
 def handler(trabalho):
     e = trabalho.get("input") or {}
     if not e.get("url_do_projeto"):
@@ -59,6 +84,8 @@ def handler(trabalho):
         with tarfile.open(tar) as t:
             t.extractall(projeto)
         os.symlink("/app/node_modules", os.path.join(projeto, "node_modules"))
+        if e.get("modo") == "script":
+            return rodar_script(e, projeto, t0)
         medidas = []
         enviado = None
         for gl in e.get("gls") or ["angle-egl"]:
@@ -74,7 +101,23 @@ def handler(trabalho):
             medidas.append(medida)
             if medida.get("ok") and enviado is None and (e.get("saida") or {}).get("put_url"):
                 enviado = enviar(saida, e["saida"])
-        return {"gpu": gpu(), "medidas": medidas, "url": enviado, "segundos_no_endpoint": round(time.time() - t0, 1)}
+        return {"gpu": gpu(), "medidas": medidas, "url": enviado, "segundos_no_endpoint": round(time.time() - t0, 1), "diagnostico": diagnostico()}
+
+
+def diagnostico():
+    """O que o host montou do driver (EGL, GLX, Vulkan): sem isso o Chrome não cria o WebGL na GPU."""
+    achados = []
+    for pasta in ["/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/usr/local/nvidia/lib64"]:
+        try:
+            achados += [os.path.join(pasta, n) for n in os.listdir(pasta) if "nvidia" in n.lower() or n.startswith("libcuda")]
+        except OSError:
+            pass
+    return {
+        "capacidades": os.environ.get("NVIDIA_DRIVER_CAPABILITIES"),
+        "bibliotecas": sorted(achados)[:60],
+        "egl_vendor": os.listdir("/usr/share/glvnd/egl_vendor.d") if os.path.isdir("/usr/share/glvnd/egl_vendor.d") else [],
+        "nucleos": os.cpu_count(),
+    }
 
 
 runpod.serverless.start({"handler": handler})

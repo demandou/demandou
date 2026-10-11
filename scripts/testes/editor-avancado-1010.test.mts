@@ -329,3 +329,36 @@ test("resposta cortada no meio (sem o fim): o último arquivo, pela metade, não
   const r = lerArquivosDaResposta("=== arquivo: roteiro.json ===\n{}\n=== arquivo: cena-01.tsx ===\nexport const Atras = () => null;\n=== arquivo: comum.tsx ===\nexport const X = /** pela met");
   assert.deepEqual(Object.keys(r), ["roteiro.json", "cena-01.tsx"]);
 });
+
+test("render 3D na GPU: só liga com a flag, as chaves e um modelo em 3D", async () => {
+  const gpu = await imp("worker/src/modelo/render-na-gpu.mjs");
+  const env = { RENDER_3D_NA_GPU: "1", RUNPOD_API_KEY: "k", RUNPOD_ENDPOINT_RENDER3D: "e", BLOB_PUBLIC_READ_WRITE_TOKEN: "t" };
+  assert.equal(gpu.deveRenderizarNaGpu({ tres: true, env }), true);
+  assert.equal(gpu.deveRenderizarNaGpu({ tres: false, env }), false);
+  assert.equal(gpu.deveRenderizarNaGpu({ tres: true, env: { ...env, RENDER_3D_NA_GPU: "" } }), false);
+  assert.equal(gpu.deveRenderizarNaGpu({ tres: true, env: { ...env, RUNPOD_ENDPOINT_RENDER3D: "" } }), false);
+  assert.ok(gpu.FORA_DO_PACOTE.includes("node_modules") && gpu.FORA_DO_PACOTE.includes("out"));
+});
+
+test("render 3D na GPU: o pedido roda o render.mjs do curso com o gl da GPU, sem a concorrência da CPU", async () => {
+  const gpu = await imp("worker/src/modelo/render-na-gpu.mjs");
+  const p = gpu.pedidoDoRender3d({ urlDoProjeto: "https://b/p.tar.gz", nome: "modelo-torre.mp4", saida: { put_url: "u" }, limites: { concurrency: 2, timeoutInMilliseconds: 600000, chromiumOptions: {} } });
+  assert.equal(p.input.modo, "script");
+  assert.equal(p.input.script, "scripts/render.mjs");
+  assert.deepEqual(p.input.args, ["out/modelo-torre.mp4"]);
+  assert.equal(p.input.gl, "angle-egl");
+  const servidor = JSON.parse(p.input.env.RENDER_DO_SERVIDOR);
+  assert.equal(servidor.concurrency, undefined);
+  assert.equal(servidor.chromeMode, "chrome-for-testing");
+  assert.equal(servidor.timeoutInMilliseconds, 600000);
+  assert.equal(servidor.chromiumOptions.enableMultiProcessOnLinux, true);
+});
+
+test("render 3D na GPU: a leitura do status (andando, pronto, falhou, sem MP4)", async () => {
+  const gpu = await imp("worker/src/modelo/render-na-gpu.mjs");
+  assert.equal(gpu.lerRespostaDoRender3d({ status: "IN_QUEUE" }).estado, "andando");
+  assert.deepEqual(gpu.lerRespostaDoRender3d({ status: "COMPLETED", output: { url: "x", medida: { render_por_s: 3 }, gpu: "L4" } }), { estado: "pronto", url: "x", medida: { render_por_s: 3 }, gpu: "L4" });
+  assert.equal(gpu.lerRespostaDoRender3d({ status: "COMPLETED", output: { erro: "quebrou" } }).erro, "quebrou");
+  assert.equal(gpu.lerRespostaDoRender3d({ status: "COMPLETED", output: {} }).estado, "falhou");
+  assert.equal(gpu.lerRespostaDoRender3d({ status: "FAILED", error: "oom" }).erro, "oom");
+});

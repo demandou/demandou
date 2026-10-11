@@ -82,17 +82,17 @@ export function cabecalhosDoBlob({ tokenDoCliente, contentType = "video/webm" })
   };
 }
 
-export async function saidaNoBlob({ token, pathname }) {
+export async function saidaNoBlob({ token, pathname, contentType = "video/webm" }) {
   const { generateClientTokenFromReadWriteToken } = await import("@vercel/blob/client");
   const tokenDoCliente = await generateClientTokenFromReadWriteToken({
     token,
     pathname,
-    allowedContentTypes: ["video/webm"],
+    allowedContentTypes: [contentType],
     maximumSizeInBytes: 1024 * 1024 * 1024,
     validUntil: Date.now() + 30 * 60_000,
     addRandomSuffix: true,
   });
-  return { put_url: `https://vercel.com/api/blob/?pathname=${encodeURIComponent(pathname)}`, cabecalhos: cabecalhosDoBlob({ tokenDoCliente }) };
+  return { put_url: `https://vercel.com/api/blob/?pathname=${encodeURIComponent(pathname)}`, cabecalhos: cabecalhosDoBlob({ tokenDoCliente, contentType }) };
 }
 
 /**

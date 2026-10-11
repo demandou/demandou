@@ -1205,11 +1205,32 @@ export async function imagensEmBlocos(projeto, blocos, { comum, esqueleto, pedir
 }
 
 /**
+ * O RENDER 3D NA GPU (render-na-gpu.mjs, 11/10/2026): com RENDER_3D_NA_GPU ligado e o
+ * modelo em 3D, o scripts/render.mjs do curso roda no endpoint do RunPod. Devolve o
+ * caminho do MP4, ou null para seguir na CPU (desligado, 2D ou qualquer falha).
+ */
+async function tentarNaGpu(projeto, nome, prazoMs) {
+  const gpu = await import("./render-na-gpu.mjs");
+  if (!gpu.deveRenderizarNaGpu({ tres: usaTres(projeto) })) return null;
+  try {
+    const r = await gpu.renderizarNaGpu(projeto, nome, { limites: limitesDoRender(projeto), prazoMs, aoPasso: (p) => console.log(`[render] ${p}`) });
+    console.log(`[render] na GPU (${r.gpu ?? "?"}): ${r.segundos} s, ${r.medida?.render_por_s ?? "?"} s por segundo de vídeo`);
+    return r.arquivo;
+  } catch (e) {
+    console.warn(`[render] a GPU falhou, volta para a CPU: ${e instanceof Error ? e.message.slice(0, 300) : e}`);
+    return null;
+  }
+}
+
+/**
  * O render em partes (render-em-partes.mjs): partes de ~150 s, algumas ao
  * mesmo tempo dentro da fatia deste trabalho (as abas da fatia divididas entre
  * elas), emendadas sem recodificar e normalizadas a -14 LUFS no fim.
  */
 export async function renderizarEmPartes(projeto, nome = "video-editado.mp4", { prazoMs = 90 * 60_000, alvoSeg = BLOCO_ALVO_SEG } = {}) {
+  // Na GPU o 3D sai inteiro de uma vez: as partes só existiam para dividir o processador.
+  const naGpu = await tentarNaGpu(projeto, nome, prazoMs);
+  if (naGpu) return { arquivo: naGpu, resumo: { gpu: true } };
   const plano = lerPlano(projeto);
   const partes = partesDoRender(plano.duracao, plano.fps, alvoSeg);
   const tres = usaTres(projeto);
@@ -1372,6 +1393,8 @@ export function usaTres(projeto) {
 }
 
 export async function renderizar(projeto, nome = "video-editado.mp4", { prazoMs = 90 * 60_000 } = {}) {
+  const naGpu = await tentarNaGpu(projeto, nome, prazoMs);
+  if (naGpu) return naGpu;
   const saida = join("out", nome);
   const r = await rodarNoProjeto(projeto, ["scripts/render.mjs", saida], { prazoMs, env: { RENDER_DO_SERVIDOR: JSON.stringify(limitesDoRender(projeto)) } });
   if (r.codigo !== 0) throw falhou("render.mjs", r);
