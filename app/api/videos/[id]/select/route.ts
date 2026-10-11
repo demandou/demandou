@@ -200,6 +200,26 @@ export async function POST(
     // NENHUM TRECHO APROVEITÁVEL (decisão do Bruno, 01/10): o vídeo falha sem
     // custo. A primeira parte volta para a conta que pagou, com o autor de quem
     // enviou, e a mensagem diz que nada foi cobrado e por quê.
+    // SEM CORTE, MAS COM FALA (11/10, teste do Bruno): o vídeo curto do Ygor tinha fala boa e nenhum trecho
+    // que se sustentasse sozinho como corte. Falhar o vídeo inteiro tirava do cliente o completo editado.
+    // Com fala transcrita, segue para o roteiro só com o completo, e o motivo vai como aviso na tela.
+    if (err instanceof SemTrechoAproveitavel && paragrafos.length > 0) {
+      const motivo = err.message.replace(/^Nenhum trecho aproveitável nesta gravação\.\s*/, "");
+      await prisma.videoJob.update({
+        where: { id },
+        data: {
+          status: "selected",
+          startedAt: null,
+          attempts: 0,
+          clips: [],
+          error: null,
+          diagnostico: `Não achei um trecho que funcione sozinho como corte, então este vídeo sai só como vídeo completo, editado normalmente. ${motivo}`.trim(),
+        },
+      });
+      const jaAprovado = Boolean((await lerRoteiroDoVideo(id).catch(() => null))?.aprovadoEm);
+      after(() => despacharPasso(id, roteiroLigado() && !jaAprovado ? "roteiro" : "cortar"));
+      return NextResponse.json({ ok: true, trechos: [], soCompleto: true });
+    }
     if (err instanceof SemTrechoAproveitavel) {
       const devolvidos = await estornarPrimeiraParte({ id, userId: video.userId }, "nenhum trecho aproveitável").catch((e) => {
         console.error(`[selecao][${id}] estorno falhou:`, e);
