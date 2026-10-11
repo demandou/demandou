@@ -177,7 +177,7 @@ test("as três opções sob medida têm estilo; a escolhida manda nas artes, a g
   assert.equal(estiloDasArtesDoProjeto("sob-medida", "modelo-anatomia"), "modelo-anatomia");
   assert.equal(estiloDasArtesDoProjeto("modelo-torre", null), null);
   assert.equal(PROMPTS_SOB_MEDIDA["sob-medida-recorte"].pessoa, true);
-  assert.doesNotMatch(JSON.stringify(PROMPTS_SOB_MEDIDA), /#[0-9a-f]{6}\b|[—–]/i);
+  assert.doesNotMatch(JSON.stringify(PROMPTS_SOB_MEDIDA), /#[0-9a-f]{6}\b|[20142013]/i);
 });
 
 test("o assunto vem da fala; o estilo só decide como desenhar", async () => {
