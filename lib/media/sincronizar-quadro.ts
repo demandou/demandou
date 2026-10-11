@@ -48,7 +48,20 @@ type TrechoDoQuadro = Trecho & {
   posts?: { linkedin?: string; x?: string; instagram?: string };
   texto?: { titulo?: string; descricao?: string };
   midia?: { vertical?: { url: string } | null } | null;
+  montagem?: { estado?: string; desde?: string; motivo?: string | null; falhaTecnica?: boolean } | null;
 };
+
+/**
+ * O ESPELHO DA MONTAGEM NO CARD QUE NASCE DEPOIS (11/10, teste de ponta a ponta):
+ * a montagem do corte começa quando o corte cru chega e só se espelha nos cards
+ * que já existem (montagem-nos-cortes.ts); o card que a sincronização cria depois
+ * nascia sem ela e mostrava o corte cru como "esperando você" durante a edição.
+ */
+export function espelhoDaMontagemDoTrecho(t: Pick<TrechoDoQuadro, "montagem">): Record<string, unknown> {
+  const m = t.montagem;
+  if (!m?.estado) return {};
+  return { montagem: { estado: m.estado, desde: m.desde ?? null, motivo: m.motivo ?? null, falhaTecnica: Boolean(m.falhaTecnica) } };
+}
 
 function legendaDoDestino(t: TrechoDoQuadro, plataforma: string): string {
   const generica =
@@ -276,6 +289,7 @@ export async function sincronizarQuadroDoVideo(videoJobId: string): Promise<void
           videoJobId: video.id,
           trechoIndice: pedido.indice,
           thumb: `/api/videos/${video.id}/midia?trecho=${pedido.indice}&tipo=capa-arte`,
+          ...espelhoDaMontagemDoTrecho(pedido.t),
         },
       },
     });
