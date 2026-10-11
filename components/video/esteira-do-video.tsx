@@ -1233,7 +1233,9 @@ function CartaoDoVideo({
   const [cancelando, setCancelando] = useState(false);
   // O pronto também se cancela (06/10, tarde): o X "tirar da lista" só some
   // da tela; cancelar tira do quadro as peças que não foram ao ar.
-  const cancelavel = !falhou && !completoFalhou;
+  // 11/10 (Bruno): o vídeo cujo completo falhou também se cancela; antes só havia "Refazer o vídeo
+  // completo" e as peças dele ficavam presas no quadro sem saída.
+  const cancelavel = !falhou;
   const confirmarCancelamento = async () => {
     setCancelando(true);
     const cancelou = await aoCancelar();
