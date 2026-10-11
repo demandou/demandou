@@ -194,34 +194,33 @@ test("o assunto vem da fala; o estilo só decide como desenhar", async () => {
   assert.match(p, /HOW TO DRAW IT \(the style decides only the rendering/);
 });
 
-test("o recorte com a foto pede a pessoa da foto; sem foto, nenhuma pessoa", () => {
+test("o Recorte nunca pede a pessoa à IA de imagem (11/10: o padre e o homem de óculos)", () => {
   const recorte = promptDeEstiloDoModelo("sob-medida-recorte")!;
-  const com = promptDaArteNoModelo({ estilo: recorte, texto: "Bem feito", tipo: "post", cores: CORES, composicao: "x", comFotoDaPessoa: true });
-  assert.match(com, /real person from the attached reference photo/);
-  const sem = promptDaArteNoModelo({ estilo: recorte, texto: "Bem feito", tipo: "post", cores: CORES, composicao: "x" });
-  assert.doesNotMatch(sem, /attached reference photo/);
-  assert.match(sem, /No people/);
+  const p = promptDaArteNoModelo({ estilo: recorte, texto: "Bem feito", tipo: "post", cores: CORES, composicao: "x" });
+  assert.doesNotMatch(p, /reference photo/);
+  assert.match(p, /No people/);
+  assert.doesNotMatch(JSON.stringify(recorte), /real person from the reference photo/);
 });
 
-test("o recorte com a foto desenha pelo gerador com foto e permite a pessoa na conferência", async () => {
+test("o Recorte desenha sem foto e a conferência da camada da IA não aceita gente", async () => {
   const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
-  let comFoto = 0;
-  let permitiu = false;
+  let geracoes = 0;
+  const permitiu: boolean[] = [];
   await desenharPelaIa(
-    { projectId: "p", modelo: "sob-medida-recorte", mediaType: "image", redes: ["instagram"], frase: "Bem feito", marca: MARCA, fotoDaPessoa: "data:image/jpeg;base64,AAAA" },
+    { projectId: "p", modelo: "sob-medida-recorte", mediaType: "image", redes: ["instagram"], frase: "Bem feito", marca: MARCA },
     {
-      gerarComFoto: async (_p, proporcao) => {
-        comFoto++;
-        return imagemFalsa(proporcao);
+      gerar: async (modelo, _p, proporcao) => {
+        geracoes++;
+        return { dataUrl: await imagemFalsa(proporcao), modelo, custoUsd: 0.134 };
       },
       conferir: async (_d, o) => {
-        permitiu = Boolean((o as { permitirPessoas?: boolean }).permitirPessoas);
+        permitiu.push(Boolean((o as { permitirPessoas?: boolean }).permitirPessoas));
         return { aprovada: true, motivo: "ok", medida: { cortado: false, resumo: "ok", lados: {} } } as never;
       },
     }
   );
-  assert.equal(comFoto, 1);
-  assert.equal(permitiu, true);
+  assert.equal(geracoes, 1);
+  assert.deepEqual(permitiu, [false]);
 });
 
 test("modelo sem prompt de estilo lança antes de gastar", async () => {

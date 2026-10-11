@@ -86,8 +86,9 @@ export async function capaDoCorteNoEstilo(o: {
 }): Promise<string> {
   const frase = o.trecho.texto?.fraseDaCapa;
   if (!frase) throw new Error("o corte não tem a frase da capa");
-  const { capaDoCortePelaIa, fotoDaPessoaParaOEstilo } = await import("@/lib/media/capa-pela-ia");
-  const { quadroUrl } = baseDaCapaDoCorte(o.trecho, o.doVideo);
+  const { capaDoCortePelaIa, recorteDaPessoaParaOEstilo } = await import("@/lib/media/capa-pela-ia");
+  // A pessoa é o recorte real do quadro nítido (o do corte, ou o do vídeo), colado em código (11/10).
+  const { quadroUrl, recorteUrl } = baseDaCapaDoCorte(o.trecho, o.doVideo);
   return capaDoCortePelaIa({
     projectId: o.projectId,
     videoJobId: o.videoJobId,
@@ -98,7 +99,7 @@ export async function capaDoCorteNoEstilo(o: {
     fala: o.fala.texto,
     contexto: [o.trecho.texto?.titulo ?? o.trecho.titulo, o.trecho.ideia].filter(Boolean).join(". ") || null,
     nicho: o.nicho,
-    fotoDaPessoa: await fotoDaPessoaParaOEstilo(o.modelo, quadroUrl),
+    recorteDaPessoa: await recorteDaPessoaParaOEstilo(o.modelo, { quadroUrl, recorteUrl, chave: `cortes/${o.videoJobId}/recorte-capa-${o.indice}.png` }),
     ajuste: o.ajuste ?? null,
     tentativas: o.tentativas,
   });

@@ -38,8 +38,8 @@ type Comum = {
   contexto?: string | null;
   /** A transcrição do vídeo: o assunto sai do trecho que casa com a frase. */
   fala?: string | null;
-  /** A pessoa (data URI do quadro nítido), só para o estilo que pede a pessoa. */
-  fotoDaPessoa?: string | null;
+  /** O recorte real da pessoa (data URI PNG com alfa), só para o estilo que põe a pessoa: colado em código. */
+  recorteDaPessoa?: string | null;
   marca?: MarcaDaArte;
   logo?: { src: string } | null;
   inj?: InjecoesDaArte;
@@ -70,7 +70,7 @@ export async function capasDoCompletoPelaIa(o: Comum & { frases: Array<{ frase: 
               nicho: o.nicho,
               contexto: o.contexto,
               fala: o.fala,
-              fotoDaPessoa: o.fotoDaPessoa,
+              recorteDaPessoa: o.recorteDaPessoa,
               marca: o.marca,
               ...("logo" in o ? { logo: o.logo ?? null } : {}),
               inj: o.inj,
@@ -109,7 +109,7 @@ export async function capaDoCortePelaIa(o: Comum & { indice: number; frase: stri
         contexto: o.contexto,
         fala: o.fala,
         trecho: o.trecho ?? null,
-        fotoDaPessoa: o.fotoDaPessoa,
+        recorteDaPessoa: o.recorteDaPessoa,
         marca: o.marca,
         ...("logo" in o ? { logo: o.logo ?? null } : {}),
         ajuste: o.ajuste ?? null,
@@ -120,18 +120,33 @@ export async function capaDoCortePelaIa(o: Comum & { indice: number; frase: stri
   return guardar(`cortes/${o.videoJobId}/capa-arte-${o.indice}.jpg`, jpeg);
 }
 
-/** A foto da pessoa para a capa, em data URI, só quando o estilo pede a pessoa e há quadro nítido. */
-export async function fotoDaPessoaParaOEstilo(modelo: string, url: string | null | undefined): Promise<string | null> {
-  if (!url) return null;
-  const { promptDeEstiloDoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
-  if (!promptDeEstiloDoModelo(modelo)?.pessoa) return null;
+/**
+ * O RECORTE REAL DA PESSOA em data URI (PNG com alfa), 11/10: o que o worker
+ * já recortou do quadro nítido (o `recorte` do /melhor-quadro, o
+ * `midia.recorte` do corte); sem ele, o /recortar a partir do quadro. Null em
+ * qualquer falha: a peça sai sem pessoa, nunca com uma pessoa desenhada.
+ */
+export async function recorteDaPessoaEmDataUri(o: { quadroUrl?: string | null; recorteUrl?: string | null; chave: string }): Promise<string | null> {
+  const { lerMidia } = await import("@/lib/media/storage");
   try {
-    const { lerMidia } = await import("@/lib/media/storage");
-    const bytes = await lerMidia(url);
-    return bytes ? `data:image/jpeg;base64,${bytes.toString("base64")}` : null;
+    let bytes = o.recorteUrl ? await lerMidia(o.recorteUrl).catch(() => null) : null;
+    if (!bytes && o.quadroUrl) {
+      const { recortarQuadro } = await import("@/lib/media/recorte-do-quadro");
+      const feito = await recortarQuadro(o.quadroUrl, o.chave);
+      bytes = feito?.url ? await lerMidia(feito.url).catch(() => null) : null;
+    }
+    return bytes ? `data:image/png;base64,${bytes.toString("base64")}` : null;
   } catch {
     return null;
   }
+}
+
+/** O recorte da pessoa para a capa, só quando o estilo põe a pessoa (o Recorte com letreiro). */
+export async function recorteDaPessoaParaOEstilo(modelo: string, o: { quadroUrl?: string | null; recorteUrl?: string | null; chave: string }): Promise<string | null> {
+  if (!o.quadroUrl && !o.recorteUrl) return null;
+  const { promptDeEstiloDoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
+  if (!promptDeEstiloDoModelo(modelo)?.pessoa) return null;
+  return recorteDaPessoaEmDataUri(o);
 }
 
 /** A transcrição do vídeo em texto, e as palavras com o tempo (para o trecho de cada corte). */

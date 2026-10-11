@@ -347,7 +347,7 @@ async function capasNoEstiloPelaIa(o: {
   tentativas: number;
 }): Promise<CapasDoCompleto> {
   const { video, anteriores } = o;
-  const { capasDoCompletoPelaIa, falaDaTranscricao, fotoDaPessoaParaOEstilo } = await import("@/lib/media/capa-pela-ia");
+  const { capasDoCompletoPelaIa, falaDaTranscricao, recorteDaPessoaParaOEstilo } = await import("@/lib/media/capa-pela-ia");
   const { falhaDaCapa } = await import("@/lib/media/capa-pelo-modelo");
   const { promptDeEstiloDoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
   // A pessoa só no estilo que a pede (o recorte): o quadro NÍTIDO da gravação, ou a da Biblioteca.
@@ -360,7 +360,8 @@ async function capasNoEstiloPelaIa(o: {
     nicho: video.project.niche,
     contexto: [o.titulo, o.resumo].filter(Boolean).join(". "),
     fala: falaDaTranscricao(video.transcript).texto,
-    fotoDaPessoa: await fotoDaPessoaParaOEstilo(o.regra, foto?.url),
+    // A pessoa é o recorte real do quadro nítido, colado em código; nunca vai à IA de imagem (11/10).
+    recorteDaPessoa: await recorteDaPessoaParaOEstilo(o.regra, { quadroUrl: foto?.url ?? null, recorteUrl: foto?.recorteUrl ?? null, chave: `cortes/${video.id}/recorte-capa-completo.png` }),
     tentativas: o.tentativas,
   });
   // O registro da capa no estilo (o mesmo campo do template): o estilo, sem pendência e sem "reserva".

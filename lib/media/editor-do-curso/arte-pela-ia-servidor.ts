@@ -6,7 +6,7 @@ import type { ContextoMidia } from "@/lib/media/usage";
 import type { GeradorDoInfografico, ModeloDoInfografico } from "@/lib/media/infografico-pelo-modelo";
 import { infograficoSoComAFala, lastroComAsFontesDoPost } from "@/lib/media/lastro-do-video";
 import type { FonteDoNumero, LastroDaArte } from "@/lib/media/dados-da-arte";
-import { composicaoDaPeca, estiloComoLinguagem, linguagemDoInfografico, promptDaArteNoModelo,promptDaCenaNoModelo, promptDeEstiloDoModelo, tipografiaDoEstilo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
+import { composicaoDaPeca, estiloComoLinguagem, layoutDoFundoDoRecorte, linguagemDoInfografico, palavraDoLetreiro, promptDaArteNoModelo, promptDaCenaNoModelo, promptDeEstiloDoModelo, promptDoFundoDoRecorte, tipografiaDoEstilo, trechoDaFala, type CoresDaPeca, type TipoDaArte } from "./arte-pela-ia";
 
 /**
  * O DESENHO PELA IA DE IMAGEM DAS PEÇAS DE UM PROJETO COM MODELO DO CURSO
@@ -68,40 +68,24 @@ export type PecaPelaIa = {
   trecho?: string | null;
   /** A transcrição do vídeo: sem `trecho`, o de cada peça (cada lâmina) sai dela. */
   fala?: string | null;
-  /** A foto da pessoa (data URI de um quadro nítido da gravação), para o estilo que pede a pessoa. */
-  fotoDaPessoa?: string | null;
+  /**
+   * A pessoa recortada (data URI de um PNG com alfa, o recorte real do quadro
+   * nítido da gravação), para o estilo que põe a pessoa: colada em código,
+   * nunca enviada à IA de imagem (11/10).
+   */
+  recorteDaPessoa?: string | null;
   /** Os números de pesquisa aprovados para esta peça, com a fonte (o `fontesDosNumeros` do post, 11/10). */
   fontesDosNumeros?: FonteDoNumero[] | null;
 };
 
-/** Quem desenha COM a foto da pessoa de referência. Parâmetro para a prova e o teste trocarem. */
-export type GeradorComFoto = (prompt: string, proporcao: ProporcaoPedida, foto: string, ctx: ContextoMidia) => Promise<string>;
-
+/**
+ * Quem desenha e quem confere, por parâmetro (a prova e o teste trocam). Não
+ * existe mais o gerador "com a foto da pessoa" (11/10): a IA de imagem nunca
+ * recebe a pessoa, que entra como recorte real em código.
+ */
 export type InjecoesDaArte = {
   gerar?: GeradorDoInfografico;
-  gerarComFoto?: GeradorComFoto;
   conferir?: PedidoDeArte["conferir"];
-};
-
-/**
- * O Nano Banana Pro com a foto da pessoa junto (a edição a partir da imagem):
- * a pessoa do recorte é a da gravação, nunca uma inventada.
- */
-export const gerarComFotoNoGoogle: GeradorComFoto = async (prompt, proporcao, foto, ctx) => {
-  const { pedidoAoGoogle, FICHA_DO_MODELO } = await import("@/lib/media/infografico-pelo-modelo");
-  const { gravarCustoDeImagem } = await import("@/lib/media/usage");
-  const chave = process.env.GEMINI_API_KEY;
-  if (!chave) throw new Error("GEMINI_API_KEY não configurada");
-  const { url, corpo } = pedidoAoGoogle("nano-banana-pro", prompt, proporcao);
-  const mime = foto.slice(5, foto.indexOf(";")) || "image/jpeg";
-  (corpo.contents as Array<{ parts: unknown[] }>)[0].parts.unshift({ inlineData: { mimeType: mime, data: foto.slice(foto.indexOf(",") + 1) } });
-  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": chave }, body: JSON.stringify(corpo), signal: AbortSignal.timeout(150_000) });
-  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text().catch(() => "")).slice(0, 160)}`);
-  const j = (await r.json()) as { candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data: string; mimeType?: string } }> } }> };
-  const parte = (j.candidates?.[0]?.content?.parts ?? []).find((x) => x.inlineData?.data);
-  if (!parte?.inlineData) throw new Error("o Nano Banana Pro não devolveu a imagem com a foto");
-  gravarCustoDeImagem(FICHA_DO_MODELO["nano-banana-pro"].id, FICHA_DO_MODELO["nano-banana-pro"].precoUsd, ctx);
-  return `data:${parte.inlineData.mimeType ?? "image/png"};base64,${parte.inlineData.data}`;
 };
 
 /** O trecho da fala desta peça: o dado, ou a janela da transcrição que mais casa com a frase (peso dobrado) e a legenda. */
@@ -134,10 +118,12 @@ export async function pecaDeFrase(
 ): Promise<Record<string, string>> {
   const estilo = promptDeEstiloDoModelo(p.modelo);
   if (!estilo) throw new Error(`o modelo ${p.modelo} não tem o prompt de estilo`);
+  // O estilo que põe a pessoa (o Recorte com letreiro): fundo e letreiro pela
+  // IA, sem gente; a pessoa real e a frase em código (11/10).
+  if (estilo.pessoa) return pecaDoRecorte(p, o, inj);
   const { produzirArtePorRede } = await import("@/lib/media/arte-por-rede");
   const { ORDEM_PRINCIPAL, ORDEM_ALTERNATIVA } = await import("@/lib/media/infografico-pelo-modelo");
   const ctx: ContextoMidia = { projectId: p.projectId, runId: p.runId ?? undefined, operation: OPERACAO_DA_ARTE_PELA_IA };
-  const comFoto = Boolean(estilo.pessoa && p.fotoDaPessoa);
   const promptBase = promptDaArteNoModelo({
     estilo,
     texto: o.texto,
@@ -148,12 +134,8 @@ export async function pecaDeFrase(
     nicho: p.nicho,
     pagina: o.pagina,
     trecho: trechoDaPeca(p, o.texto),
-    comFotoDaPessoa: comFoto,
     ajuste: o.ajuste ?? null,
   });
-  // O estilo que pede a pessoa (o recorte) desenha com a foto dela; sem a foto, sem pessoa.
-  const foto = comFoto ? p.fotoDaPessoa! : null;
-  const comAFoto = foto ? async (prompt: string, proporcao: ProporcaoPedida) => (inj.gerarComFoto ?? gerarComFotoNoGoogle)(prompt, proporcao, foto, ctx) : null;
   const arte = await produzirArtePorRede({
     redes: o.redes,
     contentType: o.contentType,
@@ -161,10 +143,10 @@ export async function pecaDeFrase(
     textoEsperado: [o.texto],
     textoDesenhadoPeloModelo: true,
     usarOlho: true,
-    permitirPessoas: Boolean(foto),
+    permitirPessoas: false,
     textoDoPost: p.textoDoPost ?? undefined,
-    desenhar: comAFoto ?? (await desenhista(ORDEM_PRINCIPAL, ctx, inj.gerar)),
-    desenharAlternativo: comAFoto ?? (await desenhista(ORDEM_ALTERNATIVA, ctx, inj.gerar)),
+    desenhar: await desenhista(ORDEM_PRINCIPAL, ctx, inj.gerar),
+    desenharAlternativo: await desenhista(ORDEM_ALTERNATIVA, ctx, inj.gerar),
     projectId: p.projectId,
     runId: p.runId ?? undefined,
     ...(inj.conferir ? { conferir: inj.conferir } : {}),
@@ -200,9 +182,6 @@ export async function cenaComFraseEmCodigo(
   // terço de cima, a área calma que o prompt da cena pede.
   // A letra da frase é a do estilo (11/10: a Maquete com a frase em serifa parecia outro estilo).
   const marca: MarcaDaArte = { ...p.marca, familia: "sobrio", variante: 0, tipografia: tipografiaDoEstilo(estilo), modelos: undefined, modeloFixo: undefined, estiloDoPost: undefined, materiais: undefined, tratamento: null } as MarcaDaArte;
-  // O estilo que pede a pessoa (o recorte) segue com ela na cena: sem a pessoa
-  // seria outra coisa, não o mesmo estilo sem a letra.
-  const foto = estilo.pessoa && p.fotoDaPessoa ? p.fotoDaPessoa : null;
   const promptBase = promptDaCenaNoModelo({
     estilo,
     ideia: o.texto,
@@ -212,7 +191,6 @@ export async function cenaComFraseEmCodigo(
     contexto: p.textoDoPost,
     nicho: p.nicho,
     trecho: trechoDaPeca(p, o.texto),
-    comFotoDaPessoa: Boolean(foto),
   });
   const arte = await produzirArtePorRede({
     redes: o.redes,
@@ -220,10 +198,10 @@ export async function cenaComFraseEmCodigo(
     promptBase,
     textoEsperado: [o.texto],
     usarOlho: true,
-    permitirPessoas: Boolean(foto),
+    permitirPessoas: false,
     textoDoPost: p.textoDoPost ?? undefined,
     desenhar: async (prompt, proporcao) => {
-      const dataUrl = foto ? await (inj.gerarComFoto ?? gerarComFotoNoGoogle)(prompt, proporcao, foto, ctx) : (await gerarInfografico(prompt, proporcao, ctx, ORDEM_PRINCIPAL, inj.gerar)).dataUrl;
+      const dataUrl = (await gerarInfografico(prompt, proporcao, ctx, ORDEM_PRINCIPAL, inj.gerar)).dataUrl;
       const bruto = Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64");
       const m = await sharp(bruto).metadata();
       // A capa deitada sai em 1280 de largura (o tamanho do YouTube); o resto, em 1080.
@@ -238,6 +216,92 @@ export async function cenaComFraseEmCodigo(
   });
   if (arte.algumaReprovada) throw new Error(`nem a cena no estilo do modelo com a frase em código passou na conferência: ${arte.avisos.filter((a) => /problema/.test(a)).join(" | ").slice(0, 300)}`);
   return arte.porRede;
+}
+
+/** O data URI em bytes. */
+function bytesDoDataUri(uri: string): Buffer {
+  return Buffer.from(uri.slice(uri.indexOf(",") + 1), "base64");
+}
+
+/**
+ * A PEÇA DO RECORTE COM LETREIRO (11/10, princípio da aula 8.2). No teste de
+ * ponta a ponta a IA recebia o quadro nítido e redesenhava a pessoa (um padre,
+ * um homem de óculos), escrevia palavra solta ("DING") e o carrossel parava
+ * porque a cena "sem texto" do estilo pedia o letreiro gigante. Agora:
+ *
+ *   1  a IA desenha só o FUNDO e a PALAVRA gigante (palavraDoLetreiro), sem
+ *      pessoa e com o palco vazio, e a conferência lê essa camada SOZINHA,
+ *      antes de colar qualquer coisa: a palavra tem de estar lá, igual, e nada
+ *      além dela; gente desenhada reprova (permitirPessoas falso);
+ *   2  a IA não acertou a palavra nas tentativas: a RESERVA no mesmo estilo
+ *      pede o fundo sem texto nenhum e a palavra entra em código, na mesma faixa;
+ *   3  a pessoa é o RECORTE REAL (p.recorteDaPessoa), colado em código com a
+ *      cabeça na frente da palavra, e a frase exata entra em código
+ *      (recorte-com-letreiro.tsx).
+ *
+ * Nem a reserva passou: lança, e quem chama tenta de novo no MESMO estilo e,
+ * sem sair, para a peça com "Tentar de novo".
+ */
+export async function pecaDoRecorte(
+  p: PecaPelaIa,
+  o: { texto: string; tipo: TipoDaArte; lamina?: number; pagina?: { i: number; total: number } | null; redes: string[]; contentType: string; ajuste?: string | null },
+  inj: InjecoesDaArte
+): Promise<Record<string, string>> {
+  const estilo = promptDeEstiloDoModelo(p.modelo)!;
+  const { produzirArtePorRede } = await import("@/lib/media/arte-por-rede");
+  const { ORDEM_PRINCIPAL, ORDEM_ALTERNATIVA, gerarInfografico } = await import("@/lib/media/infografico-pelo-modelo");
+  const { comporRecorteComLetreiro } = await import("./recorte-com-letreiro");
+  const ctx: ContextoMidia = { projectId: p.projectId, runId: p.runId ?? undefined, operation: OPERACAO_DA_ARTE_PELA_IA };
+  const cores = await coresDaPeca(p.marca);
+  const palavra = palavraDoLetreiro(o.texto) || null;
+  const recorte = p.recorteDaPessoa ? bytesDoDataUri(p.recorteDaPessoa) : null;
+  if (!recorte) console.warn(`[recorte][${p.projectId}] sem o recorte da pessoa: a peça sai com o fundo, a palavra e a frase, sem pessoa (nunca uma pessoa desenhada)`);
+  const base = {
+    estilo,
+    frase: o.texto,
+    tipo: o.tipo,
+    cores,
+    composicao: composicaoDaPeca(estilo, { dia: p.dia, lamina: o.lamina }),
+    contexto: p.textoDoPost,
+    nicho: p.nicho,
+    trecho: trechoDaPeca(p, o.texto),
+    pagina: o.pagina ?? null,
+    ajuste: o.ajuste ?? null,
+  };
+  // O layout por proporção vai junto do pedido: a mesma geometria em que o código cola a pessoa.
+  const comLayout = (ordem: typeof ORDEM_PRINCIPAL, comPalavra: boolean) => async (prompt: string, proporcao: ProporcaoPedida) =>
+    (await gerarInfografico(`${prompt}\n\n${layoutDoFundoDoRecorte(proporcao, comPalavra)}`, proporcao, ctx, ordem, inj.gerar)).dataUrl;
+  const fundo = async (comPalavra: boolean) =>
+    produzirArtePorRede({
+      redes: o.redes,
+      contentType: o.contentType,
+      promptBase: promptDoFundoDoRecorte({ ...base, palavra: comPalavra ? palavra : null }),
+      // A camada da IA é conferida SOZINHA: só a palavra (ou nada), e gente nenhuma.
+      textoEsperado: comPalavra && palavra ? [palavra] : [],
+      textoDesenhadoPeloModelo: Boolean(comPalavra && palavra),
+      usarOlho: true,
+      permitirPessoas: false,
+      textoDoPost: p.textoDoPost ?? undefined,
+      desenhar: comLayout(ORDEM_PRINCIPAL, comPalavra),
+      desenharAlternativo: comLayout(ORDEM_ALTERNATIVA, comPalavra),
+      projectId: p.projectId,
+      runId: p.runId ?? undefined,
+      ...(inj.conferir ? { conferir: inj.conferir } : {}),
+    });
+  let camada = palavra ? await fundo(true) : null;
+  let palavraEmCodigo: string | null = null;
+  if (!camada || camada.algumaReprovada) {
+    if (camada) console.warn(`[recorte][${p.projectId}] a palavra "${palavra}" pela IA não passou (${camada.avisos.filter((a) => /problema/.test(a)).join(" | ").slice(0, 300)}); o fundo sai sem texto e a palavra entra em código, no mesmo estilo`);
+    camada = await fundo(false);
+    if (camada.algumaReprovada) throw new Error(`o fundo do Recorte não passou na conferência: ${camada.avisos.filter((a) => /problema/.test(a)).join(" | ").slice(0, 300)}`);
+    palavraEmCodigo = palavra;
+  }
+  const porRede: Record<string, string> = {};
+  for (const [rede, uri] of Object.entries(camada.porRede)) {
+    const jpeg = await comporRecorteComLetreiro({ fundo: bytesDoDataUri(uri), recorte, frase: o.texto, palavraEmCodigo, cores });
+    porRede[rede] = `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+  }
+  return porRede;
 }
 
 /**
@@ -258,7 +322,8 @@ export async function capaPelaIa(o: {
   contexto?: string | null;
   fala?: string | null;
   trecho?: string | null;
-  fotoDaPessoa?: string | null;
+  /** O recorte real da pessoa (data URI PNG com alfa), colado em código no estilo que põe a pessoa. */
+  recorteDaPessoa?: string | null;
   marca?: MarcaDaArte;
   /** O logo já pronto (null: sem logo); ausente, o do projeto. */
   logo?: { src: string } | null;
@@ -271,7 +336,7 @@ export async function capaPelaIa(o: {
   const marca = o.marca ?? (await marcaDaArte(o.projectId));
   const redes = o.formato === "16:9" ? ["youtube"] : ["instagram"];
   const porRede = await pecaDeFrase(
-    { projectId: o.projectId, modelo: o.modelo, mediaType: "image", redes, frase: o.frase, textoDoPost: o.contexto ?? null, nicho: o.nicho ?? null, marca, fala: o.fala ?? null, trecho: o.trecho ?? null, fotoDaPessoa: o.fotoDaPessoa ?? null },
+    { projectId: o.projectId, modelo: o.modelo, mediaType: "image", redes, frase: o.frase, textoDoPost: o.contexto ?? null, nicho: o.nicho ?? null, marca, fala: o.fala ?? null, trecho: o.trecho ?? null, recorteDaPessoa: o.recorteDaPessoa ?? null },
     { texto: o.frase, tipo: o.formato === "16:9" ? "thumb" : "capa-vertical", redes, contentType: o.formato === "16:9" ? "image" : "reels", ajuste: o.ajuste ?? null },
     o.inj ?? {}
   );
@@ -330,6 +395,18 @@ export function infograficoDaFala(c: ConteudoDoInfografico, lastro: LastroDaArte
 }
 
 /**
+ * A reprovação do infográfico que não pode ir ao ar (11/10): gente desenhada
+ * ou texto além do pedido, depois das tentativas. Margem e detalhe seguem com
+ * o aviso, como sempre. Devolve o motivo ou null. Puro.
+ */
+export function infograficoReprovadoGrave(arte: { algumaReprovada: boolean; avisos: string[] }): string | null {
+  if (!arte.algumaReprovada) return null;
+  const finais = arte.avisos.filter((a) => /continua com problema/.test(a));
+  const grave = finais.filter((a) => /tem pessoa|al[eé]m do permitido/i.test(a));
+  return grave.length ? grave.join(" | ").slice(0, 300) : null;
+}
+
+/**
  * As artes de um dia (ou de um post do refazer) pela IA, por rede. O carrossel
  * devolve as lâminas juntas por "|" (a mesma arte em todas as redes do dia,
  * como hoje). Lança quando não sai: quem chama tenta de novo no mesmo estilo
@@ -355,6 +432,12 @@ export async function desenharPelaIa(p: PecaPelaIa, inj: InjecoesDaArte = {}): P
       // O estilo escolhido DESENHA o infográfico (11/10): a linguagem dele, não só a atmosfera.
       ...pedidoDoInfografico(conteudo, { estilo: estiloComoLinguagem(estilo), linguagem: linguagemDoInfografico(estilo), paleta: "", marca: p.marca }, { nicho: p.nicho, ctx: { projectId: p.projectId, runId: p.runId ?? undefined, operation: "infografico" }, gerar: inj.gerar }),
     });
+    // REPROVADO NÃO SAI (11/10): os infográficos do Recorte saíram com um padre
+    // e um homem de óculos depois das três tentativas reprovadas, porque aqui
+    // a reprovação não parava a peça. Gente desenhada e texto inventado lançam:
+    // quem chama tenta de novo no mesmo estilo e, sem sair, para com "Tentar de novo".
+    const grave = infograficoReprovadoGrave(arte);
+    if (grave) throw new Error(`o infográfico não passou na conferência: ${grave}`);
     return arte.porRede;
   }
   if (p.mediaType === "carousel") {

@@ -47,8 +47,14 @@ export type PromptDeEstilo = {
   evitar: string;
   soTipografico: boolean;
   fonte?: string;
-  /** O estilo põe a pessoa (o recorte): a foto dela vai como referência, quando há. */
+  /**
+   * O estilo põe a pessoa (o Recorte com letreiro). Desde 11/10 a IA NUNCA a
+   * desenha: ela faz só o fundo e o letreiro, e a pessoa é o recorte real da
+   * gravação colado em código (recorte-com-letreiro.tsx).
+   */
   pessoa?: boolean;
+  /** O elemento visual no infográfico, quando o do estilo não serve a ele (o palco vazio do Recorte). */
+  elementoNoInfografico?: string;
 };
 
 const PROMPTS = prompts as Record<string, PromptDeEstilo>;
@@ -78,24 +84,35 @@ export const PROMPTS_SOB_MEDIDA: Record<string, PromptDeEstilo> = {
     evitar: "No busy city, no collage of many objects, no photorealistic room, no neon, no text on the model's parts unless copied from the sentence.",
     soTipografico: false,
   },
+  // A PESSOA NUNCA É DESENHADA PELA IA (11/10, teste de ponta a ponta: com o
+  // quadro nítido como referência, a IA trocou o Bruno por um padre e por um
+  // homem de óculos). Princípio da aula 8.2: a IA faz só o fundo e o letreiro
+  // grande, com o palco da pessoa vazio; a pessoa é o RECORTE REAL da gravação,
+  // colado em código por cima (recorte-com-letreiro.tsx), a cabeça na frente
+  // da palavra. As composições variam só os detalhes: o lugar da palavra e do
+  // palco é fixo, porque o código cola a pessoa nele.
   "sob-medida-recorte": {
     nomeDoEstilo: "Cutout with Lettering",
-    atmosfera: "Bold, personal, editorial: the speaker is the hero, framed like a magazine cover on a dark gradient.",
-    elementoVisual: "The real person from the reference photo, cut out cleanly (head and shoulders to waist), with the key word of the sentence as giant bold lettering BEHIND the head (the head overlaps the letters), and one or two small glassy cards in front naming concrete things of the subject with words of the sentence, with a thin accent outline frame drawn around the lower part of the person.",
+    atmosfera: "Bold, personal, editorial, like a magazine cover: a giant word on a smooth dark gradient, made to have the speaker standing in front of it.",
+    elementoVisual:
+      "A giant, very heavy uppercase KEY WORD as lettering across the upper part of the frame, on a smooth dark radial gradient, and an EMPTY stage below and in front of it, reserved for the real speaker (the cutout from the recording is pasted there later, in code, with the head in front of the lower half of the letters). Beside the empty stage, at most one or two small glassy cards (well inside the image, never touching its border), each with one simple object of the subject drawn inside and no text, and a thin accent outline frame drawn low, behind where the person will stand.",
     composicoes: [
-      "Giant key word behind the head in the upper third; the person centered from the waist up; the rest of the sentence as a smaller line at the bottom.",
-      "Giant key word behind the head, slightly to the left; the person to the right of center; one small card floating at the shoulder.",
-      "The sentence in two lines at the top with the key word huge behind the head; the person lower in the frame; a thin accent frame around the chest.",
-      "Key word behind the head in light tone; the person large and close; two small cards on each side at shoulder height with words of the sentence.",
-      "The person on the left third; the giant key word behind across the frame; the rest of the sentence at the right.",
+      "The giant word centered in its band; the empty stage centered below; a thin accent outline frame low in the center, behind the stage.",
+      "The giant word in its band with its last letters in the accent; one small glassy card on the left side, at shoulder height of the empty stage.",
+      "The giant word in its band in a light tone; two small glassy cards, one on each side of the stage, at shoulder height, never over it.",
+      "The giant word in its band with a thin accent line under it; a faint radial light behind the empty stage.",
+      "The giant word in its band; one small glassy card on the right side; a thin accent outline frame low in the center.",
     ],
-    tipografia: "A very heavy geometric sans serif like Montserrat Black, uppercase, for the giant key word (one light tone, one accent tone); a bold sans serif in sentence case for the rest of the sentence.",
-    textura: "Smooth dark radial gradient behind the person; glassy cards with a soft blur and a thin border.",
-    luz: "Natural light on the person as in the photo; a soft halo of darkness around the edges.",
-    papeisDasCores: "Dark gradient background; giant word in a light tone with part in the accent; cards dark with an accent icon line; the person keeps natural colors, never tinted.",
-    evitar: "Never a different person or an altered face, no jagged cutout, no glow behind the head, no stickers or emojis.",
+    tipografia: "A very heavy geometric sans serif like Montserrat Black, uppercase, for the giant key word (one light tone, a few letters in the accent).",
+    textura: "Smooth dark radial gradient; glassy cards with a soft blur and a thin border.",
+    luz: "Soft studio light falling on the empty stage, as if a person stood there; a soft halo of darkness around the edges.",
+    papeisDasCores: "Dark gradient background; giant word in a light tone with part in the accent; cards dark with an accent line; the accent never tints the whole image.",
+    evitar:
+      "NEVER draw any person, face, head, body, hand, silhouette, mannequin, statue or portrait, not even in the cards or in the background: the real speaker is pasted later from the recording, and any drawn person would be a different person. No jagged shapes, no glow blob in the middle, no stickers or emojis.",
     soTipografico: false,
     pessoa: true,
+    elementoNoInfografico:
+      "A giant, very heavy uppercase key word as lettering in the header area, on a smooth dark gradient; the modules are small dark glassy cards with a thin accent border, each with one simple object of the subject drawn inside. Absolutely no people, faces or silhouettes anywhere.",
   },
   "sob-medida-graficos": {
     nomeDoEstilo: "Charts that Draw Themselves",
@@ -269,8 +286,6 @@ export type EntradaDaArte = {
   pagina?: { i: number; total: number } | null;
   /** O trecho da transcrição de onde a peça saiu (11/10): o assunto da arte vem dele. */
   trecho?: string | null;
-  /** A foto da pessoa vai junto como referência (o estilo que pede a pessoa, com o quadro nítido da gravação). */
-  comFotoDaPessoa?: boolean;
   /** O ajuste pedido pelo cliente no refazer (a capa do corte pelo chat), no mesmo estilo. */
   ajuste?: string | null;
 };
@@ -304,12 +319,14 @@ function linhasDoAssunto(s: PromptDeEstilo, e: { texto: string; trecho?: string 
   ];
 }
 
-/** A pessoa nos estilos que a pedem: a da foto de referência, recortada; sem foto, nenhuma pessoa. Puro. */
-function linhaDaPessoa(s: PromptDeEstilo, comFoto: boolean | undefined): string {
-  if (!s.pessoa) return "No people, faces, hands or silhouettes.";
-  return comFoto
-    ? "PERSON: use ONLY the real person from the attached reference photo, cut out cleanly from the background, same face, hair, clothes and body, never altered, never another person; no other people."
-    : "No people, faces, hands or silhouettes: without the reference photo the key word and the cards carry the piece.";
+/**
+ * A IA de imagem NUNCA desenha gente (11/10): nem no estilo que põe a pessoa,
+ * onde ela é o recorte real da gravação colado em código. Puro.
+ */
+function linhaDaPessoa(s: PromptDeEstilo): string {
+  return s.pessoa
+    ? "No people, faces, heads, bodies, hands or silhouettes anywhere: the real speaker is pasted later from the recording, never drawn."
+    : "No people, faces, hands or silhouettes.";
 }
 
 /** Texto de contexto cortado na palavra. */
@@ -343,7 +360,7 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     "",
     `COLORS (the client's brand, use exactly; ignore any color the style might suggest): background and dominant field ${e.cores.fundo}; hero text ${e.cores.titulo}; accent ${e.cores.destaque} ONLY in details (thin lines, highlights, one or two key words, small shapes, lights). ${s.papeisDasCores}${linhaDoDestaqueNaLetra(e.cores)} The key words in the accent are words that appear only ONCE in the sentence; never highlight a repeated word. Rendered materials and light keep their natural look; the brand color is never a tint over the whole image.`,
     "",
-    `AVOID: ${s.evitar} ${linhaDaPessoa(s, e.comFotoDaPessoa)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No real brand logos or app icons (Instagram, TikTok, YouTube, Facebook, WhatsApp and the like), even when the speaker names them: use plain generic shapes. No long dash.`,
+    `AVOID: ${s.evitar} ${linhaDaPessoa(s)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No real brand logos or app icons (Instagram, TikTok, YouTube, Facebook, WhatsApp and the like), even when the speaker names them: use plain generic shapes. No long dash.`,
   ];
   if (e.ajuste?.trim()) {
     linhas.push("", `CLIENT'S ADJUSTMENT (apply it without leaving the style, the colors or the exact text above): ${citar(curto(e.ajuste, 300))}`);
@@ -366,10 +383,8 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
  */
 export function promptDaCenaNoModelo(e: Omit<EntradaDaArte, "texto"> & { ideia: string }): string {
   const s = e.estilo;
-  // A pessoa só no estilo que a pede e com a foto dela junto (o recorte): é o mesmo estilo, só sem a letra.
-  const pessoa = s.pessoa && e.comFotoDaPessoa
-    ? " PERSON: use ONLY the real person from the attached reference photo, cut out cleanly, same face, hair, clothes and body, never altered; no other people."
-    : " No people, faces or hands.";
+  // Gente nunca (11/10): a pessoa do estilo que a pede é o recorte real, colado em código.
+  const pessoa = ` ${linhaDaPessoa(s)}`;
   return [
     `Create the background artwork of ${papelDaPeca(e.tipo)}, in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering.`,
     `STYLE: ${s.atmosfera} ${s.textura} ${s.luz}`,
@@ -411,9 +426,127 @@ export function linguagemDoInfografico(s: PromptDeEstilo): { nome: string; desen
   return {
     nome: s.nomeDoEstilo,
     desenho: semTravessao(`${s.atmosfera} ${s.textura} ${s.luz}`),
-    elemento: semTravessao(s.elementoVisual),
+    // O palco vazio do Recorte não serve ao infográfico (ninguém é colado nele):
+    // o estilo diz o seu elemento de infográfico, sem gente (11/10, o padre).
+    elemento: semTravessao(s.elementoNoInfografico ?? s.elementoVisual),
     tipografia: semTravessao(s.tipografia),
-    // A pessoa só entra no estilo que a pede e com a foto; o infográfico não leva foto.
-    evitar: semTravessao(`${s.evitar}${s.pessoa ? " No people in the infographic." : ""}`),
+    evitar: semTravessao(`${s.evitar}${s.pessoa ? " No people, faces or silhouettes in the infographic." : ""}`),
   };
+}
+
+/**
+ * A PALAVRA DO LETREIRO do Recorte (11/10): a palavra de conteúdo mais longa
+ * da frase, em caixa alta, com acento. É ela que a IA desenha gigante atrás
+ * da cabeça, e só ela (a conferência reprova qualquer outra). Puro.
+ */
+export function palavraDoLetreiro(frase: string): string {
+  const palavras = semTravessao(frase)
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter((w) => /\p{L}/u.test(w) && !/\d/.test(w));
+  const conteudo = palavras.filter((w) => w.length >= 4 && chaves(w).length > 0);
+  const lista = conteudo.length ? conteudo : palavras;
+  if (!lista.length) return "";
+  const melhor = lista.reduce((a, b) => (b.length > a.length ? b : a));
+  return melhor.toLocaleUpperCase("pt-BR");
+}
+
+/**
+ * A GEOMETRIA DO RECORTE (11/10), a mesma para o prompt do fundo e para o
+ * código que cola a pessoa: a faixa da palavra gigante, onde fica o alto da
+ * cabeça (na metade de baixo da palavra), o centro e o tamanho máximo da
+ * pessoa e a zona da frase em código. Frações da largura (x) e da altura (y).
+ * Puro.
+ */
+export type GeometriaDoRecorte = {
+  forma: "deitada" | "alta" | "retrato";
+  faixa: { topo: number; base: number };
+  topoDaCabeca: number;
+  centroX: number;
+  larguraMaxima: number;
+  cabecaMaxima: number;
+  frase: { x: number; y: number; w: number; h: number; alinhar: "fim" | "centro" };
+};
+// A gravação deitada põe braços e ombros largos no quadro: em pé, a pessoa pode
+// passar da largura (as laterais são cortadas) para a cabeça chegar à palavra;
+// o limite que manda é o da cabeça.
+export function geometriaDoRecorte(razao: number): GeometriaDoRecorte {
+  if (razao > 1.2) {
+    return { forma: "deitada", faixa: { topo: 0.08, base: 0.4 }, topoDaCabeca: 0.27, centroX: 0.7, larguraMaxima: 0.62, cabecaMaxima: 0.2, frase: { x: 0.05, y: 0.48, w: 0.42, h: 0.46, alinhar: "centro" } };
+  }
+  if (razao < 0.65) {
+    return { forma: "alta", faixa: { topo: 0.14, base: 0.3 }, topoDaCabeca: 0.235, centroX: 0.5, larguraMaxima: 2.4, cabecaMaxima: 0.42, frase: { x: 0.07, y: 0.6, w: 0.86, h: 0.24, alinhar: "fim" } };
+  }
+  return { forma: "retrato", faixa: { topo: 0.11, base: 0.33 }, topoDaCabeca: 0.25, centroX: 0.5, larguraMaxima: 1.8, cabecaMaxima: 0.36, frase: { x: 0.07, y: 0.68, w: 0.86, h: 0.26, alinhar: "fim" } };
+}
+
+/** A razão largura/altura de cada proporção pedida ao gerador. Puro. */
+export function razaoDaProporcao(proporcao: string): number {
+  const [a, b] = proporcao.split(":").map(Number);
+  return a > 0 && b > 0 ? a / b : 1;
+}
+
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+/**
+ * Onde fica cada coisa no fundo do Recorte, na proporção desta imagem (a
+ * mesma geometria que o código usa para colar a pessoa). Puro.
+ */
+export function layoutDoFundoDoRecorte(proporcao: string, comPalavra: boolean): string {
+  const g = geometriaDoRecorte(razaoDaProporcao(proporcao));
+  const banda = comPalavra
+    ? `The giant word spans about 80% of the width (never closer than 9% to the left or right edge), centered horizontally, its letters filling the band between ${pct(g.faixa.topo)} and ${pct(g.faixa.base)} of the image height.`
+    : `The band between ${pct(g.faixa.topo)} and ${pct(g.faixa.base)} of the height stays a clean dark gradient (a word goes there later, in code).`;
+  const palco =
+    g.forma === "deitada"
+      ? `The EMPTY STAGE for the person is the right half, from ${pct(g.topoDaCabeca)} of the height down to the bottom edge, centered at ${pct(g.centroX)} of the width: only smooth dark gradient and soft light there. The LEFT half below the band stays plain and dark, with nothing in it (a headline goes there later).`
+      : `The EMPTY STAGE for the person is the center of the frame, from ${pct(g.topoDaCabeca)} of the height down to the bottom edge, about 70% of the width: only smooth dark gradient and soft light there. The lower ${pct(1 - g.frase.y)} of the image stays calm and dark (a headline goes there later).`;
+  return `LAYOUT OF THIS IMAGE: ${banda} ${palco} Small cards, if any, sit beside the stage, never on it, never over the band, and never touching or crossing the image border (keep 10% free on every side).`;
+}
+
+/**
+ * O PROMPT DO FUNDO DO RECORTE (11/10): a IA desenha só o fundo, o letreiro
+ * gigante (a palavra exata, ou nada na reserva) e os detalhes do estilo, com
+ * o palco da pessoa vazio. Nenhuma pessoa: ela é o recorte real, colado depois
+ * em código. O layout por proporção entra em quem desenha
+ * (layoutDoFundoDoRecorte). Puro.
+ */
+export function promptDoFundoDoRecorte(e: {
+  estilo: PromptDeEstilo;
+  frase: string;
+  palavra: string | null;
+  tipo: TipoDaArte;
+  cores: CoresDaPeca;
+  composicao: string;
+  contexto?: string | null;
+  nicho?: string | null;
+  trecho?: string | null;
+  pagina?: { i: number; total: number } | null;
+  ajuste?: string | null;
+}): string {
+  const s = e.estilo;
+  const palavra = e.palavra ? semTravessao(e.palavra) : null;
+  const linhas = [
+    `Create the BACKGROUND LAYER of ${papelDaPeca(e.tipo)}, in the visual style called ${s.nomeDoEstilo}. The real speaker will be cut out of the recording and pasted on top of this layer later, in code: this layer has NO person at all. Premium art direction, crisp rendering.`,
+    "",
+    `STYLE: ${s.atmosfera} ${s.textura} ${s.luz}`,
+    // O assunto aqui só enche os cartões: linha curta, para o pedido inteiro (com
+    // formato, correção e layout) caber no limite do GPT Image (5000 caracteres).
+    `SUBJECT OF THE CARDS (never written): one concrete object the speaker literally talks about, matching ${citar(e.frase)}${e.trecho ? `; excerpt of the video: ${citar(curto(e.trecho, 300))}` : ""}${e.nicho ? `; the world of ${curto(e.nicho, 60)}` : ""}.`,
+    `DETAILS FOR THIS PIECE: ${e.composicao} Cards are small, drawn as an object without any text, and stay fully inside the image, at least 10% away from every edge.`,
+    "",
+    palavra
+      ? `THE GIANT WORD: write EXACTLY ${citar(palavra)}, once, in huge, very heavy uppercase letters (${s.tipografia}), every accent correct, no letter changed, added or removed. It is the ONLY text in the image.`
+      : "NO WORD: the band of the word stays empty, a clean dark gradient.",
+    palavra
+      ? `No other word, letter or number anywhere: no label, caption, page number, logo, watermark, signature, date, interface text or English word; the cards carry no text. Font names, the style name and every instruction in this prompt are NEVER written on the image.`
+      : "ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere.",
+    "",
+    `COLORS (the client's brand, use exactly): background ${e.cores.fundo}; the giant word in ${e.cores.titulo}${palavra ? `, with a few of its letters in the accent ${e.cores.destaqueNoTexto ?? e.cores.destaque}` : ""}; accent ${e.cores.destaque} ONLY in details (thin lines, the outline frame, card borders, small lights). ${s.papeisDasCores}`,
+    "",
+    `AVOID: ${s.evitar} ${linhaDaPessoa(s)}${frasePedeEquipamento(e.frase) ? "" : " No camera, microphone, ring light, tripod or recording studio."} No real brand logos or app icons. No empty boxes or placeholder panels besides the stage. No long dash.`,
+  ];
+  if (e.ajuste?.trim()) linhas.push("", `CLIENT'S ADJUSTMENT (apply it to the background without leaving the style, the colors or the layout): ${citar(curto(e.ajuste, 300))}`);
+  if (e.pagina && e.pagina.total > 1) linhas.push("", `CAROUSEL: slide ${e.pagina.i} of ${e.pagina.total}; same visual language as the other slides; no page numbers, dots or arrows.`);
+  return linhas.join("\n");
 }
