@@ -125,9 +125,46 @@ test("arte reprovada nas três tentativas lança (quem chama vai ao caminho de h
         conferir: async () => ({ aprovada: false, motivo: "O revisor visual reprovou: palavra escrita errada", medida: { cortado: false, resumo: "ok", lados: {} } }) as never,
       }
     ),
-    /não passou na conferência/
+    /nem a cena no estilo do modelo com a frase em código passou/
   );
-  assert.equal(chamadas, 3);
+  // Três com o texto pela IA e três da cena sem texto; só então o caminho antigo.
+  assert.equal(chamadas, 6);
+});
+
+// ─────────── 11/10, segunda rodada: rótulos e a reserva no estilo ───────────
+
+test("rótulos e setas só com palavras da frase; sem isso, linhas e pontos sem texto", () => {
+  const p = promptDaArteNoModelo({ estilo: promptDeEstiloDoModelo("modelo-anatomia")!, texto: "Grava uma vez", tipo: "lamina", cores: CORES, composicao: "x" });
+  assert.match(p, /LABELS: .*ONLY contain words copied from the sentence/);
+  assert.match(p, /lines and dots with NO text/);
+});
+
+test("a cena da reserva sai no estilo do modelo, nas cores da marca e sem nenhum texto", async () => {
+  const { promptDaCenaNoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
+  const anatomia = promptDeEstiloDoModelo("modelo-anatomia")!;
+  const p = promptDaCenaNoModelo({ estilo: anatomia, ideia: "Grava uma vez", tipo: "capa", cores: CORES, composicao: "x" });
+  assert.ok(p.includes(anatomia.nomeDoEstilo));
+  assert.match(p, /ABSOLUTELY NO TEXT/);
+  for (const c of Object.values(CORES)) assert.ok(p.includes(c));
+});
+
+test("texto reprovado nas três tentativas: a cena no estilo sem texto com a frase em código, nunca o estilo antigo", async () => {
+  const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+  const prompts: string[] = [];
+  const porRede = await desenharPelaIa(
+    { projectId: "p", modelo: "modelo-anatomia", mediaType: "image", redes: ["instagram"], frase: "Grava uma vez", dia: 2, marca: MARCA },
+    {
+      gerar: async (modelo, prompt, proporcao) => {
+        prompts.push(prompt);
+        return { dataUrl: await imagemFalsa(proporcao), modelo, custoUsd: 0.134 };
+      },
+      // Reprova todo texto desenhado pela IA; aprova a frase composta em código.
+      conferir: async (_d, o) => ({ aprovada: !(o as { textoObrigatorio?: boolean }).textoObrigatorio, motivo: "texto além do permitido: fluxa", medida: { cortado: false, resumo: "ok", lados: {} } }) as never,
+    }
+  );
+  assert.equal(prompts.length, 4);
+  assert.match(prompts[3], /ABSOLUTELY NO TEXT/);
+  assert.match(porRede.instagram, /^data:image\/jpeg;base64,/);
 });
 
 test("modelo sem prompt de estilo lança antes de gastar", async () => {

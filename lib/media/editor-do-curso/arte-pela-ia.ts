@@ -138,6 +138,7 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     `TYPOGRAPHY: ${s.tipografia} The sentence is the hero text, big and highly readable on a phone, at most 4 balanced lines; a line never starts with a punctuation mark.`,
     `TEXT: render EXACTLY this sentence, once, letter by letter, every accent and cedilla correct, no word changed, added or removed: ${citar(texto)}`,
     `No other word, letter or number anywhere: no label, page number, logo, watermark, signature, date, place name, fake interface or English word. Font names, the style name, the subject and every instruction in this prompt are NEVER written on the image. Leave out anything that would normally carry writing (price tags, signs, plaques, screens, documents, buttons).`,
+    `LABELS: any label, arrow, callout, leader line, tag, caption or annotation that the style uses may ONLY contain words copied from the sentence above (for example pointing to one of its key words); otherwise draw it as lines and dots with NO text at all. Never invent a label word.`,
     "",
     `COLORS (the client's brand, use exactly; ignore any color the style might suggest): background and dominant field ${e.cores.fundo}; hero text ${e.cores.titulo}; accent ${e.cores.destaque} ONLY in details (thin lines, highlights, one or two key words, small shapes, lights). ${s.papeisDasCores} Rendered materials and light keep their natural look; the brand color is never a tint over the whole image.`,
     "",
@@ -152,6 +153,27 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
   const contexto = curto(e.contexto, 420);
   if (contexto) linhas.push("", `SUBJECT OF THE POST (context only, never written on the image): ${contexto}`);
   return linhas.join("\n");
+}
+
+/**
+ * A CENA NO ESTILO DO MODELO SEM NENHUM TEXTO (11/10, segunda decisão do
+ * Bruno): esgotadas as tentativas com o texto desenhado pela IA, a reserva não
+ * volta ao estilo antigo. A IA desenha só a cena, no estilo do modelo e nas
+ * cores da marca, com uma área calma para a frase, que entra por cima em
+ * código (sempre exata). Puro.
+ */
+export function promptDaCenaNoModelo(e: Omit<EntradaDaArte, "texto"> & { ideia: string }): string {
+  const s = e.estilo;
+  const contexto = curto(e.contexto, 420);
+  return [
+    `Create the background artwork of a social media image (${e.tipo === "post" ? "a single Instagram feed post" : "an Instagram carousel slide"}) in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering.`,
+    `STYLE: ${s.atmosfera} ${s.textura} ${s.luz}`,
+    `VISUAL ELEMENT: ${s.elementoVisual} Built from this idea, as a metaphor: ${citar(e.ideia)}${e.nicho ? ` (the world of ${curto(e.nicho, 80)})` : ""}. One strong element.`,
+    `COMPOSITION: the element fills the lower half (or one side) of the frame; keep the upper third as a calm, clean area of plain ${e.cores.fundo} where a headline will be added later in code.`,
+    `COLORS (the client's brand): dominant field ${e.cores.fundo}; light tones ${e.cores.titulo}; accent ${e.cores.destaque} only in details. ${s.papeisDasCores}`,
+    `ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere; arrows, leader lines and callouts are lines and dots only. No people, faces or hands.${frasePedeEquipamento(e.ideia) ? "" : " No camera, microphone, ring light or recording studio."} No empty boxes or frames.`,
+    ...(contexto ? [`SUBJECT (context only, never written): ${contexto}`] : []),
+  ].join("\n");
 }
 
 /** O estilo como LINGUAGEM, para o infográfico (o layout dele manda; aqui só como desenhar). Puro. */
