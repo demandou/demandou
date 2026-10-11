@@ -22,6 +22,33 @@ import { composicaoDaPeca, estiloComoLinguagem, promptDaArteNoModelo, promptDaCe
 
 export const OPERACAO_DA_ARTE_PELA_IA = "arte-no-modelo-ia";
 
+/** Quantas vezes a peça tenta o ESTILO ESCOLHIDO antes de parar como falha técnica (11/10, a mesma regra do corte). */
+export const TENTATIVAS_NO_ESTILO = 2;
+
+/**
+ * NUNCA TROCAR O ESTILO SOZINHO (11/10, regra do Bruno). Roda o desenho no
+ * estilo escolhido e, se falhar, tenta de novo NO MESMO estilo; falhou de novo,
+ * lança com o motivo, e quem chama marca a peça como falha técnica com
+ * "Tentar de novo" e sem cobrança. Sem saldo no fornecedor não adianta repetir:
+ * lança na hora (o aviso de saldo é assunto do Bruno, não do cliente).
+ */
+export async function noMesmoEstilo<T>(fazer: (tentativa: number) => Promise<T>, o: { tentativas?: number; rotulo?: string; semSaldo?: (e: unknown) => boolean } = {}): Promise<T> {
+  const tentativas = Math.max(1, o.tentativas ?? TENTATIVAS_NO_ESTILO);
+  const semSaldo = o.semSaldo ?? (await import("@/lib/media/gpt-image")).ehSemSaldoDaOpenAI;
+  let ultimo: unknown = null;
+  for (let t = 1; t <= tentativas; t++) {
+    try {
+      return await fazer(t);
+    } catch (e) {
+      if (semSaldo(e)) throw e;
+      ultimo = e;
+      const motivo = e instanceof Error ? e.message : String(e);
+      if (t < tentativas) console.warn(`[estilo]${o.rotulo ? `[${o.rotulo}]` : ""} tentativa ${t} falhou (${motivo.slice(0, 200)}); de novo no mesmo estilo`);
+    }
+  }
+  throw ultimo instanceof Error ? ultimo : new Error(String(ultimo));
+}
+
 export type PecaPelaIa = {
   projectId: string;
   runId?: string | null;
@@ -97,7 +124,7 @@ async function desenhista(ordem: ModeloDoInfografico[], ctx: ContextoMidia, gera
  */
 export async function pecaDeFrase(
   p: PecaPelaIa,
-  o: { texto: string; tipo: TipoDaArte; lamina?: number; pagina?: { i: number; total: number } | null; redes: string[]; contentType: string },
+  o: { texto: string; tipo: TipoDaArte; lamina?: number; pagina?: { i: number; total: number } | null; redes: string[]; contentType: string; ajuste?: string | null },
   inj: InjecoesDaArte
 ): Promise<Record<string, string>> {
   const estilo = promptDeEstiloDoModelo(p.modelo);
@@ -117,6 +144,7 @@ export async function pecaDeFrase(
     pagina: o.pagina,
     trecho: trechoDaPeca(p, o.texto),
     comFotoDaPessoa: comFoto,
+    ajuste: o.ajuste ?? null,
   });
   // O estilo que pede a pessoa (o recorte) desenha com a foto dela; sem a foto, sem pessoa.
   const foto = comFoto ? p.fotoDaPessoa! : null;
@@ -139,7 +167,8 @@ export async function pecaDeFrase(
   if (!arte.algumaReprovada) return arte.porRede;
   // A RESERVA FICA NO ESTILO DO MODELO (11/10): esgotadas as tentativas com o
   // texto desenhado pela IA, ela desenha a cena no estilo sem nenhum texto e a
-  // frase entra por cima em código. Só se até isso falhar vale o caminho antigo.
+  // frase entra por cima em código. Se até isso falhar, a peça lança: quem
+  // chama tenta de novo no mesmo estilo e, sem sair, marca a falha técnica.
   const motivo = arte.avisos.filter((a) => /problema/.test(a)).join(" | ").slice(0, 300);
   console.warn(`[arte-no-modelo][${p.projectId}] o texto pela IA não passou (${motivo}); a cena no estilo de ${p.modelo} sai sem texto e a frase entra em código`);
   return cenaComFraseEmCodigo(p, o, inj);
@@ -165,6 +194,9 @@ export async function cenaComFraseEmCodigo(
   // A família "sobrio" com a variante 0 põe a cena na peça inteira e a frase no
   // terço de cima, a área calma que o prompt da cena pede.
   const marca: MarcaDaArte = { ...p.marca, familia: "sobrio", variante: 0, modelos: undefined, modeloFixo: undefined, estiloDoPost: undefined, materiais: undefined, tratamento: null } as MarcaDaArte;
+  // O estilo que pede a pessoa (o recorte) segue com ela na cena: sem a pessoa
+  // seria outra coisa, não o mesmo estilo sem a letra.
+  const foto = estilo.pessoa && p.fotoDaPessoa ? p.fotoDaPessoa : null;
   const promptBase = promptDaCenaNoModelo({
     estilo,
     ideia: o.texto,
@@ -174,6 +206,7 @@ export async function cenaComFraseEmCodigo(
     contexto: p.textoDoPost,
     nicho: p.nicho,
     trecho: trechoDaPeca(p, o.texto),
+    comFotoDaPessoa: Boolean(foto),
   });
   const arte = await produzirArtePorRede({
     redes: o.redes,
@@ -181,12 +214,14 @@ export async function cenaComFraseEmCodigo(
     promptBase,
     textoEsperado: [o.texto],
     usarOlho: true,
+    permitirPessoas: Boolean(foto),
     textoDoPost: p.textoDoPost ?? undefined,
     desenhar: async (prompt, proporcao) => {
-      const img = await gerarInfografico(prompt, proporcao, ctx, ORDEM_PRINCIPAL, inj.gerar);
-      const bruto = Buffer.from(img.dataUrl.slice(img.dataUrl.indexOf(",") + 1), "base64");
+      const dataUrl = foto ? await (inj.gerarComFoto ?? gerarComFotoNoGoogle)(prompt, proporcao, foto, ctx) : (await gerarInfografico(prompt, proporcao, ctx, ORDEM_PRINCIPAL, inj.gerar)).dataUrl;
+      const bruto = Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64");
       const m = await sharp(bruto).metadata();
-      const largura = 1080;
+      // A capa deitada sai em 1280 de largura (o tamanho do YouTube); o resto, em 1080.
+      const largura = (m.width ?? 1080) > (m.height ?? 1350) ? 1280 : 1080;
       const altura = Math.round((largura * (m.height ?? 1350)) / (m.width ?? 1080));
       const jpeg = await comporFraseNaArte({ arte: bruto, frase: o.texto, marca, largura, altura });
       return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
@@ -200,11 +235,13 @@ export async function cenaComFraseEmCodigo(
 }
 
 /**
- * A CAPA DO VÍDEO PELA IA NO ESTILO DA EDIÇÃO SOB MEDIDA (11/10): a thumb 16:9
- * do completo e a capa 9:16 de cada corte saem no estilo da opção escolhida,
- * com o assunto do trecho da fala, a frase da capa exata, a pessoa do quadro
- * nítido quando a opção pede a pessoa, as cores e o logo da marca. Devolve o
- * JPEG no tamanho final; lança quando não sai (quem chama vai ao caminho de hoje).
+ * A CAPA DO VÍDEO PELA IA NO ESTILO ESCOLHIDO (11/10): a thumb 16:9 do
+ * completo e a capa 9:16 de cada corte saem no estilo da opção sob medida (ou
+ * do modelo do curso, na segunda tentativa depois do template), com o assunto
+ * do trecho da fala, a frase da capa exata, a pessoa do quadro nítido quando o
+ * estilo pede a pessoa, as cores e o logo da marca. Devolve o JPEG no tamanho
+ * final; lança quando não sai: quem chama tenta de novo no MESMO estilo
+ * (noMesmoEstilo) e, sem sair, marca a falha técnica. Nunca o caminho antigo.
  */
 export async function capaPelaIa(o: {
   projectId: string;
@@ -217,21 +254,26 @@ export async function capaPelaIa(o: {
   trecho?: string | null;
   fotoDaPessoa?: string | null;
   marca?: MarcaDaArte;
+  /** O logo já pronto (null: sem logo); ausente, o do projeto. */
+  logo?: { src: string } | null;
+  /** O ajuste pedido no refazer, no mesmo estilo. */
+  ajuste?: string | null;
   inj?: InjecoesDaArte;
 }): Promise<Buffer> {
+  if (!promptDeEstiloDoModelo(o.modelo)) throw new Error(`o estilo ${o.modelo} não tem o prompt de estilo`);
   const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
   const marca = o.marca ?? (await marcaDaArte(o.projectId));
   const redes = o.formato === "16:9" ? ["youtube"] : ["instagram"];
   const porRede = await pecaDeFrase(
     { projectId: o.projectId, modelo: o.modelo, mediaType: "image", redes, frase: o.frase, textoDoPost: o.contexto ?? null, nicho: o.nicho ?? null, marca, fala: o.fala ?? null, trecho: o.trecho ?? null, fotoDaPessoa: o.fotoDaPessoa ?? null },
-    { texto: o.frase, tipo: o.formato === "16:9" ? "thumb" : "capa-vertical", redes, contentType: o.formato === "16:9" ? "image" : "reels" },
+    { texto: o.frase, tipo: o.formato === "16:9" ? "thumb" : "capa-vertical", redes, contentType: o.formato === "16:9" ? "image" : "reels", ajuste: o.ajuste ?? null },
     o.inj ?? {}
   );
   const uri = porRede[redes[0]];
   if (!uri) throw new Error("a capa pela IA não saiu");
   const sharp = (await import("sharp")).default;
   const base = Buffer.from(uri.slice(uri.indexOf(",") + 1), "base64");
-  const logo = marca.logoDoModelo ?? (await logoDoProjeto(o.projectId));
+  const logo = "logo" in o ? o.logo ?? null : marca.logoDoModelo ?? (await logoDoProjeto(o.projectId));
   return comLogoDaMarca(await sharp(base).jpeg({ quality: 92 }).toBuffer(), logo);
 }
 
@@ -269,7 +311,8 @@ export async function comLogoDaMarca(jpeg: Buffer, logo: { src: string } | null 
 /**
  * As artes de um dia (ou de um post do refazer) pela IA, por rede. O carrossel
  * devolve as lâminas juntas por "|" (a mesma arte em todas as redes do dia,
- * como hoje). Lança quando não sai: quem chama vai ao caminho de hoje.
+ * como hoje). Lança quando não sai: quem chama tenta de novo no mesmo estilo
+ * e, sem sair, marca a falha técnica (nunca o caminho de antes).
  */
 export async function desenharPelaIa(p: PecaPelaIa, inj: InjecoesDaArte = {}): Promise<Record<string, string>> {
   const estilo = promptDeEstiloDoModelo(p.modelo);

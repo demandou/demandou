@@ -181,34 +181,59 @@ export async function refazerCapa(
   // A base da capa pela regra do quadro nítido (11/10, lib/media/capa-do-corte.ts):
   // o quadro do próprio corte só quando veio com o recorte (passou no crivo);
   // senão o quadro nítido do vídeo, a foto da Biblioteca, ou nenhuma (só a frase).
-  const { baseDaCapaDoCorte, fotoDoVideoSePrecisar } = await import("@/lib/media/capa-do-corte");
+  const { baseDaCapaDoCorte, fotoDoVideoSePrecisar, capaDoCorteNoEstilo } = await import("@/lib/media/capa-do-corte");
   const doVideo = await fotoDoVideoSePrecisar(video.id, video.projectId, [alvo as never]).catch(() => null);
-  const { quadroUrl, recorteUrl } = baseDaCapaDoCorte(alvo as never, doVideo);
-  const bytes = quadroUrl ? await lerMidia(quadroUrl) : null;
 
-  const arte = await comporCapa(bytes ? bytes.toString("base64") : "", alvo.texto.fraseDaCapa, {
-    expressao: alvo.texto.expressao as Expressao | undefined,
-    cenario: alvo.texto.cenario,
-    nicho: video.project?.niche,
-    formato: "9:16",
-    ajuste: instrucao,
-    usageCtx: { projectId: video.projectId },
-    quadroUrl: bytes ? quadroUrl : null,
-    recorteUrl: bytes ? recorteUrl : null,
-    chaveDoRecorte: `cortes/${video.id}/recorte-capa-${indice}.png`,
-  });
-  if (!arte) throw new Error("A capa nova não saiu desta vez. Tente descrever o ajuste de outro jeito.");
+  // O ESTILO ESCOLHIDO MANDA NO REFAZER (11/10, nunca trocar o estilo sozinho):
+  // com modelo do curso ou edição sob medida, a capa refeita sai no mesmo
+  // estilo, com o ajuste pedido; sem sair nas duas tentativas, a capa de antes
+  // fica e o pedido volta com o motivo. Nunca a composição de antes.
+  const { regraDaCapaPeloModelo } = await import("@/lib/media/capa-pelo-modelo-servidor");
+  const regra = await regraDaCapaPeloModelo(video.projectId);
+  let url: string;
+  if (regra) {
+    const { falaDaTranscricao } = await import("@/lib/media/capa-pela-ia");
+    const comFala = await prisma.videoJob.findUnique({ where: { id: video.id }, select: { transcript: true } });
+    url = await capaDoCorteNoEstilo({
+      videoJobId: video.id,
+      projectId: video.projectId,
+      nicho: video.project?.niche ?? null,
+      indice,
+      modelo: regra.modelo,
+      trecho: alvo as never,
+      doVideo,
+      fala: falaDaTranscricao(comFala?.transcript),
+      ajuste: instrucao,
+    }).catch((e) => {
+      console.error(`[refazer-capa][${video.id}] corte ${indice}: a capa no estilo ${regra.modelo} não saiu:`, e);
+      throw new Error("A capa nova não saiu desta vez no estilo que você escolheu. A de antes continua; peça de novo em instantes.");
+    });
+  } else {
+    const { quadroUrl, recorteUrl } = baseDaCapaDoCorte(alvo as never, doVideo);
+    const bytes = quadroUrl ? await lerMidia(quadroUrl) : null;
 
-  const { url } = await put(
-    `cortes/${video.id}/capa-arte-${indice}.jpg`,
-    dataUrlToBuffer(arte),
-    {
-      // A capa refeita é mídia produzida, mesmo destino da original.
-      ...midiaProduzida(),
-      contentType: "image/jpeg",
-      addRandomSuffix: true,
-    }
-  );
+    const arte = await comporCapa(bytes ? bytes.toString("base64") : "", alvo.texto.fraseDaCapa, {
+      expressao: alvo.texto.expressao as Expressao | undefined,
+      cenario: alvo.texto.cenario,
+      nicho: video.project?.niche,
+      formato: "9:16",
+      ajuste: instrucao,
+      usageCtx: { projectId: video.projectId },
+      quadroUrl: bytes ? quadroUrl : null,
+      recorteUrl: bytes ? recorteUrl : null,
+      chaveDoRecorte: `cortes/${video.id}/recorte-capa-${indice}.png`,
+    });
+    if (!arte) throw new Error("A capa nova não saiu desta vez. Tente descrever o ajuste de outro jeito.");
+
+    url = (
+      await put(`cortes/${video.id}/capa-arte-${indice}.jpg`, dataUrlToBuffer(arte), {
+        // A capa refeita é mídia produzida, mesmo destino da original.
+        ...midiaProduzida(),
+        contentType: "image/jpeg",
+        addRandomSuffix: true,
+      })
+    ).url;
+  }
 
   // A capa ANTERIOR sai, e sai DEPOIS de a nova estar gravada no banco.
   //
@@ -223,7 +248,7 @@ export async function refazerCapa(
 
   trechos[indice] = {
     ...alvo,
-    midia: { ...(alvo.midia ?? {}), capaArte: { url } },
+    midia: { ...(alvo.midia ?? {}), capaArte: { url }, capaFalhou: null },
   };
   await prisma.videoJob.update({
     where: { id: video.id },

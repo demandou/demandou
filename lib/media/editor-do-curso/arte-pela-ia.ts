@@ -25,7 +25,10 @@ import prompts from "./prompts-de-estilo.json";
  *      linguagem, composições variadas);
  *   4  o infográfico vai pelo desenho de sempre (Nano Banana Pro com o
  *      conteúdo extraído), com o estilo do modelo como linguagem;
- *   5  a IA falhou: o caminho de hoje (a cena da IA com a frase em código).
+ *   5  a IA falhou: tenta de novo no MESMO estilo (a cena do estilo sem texto,
+ *      com a frase em código) e, sem sair, a peça para como falha técnica com
+ *      "Tentar de novo" (11/10, regra do Bruno: nunca trocar o estilo sozinho;
+ *      o caminho antigo, o template genérico e o modelo de reserva não entram).
  *
  * A trava: ARTE_PELO_MODELO=1 escolhe as artes pelo modelo; dentro dela,
  * ARTE_PELO_MODELO_IA=0 volta ao template do worker (desligado por padrão: a IA
@@ -112,11 +115,47 @@ export const PROMPTS_SOB_MEDIDA: Record<string, PromptDeEstilo> = {
     evitar: "Never a number, percentage, axis value or currency that is not in the sentence; no crowded dashboards, no fake interface text, no stock tickers.",
     soTipografico: false,
   },
+  // A GENÉRICA (sem técnica fixa: o JEV escolhe a aula de cada corte pela fala).
+  // Não é mais oferecida na biblioteca, mas o projeto que a tem gravada segue
+  // nela, nunca no modelo de reserva (11/10): a linguagem comum das três aulas.
+  "sob-medida": {
+    nomeDoEstilo: "Custom Explainer",
+    atmosfera: "Premium explainer look built for this speaker: one clear idea per piece on a dark stage, calm, precise and modern.",
+    elementoVisual: "ONE concrete thing the speaker talks about, shown in the way that explains it best: a clean matte 3D model of the object, or one simple chart drawn with a thin accent line when the sentence has a number, on a dark stage with soft contact shadows.",
+    composicoes: [
+      "Hero text large in the upper third; the subject centered below it, seen from a three quarter angle, with a thin accent outline on the floor.",
+      "Hero text in the lower third; the subject in the upper half, slightly exploded into its parts with thin leader lines.",
+      "Hero text in a left column; the subject on the right, larger, cropped slightly by the edge.",
+      "Hero text centered at the top; the subject small in the center of a wide empty dark stage, with long soft shadows.",
+      "Hero text at the bottom; the subject close up in the upper two thirds, one part highlighted with the accent.",
+    ],
+    tipografia: "A heavy geometric sans serif like Montserrat ExtraBold for the hero text, sentence case or uppercase, tight but readable tracking.",
+    textura: "Matte 3D surfaces and dark glassy cards with soft ambient occlusion on a smooth dark stage; no grain, no clutter.",
+    luz: "Soft studio key light from above with a gentle rim light; the accent glows faintly on one highlighted detail.",
+    papeisDasCores: "Dark background dominates; the subject in neutral light tones; the accent only in one outline, one highlighted part or line and one or two key words.",
+    evitar: "No busy scenes, no collage of many objects, no neon, no number that is not in the sentence, no text on the subject unless copied from the sentence.",
+    soTipografico: false,
+  },
 };
 
 /** As artes pelo modelo vão pela IA de imagem (o padrão) ou pelo template do worker (ARTE_PELO_MODELO_IA=0)? */
 export function arteDoModeloPelaIa(env: Record<string, string | undefined> = process.env): boolean {
   return env.ARTE_PELO_MODELO_IA?.trim() !== "0";
+}
+
+/** O id é um estilo de edição sob medida (as três opções ou a genérica)? Puro. */
+export function ehEstiloSobMedida(id: string | null | undefined): boolean {
+  return Boolean(id && PROMPTS_SOB_MEDIDA[id]);
+}
+
+/**
+ * Este estilo é desenhado pela IA de imagem? O modelo do curso, quando a IA é
+ * o caminho (o padrão); a edição sob medida, SEMPRE: ela não tem template no
+ * worker, e o template de outro modelo seria outro estilo (11/10). Puro.
+ */
+export function estiloVaiPelaIa(modelo: string | null | undefined, env: Record<string, string | undefined> = process.env): boolean {
+  if (!promptDeEstiloDoModelo(modelo)) return false;
+  return ehEstiloSobMedida(modelo) || arteDoModeloPelaIa(env);
 }
 
 /** O prompt de estilo do modelo (a versão deitada "-16x9" usa o do vertical). Null sem prompt gerado. */
@@ -129,12 +168,13 @@ export function promptDeEstiloDoModelo(id: string | null | undefined, lista: Rec
 
 /**
  * O ESTILO DAS ARTES quando o projeto escolheu uma edição sob medida (11/10):
- * a opção escolhida, que tem prompt próprio; a genérica (sem prompt) segue a
- * reserva. Puro.
+ * a opção escolhida (as três e a genérica têm prompt próprio). NUNCA o modelo
+ * de reserva gravado junto: ele serve só ao corte que falhar na edição, e
+ * mesmo lá a regra nova para o corte em vez de trocar. Null quando o escolhido
+ * não é sob medida (aí vale o modelo do curso escolhido). Puro.
  */
-export function estiloDasArtesDoProjeto(escolhido: string | null | undefined, reserva: string | null | undefined): string | null {
-  if (escolhido && PROMPTS_SOB_MEDIDA[escolhido]) return escolhido;
-  return reserva ?? null;
+export function estiloDasArtesDoProjeto(escolhido: string | null | undefined): string | null {
+  return escolhido && PROMPTS_SOB_MEDIDA[escolhido] ? escolhido : null;
 }
 
 /**
@@ -218,7 +258,22 @@ export type EntradaDaArte = {
   trecho?: string | null;
   /** A foto da pessoa vai junto como referência (o estilo que pede a pessoa, com o quadro nítido da gravação). */
   comFotoDaPessoa?: boolean;
+  /** O ajuste pedido pelo cliente no refazer (a capa do corte pelo chat), no mesmo estilo. */
+  ajuste?: string | null;
 };
+
+/** O papel da peça, dito ao modelo de imagem. Puro. */
+function papelDaPeca(tipo: TipoDaArte): string {
+  return tipo === "capa"
+    ? "the COVER slide of an Instagram carousel (it must stop the scroll)"
+    : tipo === "lamina"
+      ? "one INNER slide of an Instagram carousel"
+      : tipo === "thumb"
+        ? "the THUMBNAIL of a YouTube video (16:9, it must win the click at small size: few words, huge type, strong contrast)"
+        : tipo === "capa-vertical"
+          ? "the COVER of a vertical short video (9:16, Reels, Shorts, TikTok: the key words big in the middle band, nothing important at the very top or bottom)"
+          : "a single Instagram feed post";
+}
 
 /**
  * O ASSUNTO DA ARTE VEM DA FALA (11/10, Bruno: "as artes não têm nada a ver
@@ -260,16 +315,7 @@ function curto(s: string | null | undefined, max: number): string {
 export function promptDaArteNoModelo(e: EntradaDaArte): string {
   const s = e.estilo;
   const texto = semTravessao(e.texto);
-  const papel =
-    e.tipo === "capa"
-      ? "the COVER slide of an Instagram carousel (it must stop the scroll)"
-      : e.tipo === "lamina"
-        ? "one INNER slide of an Instagram carousel"
-        : e.tipo === "thumb"
-          ? "the THUMBNAIL of a YouTube video (16:9, it must win the click at small size: few words, huge type, strong contrast)"
-          : e.tipo === "capa-vertical"
-            ? "the COVER of a vertical short video (9:16, Reels, Shorts, TikTok: the key words big in the middle band, nothing important at the very top or bottom)"
-            : "a single Instagram feed post";
+  const papel = papelDaPeca(e.tipo);
   const linhas = [
     `Create a finished, publication ready social media image: ${papel}, in Brazilian Portuguese, in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering, nothing amateur.`,
     "",
@@ -286,6 +332,9 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     "",
     `AVOID: ${s.evitar} ${linhaDaPessoa(s, e.comFotoDaPessoa)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No real brand logos or app icons (Instagram, TikTok, YouTube, Facebook, WhatsApp and the like), even when the speaker names them: use plain generic shapes. No long dash.`,
   ];
+  if (e.ajuste?.trim()) {
+    linhas.push("", `CLIENT'S ADJUSTMENT (apply it without leaving the style, the colors or the exact text above): ${citar(curto(e.ajuste, 300))}`);
+  }
   if (e.pagina && e.pagina.total > 1) {
     linhas.push(
       "",
@@ -304,13 +353,17 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
  */
 export function promptDaCenaNoModelo(e: Omit<EntradaDaArte, "texto"> & { ideia: string }): string {
   const s = e.estilo;
+  // A pessoa só no estilo que a pede e com a foto dela junto (o recorte): é o mesmo estilo, só sem a letra.
+  const pessoa = s.pessoa && e.comFotoDaPessoa
+    ? " PERSON: use ONLY the real person from the attached reference photo, cut out cleanly, same face, hair, clothes and body, never altered; no other people."
+    : " No people, faces or hands.";
   return [
-    `Create the background artwork of a social media image (${e.tipo === "post" ? "a single Instagram feed post" : "an Instagram carousel slide"}) in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering.`,
+    `Create the background artwork of ${papelDaPeca(e.tipo)}, in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering.`,
     `STYLE: ${s.atmosfera} ${s.textura} ${s.luz}`,
     ...linhasDoAssunto(s, { texto: e.ideia, trecho: e.trecho, contexto: e.contexto, nicho: e.nicho }),
     `COMPOSITION: the subject sits in the lower 55% of the frame; the upper 40% is EMPTY, a flat area of plain ${e.cores.fundo}, where a headline will be added later in code. The whole background is ${e.cores.fundo} (this overrides any paper or surface tone named in the style).`,
-    `COLORS (the client's brand): dominant field ${e.cores.fundo}; light tones ${e.cores.titulo}; accent ${e.cores.destaque} only in details. ${s.papeisDasCores}`,
-    `ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere; arrows, leader lines and callouts are lines and dots only. No people, faces or hands.${frasePedeEquipamento(e.ideia) ? "" : " No camera, microphone, ring light or recording studio."} No empty boxes or frames.`,
+    `COLORS (the client's brand): dominant field ${e.cores.fundo}; light tones ${e.cores.titulo}; accent ${e.cores.destaque} only in details. ${s.papeisDasCores} Rendered materials, light and skin keep their natural look; the brand color is never a tint over the whole image.`,
+    `ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere; arrows, leader lines and callouts are lines and dots only.${pessoa}${frasePedeEquipamento(e.ideia) ? "" : " No camera, microphone, ring light or recording studio."} No empty boxes or frames. No real brand logos or app icons.`,
   ].join("\n");
 }
 

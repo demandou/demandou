@@ -171,13 +171,15 @@ test("16:9 no ffmpeg: a capa sai 1280x720, com a pessoa recortada e sem esticar"
 
 // ─────────────────────────── a capa pelo modelo ───────────────────────────
 
-test("modelo: o projeto com modelo do curso faz a capa pelo template; sem modelo, ou forçando a reserva, vai pelo caminho de hoje", () => {
+test("modelo: o projeto com modelo do curso faz a capa pelo template; só sem estilo escolhido vai pelo caminho de hoje; a segunda tentativa é no mesmo estilo, pela IA", () => {
   const regra = decidirArtePeloModelo({ ligada: true, modelo: "modelo-manifesto", estiloProprio: false });
   assert.equal(regra.usa, true);
   assert.equal(caminhoDaCapa({ temRegra: regra.usa }), "modelo");
   assert.equal(caminhoDaCapa({ temRegra: decidirArtePeloModelo({ ligada: true, modelo: null, estiloProprio: false }).usa }), "hoje");
   assert.equal(caminhoDaCapa({ temRegra: decidirArtePeloModelo({ ligada: false, modelo: "modelo-manifesto", estiloProprio: false }).usa }), "hoje");
-  assert.equal(caminhoDaCapa({ temRegra: true, semModelo: true }), "hoje");
+  // Nunca trocar o estilo sozinho (11/10): com estilo, a reserva é a IA no MESMO estilo, nunca o caminho de hoje.
+  assert.equal(caminhoDaCapa({ temRegra: true, pelaIa: true }), "ia");
+  assert.equal(caminhoDaCapa({ temRegra: true, pelaIa: true, pendente: { pendente: true, desde: new Date().toISOString() } }), "ia");
   // Um pedido ainda no prazo segura o segundo (não paga duas vezes); vencido, pede de novo.
   const agora = Date.parse("2026-10-11T12:00:00Z");
   assert.equal(caminhoDaCapa({ temRegra: true, pendente: { pendente: true, desde: "2026-10-11T11:30:00Z" }, agora }), "esperando");

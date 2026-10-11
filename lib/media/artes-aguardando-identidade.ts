@@ -127,6 +127,56 @@ async function marcarGrupoFalhou(projectId: string, grupo: ArteAguardando[], mot
   }
 }
 
+/**
+ * A ARTE NO ESTILO ESCOLHIDO QUE PAROU (11/10, nunca trocar o estilo sozinho):
+ * o "Tentar de novo" do quadro volta ao MESMO estilo gravado no post (o modelo
+ * do curso ou a opção sob medida), com duas tentativas, e nunca ao desenho de
+ * antes. A arte da semana já estava no pacote: não cobra. O refazer que parou
+ * (`cobrarAoSair`) cobra a arte agora, que ela existe.
+ */
+async function gerarGrupoNoEstilo(args: { projectId: string; userId: string }, grupo: ArteAguardando[], posts: Array<{ id: string; metadata: unknown }>): Promise<number> {
+  const { redesenharNoEstilo, MOTIVO_DA_ARTE_QUE_PAROU } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
+  const feitas = await redesenharNoEstilo(args.projectId, posts.map((p) => p.id)).catch((e) => {
+    // O detalhe técnico fica no log; o quadro mostra a frase do cliente, com o "Tentar de novo" de novo.
+    console.error(`[identidade][gerar] ${grupo[0].postId}: a arte no estilo não saiu:`, e instanceof Error ? e.message : e);
+    throw new Error(MOTIVO_DA_ARTE_QUE_PAROU);
+  });
+  if (!feitas) throw new Error(MOTIVO_DA_ARTE_QUE_PAROU);
+  const cobrar = posts.some((p) => (p.metadata as { arteNoModelo?: { cobrarAoSair?: unknown } } | null)?.arteNoModelo?.cobrarAoSair === true);
+  if (cobrar) {
+    await debitar({
+      userId: args.userId,
+      quantidade: custoDaMidia(grupo[0].mediaType),
+      operation: "arte_apos_identidade",
+      projectId: args.projectId,
+      refId: `${grupo[0].postId}:${Date.now()}`,
+      note: "Arte refeita no estilo escolhido, cobrada quando saiu",
+    }).catch((e) => console.warn(`[identidade][gerar] ${grupo[0].postId}: a cobrança da arte refeita não entrou:`, e instanceof Error ? e.message : e));
+    for (const p of posts) {
+      const atual = await prisma.post.findUnique({ where: { id: p.id }, select: { metadata: true } });
+      const m = (atual?.metadata ?? {}) as Record<string, unknown>;
+      const a = (m.arteNoModelo ?? {}) as Record<string, unknown>;
+      const { cobrarAoSair: _c, ...resto } = a;
+      void _c;
+      await prisma.post.update({ where: { id: p.id }, data: { metadata: { ...m, arteNoModelo: resto } as Prisma.InputJsonValue } }).catch(() => {});
+    }
+  }
+  return feitas;
+}
+
+/** Dos posts, os que têm estilo escolhido gravado. */
+async function postsComEstiloGravado(ids: string[]): Promise<string[]> {
+  if (!ids.length) return [];
+  const posts = await prisma.post.findMany({ where: { id: { in: ids } }, select: { id: true, metadata: true } }).catch(() => []);
+  return posts.filter((p) => temEstiloGravado(p.metadata)).map((p) => p.id);
+}
+
+/** O post tem estilo escolhido gravado (o lote do modelo do curso ou da opção sob medida)? */
+function temEstiloGravado(meta: unknown): boolean {
+  const m = (meta ?? {}) as { arteNoModelo?: { modelo?: unknown } };
+  return typeof m.arteNoModelo?.modelo === "string" && m.arteNoModelo.modelo.length > 0;
+}
+
 async function gerarGrupo(args: { projectId: string; userId: string }, grupo: ArteAguardando[], nicho: string | null): Promise<number> {
   const base = grupo[0];
   const runId = base.runId ?? undefined;
@@ -135,6 +185,7 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
     select: { id: true, platform: true, content: true, imagePrompt: true, mediaType: true, metadata: true },
   });
   if (!posts.length) return 0;
+  if (posts.some((p) => temEstiloGravado(p.metadata))) return gerarGrupoNoEstilo(args, grupo, posts);
   const texto = posts[0].content;
   const redes = [...new Set(posts.map((p) => p.platform))];
   const run = runId ? await prisma.pipelineRun.findUnique({ where: { id: runId }, select: { config: true } }).catch(() => null) : null;
@@ -284,13 +335,25 @@ const FRASE_SEM_ESPERA = "Nenhuma arte estava esperando: as próximas campanhas 
  * resposta. Devolve os grupos para o segundo passo.
  */
 export async function iniciarGeracaoDasArtes(args: { projectId: string; userId: string }): Promise<{ grupos: ArteAguardando[][]; frase: string }> {
-  const estado = await estadoDaIdentidade(args.projectId);
-  if (!estado.aprovada) throw new Error(`${MENSAGEM_AGUARDANDO}: aprove modelo, letra e cores antes de gerar.`);
-  const grupos = agruparPorDia(await artesAguardandoIdentidade(args.projectId));
+  const todos = agruparPorDia(await artesAguardandoIdentidade(args.projectId));
+  // A arte no estilo escolhido que parou (11/10) volta ao mesmo estilo sem
+  // depender da identidade nem do saldo: ela já estava no pacote. As outras
+  // seguem a trava de sempre.
+  const comEstilo = new Set(await postsComEstiloGravado(todos.flat().map((a) => a.postId)));
+  const doEstilo = todos.filter((g) => g.some((a) => comEstilo.has(a.postId)));
+  const outros = todos.filter((g) => !g.some((a) => comEstilo.has(a.postId)));
+  let grupos = doEstilo;
+  if (outros.length) {
+    const estado = await estadoDaIdentidade(args.projectId);
+    if (!estado.aprovada && !doEstilo.length) throw new Error(`${MENSAGEM_AGUARDANDO}: aprove modelo, letra e cores antes de gerar.`);
+    if (estado.aprovada) {
+      const disponivel = await saldo(args.userId);
+      const custo = custoDosGrupos(outros);
+      if (disponivel < custoDaMidia(outros[0][0].mediaType) && !doEstilo.length) throw new Error(`faltam créditos: gerar as ${outros.length} arte(s) custa ${custo} e há ${disponivel}`);
+      if (disponivel >= custoDaMidia(outros[0][0].mediaType)) grupos = [...doEstilo, ...outros];
+    }
+  }
   if (!grupos.length) return { grupos, frase: FRASE_SEM_ESPERA };
-  const disponivel = await saldo(args.userId);
-  const custo = custoDosGrupos(grupos);
-  if (disponivel < custoDaMidia(grupos[0][0].mediaType)) throw new Error(`faltam créditos: gerar as ${grupos.length} arte(s) custa ${custo} e há ${disponivel}`);
   for (const g of grupos) await marcarGrupoGerando(args.projectId, g);
   return {
     grupos,

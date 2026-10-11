@@ -111,7 +111,7 @@ test("o carrossel sai lâmina por lâmina, cada uma com a sua composição, junt
   assert.match(pedidos.find((p) => p.includes('"Um"'))!, /COVER slide/);
 });
 
-test("arte reprovada nas três tentativas lança (quem chama vai ao caminho de hoje)", async () => {
+test("arte reprovada nas três tentativas lança (quem chama tenta de novo no mesmo estilo e para como falha técnica)", async () => {
   const { desenharPelaIa } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
   let chamadas = 0;
   await assert.rejects(
@@ -127,7 +127,7 @@ test("arte reprovada nas três tentativas lança (quem chama vai ao caminho de h
     ),
     /nem a cena no estilo do modelo com a frase em código passou/
   );
-  // Três com o texto pela IA e três da cena sem texto; só então o caminho antigo.
+  // Três com o texto pela IA e três da cena sem texto; nunca o caminho antigo.
   assert.equal(chamadas, 6);
 });
 
@@ -169,13 +169,14 @@ test("texto reprovado nas três tentativas: a cena no estilo sem texto com a fra
 
 // ─────────── 11/10, terceira rodada: sob medida e o assunto da fala ───────────
 
-test("as três opções sob medida têm estilo; a escolhida manda nas artes, a genérica segue a reserva", async () => {
+test("as três opções sob medida e a genérica têm estilo; a escolhida manda nas artes, nunca a reserva", async () => {
   const { estiloDasArtesDoProjeto, PROMPTS_SOB_MEDIDA } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
   const { OPCOES_SOB_MEDIDA } = await import("@/lib/media/editor-avancado/no-corte");
   for (const o of OPCOES_SOB_MEDIDA) assert.ok(promptDeEstiloDoModelo(o.id), `${o.id} sem estilo`);
-  assert.equal(estiloDasArtesDoProjeto("sob-medida-3d", "modelo-anatomia"), "sob-medida-3d");
-  assert.equal(estiloDasArtesDoProjeto("sob-medida", "modelo-anatomia"), "modelo-anatomia");
-  assert.equal(estiloDasArtesDoProjeto("modelo-torre", null), null);
+  assert.equal(estiloDasArtesDoProjeto("sob-medida-3d"), "sob-medida-3d");
+  assert.equal(estiloDasArtesDoProjeto("sob-medida"), "sob-medida");
+  assert.ok(promptDeEstiloDoModelo("sob-medida"), "a genérica sem estilo");
+  assert.equal(estiloDasArtesDoProjeto("modelo-torre"), null);
   assert.equal(PROMPTS_SOB_MEDIDA["sob-medida-recorte"].pessoa, true);
   assert.doesNotMatch(JSON.stringify(PROMPTS_SOB_MEDIDA), /#[0-9a-f]{6}\b/i);
   assert.ok(!/[\u2014\u2013]/.test(JSON.stringify(PROMPTS_SOB_MEDIDA)));

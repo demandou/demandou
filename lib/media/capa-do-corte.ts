@@ -3,14 +3,16 @@ import { prisma } from "@/lib/db/prisma";
 import { lerMidia, midiaProduzida } from "@/lib/media/storage";
 import { comporCapa, type Expressao } from "@/lib/media/capa-e-titulo";
 import { dataUrlToBuffer } from "@/lib/media/nano-banana";
-import { baseDaCapaDoCorte, type FotoDaCapa, type TrechoDaCapa } from "@/lib/media/capa-pelo-modelo";
+import { baseDaCapaDoCorte, falaDoCorte, falhaDaCapa, type CapaPendente, type FotoDaCapa, type TrechoDaCapa } from "@/lib/media/capa-pelo-modelo";
 
 export { baseDaCapaDoCorte };
 
 /**
  * A CAPA DE UM CORTE PELO CAMINHO DE HOJE (a composição em código sobre o
  * fundo gerado), com a regra do quadro nítido (11/10/2026). É a capa do
- * projeto sem modelo do curso e a reserva de quem tem.
+ * projeto SEM estilo escolhido. Com estilo escolhido (modelo do curso ou
+ * edição sob medida), a capa sai no estilo (`capaDoCorteNoEstilo`), nunca por
+ * aqui: trocar o estilo sozinho é proibido (11/10).
  *
  * A foto da pessoa:
  * - o quadro do PRÓPRIO corte, quando ele chegou com o recorte (o worker só
@@ -64,26 +66,96 @@ export async function fotoDoVideoSePrecisar(videoJobId: string, projectId: strin
   return fotoDaCapa(videoJobId, projectId, { largura: 1080, altura: 1920 });
 }
 
-/** A reserva das capas dos cortes: compõe pelo caminho de hoje e grava `capaArte` em cada um. */
-export async function comporCapasDosCortes(videoJobId: string, indices: number[]): Promise<number> {
-  const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { id: true, projectId: true, clips: true, project: { select: { niche: true } } } });
-  if (!video) return 0;
+/**
+ * A CAPA 9:16 DE UM CORTE NO ESTILO ESCOLHIDO (11/10): a frase da capa, o
+ * assunto do trecho da fala do corte, a pessoa do quadro nítido quando o
+ * estilo pede a pessoa, duas tentativas no estilo (uma quando o template do
+ * worker já foi a primeira). Devolve a URL; lança quando não sai.
+ */
+export async function capaDoCorteNoEstilo(o: {
+  videoJobId: string;
+  projectId: string;
+  nicho: string | null;
+  indice: number;
+  modelo: string;
+  trecho: TrechoDaCapa;
+  doVideo: FotoDaCapa | null;
+  fala: { texto: string | null; palavras: Array<{ word: string; start: number; end: number }> };
+  ajuste?: string | null;
+  tentativas?: number;
+}): Promise<string> {
+  const frase = o.trecho.texto?.fraseDaCapa;
+  if (!frase) throw new Error("o corte não tem a frase da capa");
+  const { capaDoCortePelaIa, fotoDaPessoaParaOEstilo } = await import("@/lib/media/capa-pela-ia");
+  const { quadroUrl } = baseDaCapaDoCorte(o.trecho, o.doVideo);
+  return capaDoCortePelaIa({
+    projectId: o.projectId,
+    videoJobId: o.videoJobId,
+    indice: o.indice,
+    modelo: o.modelo,
+    frase,
+    trecho: falaDoCorte(o.fala.palavras, o.trecho.inicio, o.trecho.fim),
+    fala: o.fala.texto,
+    contexto: [o.trecho.texto?.titulo ?? o.trecho.titulo, o.trecho.ideia].filter(Boolean).join(". ") || null,
+    nicho: o.nicho,
+    fotoDaPessoa: await fotoDaPessoaParaOEstilo(o.modelo, quadroUrl),
+    ajuste: o.ajuste ?? null,
+    tentativas: o.tentativas,
+  });
+}
+
+/**
+ * AS CAPAS DOS CORTES NO ESTILO ESCOLHIDO, gravadas em cada corte: a que saiu
+ * vira `capaArte` (e a falha de antes sai); a que não saiu fica com
+ * `capaFalhou` (a falha técnica com "Tentar de novo", sem cobrança), e a capa
+ * de antes, se havia, continua. É a segunda tentativa depois do template do
+ * modelo do curso, a capa da edição sob medida e o "Tentar de novo" da tela.
+ */
+export async function capasDosCortesNoEstilo(videoJobId: string, indices: number[], o: { modelo: string; tentativas?: number }): Promise<{ feitas: number; falhas: number }> {
+  const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { id: true, projectId: true, clips: true, transcript: true, project: { select: { niche: true } } } });
+  if (!video) return { feitas: 0, falhas: 0 };
   const trechos = (video.clips as unknown as TrechoDaCapa[]) ?? [];
-  const alvos = indices.filter((i) => trechos[i]?.texto?.fraseDaCapa);
-  if (!alvos.length) return 0;
-  const doVideo = await fotoDoVideoSePrecisar(video.id, video.projectId, alvos.map((i) => trechos[i]));
+  const alvos = [...new Set(indices)].filter((i) => trechos[i]?.texto?.fraseDaCapa);
+  if (!alvos.length) return { feitas: 0, falhas: 0 };
+  const { promptDeEstiloDoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
+  const { falaDaTranscricao } = await import("@/lib/media/capa-pela-ia");
+  // O quadro nítido só para o estilo que pede a pessoa (o recorte).
+  const doVideo = promptDeEstiloDoModelo(o.modelo)?.pessoa ? await fotoDoVideoSePrecisar(video.id, video.projectId, alvos.map((i) => trechos[i])).catch(() => null) : null;
+  const fala = falaDaTranscricao(video.transcript);
   const { fundirNoTrecho } = await import("@/lib/media/revisao-do-corte");
   let feitas = 0;
-  await Promise.all(
-    alvos.map(async (i) => {
-      const url = await comporCapaDoCorte({ videoJobId: video.id, projectId: video.projectId, nicho: video.project.niche, indice: i, trecho: trechos[i], doVideo }).catch((e) => {
-        console.error(`[capa-do-corte][${video.id}] corte ${i}:`, e);
-        return null;
-      });
-      if (!url) return;
-      await fundirNoTrecho(video.id, i, {}, { capaArte: { url } });
-      feitas++;
-    })
-  );
-  return feitas;
+  let falhas = 0;
+  const desde = new Date().toISOString();
+  const lote = `capa-ia-cortes-${video.id}-${Date.now().toString(36)}`;
+  // Três por vez: cada capa leva de 30 a 90 s, e o fornecedor limita a vazão.
+  const fila = [...alvos];
+  const trabalhar = async () => {
+    for (let i = fila.shift(); i !== undefined; i = fila.shift()) {
+      try {
+        const url = await capaDoCorteNoEstilo({ videoJobId: video.id, projectId: video.projectId, nicho: video.project.niche, indice: i, modelo: o.modelo, trecho: trechos[i], doVideo, fala, tentativas: o.tentativas });
+        // O registro da capa no estilo (o mesmo campo do template): o estilo, feita, sem pendência nem reserva.
+        const anterior = (trechos[i]?.midia as { capaNoModelo?: { templateFalhou?: string | null } } | null | undefined)?.capaNoModelo?.templateFalhou ?? null;
+        const registro: CapaPendente & { peca: number; caminho: "ia"; tentativaAnterior?: string } = {
+          lote,
+          pendente: false,
+          desde,
+          modelo: o.modelo,
+          foto: doVideo?.origem ?? "nenhuma",
+          feitoEm: new Date().toISOString(),
+          peca: alvos.indexOf(i) + 1,
+          caminho: "ia",
+          ...(anterior ? { tentativaAnterior: anterior } : {}),
+        };
+        await fundirNoTrecho(video.id, i, {}, { capaArte: { url }, capaNoModelo: registro, capaFalhou: null });
+        feitas++;
+      } catch (e) {
+        falhas++;
+        const falha = falhaDaCapa(o.modelo, e);
+        console.error(`[capa-do-corte][${video.id}] corte ${i}: a capa no estilo ${o.modelo} não saiu (${falha.detalhe}); para como falha técnica, sem trocar o estilo`);
+        await fundirNoTrecho(video.id, i, {}, { capaFalhou: falha }).catch(() => {});
+      }
+    }
+  };
+  await Promise.all([1, 2, 3].map(trabalhar));
+  return { feitas, falhas };
 }

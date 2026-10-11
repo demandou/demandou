@@ -20,6 +20,7 @@ import type { Radar } from "@/lib/media/radar-do-video";
 import { projetoVisivel } from "@/lib/equipe/conta";
 import { caminhoDaCapa } from "@/lib/media/capa-pelo-modelo";
 import { fotoDaCapa, pedirCapaDoCompletoNoModelo, regraDaCapaPeloModelo } from "@/lib/media/capa-pelo-modelo-servidor";
+import { ehEstiloSobMedida } from "@/lib/media/editor-do-curso/arte-pela-ia";
 
 /**
  * A capa (thumbnail) do vídeo COMPLETO no YouTube.
@@ -156,7 +157,13 @@ function corPrincipal(paleta: string | null | undefined): string | null {
  */
 export async function gerarCapasDoCompleto(
   videoJobId: string,
-  opcoes: { estilo?: EstiloDeCapa; clima?: ClimaDaCapa; userId?: string; semModelo?: boolean } = {}
+  opcoes: {
+    estilo?: EstiloDeCapa;
+    clima?: ClimaDaCapa;
+    userId?: string;
+    /** O template do modelo já falhou (callback ou vigia): a segunda tentativa, no MESMO estilo, pela IA. */
+    segundaTentativa?: boolean;
+  } = {}
 ): Promise<CapasDoCompleto> {
   const video = await prisma.videoJob.findFirst({
     where: { id: videoJobId, ...(opcoes.userId ? { project: projetoVisivel(opcoes.userId) } : {}) },
@@ -168,6 +175,7 @@ export async function gerarCapasDoCompleto(
       capas: true,
       radar: true,
       originalName: true,
+      transcript: true,
       project: { select: { niche: true, colorPalette: true, capaEstilo: true, name: true } },
     },
   });
@@ -205,11 +213,14 @@ export async function gerarCapasDoCompleto(
 
   const anteriores = video.capas as CapasDoCompleto | null;
 
-  // PELO MODELO DO CURSO (11/10): o projeto com modelo faz a capa pelo template
-  // do modelo, como as artes. Um pedido por vez: enquanto o lote está no
-  // worker, pedir de novo (a tela, o piloto) devolve o que já está a caminho.
-  const regra = opcoes.semModelo ? null : await regraDaCapaPeloModelo(video.projectId);
-  const caminho = caminhoDaCapa({ temRegra: Boolean(regra), semModelo: opcoes.semModelo, pendente: anteriores?.noModelo ?? null });
+  // O ESTILO ESCOLHIDO MANDA NA CAPA (11/10). Com modelo do curso, a capa sai
+  // pelo template do modelo, como as artes; um pedido por vez: enquanto o lote
+  // está no worker, pedir de novo (a tela, o piloto) devolve o que já está a
+  // caminho. Com a edição sob medida, pela IA no estilo da opção. O caminho de
+  // hoje (lá embaixo) é só do projeto SEM estilo escolhido: nunca a reserva.
+  const regra = await regraDaCapaPeloModelo(video.projectId);
+  const pelaIa = Boolean(regra && (ehEstiloSobMedida(regra.modelo) || opcoes.segundaTentativa));
+  const caminho = caminhoDaCapa({ temRegra: Boolean(regra), pelaIa, pendente: anteriores?.noModelo ?? null });
   if (caminho === "esperando") return anteriores!;
 
   const material = {
@@ -218,28 +229,38 @@ export async function gerarCapasDoCompleto(
     teses: (radar?.teses ?? []).map((t) => t.frase).slice(0, 6),
     nicho: video.project.niche,
   };
-  if (regra && caminho === "modelo") {
-    const frasesDoModelo = await escreverFrasesDaCapa(material, video.projectId, clima);
-    const noModelo = await pedirCapaDoCompletoNoModelo({ videoJobId: video.id, projectId: video.projectId, modelo: regra.modelo, frases: frasesDoModelo }).catch((e) => {
-      console.error(`[capas-do-completo][${video.id}] pedido ao modelo falhou, vai pelo caminho de hoje:`, e);
-      return null;
-    });
-    if (noModelo) {
-      // As opções de antes ficam na tela até as novas chegarem pelo callback.
-      const capas: CapasDoCompleto = {
-        estilo,
-        clima,
-        opcoes: anteriores?.opcoes ?? [],
-        escolhida: anteriores?.escolhida ?? 0,
-        geradaEm: anteriores?.geradaEm ?? new Date().toISOString(),
-        noModelo,
-      };
-      await prisma.videoJob.update({ where: { id: video.id }, data: { capas: capas as never } });
-      return capas;
+  if (regra && caminho !== "hoje") {
+    // Na segunda tentativa, as mesmas frases que foram ao template (o cliente não vê frase trocada).
+    const pedidas = opcoes.segundaTentativa ? anteriores?.noModelo?.frases : null;
+    const frasesDoEstilo: Frase[] = pedidas?.length ? pedidas.map((f) => ({ frase: f.frase, expressao: f.expressao as Expressao })) : await escreverFrasesDaCapa(material, video.projectId, clima);
+    // A primeira tentativa de um modelo do curso: o template no worker.
+    let tentativas = opcoes.segundaTentativa ? 1 : 2;
+    if (caminho === "modelo") {
+      const noModelo = await pedirCapaDoCompletoNoModelo({ videoJobId: video.id, projectId: video.projectId, modelo: regra.modelo, frases: frasesDoEstilo }).catch((e) => {
+        console.error(`[capas-do-completo][${video.id}] o pedido ao template do ${regra.modelo} falhou; segunda tentativa no mesmo estilo pela IA:`, e);
+        return null;
+      });
+      if (noModelo) {
+        // As opções de antes ficam na tela até as novas chegarem pelo callback.
+        const capas: CapasDoCompleto = {
+          estilo,
+          clima,
+          opcoes: anteriores?.opcoes ?? [],
+          escolhida: anteriores?.escolhida ?? 0,
+          geradaEm: anteriores?.geradaEm ?? new Date().toISOString(),
+          noModelo,
+          falha: null,
+        };
+        await prisma.videoJob.update({ where: { id: video.id }, data: { capas: capas as never } });
+        return capas;
+      }
+      // O template recusou: foi a primeira tentativa; a segunda é no mesmo estilo, pela IA.
+      tentativas = 1;
     }
+    return capasNoEstiloPelaIa({ video, regra: regra.modelo, frases: frasesDoEstilo, titulo, resumo: material.resumo, estilo, clima, anteriores, post, tentativas });
   }
 
-  // O CAMINHO DE HOJE (sem modelo, ou a reserva), com a regra do quadro nítido.
+  // O CAMINHO DE HOJE (projeto sem estilo escolhido), com a regra do quadro nítido.
   const [frases, foto] = await Promise.all([
     escreverFrasesDaCapa(material, video.projectId, clima),
     fotoDaCapa(video.id, video.projectId, { largura: 1280, altura: 720 }),
@@ -297,12 +318,90 @@ export async function gerarCapasDoCompleto(
     opcoes: opcoesNovas,
     escolhida,
     geradaEm: new Date().toISOString(),
-    // A reserva guarda o motivo do pedido ao modelo que não voltou.
+    // O pedido ao modelo de quando o projeto tinha estilo fica fechado, com o motivo.
     ...(anteriores?.noModelo ? { noModelo: { ...anteriores.noModelo, pendente: false } } : {}),
   };
   await prisma.videoJob.update({ where: { id: video.id }, data: { capas: capas as never } });
   // A escolha da foto já está no card, no post e no YouTube: não reaponta.
   if (!fotoEscolhida) await apontarCapaEscolhida(video.id, video.projectId, post, capas.opcoes[0].url);
+  return capas;
+}
+
+/**
+ * AS CAPAS DO COMPLETO PELA IA NO ESTILO ESCOLHIDO (11/10): a opção sob medida
+ * (duas tentativas por capa) ou a segunda tentativa de um modelo do curso cujo
+ * template não entregou. As que saem viram as opções; nenhuma saiu, a capa fica
+ * como falha técnica com "Tentar de novo" (as opções de antes continuam na
+ * tela) e nada é cobrado. Nunca a composição de antes nem o modelo de reserva.
+ */
+async function capasNoEstiloPelaIa(o: {
+  video: { id: string; projectId: string; transcript: unknown; project: { niche: string | null } };
+  regra: string;
+  frases: Frase[];
+  titulo: string;
+  resumo: string;
+  estilo: EstiloDeCapa;
+  clima: ClimaDaCapa;
+  anteriores: CapasDoCompleto | null;
+  post: { id: string; metadata: unknown } | null;
+  tentativas: number;
+}): Promise<CapasDoCompleto> {
+  const { video, anteriores } = o;
+  const { capasDoCompletoPelaIa, falaDaTranscricao, fotoDaPessoaParaOEstilo } = await import("@/lib/media/capa-pela-ia");
+  const { falhaDaCapa } = await import("@/lib/media/capa-pelo-modelo");
+  const { promptDeEstiloDoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
+  // A pessoa só no estilo que a pede (o recorte): o quadro NÍTIDO da gravação, ou a da Biblioteca.
+  const foto = promptDeEstiloDoModelo(o.regra)?.pessoa ? await fotoDaCapa(video.id, video.projectId, { largura: 1280, altura: 720 }).catch(() => null) : null;
+  const r = await capasDoCompletoPelaIa({
+    projectId: video.projectId,
+    videoJobId: video.id,
+    modelo: o.regra,
+    frases: o.frases,
+    nicho: video.project.niche,
+    contexto: [o.titulo, o.resumo].filter(Boolean).join(". "),
+    fala: falaDaTranscricao(video.transcript).texto,
+    fotoDaPessoa: await fotoDaPessoaParaOEstilo(o.regra, foto?.url),
+    tentativas: o.tentativas,
+  });
+  // O registro da capa no estilo (o mesmo campo do template): o estilo, sem pendência e sem "reserva".
+  const agora = new Date().toISOString();
+  const anterior = anteriores?.noModelo?.templateFalhou ?? null;
+  const registro: NonNullable<CapasDoCompleto["noModelo"]> = {
+    lote: `capa-ia-completo-${video.id}-${Date.now().toString(36)}`,
+    pendente: false,
+    desde: agora,
+    modelo: o.regra,
+    foto: foto?.origem ?? "nenhuma",
+    frases: o.frases,
+    caminho: "ia",
+    ...(anterior ? { tentativaAnterior: anterior } : {}),
+  };
+  const fechado = { noModelo: registro };
+  if (!r.opcoes.length) {
+    const falha = falhaDaCapa(o.regra, r.erros.join(" | ") || "a capa não saiu");
+    console.error(`[capas-do-completo][${video.id}] a capa no estilo ${o.regra} não saiu (${falha.detalhe}); para como falha técnica, sem trocar o estilo`);
+    const capas: CapasDoCompleto = {
+      estilo: o.estilo,
+      clima: o.clima,
+      opcoes: anteriores?.opcoes ?? [],
+      escolhida: anteriores?.escolhida ?? 0,
+      geradaEm: anteriores?.geradaEm ?? new Date().toISOString(),
+      ...fechado,
+      falha,
+    };
+    await prisma.videoJob.update({ where: { id: video.id }, data: { capas: capas as never } });
+    return capas;
+  }
+  if (r.erros.length) console.warn(`[capas-do-completo][${video.id}] ${r.erros.length} das capas no estilo ${o.regra} não saiu: ${r.erros.join(" | ").slice(0, 300)}`);
+  // A foto da biblioteca que o cliente já tinha posto entre as opções fica, como no caminho de hoje.
+  const daBiblioteca = (anteriores?.opcoes ?? []).filter((op) => op.materialId);
+  const fotoEscolhida = anteriores?.opcoes[anteriores.escolhida]?.materialId;
+  const opcoesNovas = [...r.opcoes, ...daBiblioteca];
+  const escolhida = fotoEscolhida ? Math.max(0, opcoesNovas.findIndex((op) => op.materialId === fotoEscolhida)) : 0;
+  const capas: CapasDoCompleto = { estilo: o.estilo, clima: o.clima, opcoes: opcoesNovas, escolhida, geradaEm: agora, noModelo: { ...registro, feitoEm: new Date().toISOString() }, falha: null };
+  await prisma.videoJob.update({ where: { id: video.id }, data: { capas: capas as never } });
+  if (!fotoEscolhida) await apontarCapaEscolhida(video.id, video.projectId, o.post, capas.opcoes[0].url);
+  console.log(`[capas-do-completo][${video.id}] ${r.opcoes.length} capa(s) no estilo ${o.regra} pela IA`);
   return capas;
 }
 
