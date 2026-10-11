@@ -14,6 +14,8 @@ import {
   justar,
   lerPlano,
   medirRosto,
+  modeloNoFormato,
+  formatoDoModelo,
   passoDasImagens,
   preparar,
   referenciasDoModelo,
@@ -230,7 +232,7 @@ export function rostoDoExemplo(modelo) {
  * até 1,5x antes de aceitar a diferença (o mesmo método das miniaturas da
  * biblioteca). O rosto é medido pelo medir-rosto.py do worker.
  */
-export async function quadroDaFoto(foto, alvo, pasta, nome = "quadro-da-pessoa.png") {
+export async function quadroDaFoto(foto, alvo, pasta, nome = "quadro-da-pessoa.png", tela = { largura: 1080, altura: 1920 }) {
   const sonda = await rodar(FFPROBE, ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", foto]);
   const [Wp, Hp] = sonda.out.trim().split(",").map(Number);
   if (!(Wp > 0 && Hp > 0)) throw new Error("não consegui ler o tamanho da foto da pessoa");
@@ -241,8 +243,8 @@ export async function quadroDaFoto(foto, alvo, pasta, nome = "quadro-da-pessoa.p
   } catch {
     medida = null;
   }
-  const W = 1080;
-  const H = 1920;
+  const W = tela.largura;
+  const H = tela.altura;
   const fx = medida && !medida.erro ? medida.rostoX * Wp : Wp * 0.5;
   const fy = medida && !medida.erro ? medida.rostoY * Hp : Hp * 0.35;
   const tx = alvo.x * W;
@@ -286,7 +288,7 @@ export function janelasDasPecas(fala) {
   return inicios.map((de, i) => ({ de, duracao: +((inicios[i + 1] ?? fala.duracao) - de).toFixed(3) }));
 }
 
-export async function videoDaFala({ fala, quadro, quadros = null, cor, saida }) {
+export async function videoDaFala({ fala, quadro, quadros = null, cor, saida, largura = 1080, altura = 1920 }) {
   const dur = fala.duracao.toFixed(3);
   const hex = /^#?[0-9a-f]{6}$/i.test(String(cor ?? "")) ? String(cor).replace("#", "") : "111111";
   const voz = fala.trechos.map((t) => `between(t,${t.vozDe.toFixed(3)},${t.vozAte.toFixed(3)})`).join("+");
@@ -300,12 +302,12 @@ export async function videoDaFala({ fala, quadro, quadros = null, cor, saida }) 
   if (porPeca) {
     const janelas = janelasDasPecas(fala);
     entrada = porPeca.flatMap((q, i) => ["-loop", "1", "-framerate", "30", "-t", janelas[i].duracao.toFixed(3), "-i", q]);
-    grafo = `${porPeca.map((_, i) => `[${i}:v]scale=1080:1920,setsar=1,fps=30,format=yuv420p[q${i}]`).join(";")};${porPeca.map((_, i) => `[q${i}]`).join("")}concat=n=${porPeca.length}:v=1:a=0[v];`;
+    grafo = `${porPeca.map((_, i) => `[${i}:v]scale=${largura}:${altura},setsar=1,fps=30,format=yuv420p[q${i}]`).join(";")};${porPeca.map((_, i) => `[q${i}]`).join("")}concat=n=${porPeca.length}:v=1:a=0[v];`;
     video = "[v]";
     audio = porPeca.length;
   } else {
     const unico = quadro ?? (Array.isArray(quadros) ? quadros[0] : null);
-    entrada = unico ? ["-loop", "1", "-framerate", "30", "-t", dur, "-i", unico] : ["-f", "lavfi", "-i", `color=c=0x${hex}:s=1080x1920:r=30:d=${dur}`];
+    entrada = unico ? ["-loop", "1", "-framerate", "30", "-t", dur, "-i", unico] : ["-f", "lavfi", "-i", `color=c=0x${hex}:s=${largura}x${altura}:r=30:d=${dur}`];
   }
   await ffmpeg(
     [
@@ -826,6 +828,22 @@ export async function noFormato(quadro, formato, saida, { corDaMarca = "#111111"
 
 // ---------- 7b. a capa deitada (16:9) ----------
 
+/** A versão deitada do modelo (`<id>-16x9`), quando existe; senão null. */
+export function versaoDeitada(modelo) {
+  try {
+    const m = modeloNoFormato(modelo, "16:9");
+    return formatoDoModelo(m) === "16:9" ? m : null;
+  } catch {
+    return null;
+  }
+}
+
+/** O quadro deitado do template (1920x1080) no tamanho da capa do YouTube (1280x720): só redução, mesma proporção. */
+export async function noTamanhoDaCapa(quadro, saida) {
+  await ffmpeg(["-i", quadro, "-vf", "scale=1280:720:flags=lanczos:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2", "-frames:v", "1", saida], "capa deitada");
+  return { modo: "deitada-nativa" };
+}
+
 /** O canal alfa de uma imagem, reduzido (cinza, linha a linha). */
 async function alfa(arquivo, w, h) {
   const r = await rodar(FFMPEG, ["-v", "error", "-i", arquivo, "-vf", `format=rgba,alphaextract,scale=${w}:${h}:flags=area`, "-f", "rawvideo", "-pix_fmt", "gray", "-"], { binario: true });
@@ -1199,19 +1217,27 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
 
   // 1 e 2. A fala sintética e o "vídeo" da pessoa (foto do cliente ou fundo liso).
   const fala = falaDasPecas(pecas);
-  const alvo = rostoDoExemplo(pedido.modelo);
+  // A CAPA DEITADA NA VERSÃO DEITADA DO MODELO (11/10): pedido só de 16:9 (a
+  // capa do completo) com o modelo que tem a versão `-16x9` desenha a peça no
+  // template deitado, com a pessoa na moldura que ele tem para ela, como o
+  // completo editado. Sem a versão, o template em pé e a recomposição deitada
+  // (noFormato16x9).
+  const deitado = pecas.every((p) => p.formatos.length === 1 && p.formatos[0] === "16:9") ? versaoDeitada(pedido.modelo) : null;
+  const modeloDoRender = deitado ?? pedido.modelo;
+  const tela = deitado ? { largura: 1920, altura: 1080 } : { largura: 1080, altura: 1920 };
+  const alvo = rostoDoExemplo(modeloDoRender);
   // A pessoa: a foto de cada peça (a da peça, ou a do pedido), cada uma com o
   // rosto no lugar do rosto do exemplo. Foto que não entra é trocada por uma
   // das que entraram; nenhuma entrou, as peças saem sem pessoa.
   let pessoa = null;
-  const fotosPedidas = pecas.map((p) => p.fotoUrl ?? pedido.fotoUrl ?? null);
+  const fotosPedidas = pecas.map((p) => p.fotoUrl ?? (deitado ? pedido.pessoaUrl : null) ?? pedido.fotoUrl ?? null);
   const unicas = [...new Set(fotosPedidas.filter(Boolean))];
   if (unicas.length && obterFoto) {
     const quadroDe = new Map();
     for (const [k, url] of unicas.entries()) {
       try {
         const foto = await obterFoto(url, join(pasta, `foto-da-pessoa-${k + 1}`));
-        const q = await quadroDaFoto(foto, alvo, pasta, `quadro-da-pessoa-${k + 1}.png`);
+        const q = await quadroDaFoto(foto, alvo, pasta, `quadro-da-pessoa-${k + 1}.png`, tela);
         if (!q.rostoAchado) avisos.push(`a foto ${k + 1} da pessoa não teve rosto achado: entrou centrada`);
         quadroDe.set(url, q);
       } catch (e) {
@@ -1224,12 +1250,12 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
       pessoa = { arquivo: quadros[0].arquivo, quadros: quadros.map((q) => q.arquivo), rostoAchado: quadros.every((q) => q.rostoAchado), zoom: quadros[0].zoom, fotos: entraram.length };
     } else avisos.push("nenhuma foto da pessoa entrou; as peças saem sem pessoa");
   }
-  const video = await videoDaFala({ fala, quadro: pessoa?.arquivo ?? null, quadros: pessoa?.quadros ?? null, cor: pedido.cores?.fundo, saida: join(pasta, "pecas.mp4") });
+  const video = await videoDaFala({ fala, quadro: pessoa?.arquivo ?? null, quadros: pessoa?.quadros ?? null, cor: pedido.cores?.fundo, saida: join(pasta, "pecas.mp4"), ...tela });
 
   // A pessoa da capa deitada (16:9, 11/10): o quadro nítido que o app mandou
   // em `pessoaUrl`, recortado do fundo; entra ao lado do texto do modelo.
   let pessoa16x9 = null;
-  if (pedido.pessoaUrl && obterFoto && pecas.some((p) => p.formatos.includes("16:9"))) {
+  if (!deitado && pedido.pessoaUrl && obterFoto && pecas.some((p) => p.formatos.includes("16:9"))) {
     try {
       const foto = await obterFoto(pedido.pessoaUrl, join(pasta, "pessoa-da-capa"));
       const { quadroDaCapa } = await import("../segmentacao.mjs");
@@ -1245,10 +1271,10 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
   marcar("fala");
 
   // 3. O fluxo do curso: projeto, cores da marca, preparar, tomadas, rosto, cortar.
-  const projeto = criarProjeto(pedido.modelo, pasta);
+  const projeto = criarProjeto(modeloDoRender, pasta);
   const cores = pedido.cores?.destaque ? aplicarCoresDaMarca(projeto, pedido.cores) : { trocadas: 0 };
   if (cores.erro) avisos.push(`as cores da marca não entraram: ${cores.erro}`);
-  const ajustesSemPessoa = pessoa ? 0 : ajustarSemPessoa(projeto, pedido.modelo);
+  const ajustesSemPessoa = pessoa ? 0 : ajustarSemPessoa(projeto, modeloDoRender);
   await preparar(projeto, video, fala.palavras);
   const tomadas = escolherTomadas(projeto);
   await justar(projeto);
@@ -1269,7 +1295,7 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
     semPessoa: !pessoa,
     corDoFundo: pedido.cores?.fundo ?? null,
     // Quadros da gravação na janela da pessoa (11/10), e não uma foto posada.
-    ...(pessoa && pedido.fotosDaGravacao ? { pessoaDaGravacao: true } : {}),
+    ...(pessoa && (pedido.fotosDaGravacao || deitado) ? { pessoaDaGravacao: true } : {}),
     // Os blocos que o corte do mesmo vídeo usou (o que ficou bom), e os do modelo.
     ...(pedido.referenciaDoCorte ? { referenciaDoCorte: String(pedido.referenciaDoCorte).slice(0, 3000) } : {}),
     ...(tipos.length ? { blocosDoModelo: tipos } : {}),
@@ -1277,7 +1303,7 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
   marcar("cortar");
 
   // 4 e 5. As imagens (modelos com imagem) e o plano, até as conferências aprovarem.
-  const referencias = referenciasDoModelo(pedido.modelo);
+  const referencias = referenciasDoModelo(modeloDoRender);
   const maxVoltas = Math.max(1, Math.min(4, Number(pedido.voltas) || 3));
   const teto = Number(pedido.tetoUsd) > 0 ? Number(pedido.tetoUsd) : 1;
   let gasto = 0;
@@ -1285,7 +1311,7 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
     gasto += Number(r?.custoUsd) || 0;
     return r;
   };
-  const comum = { modelo: pedido.modelo, referencias, nicho: pedido.nicho ?? null, pecasParadas };
+  const comum = { modelo: modeloDoRender, referencias, nicho: pedido.nicho ?? null, pecasParadas };
   let mapa = null;
   let creditos = null;
   if (referencias.imagens) {
@@ -1312,7 +1338,7 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
     // entrada já aconteceu, então vira aviso.
     const tempo = await gateDeTempo(projeto);
     if (!tempo.ok) avisos.push(`gate de tempo (aviso, volta ${volta + 1}): ${tempo.resultados.filter((g) => !g.ok).map((g) => g.ferramenta).join(", ")}`);
-    const dasPecas = conferirPecas(lerPlano(projeto), trechos, pedido.modelo, { tipos });
+    const dasPecas = conferirPecas(lerPlano(projeto), trechos, modeloDoRender, { tipos });
     const semLastro = escrito.numerosSemLastro ?? [];
     aprovado = conf.aprovado && dasPecas.length === 0 && semLastro.length === 0;
     historico.push({ volta: volta + 1, conferir: conf.aprovado, duros: conf.duros, relaxados: conf.relaxados.length, pecas: dasPecas, semLastro, custoUsd: +(Number(escrito.custoUsd) || 0).toFixed(4) });
@@ -1381,7 +1407,9 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
       const bruto = join(pastaDasPecas, `${base}.png`);
       const arquivo = join(pastaDasPecas, `${base}.jpg`);
       const formato =
-        f === "16:9"
+        f === "16:9" && deitado
+          ? await noTamanhoDaCapa(q(instante), bruto)
+          : f === "16:9"
           ? await noFormato16x9(q(instante), bruto, { corDaMarca: pedido.cores?.fundo, pessoa: pessoa16x9 })
           : await noFormato(q(instante), f, bruto, { corDaMarca: pedido.cores?.fundo, mascara: mascaras[instante.toFixed(2)] ?? null, rosto, reservaDaBase: logo ? RESERVA_DO_LOGO : 0 });
       const acabamento = await acabarPeca(bruto, arquivo, { logo });
@@ -1416,6 +1444,7 @@ export async function arteNoModelo(pedido, pasta, { pedirPlano, obterFoto = null
     ajustesSemPessoa,
     pessoa: pessoa ? { zoom: pessoa.zoom, rostoAchado: pessoa.rostoAchado, fotos: pessoa.fotos } : null,
     pessoa16x9: pessoa16x9 ? { largura: pessoa16x9.w, altura: pessoa16x9.h } : null,
+    deitado,
     avisos,
     tempos,
     projeto,

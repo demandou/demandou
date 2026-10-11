@@ -298,6 +298,12 @@ test("variedade: o redator recebe a regra, os blocos do modelo e a referência d
   assert.equal(referenciaDosCortes([null, { tipos: [] }]), null);
 });
 
+test("16:9: o modelo com versão deitada desenha a capa no template deitado; sem versão, recompõe", () => {
+  assert.equal(worker.versaoDeitada("modelo-torre"), "modelo-torre-16x9");
+  assert.equal(worker.versaoDeitada("modelo-manifesto"), "modelo-manifesto-16x9");
+  assert.equal(worker.versaoDeitada("modelo-que-nao-existe"), null);
+});
+
 test("fotos: uma por peça, sem repetir enquanto houver diferente", () => {
   assert.deepEqual(fotosPorPeca(["a", "b", "c"], 5), ["a", "b", "c", "a", "b"]);
   assert.deepEqual(fotosPorPeca([], 3), []);
