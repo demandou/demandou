@@ -518,27 +518,29 @@ type PostDaReserva = { id: string; platform: string; mediaType: string | null; r
 
 /**
  * O que o vídeo dá à arte pela IA (11/10): a transcrição (o assunto de cada peça
- * sai do trecho dela) e, no estilo que pede a pessoa, um quadro nítido da
- * gravação (a regra da capa nítida). Sem vídeo, nada; falha não derruba a arte.
+ * sai do trecho dela) e, no estilo que põe a pessoa, o RECORTE REAL dela
+ * (PNG com alfa) do quadro nítido da gravação, que o worker já devolve no
+ * /melhor-quadro (ou faz no /recortar). Colado em código, nunca enviado à IA
+ * de imagem (11/10). Sem vídeo, nada; falha não derruba a arte (sai sem pessoa).
  */
-export async function falaEFotoDoVideo(videoJobId: string | null | undefined, querFoto: boolean): Promise<{ fala: string | null; fotoDaPessoa: string | null }> {
-  if (!videoJobId) return { fala: null, fotoDaPessoa: null };
+export async function falaEFotoDoVideo(videoJobId: string | null | undefined, querFoto: boolean): Promise<{ fala: string | null; recorteDaPessoa: string | null }> {
+  if (!videoJobId) return { fala: null, recorteDaPessoa: null };
   const video = await prisma.videoJob.findUnique({ where: { id: videoJobId }, select: { transcript: true } }).catch(() => null);
   const t = video?.transcript as { text?: unknown } | string | null | undefined;
   const fala = typeof t === "string" ? t : typeof t?.text === "string" ? t.text : null;
-  let fotoDaPessoa: string | null = null;
+  let recorteDaPessoa: string | null = null;
   if (querFoto) {
     try {
       const { quadrosNitidosDoVideo } = await import("@/lib/media/quadros-nitidos");
-      const { lerMidia } = await import("@/lib/media/storage");
-      const [q] = await quadrosNitidosDoVideo(videoJobId, { quantos: 1, alvo: { largura: 1080, altura: 1350 } });
-      const buf = q?.url ? await lerMidia(q.url) : null;
-      if (buf) fotoDaPessoa = `data:image/jpeg;base64,${buf.toString("base64")}`;
+      const { recorteDaPessoaEmDataUri } = await import("@/lib/media/capa-pela-ia");
+      const chave = `cortes/${videoJobId}/arte-recorte-${Date.now().toString(36)}`;
+      const [q] = await quadrosNitidosDoVideo(videoJobId, { quantos: 1, alvo: { largura: 1080, altura: 1350 }, chave });
+      recorteDaPessoa = await recorteDaPessoaEmDataUri({ quadroUrl: q?.url ?? null, recorteUrl: q?.recorteUrl ?? null, chave: `${chave}-r.png` });
     } catch (e) {
-      console.warn(`[arte-no-modelo] o quadro nítido da pessoa não veio (a arte sai sem pessoa): ${e instanceof Error ? e.message : e}`);
+      console.warn(`[arte-no-modelo] o recorte da pessoa não veio (a arte sai sem pessoa): ${e instanceof Error ? e.message : e}`);
     }
   }
-  return { fala, fotoDaPessoa };
+  return { fala, recorteDaPessoa };
 }
 
 /**

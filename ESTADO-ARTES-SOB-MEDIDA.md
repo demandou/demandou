@@ -88,3 +88,25 @@ Ramo: worktree-agent-a94b187ebaa5d01f1 (com o backup-0210 juntado). Nada publica
   artigo, preposição e "o que você"; trechoRepetido pega "tarefa boa atrás de tarefa boa".
 - Destaque: destaqueLegivel (papeis-da-paleta.ts) dá à letra em destaque o mesmo matiz com contraste 4,5.
 - Teste: scripts/testes/artes-do-e2e-1110.test.mts (17). Nada pago, nada publicado.
+
+## Rodada 11/10 (noite): Recorte com letreiro com a pessoa REAL (ramo sob-medida-recorte-pessoa-real)
+
+- Defeitos do teste de ponta a ponta (vídeo cmv44o9nj00013stt5readmt5): a IA recebia o quadro nítido e redesenhava
+  a pessoa (padre e homem de óculos nos infográficos), uma arte saiu com "DING" e o carrossel cmv44tzn0 parou com
+  reservaFalhou "texto além do permitido: girar" (a cena "sem texto" do Recorte pedia o letreiro gigante e a foto).
+- Regra (aula 8.2): a IA de imagem NUNCA desenha gente. No Recorte (post, carrossel, capas 16:9 e 9:16) a IA faz só o
+  fundo e a palavra gigante (palavraDoLetreiro), com o palco vazio (promptDoFundoDoRecorte e layoutDoFundoDoRecorte,
+  a mesma geometriaDoRecorte do código); a camada é conferida SOZINHA (só a palavra, permitirPessoas falso). A pessoa
+  é o recorte real (PNG com alfa do /melhor-quadro ou do /recortar do worker, sem rota nova), colado em código em
+  recorte-com-letreiro.tsx com a cabeça na metade de baixo da palavra; a frase entra em código.
+- Reserva no MESMO estilo: a palavra pela IA reprovada nas 3 tentativas, o fundo sai sem texto e a palavra entra em
+  código; nem isso passou, lança (noMesmoEstilo, Tentar de novo).
+- Infográfico do Recorte: elementoNoInfografico sem palco e sem gente; reprovado por gente ou texto inventado agora
+  lança (infograficoReprovadoGrave), antes saía mesmo reprovado.
+- Removidos gerarComFotoNoGoogle, GeradorComFoto, inj.gerarComFoto e fotoDaPessoa (agora recorteDaPessoa).
+- Testes: recorte-pessoa-real-1110 (11, novo), arte-pela-ia-1110 (17), capas-sob-medida-1110 (11),
+  artes-do-e2e-1110 (19), arte-pelo-modelo-1010 (26), capa-nitida-1010 (23), pecas-no-modelo-1010 (4). tsc limpo.
+- Prova paga (scratchpad recorte-real, US$ 1,23, nada gravado no banco): post-instagram.jpg (Bruno real, EXCELÊNCIA
+  atrás da cabeça; a palavra pela IA reprovou por cartão cortado na borda e saiu pela reserva com a palavra em código)
+  e thumb-16x9.jpg (Bruno real, PRODUTIVIDADE pela IA atrás da cabeça, frase em código). Depois da prova os cartões
+  passaram a ficar a 10% da borda e o pedido encurtou para caber nos 5000 caracteres do GPT Image (ainda sem prova paga).

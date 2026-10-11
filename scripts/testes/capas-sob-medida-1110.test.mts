@@ -141,9 +141,19 @@ test("capa do completo que não sai no estilo: duas tentativas, nenhuma opção,
   assert.deepEqual([...nomes], ["Charts that Draw Themselves"]);
 });
 
-test("capa 9:16 do corte no Recorte: a pessoa do quadro nítido pelo gerador com foto, o trecho do corte, guardada como capa-arte", async () => {
+test("capa 9:16 do corte no Recorte: a IA faz só o fundo e a palavra, o recorte real entra em código, guardada como capa-arte", async () => {
   const { capaDoCortePelaIa } = await import("@/lib/media/capa-pela-ia");
   const prompts: Array<{ prompt: string; proporcao: string }> = [];
+  // Uma "pessoa" magenta com alfa: cabeça estreita em cima, tronco largo embaixo (o quadro da gravação).
+  const bloco = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 4, background: { r: 255, g: 0, b: 255, alpha: 1 } } }).png().toBuffer();
+  const recorte = await sharp({ create: { width: 400, height: 600, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([
+      { input: await bloco(80, 100), left: 160, top: 100 },
+      { input: await bloco(200, 400), left: 100, top: 200 },
+    ])
+    .png()
+    .toBuffer();
+  let guardado: Buffer | null = null;
   const url = await capaDoCortePelaIa({
     projectId: "p",
     videoJobId: "v2",
@@ -152,24 +162,34 @@ test("capa 9:16 do corte no Recorte: a pessoa do quadro nítido pelo gerador com
     frase: "Grava uma vez",
     trecho: "eu gravo uma vez só e o agente transforma em sete peças",
     fala: FALA,
-    fotoDaPessoa: "data:image/jpeg;base64,AAAA",
+    recorteDaPessoa: `data:image/png;base64,${recorte.toString("base64")}`,
     marca: MARCA,
     logo: null,
     inj: {
-      gerarComFoto: async (prompt, proporcao) => {
+      gerar: async (modelo, prompt, proporcao) => {
         prompts.push({ prompt, proporcao });
-        return imagemNaProporcao(proporcao);
+        return { dataUrl: await imagemNaProporcao(proporcao), modelo, custoUsd: 0.134 };
       },
       conferir: APROVA,
     },
-    guardar: async (chave) => `https://fake/${chave}`,
+    guardar: async (chave, jpeg) => {
+      guardado = jpeg;
+      return `https://fake/${chave}`;
+    },
   });
   assert.equal(url, "https://fake/cortes/v2/capa-arte-3.jpg");
   assert.equal(prompts.length, 1);
   assert.equal(prompts[0].proporcao, "9:16");
-  assert.match(prompts[0].prompt, /COVER of a vertical short video/);
-  assert.match(prompts[0].prompt, /real person from the attached reference photo/);
-  assert.match(prompts[0].prompt, /Excerpt of the video: ".*sete peças/);
+  assert.match(prompts[0].prompt, /BACKGROUND LAYER of the COVER of a vertical short video/);
+  assert.match(prompts[0].prompt, /this layer has NO person/);
+  assert.match(prompts[0].prompt, /write EXACTLY "GRAVA"/);
+  assert.doesNotMatch(prompts[0].prompt, /reference photo/);
+  assert.match(prompts[0].prompt, /excerpt of the video: ".*sete peças/);
+  // A pessoa real está na capa: o magenta do recorte aparece no meio, abaixo da palavra.
+  const { data, info } = await sharp(guardado!).raw().toBuffer({ resolveWithObject: true });
+  const px = (x: number, y: number) => Array.from(data.subarray((y * info.width + x) * info.channels, (y * info.width + x) * info.channels + 3));
+  const [r, g, b] = px(Math.round(info.width / 2), Math.round(info.height * 0.4));
+  assert.ok(r > 200 && g < 60 && b > 200, `sem o recorte no meio da capa: ${r},${g},${b}`);
 });
 
 test("capa do corte que falha nas duas tentativas lança (quem chama grava capaFalhou com Tentar de novo)", async () => {
@@ -224,16 +244,17 @@ test("a falha técnica da capa diz Tentar de novo e Nada foi cobrado; o trecho d
   assert.equal(caminhoDaCapa({ temRegra: false, pelaIa: true }), "hoje");
 });
 
-test("a cena sem texto (a segunda forma do MESMO estilo) diz o papel da capa e só põe a pessoa com a foto", async () => {
+test("a cena sem texto (a segunda forma do MESMO estilo) diz o papel da capa e nunca pede gente", async () => {
   const { promptDaCenaNoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
   const recorte = promptDeEstiloDoModelo("sob-medida-recorte")!;
-  const com = promptDaCenaNoModelo({ estilo: recorte, ideia: "Grava uma vez", tipo: "thumb", cores: CORES, composicao: "x", comFotoDaPessoa: true });
-  assert.match(com, /THUMBNAIL of a YouTube video/);
-  assert.match(com, /attached reference photo/);
-  assert.match(com, /ABSOLUTELY NO TEXT/);
-  const sem = promptDaCenaNoModelo({ estilo: recorte, ideia: "Grava uma vez", tipo: "capa-vertical", cores: CORES, composicao: "x" });
-  assert.match(sem, /No people, faces or hands/);
-  assert.match(sem, /COVER of a vertical short video/);
+  const thumb = promptDaCenaNoModelo({ estilo: recorte, ideia: "Grava uma vez", tipo: "thumb", cores: CORES, composicao: "x" });
+  assert.match(thumb, /THUMBNAIL of a YouTube video/);
+  assert.doesNotMatch(thumb, /reference photo/);
+  assert.match(thumb, /ABSOLUTELY NO TEXT/);
+  assert.match(thumb, /No people/);
+  const vertical = promptDaCenaNoModelo({ estilo: promptDeEstiloDoModelo("sob-medida-3d")!, ideia: "Grava uma vez", tipo: "capa-vertical", cores: CORES, composicao: "x" });
+  assert.match(vertical, /No people, faces, hands or silhouettes/);
+  assert.match(vertical, /COVER of a vertical short video/);
 });
 
 test("o ajuste do refazer da capa entra no prompt sem sair do estilo", () => {
