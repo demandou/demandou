@@ -19,6 +19,7 @@ import { openBrowser, renderMedia, renderStill, selectComposition } from "@remot
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { nivelarAudioDoMov } from "./audio-do-mov.mjs";
 
 const [projeto, arquivoDoPedido] = process.argv.slice(2);
 const pedido = JSON.parse(readFileSync(arquivoDoPedido, "utf8"));
@@ -137,10 +138,8 @@ try {
       console.log(JSON.stringify({ ok: true, bundle_s: +tBundle.toFixed(1), render_s: +tRender.toFixed(1), render_por_s: +(tRender / duracao).toFixed(2), duracao_s: duracao, arquivo: pedido.saida }));
     } else {
     // -14 LUFS em duas passadas (o mesmo filtro do render.mjs do curso)
-    const medida = ffmpeg(["-i", bruto, "-af", "loudnorm=I=-14:TP=-2:LRA=11:print_format=json", "-f", "null", "-"]);
-    const m = JSON.parse(medida.slice(medida.lastIndexOf("{"), medida.lastIndexOf("}") + 1));
-    const filtro = `loudnorm=I=-14:TP=-2:LRA=11:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true,aresample=48000`;
-    ffmpeg(["-y", "-i", bruto, "-c:v", "copy", "-af", filtro, "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", pedido.saida]);
+    // pelo WAV copiado do .mov (audio-do-mov.mjs): o ffmpeg 5.1 do contêiner não refaz o filtro quando o layout muda
+    const m = nivelarAudioDoMov(ffmpeg, bruto, pedido.saida);
     rmSync(bruto, { force: true });
     const duracao = composition.durationInFrames / composition.fps;
     console.log(JSON.stringify({ ok: true, bundle_s: +tBundle.toFixed(1), render_s: +tRender.toFixed(1), render_por_s: +(tRender / duracao).toFixed(2), duracao_s: duracao, audio: `${m.input_i} LUFS -> -14 LUFS`, arquivo: pedido.saida }));

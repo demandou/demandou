@@ -6,6 +6,7 @@ import { extrairTrecho, fpsConstante } from "../modelo/editar-no-modelo.mjs";
 import { blocosPelaPausa, continuidadeDoPrimeiro, fixarContinuidade, palavrasDoBloco, tetoDoBloco, USD_POR_MINUTO_DO_COMPLETO } from "./blocos-do-completo.mjs";
 import { editarAvancado } from "./editar-avancado.mjs";
 import { ESTIMATIVA_USD } from "./teto.mjs";
+import { nivelarAudioDoMov } from "./audio-do-mov.mjs";
 
 /**
  * O VÍDEO COMPLETO SOB MEDIDA (11/10/2026, pedido do Bruno): a Maquete 3D, o
@@ -97,10 +98,8 @@ export function emendarBlocos(arquivos, pasta, saida) {
     throw new Error(`a emenda saiu com som e imagem de durações diferentes (${durA.toFixed(3)} s e ${durV.toFixed(3)} s)`);
   }
   // -14 LUFS no vídeo inteiro, em duas passadas (o mesmo filtro do render do curso)
-  const medida = ffmpeg(["-i", junto, "-af", "loudnorm=I=-14:TP=-2:LRA=11:print_format=json", "-f", "null", "-"]);
-  const m = JSON.parse(medida.slice(medida.lastIndexOf("{"), medida.lastIndexOf("}") + 1));
-  const filtro = `loudnorm=I=-14:TP=-2:LRA=11:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true,aresample=48000`;
-  ffmpeg(["-y", "-i", junto, "-c:v", "copy", "-af", filtro, "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", saida]);
+  // pelo WAV copiado do .mov (audio-do-mov.mjs): o ffmpeg 5.1 do contêiner não refaz o filtro quando o layout muda
+  const m = nivelarAudioDoMov(ffmpeg, junto, saida);
   return { duracaoVideo: +durV.toFixed(3), duracaoAudio: +durA.toFixed(3), volume: `${m.input_i} LUFS -> -14 LUFS` };
 }
 
