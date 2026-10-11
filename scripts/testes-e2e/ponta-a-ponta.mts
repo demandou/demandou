@@ -719,8 +719,10 @@ function conferir(r: Relatorio, v: Video, p: Pecas) {
 function calcularTempos(r: Relatorio, v: Video) {
   const d = v.durationSec ?? null;
   const tres = modeloEhTres(r.estilo, r.estiloNoProjeto.reserva);
+  // A promessa do editor do estilo: o sob medida tem a dele (segundosNoSobMedida), o modelo do curso a sua.
+  const sobMedida = r.estilo.startsWith("sob-medida");
   const curso = (dur: number | null) => {
-    const x = app.linha.segundosNoModeloDoCurso(dur, tres);
+    const x = sobMedida ? app.linha.segundosNoSobMedida(dur) : app.linha.segundosNoModeloDoCurso(dur, tres);
     return x.efeitos + x.montagem;
   };
   const base = app.tempos.segundosDaEtapa("base", d);
@@ -737,7 +739,9 @@ function calcularTempos(r: Relatorio, v: Video) {
   linha("artes (da aprovação)", seg(ap, m.artes), null);
   clipsDe(v).forEach((_, i) => linha(`capa do corte ${i} (da aprovação)`, seg(ap, m[`capa-corte-${i}`]), Math.round(base * 0.7)));
   linha("capas do completo (da aprovação)", seg(ap, m["capas-do-completo"]), null);
-  linha("tudo (do envio ao fim)", seg(m["envio-comecou"], m.fim), app.tempos.segundosDaEtapa("roteiro", d) + base + curso(d));
+  // O fim é o último marco de peça (o status do vídeo fica "pronto" antes de a edição acabar).
+  const ultimo = Object.entries(m).filter(([k, x]) => x && k !== "fim").map(([, x]) => String(x)).sort().pop() ?? m.fim;
+  linha("tudo (do envio à última peça)", seg(m["envio-comecou"], ultimo), app.tempos.segundosDaEtapa("roteiro", d) + base + curso(d));
 }
 
 // ─────────────────────────────── o custo (só SELECT) ───────────────────────────────
