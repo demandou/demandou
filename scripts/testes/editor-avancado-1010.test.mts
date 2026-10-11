@@ -20,7 +20,7 @@ const editar = await imp("worker/src/avancado/editar-avancado.mjs");
 const { lerArquivosDaResposta, textosNaTela, numerosSemLastroNaCena } = await import("@/lib/media/editor-avancado/arquivos");
 const { caminhoDoCorte, reservaDoSobMedida, ID_SOB_MEDIDA, OPCOES_SOB_MEDIDA, ehSobMedida, tecnicaDaOpcao } = await import("@/lib/media/editor-avancado/no-corte");
 const { tetoDoPlanoUsd } = await import("@/lib/media/editor-do-curso/no-corte");
-const { revisarQuadros } = await import("@/lib/media/editor-avancado/revisao");
+const { revisarQuadros, ehDefeitoDoRoteiro } = await import("@/lib/media/editor-avancado/revisao");
 const { decidirTecnica } = await import("@/lib/media/editor-avancado/tecnica");
 
 const fala = [
@@ -306,4 +306,21 @@ test("as três aulas do curso são três opções, cada uma com a sua técnica f
   assert.ok(ehSobMedida(ID_SOB_MEDIDA));
   assert.equal(tecnicaDaOpcao(ID_SOB_MEDIDA), null);
   assert.ok(!ehSobMedida("modelo-viral") && !ehSobMedida(null));
+});
+
+test("a revisão manda o defeito da legenda e da janela da pessoa para o roteiro, não para todas as cenas no ar", async () => {
+  assert.ok(ehDefeitoDoRoteiro({ tipo: "texto-cortado", descricao: "legenda cortada na borda inferior" }));
+  assert.ok(ehDefeitoDoRoteiro({ tipo: "legenda-coberta", descricao: "legenda coberta pelo cartão do apresentador" }));
+  assert.ok(!ehDefeitoDoRoteiro({ tipo: "legenda-coberta", descricao: "o painel do gráfico cobre a legenda" }));
+  assert.ok(!ehDefeitoDoRoteiro({ tipo: "texto-cortado", descricao: "palavra MAIS cortada na borda superior" }));
+  const olho = async () => ({ custoUsd: 0, json: { quadros: [0, 1, 2].map((k) => ({ k, problemas: [{ tipo: "texto-cortado", descricao: "legenda cortada na borda inferior" }] })) } });
+  const juiz = (async (_c: unknown, qs: Record<string, unknown>) => Object.fromEntries(Object.keys(qs).map((k) => [k, { type: "noul", noul: 0.9 }]))) as never;
+  const quadro = (t: number, cenas: string[]) => ({ t, base64: "x", cenas, fala: "" });
+  const r = await revisarQuadros({
+    quadros: [quadro(1, ["cena-01.tsx"]), quadro(5, ["cena-02.tsx"]), quadro(9, ["cena-03.tsx"])],
+    cenas: ["cena-01.tsx", "cena-02.tsx", "cena-03.tsx"].map((arquivo, i) => ({ arquivo, oQue: "x", de: i * 4, ate: i * 4 + 4 })),
+    olho,
+    juiz,
+  });
+  assert.deepEqual(r.reprovadas.map((x) => x.arquivo), ["roteiro.json"]);
 });

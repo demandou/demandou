@@ -68,6 +68,18 @@ Quadro sem defeito não entra na lista. Elemento entrando ou saindo (meio transp
 
 const POR_LOTE = 24;
 
+/**
+ * O defeito é do roteiro (a faixa da legenda, a janela da pessoa) e não de uma cena? A legenda
+ * cortada ou coberta sem um elemento de cena nomeado, e a moldura/janela da pessoa. Puro (testado).
+ */
+export function ehDefeitoDoRoteiro(d: { tipo: TipoDoDefeito; descricao: string }): boolean {
+  const texto = d.descricao.toLowerCase();
+  const daLegenda = d.tipo === "legenda-coberta" || /legenda/.test(texto);
+  const daJanela = /\b(moldura|janela) (da|do) (pessoa|apresentador)/.test(texto);
+  const elementoDeCena = /\b(painel|card|t[íi]tulo|gr[áa]fico|[íi]cone|r[óo]tulo|maquete|letreiro|palavra)\b/.test(texto);
+  return (daLegenda || daJanela) && !elementoDeCena;
+}
+
 function rotulo(k: number, q: QuadroParaRevisar, cenas: Map<string, CenaDoRoteiroResumida>): string {
   const no = q.cenas.length ? q.cenas.map((a) => `${a} (${cenas.get(a)?.oQue ?? "?"})`).join("; ") : "nenhuma (só o apresentador e a legenda)";
   return `Quadro k=${k} (${q.t.toFixed(1)} s) | cenas no ar: ${no} | fala: "${q.fala.slice(0, 160)}"`;
@@ -127,7 +139,10 @@ export async function revisarQuadros(p: {
   const porCena = new Map<string, DefeitoNoQuadro[]>();
   for (const v of vistos.filter((x) => !DA_GRAVACAO.has(x.tipo))) {
     const candidatas = v.cenas.map((a) => porArquivo.get(a)).filter((c): c is CenaDoRoteiroResumida => Boolean(c));
-    const dona = candidatas.sort((a, b) => (b.de ?? 0) - (a.de ?? 0))[0]?.arquivo ?? "roteiro.json";
+    // A LEGENDA E A JANELA DA PESSOA moram no roteiro.json: na prova da aula 6 (10/10), "legenda
+    // cortada na borda" caiu em todas as cenas no ar e o conserto reescreveu as cinco (US$ 0,67).
+    const doRoteiro = ehDefeitoDoRoteiro(v);
+    const dona = doRoteiro ? "roteiro.json" : (candidatas.sort((a, b) => (b.de ?? 0) - (a.de ?? 0))[0]?.arquivo ?? "roteiro.json");
     porCena.set(dona, [...(porCena.get(dona) ?? []), { t: v.t, tipo: v.tipo, descricao: v.descricao }]);
   }
   const lista = [...porCena.entries()];
