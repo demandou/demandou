@@ -143,6 +143,14 @@ export async function extrasDaLinha(
   const montagemLigada = process.env.MONTAGEM_DO_COMPLETO === "1" || process.env.MONTAGEM_NA_EDICAO === "1";
   const revisao = revisaoVisualLigada();
   const roteiro = roteiroLigado();
+  // O EDITOR DO CURSO (10/10, noite): o modelo do projeto e se ele é 3D, para a previsão honesta.
+  const modeloDoCurso = await (async () => {
+    const { editorDoCursoLigado, modeloDoCursoDoProjeto, MODELOS_DO_CURSO } = await import("@/lib/media/editor-do-curso/no-corte");
+    if (!editorDoCursoLigado()) return null;
+    const id = await modeloDoCursoDoProjeto(projectId).catch(() => null);
+    const m = id ? (MODELOS_DO_CURSO.find((x) => x.id === id) as { three?: boolean } | undefined) : undefined;
+    return id ? { tres: Boolean(m?.three) } : null;
+  })().catch(() => null);
 
   for (const v of videos) {
     const m = porVideo.get(v.id);
@@ -156,7 +164,8 @@ export async function extrasDaLinha(
     r.set(v.id, {
       ...(pedidosNaoAtendidos.length ? { pedidosNaoAtendidos } : {}),
       roteiroLigado: roteiro,
-      efeitosLigados: montagemLigada || temMontagem,
+      modeloDoCurso,
+      efeitosLigados: montagemLigada || temMontagem || Boolean(modeloDoCurso),
       revisaoLigada: revisao,
       completo: m?.estado
         ? {

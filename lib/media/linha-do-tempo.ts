@@ -35,6 +35,8 @@ export type ExtrasDaLinha = {
   efeitosLigados: boolean;
   /** A revisão visual final está ligada. */
   revisaoLigada: boolean;
+  /** O projeto edita pelo modelo do curso (10/10): a previsão usa o tempo dele; `tres` é o modelo em 3D. */
+  modeloDoCurso?: { tres: boolean } | null;
   /** A montagem do vídeo completo, quando existe. */
   completo: {
     estado: string | null;
@@ -205,7 +207,22 @@ const DETALHES: Record<ChaveDoPasso, { rotulo: string; detalhe: string }> = {
  * o roteiro medido cobre ouvir, escolher e planejar; a "base" cobre cortes,
  * capas, textos e a edição da fala.
  */
-function pesosDoRelogio(relogio: LeituraDaLinha["relogio"], d: number | null): Partial<Record<ChaveDoPasso, number>> {
+/**
+ * A PREVISÃO NO MODELO DO CURSO (10/10, noite, Bruno: "deixamos o tempo alto e
+ * entregamos antes; só o 3D será no tempo do vídeo"). Medido no vídeo dele de
+ * 2,4 min no Torre: corte em ~13 min e o completo passando de 1 h (plano em
+ * blocos, revisão e o 3D renderizado no processador, uma parte por vez). Os
+ * efeitos são o plano; a montagem é o render. Mínimos altos de propósito.
+ */
+export function segundosNoModeloDoCurso(d: number | null | undefined, tres: boolean): { efeitos: number; montagem: number } {
+  const min = (d ?? 600) / 60;
+  return {
+    efeitos: Math.round(Math.max(20, (tres ? 6 : 4) * min) * 60),
+    montagem: Math.round((tres ? Math.max(45, 20 * min) : Math.max(15, 3 * min)) * 60),
+  };
+}
+
+function pesosDoRelogio(relogio: LeituraDaLinha["relogio"], d: number | null, curso?: { tres: boolean } | null): Partial<Record<ChaveDoPasso, number>> {
   if (relogio === "gemeo") {
     return { "gemeo-voz": segundosDaEtapa("gemeoVoz", d), "gemeo-pedacos": segundosDaEtapa("gemeoPedacos", d), "gemeo-juntar": segundosDaEtapa("gemeoJuntar", d) };
   }
@@ -220,8 +237,8 @@ function pesosDoRelogio(relogio: LeituraDaLinha["relogio"], d: number | null): P
     capas: b * 0.1,
     escrevendo: b * 0.1,
     "edicao-da-fala": b * 0.2,
-    efeitos: segundosDaEtapa("efeitos", d),
-    montagem: segundosDaEtapa("montagem", d),
+    efeitos: curso ? segundosNoModeloDoCurso(d, curso.tres).efeitos : segundosDaEtapa("efeitos", d),
+    montagem: curso ? segundosNoModeloDoCurso(d, curso.tres).montagem : segundosDaEtapa("montagem", d),
     revisao: segundosDaEtapa("revisao", d),
   };
 }
@@ -443,7 +460,7 @@ export function lerLinhaDoTempo(v: EntradaDaLinha, etapaLocal: string | null = n
     : roteiroLigado && !v.roteiro?.aprovado && !v.temCortes && s !== "aprovando"
       ? "roteiro"
       : "edicao";
-  const pesos = pesosDoRelogio(relogio, v.durationSec);
+  const pesos = pesosDoRelogio(relogio, v.durationSec, v.linha?.modeloDoCurso ?? null);
   const presentes = passos.filter((p) => pesos[p.chave] !== undefined);
   const totalSegundos = Math.round(presentes.reduce((t, p) => t + (pesos[p.chave] ?? 0), 0));
   const posicao = presentes.findIndex((p) => p.chave === passoAtual.chave);
@@ -485,7 +502,10 @@ export function faltamAteOFim(v: EntradaDaLinha & { criadoEm: string; inicioDaRo
   const doRelogio = Math.max(l.totalSegundos - decorrido, l.restaDepoisDoAtualSegundos, 0);
   const efeitos = Boolean(v.linha?.efeitosLigados);
   const revisao = Boolean(v.linha?.revisaoLigada);
-  const edicao = segundosDaEdicao(v.durationSec, { efeitos, revisao });
+  const curso = v.linha?.modeloDoCurso ?? null;
+  const edicao = curso
+    ? segundosDaEtapa("base", v.durationSec) + segundosNoModeloDoCurso(v.durationSec, curso.tres).efeitos + segundosNoModeloDoCurso(v.durationSec, curso.tres).montagem + (revisao ? segundosDaEtapa("revisao", v.durationSec) : 0)
+    : segundosDaEdicao(v.durationSec, { efeitos, revisao });
   const depois = l.relogio === "gemeo" ? segundosDaEtapa("roteiro", v.durationSec) + edicao : l.relogio === "roteiro" ? edicao : 0;
   return { segundos: Math.round(doRelogio + depois), passou: decorrido > l.totalSegundos };
 }
