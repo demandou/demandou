@@ -219,8 +219,11 @@ export function segundosNoModeloDoCurso(d: number | null | undefined, tres: bool
   return {
     // 11/10, 01h40 (Bruno: "70 minutos para um vídeo de 2 está maluco"): recalibrado depois do tini, que
     // tirou as falhas e novas tentativas que inflavam o tempo. Ainda pelo alto, mas perto do real.
-    efeitos: Math.round(Math.max(tres ? 10 : 8, (tres ? 4 : 3) * min) * 60),
-    montagem: Math.round((tres ? Math.max(15, 8 * min) : Math.max(8, 2 * min)) * 60),
+    // 11/10, manhã (Bruno: "deixar o tempo real"): medido no worker com o tini, o corte de 35 s no
+    // Anatomia (3D) levou ~5 min (preparar 50 s, cortar 70 s, plano 70 s, revisão 90 s, render e trilha
+    // 90 s). Plano e revisão crescem por bloco de 2,5 min; o render 3D, ~4 min por minuto de vídeo.
+    efeitos: Math.round(Math.max(3, 2.5 * min) * 60),
+    montagem: Math.round((tres ? Math.max(3, 4 * min) : Math.max(2, 2 * min)) * 60),
   };
 }
 
