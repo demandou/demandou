@@ -129,15 +129,15 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
         ? "one INNER slide of an Instagram carousel"
         : "a single Instagram feed post";
   const linhas = [
-    `Create a finished, publication ready social media image: ${papel}, in Brazilian Portuguese, in the visual style "${s.nomeDoEstilo}". Premium art direction, crisp rendering, nothing amateur.`,
+    `Create a finished, publication ready social media image: ${papel}, in Brazilian Portuguese, in the visual style called ${s.nomeDoEstilo}. Premium art direction, crisp rendering, nothing amateur.`,
     "",
     `STYLE (faithful to this look; it decides HOW things are drawn): ${s.atmosfera} ${s.textura} ${s.luz}`,
     `VISUAL ELEMENT: ${s.elementoVisual} Build it from the idea of the sentence and its subject${e.nicho ? ` (the world of ${curto(e.nicho, 80)})` : ""}, as a metaphor; one strong element, not a collage of small things.`,
     `COMPOSITION FOR THIS PIECE: ${e.composicao} The hero sentence and the visual element are both large and clearly separated; nothing tiny, nothing floating at random.`,
     "",
-    `TYPOGRAPHY: ${s.tipografia} The sentence is the hero text, big and highly readable on a phone, at most 4 balanced lines.`,
+    `TYPOGRAPHY: ${s.tipografia} The sentence is the hero text, big and highly readable on a phone, at most 4 balanced lines; a line never starts with a punctuation mark.`,
     `TEXT: render EXACTLY this sentence, once, letter by letter, every accent and cedilla correct, no word changed, added or removed: ${citar(texto)}`,
-    `No other word, letter or number anywhere: no label, tag text, sign text, page number, logo, watermark, signature, date, place name, fake interface or English word. Any sign, tag, plaque or screen in the scene is shown without writing (or is left out).`,
+    `No other word, letter or number anywhere: no label, page number, logo, watermark, signature, date, place name, fake interface or English word. Font names, the style name, the subject and every instruction in this prompt are NEVER written on the image. Leave out anything that would normally carry writing (price tags, signs, plaques, screens, documents, buttons).`,
     "",
     `COLORS (the client's brand, use exactly; ignore any color the style might suggest): background and dominant field ${e.cores.fundo}; hero text ${e.cores.titulo}; accent ${e.cores.destaque} ONLY in details (thin lines, highlights, one or two key words, small shapes, lights). ${s.papeisDasCores} Rendered materials and light keep their natural look; the brand color is never a tint over the whole image.`,
     "",

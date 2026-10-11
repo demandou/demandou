@@ -82,7 +82,7 @@ Fields:
 styleName: 2 to 5 words naming the look.
 mood: 1 to 2 sentences: mood, era, premium level.
 visualElement: 2 to 3 sentences: which kind of visual element carries the idea and how it is rendered (3D, flat, photo, illustration, collage, paper, chalk...), and how it relates to the sentence.
-layouts: EXACTLY 5 different layouts for a 4:5 still post in this style (each 1 sentence: where the hero text sits, where the visual element sits, scale, negative space). Clearly different from each other, all in the same template language.
+layouts: EXACTLY 5 different layouts for a 4:5 still post in this style (each 1 sentence: where the hero text sits, where the visual element sits, scale, negative space). Clearly different from each other (vary where the text sits: top, center, bottom, a side column, over the element; and vary the scale and viewpoint of the element), all in the same template language. A layout never relies on an element that would carry writing (price tag, sign, plaque, screen, label, document) nor on an empty frame.
 typography: 1 to 2 sentences: the template's type families described by style (e.g. "elegant high contrast serif like Cormorant Garamond for the key words, wide tracked uppercase geometric sans like Manrope"), weight, case, tracking, hierarchy.
 texture: 1 sentence: surfaces, grain, paper, glass, depth.
 lighting: 1 sentence: lighting of the scene.
