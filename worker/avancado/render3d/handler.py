@@ -40,6 +40,14 @@ def enviar(arquivo, saida):
         return None
 
 
+def rodar(cmd, pasta, env, prazo_s=600):
+    """Roda com prazo: um navegador que trava não segura o trabalho (e a GPU paga) até o limite do endpoint."""
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, cwd=pasta, env=env, timeout=prazo_s)
+    except subprocess.TimeoutExpired as x:
+        return subprocess.CompletedProcess(cmd, 124, (x.stdout or b"").decode("utf-8", "replace") if isinstance(x.stdout, bytes) else (x.stdout or ""), f"passou do prazo de {prazo_s} s")
+
+
 def gpu():
     try:
         return subprocess.run(["nvidia-smi", "--query-gpu=name,driver_version", "--format=csv,noheader"], capture_output=True, text=True, timeout=20).stdout.strip()
@@ -56,7 +64,7 @@ def rodar_script(e, projeto, t0):
     arquivo = os.path.join(projeto, e.get("arquivo") or "out/video-editado.mp4")
     env = {**os.environ, **{k: str(v) for k, v in (e.get("env") or {}).items()}, "GL_DOS_MODELOS": e.get("gl") or "angle-egl"}
     t1 = time.time()
-    r = subprocess.run(["node", e.get("script") or "scripts/render.mjs", *[str(a) for a in (e.get("args") or [])]], capture_output=True, text=True, cwd=projeto, env=env)
+    r = rodar(["node", e.get("script") or "scripts/render.mjs", *[str(a) for a in (e.get("args") or [])]], projeto, env, int(e.get("prazo_s") or 1700))
     render_s = round(time.time() - t1, 1)
     if r.returncode != 0 or not os.path.exists(arquivo):
         return {"erro": f"o script saiu com {r.returncode}: {(r.stderr or r.stdout)[-1500:]}", "gpu": gpu()}
@@ -95,7 +103,7 @@ def handler(trabalho):
                 cmd += [str(e["de"]), str(e["ate"] if e.get("ate") is not None else 10**9)]
                 if e.get("concorrencia"):
                     cmd.append(str(e["concorrencia"]))
-            r = subprocess.run(cmd, capture_output=True, text=True, cwd=projeto, env={**os.environ, **({"RENDER_LOG": e["log"]} if e.get("log") else {})})
+            r = rodar(cmd, projeto, {**os.environ, **({"RENDER_LOG": e["log"]} if e.get("log") else {})})
             linhas = [l for l in r.stdout.strip().splitlines() if l.startswith("{")]
             medida = json.loads(linhas[-1]) if linhas else {"ok": False, "gl": gl, "erro": (r.stderr or r.stdout)[-1500:]}
             if not medida.get("ok"):

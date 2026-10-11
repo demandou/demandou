@@ -19,6 +19,10 @@ RUN apt-get update \
 
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 ENV NVIDIA_VISIBLE_DEVICES=all
+# O host do RunPod mostra 128 núcleos: o Remotion passa --video-threads=85 ao Chrome e o
+# decodificador H.264 com tantas threads segura os quadros (o <Video> do @remotion/media
+# esperou 118 s pelo primeiro). O nproc respeita OMP_NUM_THREADS, e o Remotion usa o nproc.
+ENV OMP_NUM_THREADS=8
 
 # O libglvnd e o carregador da Vulkan só acham o driver da NVIDIA (que o host monta
 # com a capacidade "graphics") por estes dois arquivos; a imagem base não os traz.
@@ -34,15 +38,6 @@ RUN npm install --omit=dev --no-audit --no-fund
 RUN npx remotion browser ensure
 # No Linux o headless shell não desenha na GPU: o Chrome for Testing sim (gl "angle-egl+cft").
 RUN npx remotion browser ensure --chrome-mode=chrome-for-testing
-# Invólucros que desligam a decodificação de vídeo por hardware (o <Video> do @remotion/media
-# travou extraindo quadros com a GPU à vista): o mesmo navegador, mais uma opção no fim.
-RUN set -e; \
-    cft=$(find /app/node_modules/.remotion -type f -name chrome -perm -u+x | head -1); \
-    hs=$(find /app/node_modules/.remotion -type f -name chrome-headless-shell -perm -u+x | head -1); \
-    test -n "$cft" && test -n "$hs"; \
-    printf '#!/bin/sh\nexec "%s" "$@" --disable-accelerated-video-decode\n' "$cft" > /app/chrome-cft-sem-hw; \
-    printf '#!/bin/sh\nexec "%s" "$@" --disable-accelerated-video-decode\n' "$hs" > /app/chrome-hs-sem-hw; \
-    chmod +x /app/chrome-cft-sem-hw /app/chrome-hs-sem-hw; cat /app/chrome-cft-sem-hw
 
 COPY fontes ./fontes
 COPY avancado/render3d/render-3d.mjs /app/render-3d.mjs
