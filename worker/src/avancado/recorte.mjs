@@ -49,7 +49,7 @@ export function caixaDoRecorte(rosto, largura, altura, { larguraDaCaixa = 1320 }
 }
 
 /** O corpo do pedido ao endpoint do RunPod (o handler.py de worker/avancado/runpod). Puro (testado). */
-export function pedidoDoRunpod({ urlDoTrecho, duracao, caixa, aquecer = 1.5, razao = 0.25 }) {
+export function pedidoDoRunpod({ urlDoTrecho, duracao, caixa, aquecer = 1.5, razao = 0.25, saida = null }) {
   return {
     input: {
       url_do_trecho: urlDoTrecho,
@@ -59,8 +59,40 @@ export function pedidoDoRunpod({ urlDoTrecho, duracao, caixa, aquecer = 1.5, raz
       aquecer_no_comeco: true,
       razao,
       caixa: caixa ? caixa.join(",") : null,
+      ...(saida ? { saida } : {}),
     },
   };
+}
+
+/**
+ * Para onde o RunPod manda o WebM: o Blob público da Vercel, com um TOKEN DE
+ * CLIENTE que só serve para este arquivo e vence em 30 min (a chave do Blob
+ * nunca sai do worker). O handler faz o PUT com estes cabeçalhos, como o SDK
+ * do Blob faz, e devolve a URL. Os cabeçalhos são puros (testados).
+ */
+export function cabecalhosDoBlob({ tokenDoCliente, contentType = "video/webm" }) {
+  const storeId = String(tokenDoCliente).split("_")[3] ?? "";
+  return {
+    authorization: `Bearer ${tokenDoCliente}`,
+    "x-api-version": "12",
+    "x-vercel-blob-store-id": storeId,
+    "x-vercel-blob-access": "public",
+    "x-content-type": contentType,
+    "x-add-random-suffix": "1",
+  };
+}
+
+export async function saidaNoBlob({ token, pathname }) {
+  const { generateClientTokenFromReadWriteToken } = await import("@vercel/blob/client");
+  const tokenDoCliente = await generateClientTokenFromReadWriteToken({
+    token,
+    pathname,
+    allowedContentTypes: ["video/webm"],
+    maximumSizeInBytes: 1024 * 1024 * 1024,
+    validUntil: Date.now() + 30 * 60_000,
+    addRandomSuffix: true,
+  });
+  return { put_url: `https://vercel.com/api/blob/?pathname=${encodeURIComponent(pathname)}`, cabecalhos: cabecalhosDoBlob({ tokenDoCliente }) };
 }
 
 /**
@@ -111,12 +143,13 @@ async function recortarNaCpu({ trecho, duracao, caixa, pasta }) {
   return { alfa, rastro: JSON.parse(readFileSync(rastro, "utf8")), medida };
 }
 
-async function recortarNoRunpod({ trecho, duracao, caixa, pasta, publicar, env = process.env, fetchImpl = fetch, esperaMs = 5000 }) {
+async function recortarNoRunpod({ trecho, duracao, caixa, pasta, publicar, destino = null, env = process.env, fetchImpl = fetch, esperaMs = 5000 }) {
   if (!publicar) throw new Error("o recorte no RunPod precisa publicar o trecho (sem função de publicar)");
   const urlDoTrecho = await publicar(trecho);
+  const saida = destino ? await destino() : null;
   const base = `${RUNPOD}/${env.RUNPOD_ENDPOINT_RECORTE}`;
   const cab = { Authorization: `Bearer ${env.RUNPOD_API_KEY}`, "Content-Type": "application/json" };
-  const r = await fetchImpl(`${base}/run`, { method: "POST", headers: cab, body: JSON.stringify(pedidoDoRunpod({ urlDoTrecho, duracao, caixa })), signal: AbortSignal.timeout(60_000) });
+  const r = await fetchImpl(`${base}/run`, { method: "POST", headers: cab, body: JSON.stringify(pedidoDoRunpod({ urlDoTrecho, duracao, caixa, saida })), signal: AbortSignal.timeout(60_000) });
   if (!r.ok) throw new Error(`o RunPod recusou o recorte (HTTP ${r.status})`);
   const { id } = await r.json();
   // a partida a frio da GPU mais ~2 s por segundo de vídeo, com folga
@@ -139,7 +172,7 @@ async function recortarNoRunpod({ trecho, duracao, caixa, pasta, publicar, env =
     } else {
       writeFileSync(alfa, Buffer.from(lido.base64, "base64"));
     }
-    return { alfa, rastro: lido.rastro, medida: lido.medida };
+    return { alfa, rastro: lido.rastro, medida: lido.medida, urlDoWebm: lido.url ?? null };
   }
 }
 
@@ -149,11 +182,12 @@ async function recortarNoRunpod({ trecho, duracao, caixa, pasta, publicar, env =
  * medida, backend, segundos }. Falhou no RunPod, cai na CPU (o corte sai mais
  * devagar, mas sai).
  */
-export async function recortarApresentador({ trecho, duracao, caixa, pasta, publicar = null, backend = backendDoRecorte() }) {
+export async function recortarApresentador({ trecho, duracao, caixa, pasta, publicar = null, destino = null, aoPublicar = () => {}, backend = backendDoRecorte() }) {
   const t0 = Date.now();
   if (backend === "runpod") {
     try {
-      const r = await recortarNoRunpod({ trecho, duracao, caixa, pasta, publicar });
+      const r = await recortarNoRunpod({ trecho, duracao, caixa, pasta, publicar, destino });
+      if (r.urlDoWebm) aoPublicar(r.urlDoWebm);
       return { ...r, backend: "runpod", segundos: +((Date.now() - t0) / 1000).toFixed(1) };
     } catch (e) {
       console.warn(`[avancado] recorte no RunPod falhou, vai na CPU: ${e instanceof Error ? e.message : e}`);

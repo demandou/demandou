@@ -130,8 +130,8 @@ export async function portaoDoTsc(projeto, { prazoMs = 4 * 60_000 } = {}) {
   const r = await rodarIsolado(tsc, ["-p", "tsconfig.portao.json", "--pretty", "false"], { cwd: projeto, prazoMs, memoriaMb: 2048 });
   if (r.estourou) return { problemas: [{ arquivo: "*", linha: 1, motivo: "o tsc passou do prazo" }] };
   const problemas = [];
-  for (const l of r.saida.split("\n")) {
-    const m = l.match(/^(.+?)\((\d+),(\d+)\): error (TS\d+): (.*)$/);
+  for (const l of r.saida.split(/\r?\n/)) {
+    const m = l.trim().match(/([^\s()]+\.tsx?)\((\d+),(\d+)\): error (TS\d+): (.*)$/);
     if (!m) continue;
     const arquivo = m[1].replace(/\\/g, "/").replace(/^.*src\//, "src/");
     problemas.push({ arquivo: arquivo.replace(/^src\/cenas\//, ""), linha: Number(m[2]), motivo: `${m[4]}: ${m[5]}` });

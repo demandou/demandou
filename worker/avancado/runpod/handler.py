@@ -13,8 +13,10 @@ Entrada (o corpo que o worker manda em POST /run, worker/src/avancado/recorte.mj
              "saida": {"put_url": "...", "cabecalhos": {...}}  (opcional)}}
 
 Saída: {"medida": {...}, "rastro": {...}, "url": "..."} quando o WebM sobe para
-um bucket (as variáveis BUCKET_* do RunPod) ou para o put_url pedido; senão
-{"webm_base64": "..."} (só até ~15 MB: o RunPod limita o tamanho da resposta).
+o put_url pedido (o worker manda um destino no Blob da Vercel com token de
+cliente só para aquele arquivo) ou para um bucket (as variáveis BUCKET_* do
+RunPod); senão {"webm_base64": "..."} (só até ~15 MB: o RunPod limita o
+tamanho da resposta). Com "so_medida": true, só a medida e o rastro.
 
 O modelo vai na imagem (Dockerfile ao lado), sob a licença GPL-3.0 do Robust
 Video Matting: roda no nosso endpoint, nunca é entregue a cliente.
@@ -43,19 +45,27 @@ def baixar(url, destino):
 
 
 def enviar(arquivo, entrada):
-    """Sobe o WebM: bucket do RunPod (BUCKET_ENDPOINT_URL...), put_url pedido, ou bytes na resposta."""
-    if os.environ.get("BUCKET_ENDPOINT_URL"):
+    """Sobe o WebM: o put_url pedido, o bucket do RunPod (BUCKET_ENDPOINT_URL...), ou bytes na resposta."""
+    saida = entrada.get("saida") or {}
+    if not saida.get("put_url") and os.environ.get("BUCKET_ENDPOINT_URL"):
         from runpod.serverless.utils import rp_upload
 
         return {"url": rp_upload.upload_file_to_bucket(file_name=f"recorte-{int(time.time())}.webm", file_location=arquivo)}
-    saida = entrada.get("saida") or {}
     if saida.get("put_url"):
+        # o destino que o worker preparou (o Blob da Vercel com um token de cliente só para este arquivo)
         with open(arquivo, "rb") as f:
             pedido = urllib.request.Request(saida["put_url"], data=f.read(), method="PUT", headers={"Content-Type": "video/webm", **(saida.get("cabecalhos") or {})})
         with urllib.request.urlopen(pedido, timeout=600) as r:
             if r.status >= 300:
                 raise RuntimeError(f"o envio do WebM respondeu {r.status}")
-        return {"url": saida.get("url_publica") or saida["put_url"].split("?")[0]}
+            corpo = r.read().decode("utf-8", "replace")
+        try:
+            url = json.loads(corpo).get("url")
+        except ValueError:
+            url = None
+        return {"url": url or saida.get("url_publica") or saida["put_url"].split("?")[0]}
+    if entrada.get("so_medida"):
+        return {}
     tamanho = os.path.getsize(arquivo)
     if tamanho > TETO_DOS_BYTES:
         raise RuntimeError(f"WebM de {tamanho} bytes não cabe na resposta: configure o bucket do endpoint")

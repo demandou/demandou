@@ -56,7 +56,7 @@ export function cameraEm(t: number, chaves: ChaveDeCamera[]): { pos: Vetor; alvo
   return { pos, alvo, fov: mix(c1.fov ?? 40, c2.fov ?? 40, u) };
 }
 
-const camProj = new THREE.PerspectiveCamera(40, 1, 0.1, 200);
+const camProj = new THREE.PerspectiveCamera(40, 1, 0.3, 90);
 /** Onde um ponto do 3D cai na tela (px dentro do canvas), pela mesma câmera do canvas. */
 export function projetar(t: number, chaves: ChaveDeCamera[], ponto: Vetor, largura: number, altura: number): { x: number; y: number; atras: boolean } {
   const c = cameraEm(t, chaves);
@@ -182,7 +182,7 @@ export const Cena3D: React.FC<{
   const inicio = cameraEm(0, chaves);
   return (
     <div style={{ position: "absolute", left: x, top: y, width: largura, height: altura, opacity: opacidade }}>
-      <ThreeCanvas width={largura} height={altura} shadows={sombras} gl={{ antialias: true, alpha: true }} camera={{ fov: inicio.fov, near: 0.1, far: 200, position: inicio.pos }}>
+      <ThreeCanvas width={largura} height={altura} shadows={sombras} gl={{ antialias: true, alpha: true }} camera={{ fov: inicio.fov, near: 0.3, far: 90, position: inicio.pos }}>
         <Rig chaves={chaves} />
         {children}
       </ThreeCanvas>
@@ -202,23 +202,27 @@ export const LuzesDaMarca: React.FC<{ destaque?: number; alvo?: Vetor }> = ({ de
       intensity={2.1}
       color={misturar(MARCA.titulo, "#ffffff", 0.6)}
       castShadow
-      shadow-mapSize-width={1024}
-      shadow-mapSize-height={1024}
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
       shadow-camera-left={-8}
       shadow-camera-right={8}
       shadow-camera-top={8}
       shadow-camera-bottom={-8}
       shadow-camera-near={1}
       shadow-camera-far={30}
-      shadow-bias={-0.0005}
-      shadow-normalBias={0.02}
+      shadow-bias={-0.0008}
+      shadow-normalBias={0.05}
     />
     <directionalLight position={[-6, 4, -5]} intensity={0.45} color={MARCA.titulo} />
     {destaque > 0.001 ? <pointLight position={alvo} intensity={6 * destaque} distance={9} color={MARCA.destaque} /> : null}
   </>
 );
 
-/** O chão: um disco no fundo da marca que recebe sombra, com uma grade bem fraca. */
+/**
+ * O chão: um disco no fundo da marca que recebe sombra, com uma grade bem fraca.
+ * Fica 2 cm ABAIXO de y = 0: a base da maquete pode encostar em 0 sem as duas
+ * superfícies brigarem no mesmo plano (a escada preta da prova da maquete de 10/10).
+ */
 export const ChaoDaMarca: React.FC<{ raio?: number; grade?: boolean }> = ({ raio = 14, grade = true }) => {
   const g = React.useMemo(() => {
     const h = new THREE.GridHelper(24, 48, MARCA.titulo, MARCA.titulo);
@@ -231,11 +235,11 @@ export const ChaoDaMarca: React.FC<{ raio?: number; grade?: boolean }> = ({ raio
   useEffect(() => () => g.dispose(), [g]);
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <circleGeometry args={[raio, 64]} />
         <meshStandardMaterial color={MARCA.fundo} roughness={0.95} />
       </mesh>
-      {grade ? <primitive object={g} position={[0, 0.002, 0]} /> : null}
+      {grade ? <primitive object={g} position={[0, -0.018, 0]} /> : null}
     </group>
   );
 };

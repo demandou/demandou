@@ -97,7 +97,7 @@ export const Atras: React.FC<CenaProps> = ({ de, ate }) => {
 ## 6. Peças de texto e traço
 
 - `<Letreiro texto t inicio cor atraso? duracao? mascaraHorizontal? />`: construção por letras (cada letra com atraso curto). `mascaraHorizontal`: revelada da esquerda para a direita (aula 8.2, ATENÇÃO). Ponha dentro de um `<div>` com a fonte, o peso e o tamanho.
-- `<TituloQueCabe texto largura maximo cor peso? alinhar? espacamentoEm? style? />`: um título numa linha que ENCOLHE até caber (texto cortado na borda reprova a revisão). `useTamanhoQueCabe(texto, largura, maximo, opcoes?)` devolve o tamanho para quem monta o próprio bloco.
+- `<TituloQueCabe texto largura maximo cor peso? alinhar? espacamentoEm? style? />`: um título que ENCOLHE até caber (texto cortado na borda reprova a revisão); se numa linha ficaria com menos de 60% do `maximo`, vai em duas linhas equilibradas. `maximo` de 90 para cima. Por cima da gravação em tela cheia, ponha o título numa caixa com fundo `comAlfa(MARCA.fundo, 0.78)`. `useTamanhoQueCabe(texto, largura, maximo, opcoes?)` devolve o tamanho para quem monta o próprio bloco.
 - `<Cartao t inicio titulo apoio? icone? x|direita y largura? lado? ativo? saida? tamanho? />`: cartão de borda fina e cantos arredondados (aula 7) que entra com deslocamento curto e o ícone se desenhando; `ativo` 0 a 1 destaca o explicado e tira ênfase dos outros; `saida` (segundos) tira o cartão; com `largura`, o título encolhe até caber nela.
 - `<Icone nome tamanho? cor? espessura? progresso? />`: ícones de traço que se desenham (`progresso` 0 a 1). Nomes: caixa, notebook, celular, calendario, check, lista, pessoa, pessoas, casa, coracao, grafico, alvo, lampada, relogio, estrela, seta, cursor, conversa, poltrona, livro, ferramenta, foguete, escudo, lupa, engrenagem, bandeira, chave, cadeado, mundo, megafone, etiqueta, predio, berco, tenda, corda, estaca, plataforma, mao, mais, menos, xis. Outro ícone: desenhe com `<svg viewBox="0 0 24 24">` e `<path>` com `pathLength={1}`, `strokeDasharray="1 1"` e `strokeDashoffset={1 - p}`.
 - `<Traco d progresso cor? espessura? />`: um caminho SVG em px do quadro que se desenha (sublinhado, seta, contorno). `<LinhaEntre de ate progresso seta? curva? />`: linha entre dois pontos.
@@ -131,6 +131,7 @@ const chaves: ChaveDeCamera[] = [
 - Explodir em camadas: a mesma geometria em `<group position={[0, elevacao * abre, 0]}>`, com `abre` 0 → 1 → 0 pela fala; a base fica alinhada e a reconstrução acontece NA TELA, sem corte.
 - Dentro do `Cena3D` só malha, grupo, luz e material; texto e rótulo ficam fora (os `rotulos`).
 - Sem GPU no servidor: até ~40 malhas, uma luz com sombra, sem pós-processamento. Nada de modelo externo, textura ou imagem.
+- O chão do kit (`ChaoDaMarca`) fica 2 cm abaixo de y = 0: a base da maquete fica em y = 0 ou acima. Duas superfícies no mesmo plano "brigam" (aparece uma escada preta): desloque 1 a 2 cm. Material transparente (`transparent`) não lança sombra: `castShadow` só no opaco.
 
 ## 7b. Os gráficos (aula 6)
 

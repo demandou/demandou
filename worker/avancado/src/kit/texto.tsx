@@ -90,7 +90,24 @@ export function useTamanhoQueCabe(texto: string, largura: number, maximo: number
   }, [texto, largura, maximo, opcoes.familia, opcoes.peso, opcoes.espacamentoEm, opcoes.minimo, pronto]);
 }
 
-/** Um título numa linha que sempre cabe na largura dada (encolhe até caber). */
+/** O ponto de quebra que deixa as duas linhas mais parecidas em tamanho (num espaço). */
+export function quebrarEmDuas(texto: string): [string, string] | null {
+  const palavras = texto.split(" ").filter(Boolean);
+  if (palavras.length < 2) return null;
+  let melhor: [string, string] | null = null;
+  for (let i = 1; i < palavras.length; i++) {
+    const a = palavras.slice(0, i).join(" ");
+    const b = palavras.slice(i).join(" ");
+    if (!melhor || Math.max(a.length, b.length) < Math.max(melhor[0].length, melhor[1].length)) melhor = [a, b];
+  }
+  return melhor;
+}
+
+/**
+ * Um título que sempre cabe na largura dada: numa linha, encolhendo até
+ * caber; se numa linha ficaria pequeno demais (menos de 60% do máximo, o
+ * título miúdo da prova da maquete de 10/10), em DUAS linhas equilibradas.
+ */
 export const TituloQueCabe: React.FC<{
   texto: string;
   largura: number;
@@ -102,10 +119,24 @@ export const TituloQueCabe: React.FC<{
   style?: React.CSSProperties;
   children?: React.ReactNode;
 }> = ({ texto, largura, maximo, cor, peso = 800, alinhar = "left", espacamentoEm = -0.01, style, children }) => {
-  const tamanho = useTamanhoQueCabe(texto, largura * 0.98, maximo, { peso, espacamentoEm });
+  const opcoes = { peso, espacamentoEm };
+  const umaLinha = useTamanhoQueCabe(texto, largura * 0.98, maximo, opcoes);
+  const duas = quebrarEmDuas(texto);
+  const a = useTamanhoQueCabe(duas?.[0] ?? texto, largura * 0.98, maximo, opcoes);
+  const b = useTamanhoQueCabe(duas?.[1] ?? texto, largura * 0.98, maximo, opcoes);
+  const emDuas = !children && duas !== null && umaLinha < maximo * 0.6 && Math.min(a, b) > umaLinha * 1.15;
+  const tamanho = emDuas ? Math.min(a, b) : umaLinha;
   return (
-    <div style={{ width: largura, textAlign: alinhar, fontFamily: LETRA.titulo, fontWeight: peso, fontSize: tamanho, lineHeight: 1, letterSpacing: `${espacamentoEm}em`, color: cor, whiteSpace: "nowrap", ...style }}>
-      {children ?? texto}
+    <div style={{ width: largura, textAlign: alinhar, fontFamily: LETRA.titulo, fontWeight: peso, fontSize: tamanho, lineHeight: emDuas ? 1.02 : 1, letterSpacing: `${espacamentoEm}em`, color: cor, whiteSpace: "nowrap", ...style }}>
+      {emDuas && duas ? (
+        <>
+          {duas[0]}
+          <br />
+          {duas[1]}
+        </>
+      ) : (
+        (children ?? texto)
+      )}
     </div>
   );
 };

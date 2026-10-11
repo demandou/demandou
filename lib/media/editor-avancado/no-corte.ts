@@ -29,6 +29,8 @@ export type OpcaoSobMedida = {
   resumo: string;
   /** O ícone do cartão (lucide). */
   icone: "box" | "scissors" | "chart";
+  /** A arte do cartão: três quadros da prova da aula renderizada pelo kit (public/estilos/sob-medida). */
+  arte: string;
 };
 
 export const OPCOES_SOB_MEDIDA: readonly OpcaoSobMedida[] = [
@@ -39,6 +41,7 @@ export const OPCOES_SOB_MEDIDA: readonly OpcaoSobMedida[] = [
     nome: "Maquete 3D",
     resumo: "Uma maquete em 3D de verdade que se monta, se abre em camadas e se reconstrói enquanto você explica, com você numa moldura ao lado.",
     icone: "box",
+    arte: "/estilos/sob-medida/sob-medida-3d.webp",
   },
   {
     id: "sob-medida-recorte",
@@ -47,6 +50,7 @@ export const OPCOES_SOB_MEDIDA: readonly OpcaoSobMedida[] = [
     nome: "Recorte com letreiro",
     resumo: "Você recortado do fundo, com as palavras-chave grandes passando atrás da sua cabeça e uma moldura que se desenha conforme a fala.",
     icone: "scissors",
+    arte: "/estilos/sob-medida/sob-medida-recorte.webp",
   },
   {
     id: "sob-medida-graficos",
@@ -55,6 +59,7 @@ export const OPCOES_SOB_MEDIDA: readonly OpcaoSobMedida[] = [
     nome: "Gráficos que se desenham",
     resumo: "Gráficos, números e cards que entram na palavra dita, um por vez, acima da sua cabeça: o número que você falou, nunca um inventado.",
     icone: "chart",
+    arte: "/estilos/sob-medida/sob-medida-graficos.webp",
   },
 ];
 
