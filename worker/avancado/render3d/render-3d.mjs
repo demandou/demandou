@@ -12,7 +12,10 @@ const [projetoArg, saida, glArg, id = "Edicao", deTxt, ateTxt, concTxt] = proces
 const projeto = path.resolve(projetoArg);
 // "angle-egl+cft": o Chrome for Testing (o headless shell não desenha na GPU no Linux).
 const [gl, modo] = String(glArg).split("+");
-const chromeMode = modo === "cft" ? "chrome-for-testing" : "headless-shell";
+const chromeMode = String(modo).startsWith("cft") ? "chrome-for-testing" : "headless-shell";
+// "+cftw" ou "+hsw": o mesmo navegador por um invólucro que desliga a decodificação de vídeo por
+// hardware (a imagem do RunPod cria /app/chrome-cft-sem-hw e /app/chrome-hs-sem-hw).
+const browserExecutable = String(modo).endsWith("w") ? (chromeMode === "chrome-for-testing" ? "/app/chrome-cft-sem-hw" : "/app/chrome-hs-sem-hw") : null;
 const chromiumOptions = { gl, ...(process.platform === "linux" ? { enableMultiProcessOnLinux: true } : {}) };
 const t0 = Date.now();
 let serveUrl = null;
@@ -20,7 +23,7 @@ try {
   mkdirSync(path.dirname(path.resolve(saida)), { recursive: true });
   serveUrl = await bundle({ entryPoint: path.join(projeto, "src", "index.ts"), publicDir: path.join(projeto, "public"), rootDir: projeto, enableCaching: false });
   const tBundle = (Date.now() - t0) / 1000;
-  const composition = await selectComposition({ serveUrl, id, chromiumOptions, chromeMode, timeoutInMilliseconds: 120_000 });
+  const composition = await selectComposition({ serveUrl, id, chromiumOptions, chromeMode, browserExecutable, timeoutInMilliseconds: 120_000 });
   const de = deTxt ? Number(deTxt) : 0;
   const ate = ateTxt ? Math.min(composition.durationInFrames - 1, Number(ateTxt)) : composition.durationInFrames - 1;
   const t1 = Date.now();
@@ -37,6 +40,7 @@ try {
     outputLocation: saida,
     chromiumOptions,
     chromeMode,
+    browserExecutable,
     timeoutInMilliseconds: 120_000,
     // os mesmos limites do worker (limitesDoRender): cache e threads do extrator de quadros
     offthreadVideoCacheSizeInBytes: 512 * 1024 * 1024,
