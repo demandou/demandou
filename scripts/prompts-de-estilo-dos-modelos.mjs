@@ -78,6 +78,7 @@ Hard rules for what you write (EVERY field in ENGLISH even though the sources ar
 - Where the template shows the presenter (inside giant letters, in a rounded frame, in a window, in a circle), the still post REPLACES the presenter with a subject related image, scene or texture that fills that shape completely. Never a person, never an empty box or empty frame.
 - The visual element must be GENERIC and adaptable to ANY subject (finance, church, health, software...), like the template's "signature in any subject" section says: describe the KIND of element and how it is rendered (e.g. "a stylized 3D night city with lit windows and one tall tower made of the idea", "a technical cutaway illustration of an object with labeled parts and thin leader lines", "pure typographic poster, no image").
 - No real logos, no fake UI text, no extra words: the only words in the image will be the provided sentence (no labels, no numbers, no names of places).
+- Labels, arrows, callouts, leader lines, tags, captions and annotations of the template may only carry words taken from the provided sentence; describe them as "label lines and dots WITHOUT text" (or as pointing to a key word of the sentence). Never describe a label, tag, plaque, sign or screen that would need its own words.
 Fields:
 styleName: 2 to 5 words naming the look.
 mood: 1 to 2 sentences: mood, era, premium level.
