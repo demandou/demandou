@@ -79,13 +79,16 @@ type Opcoes = { usage: { projectId?: string | null; operation: string }; onCusto
  * O TEMPO DE UMA FASE (11/10/2026): cada fase roda numa invocação da Vercel com
  * 800 s de prazo. A escrita da Maquete 3D com o esforço padrão (alto) e 64 mil
  * de teto pensou até a função morrer. Agora cada chamada tem esforço e teto que
- * cabem em poucos minutos (perto de 90 tokens por segundo no Sonnet 5) e um
- * prazo de 9 minutos; a chamada que acabar só pensando volta como falha com
- * custo, e quem tenta de novo, com esforço baixo, é o worker, numa invocação nova.
+ * cabem em poucos minutos (92 tokens por segundo medidos no Sonnet 5: 32 mil em
+ * 346 s) e um prazo de 9 minutos; a chamada que acabar só pensando volta como
+ * falha com custo, e quem tenta de novo, com esforço baixo, é o worker, numa
+ * invocação nova (uma vez só).
  */
 export const LIMITE_DA_CHAMADA_MS = 9 * 60_000;
 export const ESFORCO_E_TETO = {
-  escrever: { esforco: "medium" as Esforco, maxTokens: 32_000 },
+  // medido em 11/10 no trecho do teste do Bruno (Maquete 3D, 36 s): o médio pensou os 32 mil
+  // inteiros em 346 s sem escrever (US$ 0,40); o baixo escreveu tudo em 213 s (US$ 0,29)
+  escrever: { esforco: "low" as Esforco, maxTokens: 32_000 },
   consertar: { esforco: "medium" as Esforco, maxTokens: 20_000 },
 };
 
@@ -105,7 +108,7 @@ async function chamar(kit: KitDoWorker, pedido: string, padrao: { esforco: Esfor
     cachedPrefix: prefixoDaCena(kit),
     cacheTtl: "1h",
     model: modeloDasCenas(),
-    maxTokens: tetoDeSaida(esforco === "low" ? Math.min(padrao.maxTokens, 24_000) : padrao.maxTokens, o.tetoRestanteUsd),
+    maxTokens: tetoDeSaida(padrao.maxTokens, o.tetoRestanteUsd),
     timeoutMs: LIMITE_DA_CHAMADA_MS,
     effort: esforco,
     usage: { projectId: o.usage.projectId ?? undefined, operation: o.usage.operation },

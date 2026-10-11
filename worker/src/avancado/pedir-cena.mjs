@@ -17,7 +17,7 @@ export function falhaDoPedido(mensagem, custoUsd = 0) {
 
 /** Vale pedir de novo com esforço baixo? Puro (testado). */
 export function deveTentarComMenosEsforco(corpo, fim) {
-  return Boolean(fim?.estado === "falhou" && fim.pensou && FASES_QUE_ESCREVEM.has(corpo?.fase) && corpo?.esforco !== "low");
+  return Boolean(fim?.estado === "falhou" && fim.pensou && FASES_QUE_ESCREVEM.has(corpo?.fase) && corpo?.esforco !== "low" && fim.esforco !== "low");
 }
 
 /**

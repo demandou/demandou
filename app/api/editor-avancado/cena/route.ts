@@ -3,7 +3,7 @@ export const maxDuration = 800;
 
 import { after, NextRequest, NextResponse } from "next/server";
 import { corpoAssinadoConfere, CABECALHO_ASSINATURA } from "@/lib/media/worker-token";
-import { acabouPensando } from "@/lib/media/editor-avancado/escrever-cenas";
+import { acabouPensando, ESFORCO_E_TETO } from "@/lib/media/editor-avancado/escrever-cenas";
 import { atenderPedidoDaCena, FalhaComCusto, PedidoInvalido, type PedidoDaCena } from "@/lib/media/editor-avancado/atender";
 import { apagarFim, estadoDoTrabalho, gravarFim, inicioDoTrabalho, lerFim, novoIdDeTrabalho } from "@/lib/media/editor-avancado/trabalho";
 
@@ -45,19 +45,21 @@ export async function POST(req: NextRequest) {
 
   const id = novoIdDeTrabalho();
   const rotulo = `[editor-avancado] ${corpo.fase ?? "?"} do corte ${corpo.videoJobId ?? "?"} (${id.slice(14, 22)})`;
+  // o esforço que a escrita usa de fato: o worker só tenta de novo com menos esforço se houver menos
+  const esforco = corpo.esforco ?? (corpo.fase === "escrever" ? ESFORCO_E_TETO.escrever.esforco : ESFORCO_E_TETO.consertar.esforco);
   after(async () => {
     const t0 = Date.now();
     const segundos = () => Math.round((Date.now() - t0) / 1000);
     try {
       const resultado = await atenderPedidoDaCena(corpo);
-      console.log(`${rotulo}: pronto em ${segundos()} s, US$ ${Number(resultado.custoUsd).toFixed(4)}${corpo.esforco ? `, esforço ${corpo.esforco}` : ""}`);
+      console.log(`${rotulo}: pronto em ${segundos()} s, US$ ${Number(resultado.custoUsd).toFixed(4)}${["tecnica", "revisar"].includes(String(corpo.fase)) ? "" : `, esforço ${esforco}`}`);
       await gravarFim(id, { estado: "pronto", resultado, segundos: segundos() });
     } catch (e) {
       const erro = e instanceof Error ? e.message : "falhou";
       // o que a chamada perdida custou vai junto: o teto do corte no worker conta
       const custoUsd = e instanceof FalhaComCusto ? e.custoUsd : 0;
       console.error(`${rotulo}: falhou em ${segundos()} s, US$ ${custoUsd.toFixed(4)}: ${erro}`);
-      await gravarFim(id, { estado: "falhou", erro, custoUsd, pensou: acabouPensando(e), invalido: e instanceof PedidoInvalido, segundos: segundos() }).catch((x) =>
+      await gravarFim(id, { estado: "falhou", erro, custoUsd, pensou: acabouPensando(e), esforco, invalido: e instanceof PedidoInvalido, segundos: segundos() }).catch((x) =>
         console.error(`${rotulo}: não gravou a falha: ${x instanceof Error ? x.message : x}`)
       );
     }

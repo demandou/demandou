@@ -374,9 +374,9 @@ test("trabalho da cena: o id carrega a hora; sem fim é andando até o prazo da 
   assert.deepEqual(t.estadoDoTrabalho(id, fim, 1_760_000_000_000 + 900_000), fim);
 });
 
-test("a escrita cabe no prazo: esforço médio, teto de 32 mil e uma chamada de no máximo 9 min", async () => {
+test("a escrita cabe no prazo: esforço baixo, teto de 32 mil e uma chamada de no máximo 9 min", async () => {
   const { ESFORCO_E_TETO, LIMITE_DA_CHAMADA_MS } = await import("@/lib/media/editor-avancado/escrever-cenas");
-  assert.equal(ESFORCO_E_TETO.escrever.esforco, "medium");
+  assert.equal(ESFORCO_E_TETO.escrever.esforco, "low");
   assert.ok(ESFORCO_E_TETO.escrever.maxTokens <= 32_000);
   assert.ok(LIMITE_DA_CHAMADA_MS < 800_000 - 60_000);
 });
@@ -410,6 +410,8 @@ test("pedido assíncrono: a escrita que só pensou vai de novo com esforço baix
   assert.ok(Math.abs(r.custoUsd - 0.4) < 1e-9);
   assert.equal(pc.deveTentarComMenosEsforco({ fase: "escrever", esforco: "low" }, { estado: "falhou", pensou: true }), false);
   assert.equal(pc.deveTentarComMenosEsforco({ fase: "revisar" }, { estado: "falhou", pensou: true }), false);
+  // a escrita que já foi no esforço baixo (o padrão desde a medida de 11/10) não repete igual
+  assert.equal(pc.deveTentarComMenosEsforco({ fase: "escrever" }, { estado: "falhou", pensou: true, esforco: "low" }), false);
 });
 
 test("pedido assíncrono: falha com custo, função perdida e o app antigo que responde 200", async () => {

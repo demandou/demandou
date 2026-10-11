@@ -19,7 +19,7 @@ const ID = /^(\d{13})-[0-9a-f-]{36}$/;
 
 export type FimDoTrabalho =
   | { estado: "pronto"; resultado: Record<string, unknown>; segundos: number }
-  | { estado: "falhou"; erro: string; custoUsd: number; pensou?: boolean; invalido?: boolean; segundos: number };
+  | { estado: "falhou"; erro: string; custoUsd: number; pensou?: boolean; esforco?: string; invalido?: boolean; segundos: number };
 
 export type EstadoDoTrabalho = FimDoTrabalho | { estado: "andando"; segundos: number } | { estado: "perdido"; erro: string; segundos: number };
 
