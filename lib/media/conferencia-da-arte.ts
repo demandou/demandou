@@ -173,7 +173,17 @@ export function palavrasForaDoPermitido(textos: string[], permitido: string[]): 
   return textos
     .flatMap(palavras)
     .map(semAcento)
-    .filter((w) => w.length >= 2 && w !== "?" && !permitidas.some((p) => parecidas(w, p)));
+    .filter((w) => w.length >= 2 && w !== "?" && !ehNumeroDeEtapa(w) && !permitidas.some((p) => parecidas(w, p)));
+}
+
+/**
+ * A NUMERAÇÃO DE ETAPA (11/10, teste da Maquete 3D): o infográfico de três etapas
+ * sai com "01", "02", "03", e a conferência tomava isso por número inventado nas três
+ * tentativas. Só 01 a 09 sozinhos; porcentagem, valor e qualquer outro número seguem
+ * barrados.
+ */
+export function ehNumeroDeEtapa(w: string): boolean {
+  return /^0[1-9]$/.test(w);
 }
 
 export type DecisaoDaDescricao = { reprovou: string | null; porCodigo: boolean };

@@ -270,3 +270,11 @@ test("o lote da opção sob medida é recusado antes de qualquer pedido ao worke
     else process.env.VIDEO_WORKER_URL = antes;
   }
 });
+
+test("conferência: numeração de etapa 01 a 09 não é número inventado; porcentagem e valor seguem barrados", async () => {
+  const { palavrasForaDoPermitido } = await import("@/lib/media/conferencia-da-arte");
+  const permitido = ["Excelência na Essência", "O Foco da Produtividade Real"];
+  assert.deepEqual(palavrasForaDoPermitido(["01 Excelência na Essência", "02 O Foco da Produtividade Real"], permitido), []);
+  assert.deepEqual(palavrasForaDoPermitido(["40% Excelência"], permitido), ["40%"]);
+  assert.deepEqual(palavrasForaDoPermitido(["Excelência 12"], permitido), ["12"]);
+});
