@@ -62,7 +62,7 @@ const TIPO = "editor";
 const CHAVE = "modelo-do-curso";
 
 export function editorDoCursoLigado(): boolean {
-  return process.env.EDITOR_DO_CURSO === "1";
+  return process.env.EDITOR_DO_CURSO?.trim() === "1";
 }
 
 /**
@@ -221,7 +221,7 @@ export function versaoDeitadaDoModelo(id: string | null | undefined): string | n
 }
 
 export function completoPeloModeloLigado(): boolean {
-  return process.env.COMPLETO_PELO_MODELO === "1";
+  return process.env.COMPLETO_PELO_MODELO?.trim() === "1";
 }
 
 export type CaminhoDoCompleto = { caminho: "curso"; modelo: string; versao: string; formato: FormatoDoModelo } | { caminho: "reserva"; motivo: string };

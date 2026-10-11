@@ -27,3 +27,11 @@ test("as duas regras das artes usam a mesma conferência", () => {
     assert.match(readFileSync(new URL(f, raiz), "utf8"), /estiloProprioValeSobreOModelo\(projectId\)/, f);
   }
 });
+
+test("a chave das artes pelo modelo liga com o valor gravado com quebra de linha (o PowerShell manda \"1\r\n\")", async () => {
+  const { arteDoModeloLigada } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo");
+  assert.equal(arteDoModeloLigada({ ARTE_PELO_MODELO: "1\r\n" }), true);
+  assert.equal(arteDoModeloLigada({ ARTE_PELO_MODELO: " 1 " }), true);
+  assert.equal(arteDoModeloLigada({ ARTE_PELO_MODELO: "0" }), false);
+  assert.equal(arteDoModeloLigada({}), false);
+});

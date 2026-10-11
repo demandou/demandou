@@ -44,7 +44,7 @@ type ModeloDoCatalogo = { id: string; formato: string; pede: string[]; automatic
 const CATALOGO = catalogo as ModeloDoCatalogo[];
 
 export function arteDoModeloLigada(env: Record<string, string | undefined> = process.env): boolean {
-  return env.ARTE_PELO_MODELO === "1";
+  return env.ARTE_PELO_MODELO?.trim() === "1"; // trim (10/10, noite): a variável foi gravada com quebra de linha e o caminho nunca ligou
 }
 
 /**
