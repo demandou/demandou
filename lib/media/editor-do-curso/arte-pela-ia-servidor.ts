@@ -242,6 +242,24 @@ function bytesDoDataUri(uri: string): Buffer {
  * Nem a reserva passou: lança, e quem chama tenta de novo no MESMO estilo e,
  * sem sair, para a peça com "Tentar de novo".
  */
+type Conferir = NonNullable<PedidoDeArte["conferir"]>;
+
+/**
+ * A palavra grande numa cor só (11/10, a thumb com "OD", "I" e "I" de
+ * PRODUTIVIDADE em vermelho, que parecia defeito): depois da conferência de
+ * sempre, o código mede a cor das letras na faixa da palavra; letras avulsas
+ * na cor da marca reprovam a camada da IA, com o motivo na próxima tentativa.
+ */
+export function comCorDaPalavra(conferir: Conferir, cores: CoresDaPeca): Conferir {
+  return async (dataUri, opcoes) => {
+    const v = await conferir(dataUri, opcoes);
+    if (!v.aprovada) return v;
+    const { corPorLetraNaPalavra } = await import("./recorte-com-letreiro");
+    const motivo = await corPorLetraNaPalavra(dataUri, cores).catch(() => null);
+    return motivo ? { ...v, aprovada: false, motivo: `O revisor de cor reprovou: ${motivo}` } : v;
+  };
+}
+
 export async function pecaDoRecorte(
   p: PecaPelaIa,
   o: { texto: string; tipo: TipoDaArte; lamina?: number; pagina?: { i: number; total: number } | null; redes: string[]; contentType: string; ajuste?: string | null },
@@ -286,8 +304,9 @@ export async function pecaDoRecorte(
       desenharAlternativo: comLayout(ORDEM_ALTERNATIVA, comPalavra),
       projectId: p.projectId,
       runId: p.runId ?? undefined,
-      ...(inj.conferir ? { conferir: inj.conferir } : {}),
+      conferir: comPalavra ? comCorDaPalavra(conferirBase, cores) : conferirBase,
     });
+  const conferirBase = inj.conferir ?? (await import("@/lib/media/conferencia-da-arte")).conferirArte;
   let camada = palavra ? await fundo(true) : null;
   let palavraEmCodigo: string | null = null;
   if (!camada || camada.algumaReprovada) {

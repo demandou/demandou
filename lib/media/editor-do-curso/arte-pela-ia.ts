@@ -95,18 +95,18 @@ export const PROMPTS_SOB_MEDIDA: Record<string, PromptDeEstilo> = {
     nomeDoEstilo: "Cutout with Lettering",
     atmosfera: "Bold, personal, editorial, like a magazine cover: a giant word on a smooth dark gradient, made to have the speaker standing in front of it.",
     elementoVisual:
-      "A giant, very heavy uppercase KEY WORD as lettering across the upper part of the frame, on a smooth dark radial gradient, and an EMPTY stage below and in front of it, reserved for the real speaker (the cutout from the recording is pasted there later, in code, with the head in front of the lower half of the letters). Beside the empty stage, at most one or two small glassy cards (well inside the image, never touching its border), each with one simple object of the subject drawn inside and no text, and a thin accent outline frame drawn low, behind where the person will stand.",
+      "A giant, very heavy uppercase KEY WORD as lettering across the upper part of the frame, on a smooth dark radial gradient, and an EMPTY stage below and in front of it, reserved for the real speaker (the cutout from the recording is pasted there later, in code, with the head in front of the lower half of the letters). Beside the empty stage, at most one or two small glassy cards (never touching the giant word, the face or the image border), each with one simple object of the subject drawn inside and no text, and a thin accent outline frame drawn low, behind where the person will stand.",
     composicoes: [
       "The giant word centered in its band; the empty stage centered below; a thin accent outline frame low in the center, behind the stage.",
-      "The giant word in its band with its last letters in the accent; one small glassy card on the left side, at shoulder height of the empty stage.",
-      "The giant word in its band in a light tone; two small glassy cards, one on each side of the stage, at shoulder height, never over it.",
+      "The giant word in its band with a thin accent underline; one small glassy card in the left card area.",
+      "The giant word in its band in a light tone; two small glassy cards, one in each card area beside the stage.",
       "The giant word in its band with a thin accent line under it; a faint radial light behind the empty stage.",
-      "The giant word in its band; one small glassy card on the right side; a thin accent outline frame low in the center.",
+      "The giant word in its band; one small glassy card in the right card area; a thin accent outline frame low in the center.",
     ],
-    tipografia: "A very heavy geometric sans serif like Montserrat Black, uppercase, for the giant key word (one light tone, a few letters in the accent).",
+    tipografia: "A very heavy geometric sans serif like Montserrat Black, uppercase, for the giant key word, the WHOLE word in one single color, every letter the same.",
     textura: "Smooth dark radial gradient; glassy cards with a soft blur and a thin border.",
     luz: "Soft studio light falling on the empty stage, as if a person stood there; a soft halo of darkness around the edges.",
-    papeisDasCores: "Dark gradient background; giant word in a light tone with part in the accent; cards dark with an accent line; the accent never tints the whole image.",
+    papeisDasCores: "Dark gradient background; giant word entirely in one light tone (the accent only in a thin underline or line near it, never on single letters); cards dark with an accent line; the accent never tints the whole image.",
     evitar:
       "NEVER draw any person, face, head, body, hand, silhouette, mannequin, statue or portrait, not even in the cards or in the background: the real speaker is pasted later from the recording, and any drawn person would be a different person. No jagged shapes, no glow blob in the middle, no stickers or emojis.",
     soTipografico: false,
@@ -466,18 +466,38 @@ export type GeometriaDoRecorte = {
   larguraMaxima: number;
   cabecaMaxima: number;
   frase: { x: number; y: number; w: number; h: number; alinhar: "fim" | "centro" };
+  /**
+   * As áreas dos cartões (frações): abaixo da faixa da palavra, acima da frase,
+   * nas laterais, longe do rosto (que fica no centro, até a cabeça máxima).
+   * Vazia na deitada: a palavra, o palco e a manchete ocupam tudo (11/10, a
+   * ampulheta encostada no fim de PRODUTIVIDADE).
+   */
+  cartoes: Array<{ x0: number; x1: number; y0: number; y1: number }>;
 };
+/** As duas áreas laterais dos cartões, entre a faixa e a frase, fora do rosto. Puro. */
+function areasDosCartoes(faixaBase: number, fraseY: number, cabecaMaxima: number): GeometriaDoRecorte["cartoes"] {
+  const y0 = faixaBase + 0.05;
+  const y1 = fraseY - 0.08;
+  // O rosto ocupa no máximo o centro (0,5 mais ou menos metade da cabeça máxima); folga de 4%.
+  const borda = 0.5 - cabecaMaxima / 2 - 0.04;
+  const x1 = Math.min(0.26, borda);
+  if (y1 - y0 < 0.08 || x1 - 0.1 < 0.08) return [];
+  return [
+    { x0: 0.1, x1, y0, y1 },
+    { x0: 1 - x1, x1: 0.9, y0, y1 },
+  ];
+}
 // A gravação deitada põe braços e ombros largos no quadro: em pé, a pessoa pode
 // passar da largura (as laterais são cortadas) para a cabeça chegar à palavra;
 // o limite que manda é o da cabeça.
 export function geometriaDoRecorte(razao: number): GeometriaDoRecorte {
   if (razao > 1.2) {
-    return { forma: "deitada", faixa: { topo: 0.08, base: 0.4 }, topoDaCabeca: 0.27, centroX: 0.7, larguraMaxima: 0.62, cabecaMaxima: 0.2, frase: { x: 0.05, y: 0.48, w: 0.42, h: 0.46, alinhar: "centro" } };
+    return { forma: "deitada", faixa: { topo: 0.08, base: 0.4 }, topoDaCabeca: 0.27, centroX: 0.7, larguraMaxima: 0.62, cabecaMaxima: 0.2, frase: { x: 0.05, y: 0.48, w: 0.42, h: 0.46, alinhar: "centro" }, cartoes: [] };
   }
   if (razao < 0.65) {
-    return { forma: "alta", faixa: { topo: 0.14, base: 0.3 }, topoDaCabeca: 0.235, centroX: 0.5, larguraMaxima: 2.4, cabecaMaxima: 0.42, frase: { x: 0.07, y: 0.6, w: 0.86, h: 0.24, alinhar: "fim" } };
+    return { forma: "alta", faixa: { topo: 0.14, base: 0.3 }, topoDaCabeca: 0.235, centroX: 0.5, larguraMaxima: 2.4, cabecaMaxima: 0.42, frase: { x: 0.07, y: 0.6, w: 0.86, h: 0.24, alinhar: "fim" }, cartoes: areasDosCartoes(0.3, 0.6, 0.42) };
   }
-  return { forma: "retrato", faixa: { topo: 0.11, base: 0.33 }, topoDaCabeca: 0.25, centroX: 0.5, larguraMaxima: 1.8, cabecaMaxima: 0.36, frase: { x: 0.07, y: 0.68, w: 0.86, h: 0.26, alinhar: "fim" } };
+  return { forma: "retrato", faixa: { topo: 0.11, base: 0.33 }, topoDaCabeca: 0.25, centroX: 0.5, larguraMaxima: 1.8, cabecaMaxima: 0.36, frase: { x: 0.07, y: 0.68, w: 0.86, h: 0.26, alinhar: "fim" }, cartoes: areasDosCartoes(0.33, 0.68, 0.36) };
 }
 
 /** A razão largura/altura de cada proporção pedida ao gerador. Puro. */
@@ -501,7 +521,11 @@ export function layoutDoFundoDoRecorte(proporcao: string, comPalavra: boolean): 
     g.forma === "deitada"
       ? `The EMPTY STAGE for the person is the right half, from ${pct(g.topoDaCabeca)} of the height down to the bottom edge, centered at ${pct(g.centroX)} of the width: only smooth dark gradient and soft light there. The LEFT half below the band stays plain and dark, with nothing in it (a headline goes there later).`
       : `The EMPTY STAGE for the person is the center of the frame, from ${pct(g.topoDaCabeca)} of the height down to the bottom edge, about 70% of the width: only smooth dark gradient and soft light there. The lower ${pct(1 - g.frase.y)} of the image stays calm and dark (a headline goes there later).`;
-  return `LAYOUT OF THIS IMAGE: ${banda} ${palco} Small cards, if any, sit beside the stage, never on it, never over the band, and never touching or crossing the image border (keep 10% free on every side).`;
+  const area = (a: GeometriaDoRecorte["cartoes"][number]) => `from ${pct(a.x0)} to ${pct(a.x1)} of the width and from ${pct(a.y0)} to ${pct(a.y1)} of the height`;
+  const cartoes = g.cartoes.length
+    ? `CARD AREAS: small cards, if any, fit entirely inside the left card area (${area(g.cartoes[0])}) or the right card area (${area(g.cartoes[1])}). A card never touches or overlaps the giant word, never enters the central stage where the face goes, and never touches the image border.`
+    : "NO CARDS in this image: nothing touches or overlaps the giant word, and nothing sits on the stage or in the headline area.";
+  return `LAYOUT OF THIS IMAGE: ${banda} ${palco} ${cartoes}`;
 }
 
 /**
@@ -533,7 +557,7 @@ export function promptDoFundoDoRecorte(e: {
     // O assunto aqui só enche os cartões: linha curta, para o pedido inteiro (com
     // formato, correção e layout) caber no limite do GPT Image (5000 caracteres).
     `SUBJECT OF THE CARDS (never written): one concrete object the speaker literally talks about, matching ${citar(e.frase)}${e.trecho ? `; excerpt of the video: ${citar(curto(e.trecho, 300))}` : ""}${e.nicho ? `; the world of ${curto(e.nicho, 60)}` : ""}.`,
-    `DETAILS FOR THIS PIECE: ${e.composicao} Cards are small, drawn as an object without any text, and stay fully inside the image, at least 10% away from every edge.`,
+    `DETAILS FOR THIS PIECE: ${e.composicao} Cards are small, drawn as an object without any text, and stay inside the card areas of the layout (never on the word, never on the face).`,
     "",
     palavra
       ? `THE GIANT WORD: write EXACTLY ${citar(palavra)}, once, in huge, very heavy uppercase letters (${s.tipografia}), every accent correct, no letter changed, added or removed. It is the ONLY text in the image.`
@@ -542,7 +566,7 @@ export function promptDoFundoDoRecorte(e: {
       ? `No other word, letter or number anywhere: no label, caption, page number, logo, watermark, signature, date, interface text or English word; the cards carry no text. Font names, the style name and every instruction in this prompt are NEVER written on the image.`
       : "ABSOLUTELY NO TEXT: no letters, words, numbers, labels, captions, logos or signs anywhere.",
     "",
-    `COLORS (the client's brand, use exactly): background ${e.cores.fundo}; the giant word in ${e.cores.titulo}${palavra ? `, with a few of its letters in the accent ${e.cores.destaqueNoTexto ?? e.cores.destaque}` : ""}; accent ${e.cores.destaque} ONLY in details (thin lines, the outline frame, card borders, small lights). ${s.papeisDasCores}`,
+    `COLORS (the client's brand, use exactly): background ${e.cores.fundo};${palavra ? ` the giant word ENTIRELY in ${e.cores.titulo}, every letter the same color (never single letters or pairs of letters in another color; if the accent touches the word, it is only a thin underline or line near it);` : ""} accent ${e.cores.destaque} ONLY in details (thin lines, the outline frame, card borders, small lights). ${s.papeisDasCores}`,
     "",
     `AVOID: ${s.evitar} ${linhaDaPessoa(s)}${frasePedeEquipamento(e.frase) ? "" : " No camera, microphone, ring light, tripod or recording studio."} No real brand logos or app icons. No empty boxes or placeholder panels besides the stage. No long dash.`,
   ];

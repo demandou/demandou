@@ -140,6 +140,72 @@ export function lugarDaPessoa(
   return { escala, left, top, width, height };
 }
 
+/** Hex em [r, g, b]. Puro. */
+function rgbDe(hex: string): [number, number, number] {
+  const c = hex.replace("#", "");
+  const full = c.length === 3 ? c.split("").map((x) => x + x).join("") : c.slice(0, 6);
+  const n = parseInt(full, 16);
+  return Number.isFinite(n) ? [(n >> 16) & 255, (n >> 8) & 255, n & 255] : [0, 0, 0];
+}
+const distancia = (a: ArrayLike<number>, b: ArrayLike<number>) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+/**
+ * COR POR LETRA NA PALAVRA GRANDE (11/10): a palavra é inteira numa cor (a da
+ * letra) ou inteira na cor da marca; letras avulsas na cor da marca parecem
+ * defeito. Mede, na faixa da palavra (sem o fim dela, onde mora o sublinhado),
+ * a cor dominante de cada coluna: colunas na cor da letra E colunas na cor da
+ * marca, ambas com mais de 3% da largura, reprovam. Devolve o motivo ou null.
+ * `rgb` é a imagem em 3 canais. Puro.
+ */
+export function corPorLetra(
+  rgb: Uint8Array,
+  w: number,
+  h: number,
+  faixa: { topo: number; base: number },
+  cores: Pick<CoresDaPeca, "fundo" | "titulo" | "destaque" | "destaqueNoTexto">
+): string | null {
+  const fundo = rgbDe(cores.fundo);
+  const titulo = rgbDe(cores.titulo);
+  const marcas = [cores.destaque, cores.destaqueNoTexto].filter((c): c is string => Boolean(c)).map(rgbDe);
+  const y0 = Math.max(0, Math.round(faixa.topo * h));
+  const y1 = Math.min(h, Math.round((faixa.topo + 0.85 * (faixa.base - faixa.topo)) * h));
+  const linhas = Math.max(1, y1 - y0);
+  let colunasDaLetra = 0;
+  let colunasDaMarca = 0;
+  for (let x = 0; x < w; x++) {
+    let naLetra = 0;
+    let naMarca = 0;
+    for (let y = y0; y < y1; y++) {
+      const i = (y * w + x) * 3;
+      const px = [rgb[i], rgb[i + 1], rgb[i + 2]];
+      if (distancia(px, fundo) < 70) continue;
+      const dT = distancia(px, titulo);
+      const dM = Math.min(...marcas.map((m) => distancia(px, m)));
+      if (dM < dT && dM < 110) naMarca++;
+      else if (dT <= dM && dT < 110) naLetra++;
+    }
+    const minimo = linhas * 0.03;
+    if (naMarca >= minimo && naMarca > naLetra) colunasDaMarca++;
+    else if (naLetra >= minimo) colunasDaLetra++;
+  }
+  if (colunasDaMarca >= w * 0.03 && colunasDaLetra >= w * 0.03) {
+    return `a palavra grande tem letras avulsas na cor da marca (${Math.round((100 * colunasDaMarca) / (colunasDaMarca + colunasDaLetra))}% das letras); ela vai inteira numa cor só, e a marca só em filete ou sublinhado`;
+  }
+  return null;
+}
+
+/** A cor por letra na camada da IA (data URI), na faixa achada ou na da geometria. */
+export async function corPorLetraNaPalavra(dataUri: string, cores: CoresDaPeca): Promise<string | null> {
+  const bytes = Buffer.from(dataUri.slice(dataUri.indexOf(",") + 1), "base64");
+  const meta = await sharp(bytes).metadata();
+  const g = geometriaDoRecorte((meta.width ?? 1) / (meta.height ?? 1));
+  const reduzida = sharp(bytes).resize({ width: 320 }).removeAlpha();
+  const { data, info } = await reduzida.clone().raw().toBuffer({ resolveWithObject: true });
+  const cinza = await reduzida.clone().grayscale().raw().toBuffer({ resolveWithObject: true });
+  const achada = faixaDoLetreiro(new Uint8Array(cinza.data.buffer, cinza.data.byteOffset, cinza.info.width * cinza.info.height), cinza.info.width, cinza.info.height);
+  return corPorLetra(new Uint8Array(data.buffer, data.byteOffset, info.width * info.height * 3), info.width, info.height, achada ?? g.faixa, cores);
+}
+
 /** Hex para rgba com a opacidade pedida. Puro. */
 function rgba(hex: string, a: number): string {
   const c = hex.replace("#", "");
