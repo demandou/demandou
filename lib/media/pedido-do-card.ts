@@ -120,7 +120,9 @@ export type AcaoDoPedido =
       ajustes?: AjustesDaPeca | null;
     }
   | { tipo: "data"; data: string; hora: string | null }
-  | { tipo: "rede"; incluir: string[]; tirar: string[] };
+  | { tipo: "rede"; incluir: string[]; tirar: string[] }
+  /** "posta também no story" (11/10): um post irmão no story do Instagram e do Facebook, sem IA e sem custo. */
+  | { tipo: "story" };
 
 const agora = () => new Date().toISOString();
 
@@ -194,14 +196,19 @@ export async function estadoDoPedido(cardId: string) {
 const HEX = /#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/i;
 const PEDIDO_DE_ARTE = /\b(imagem|imagens|fotos?|artes?|gr[aá]fic\w*|infogr[aá]fic\w*|capas?|ilustra\w*|visual|design|cor|cores|layout|l[aâ]minas?|slides?)\b/i; // palavra inteira: "corrige" não é "cor"
 
+/** "story", "stories", "storie": o pedido de publicar também no story (11/10). */
+const PEDIDO_DE_STORY = /\bstor(y|ies|ie|ys)\b/i;
+
 /** Sem o modelo (falhou ou demorou), a leitura por palavra: melhor que nada. Exportada para a prova. */
 export function entenderNaUnha(mensagem: string): AcaoDoPedido[] {
   const acoes: AcaoDoPedido[] = [];
   const temArte = PEDIDO_DE_ARTE.test(mensagem) || pedidoDeIntercalar(mensagem) || Boolean(lerAjustesDoPedido(mensagem));
+  const temStory = PEDIDO_DE_STORY.test(mensagem);
   // "O texto ficou atrás de mim, precisa subir" é o TÍTULO da arte (ajuste de
   // layout), e não a legenda: a palavra "texto" sozinha não abre ação de texto.
   const textoEhDoLayout = deslocamentoDoTituloNoPedido(mensagem) !== 0;
-  const temTexto = (textoEhDoLayout ? /\b(tira|tire|remov|legenda|escrev|reescrev|troca a palavra|corrig)/i : /\b(tira|tire|remov|texto|legenda|frase|escrev|reescrev|troca a palavra|corrig)/i).test(mensagem) || !temArte;
+  const temTexto = (textoEhDoLayout ? /\b(tira|tire|remov|legenda|escrev|reescrev|troca a palavra|corrig)/i : /\b(tira|tire|remov|texto|legenda|frase|escrev|reescrev|troca a palavra|corrig)/i).test(mensagem) || (!temArte && !temStory);
+  if (temStory) acoes.push({ tipo: "story" });
   if (temTexto) acoes.push({ tipo: "texto", instrucao: mensagem });
   if (temArte) acoes.push(comAsPistasDoTexto({ tipo: "arte", instrucao: mensagem, cor: mensagem.match(HEX)?.[0]?.toUpperCase() ?? null, lamina: null, marcaToda: false }, mensagem));
   return acoes;
@@ -254,6 +261,7 @@ Tipos de ação (use quantas o pedido tiver, na ordem em que aparecem):
 - {"tipo":"arte","instrucao":"...","cor":"#RRGGBB ou null","lamina":número ou null,"marcaToda":true|false,"paletaEstrita":true|false,"pretoEBranco":true|false,"papel":true|false,"intercalarFotos":true|false,"tituloParaCima":true|false,"tituloParaBaixo":true|false,"luzDeFundo":true|false}: refazer a IMAGEM, o carrossel ou o infográfico. "cor" é a cor pedida em hex (converta nome de cor conhecido: escarlate #E3000F só se o cliente não deu o hex; se deu, use o dele). "lamina" só se o cliente nomeou UMA lâmina/slide (1, 2, 3...). "marcaToda" true só se ele pediu essa cor para a marca inteira ("sempre", "em tudo", "na marca"). "paletaEstrita" true quando ele exige que a arte use SÓ certas cores ("somente preto e vermelho", "só as cores da marca", "use só a paleta", "nada fora da paleta"); "mude para vermelho" não é estrito. "pretoEBranco" true só se pediu preto e branco literalmente. "papel" true se citou papel, papel rasgado, colagem, recorte ou fita adesiva. "intercalarFotos" true se pediu para intercalar, alternar ou variar as fotos dele nas lâminas. "tituloParaCima"/"tituloParaBaixo" true quando o texto/título DA ARTE ("o texto atrás de mim", "a palavra") deve subir ou descer: isso é ajuste da ARTE, e NÃO ação de texto. "luzDeFundo" true se pediu luz de fundo, luz atrás, contraluz ou efeito de profundidade.
 - {"tipo":"data","data":"AAAA-MM-DD","hora":"HH:MM ou null"}: mudar o dia/horário de publicação. Resolva "sexta", "amanhã" etc. a partir de hoje.
 - {"tipo":"rede","incluir":["instagram"|"linkedin"|"facebook"|"twitter"|"threads"|"tiktok"|"youtube"],"tirar":[...]}: publicar também em outra rede, ou tirar de uma rede.
+- {"tipo":"story"}: publicar também no STORY (stories) do Instagram ou do Facebook. Story NÃO é rede nova nem mudança de texto ou de arte.
 
 Pedido composto vira várias ações: "tira X e refaz a arte em vermelho" são DUAS (texto e arte). Não invente ação que não foi pedida.`;
   const usuario = `Hoje: ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", year: "numeric", month: "2-digit", day: "2-digit" })}.
@@ -263,7 +271,7 @@ Pedido do cliente: ${args.mensagem}`;
   try {
     const bruto = await askClaude(sistema, usuario, { maxTokens: 4000, timeoutMs: 60_000, usage: { operation: "chat_do_card_entender", projectId: args.usage.projectId, runId: args.usage.runId ?? undefined } });
     const json = JSON.parse(bruto.slice(bruto.indexOf("{"), bruto.lastIndexOf("}") + 1)) as { acoes?: AcaoDoPedido[] };
-    const acoes = (json.acoes ?? []).filter((a) => a && ["texto", "arte", "data", "rede"].includes(a.tipo));
+    const acoes = (json.acoes ?? []).filter((a) => a && ["texto", "arte", "data", "rede", "story"].includes(a.tipo));
     if (acoes.length) {
       // O hex escrito pelo cliente vale mais que o que o modelo converteu.
       const hexDoCliente = args.mensagem.match(HEX)?.[0]?.toUpperCase();
@@ -526,6 +534,7 @@ export async function executarPedido(ctx: Contexto): Promise<void> {
       }
       if (a.tipo === "data") pedido.etapas.push({ chave: "data", rotulo: "mudando a data", estado: "esperando" });
       if (a.tipo === "rede") pedido.etapas.push({ chave: "rede", rotulo: "mudando as redes", estado: "esperando" });
+      if (a.tipo === "story") pedido.etapas.push({ chave: "story", rotulo: "levando para o story", estado: "esperando" });
     }
     await salvar();
 
@@ -653,6 +662,14 @@ export async function executarPedido(ctx: Contexto): Promise<void> {
       const r = await mudarRedes(posts, rede, ctx.userId, card.projectId);
       frases.push(r.frase);
       await marcar("rede", r.ok ? "feito" : "falhou");
+    }
+
+    // Depois das redes: "posta no Instagram e no story" leva primeiro ao Instagram.
+    if (acoes.some((a) => a.tipo === "story")) {
+      await marcar("story", "fazendo");
+      const r = await levarParaOStory(card.runId, card.dayOfWeek);
+      frases.push(r.frase);
+      await marcar("story", r.ok ? "feito" : "falhou");
     }
 
     if (!acoes.length) frases.push("Não entendi o que mudar. Me diga em uma frase o que quer no texto ou na arte.");
@@ -1086,6 +1103,41 @@ async function refazerArteUnica(o: {
 }
 
 // ── Data e rede ──────────────────────────────────────────────────────────────
+
+/**
+ * O STORY PEDIDO NO CHAT (11/10, pedido do Bruno: "pedi no card para postar
+ * também no story, e não ajustou o tamanho e nem postou"). O chat não tinha
+ * essa ação. Agora cada post de feed do dia no Instagram e no Facebook ganha o
+ * irmão de story pelo MESMO caminho da tela (criarLugarNovo: mesmo texto e
+ * mesma mídia, sem IA e sem custo); a arte sai em 9:16 na publicação
+ * (arte-do-story.ts, pela Meta e pelo Blotato).
+ */
+async function levarParaOStory(runId: string, dayOfWeek: number): Promise<{ ok: boolean; frase: string }> {
+  const { criarLugarNovo } = await import("@/lib/publish/lugar-novo");
+  const { formatoValido } = await import("@/lib/publish/formato-de-destino");
+  const doDia = await prisma.post.findMany({
+    where: { runId, dayOfWeek, platform: { in: ["instagram", "facebook"] }, status: { notIn: ["cancelled", "rejected"] } },
+    orderBy: { createdAt: "asc" },
+  });
+  const feeds = doDia.filter((p) => formatoValido(p.platform, (p.metadata as { formato?: unknown } | null)?.formato) === "feed");
+  if (!feeds.length) {
+    return { ok: false, frase: "Story só existe no Instagram e no Facebook, e esta peça não está em nenhum dos dois. Me peça para levar ao Instagram e depois ao story." };
+  }
+  const feitas: string[] = [];
+  const ja: string[] = [];
+  for (const p of feeds) {
+    const r = await criarLugarNovo(p, "story");
+    const nome = NOME_DA_REDE[p.platform] ?? p.platform;
+    if (r.status === 200) feitas.push(nome);
+    else if (r.status === 409) ja.push(nome);
+  }
+  if (!feitas.length && ja.length) return { ok: true, frase: `O story já estava marcado no ${ja.join(" e no ")}.` };
+  if (!feitas.length) return { ok: false, frase: "Não consegui marcar o story desta vez. Pode pedir de novo." };
+  return {
+    ok: true,
+    frase: `Marquei também o story no ${feitas.join(" e no ")}, no mesmo horário, em rascunho junto com o dia. A arte sai em pé (9:16), inteira; story não leva legenda e some em 24 horas.`,
+  };
+}
 
 async function mudarData(
   posts: Array<{ id: string; status: string; scheduledAt: Date | null }>,

@@ -188,6 +188,12 @@ export type DepsDaPeca = {
   /** Os cards vivos da campanha ligados a estes posts. */
   lerCardsDosPosts(runId: string, postIds: string[]): Promise<CardIrmao[]>;
   arquivarCards(ids: string[]): Promise<number>;
+  /**
+   * Os cards SEM post do dia (prévia, publicação), quando o dia ficou sem post
+   * vivo nenhum (11/10: a prévia da quinta ficou "esperando você" depois que a
+   * peça foi cancelada). Opcional para as provas que montam as dependências.
+   */
+  arquivarSoltosDoDia?(runId: string, dayOfWeek: number): Promise<number>;
   cardsVivos(runId: string): Promise<number>;
   arquivarRun(runId: string): Promise<boolean>;
   nomeDe(userId: string): Promise<string | null>;
@@ -236,6 +242,11 @@ const depsDoBanco: DepsDaPeca = {
       ? prisma.campaignCard.findMany({ where: { runId, status: { not: "archived" }, postId: { in: postIds } }, select: { id: true, cardType: true, postId: true } })
       : Promise.resolve([]),
   arquivarCards: async (ids) => (ids.length ? (await prisma.campaignCard.updateMany({ where: { id: { in: ids }, status: { not: "archived" } }, data: { status: "archived" } })).count : 0),
+  arquivarSoltosDoDia: async (runId, dayOfWeek) => {
+    const vivos = await prisma.post.count({ where: { runId, dayOfWeek, status: { notIn: ["cancelled", "rejected"] } } });
+    if (vivos > 0) return 0;
+    return (await prisma.campaignCard.updateMany({ where: { runId, dayOfWeek, postId: null, cardType: { in: ["preview", "publish"] }, status: { not: "archived" } }, data: { status: "archived" } })).count;
+  },
   cardsVivos: (runId) => prisma.campaignCard.count({ where: { runId, NOT: { status: "archived" } } }),
   arquivarRun: async (runId) => (await prisma.pipelineRun.updateMany({ where: { id: runId, archived: false }, data: { archived: true, archivedAt: new Date() } })).count > 0,
   nomeDe,
@@ -275,7 +286,8 @@ export async function cancelarPeca(cardId: string, userId: string, postIds: stri
       ...cardsIrmaosParaArquivar(irmaos.filter((c) => c.id !== card.id), paraCancelar),
     ]),
   ];
-  const cardsArquivados = await deps.arquivarCards(paraArquivar);
+  const cardsArquivados =
+    (await deps.arquivarCards(paraArquivar)) + (deps.arquivarSoltosDoDia && card.dayOfWeek != null ? await deps.arquivarSoltosDoDia(card.runId, card.dayOfWeek) : 0);
   // Run sem card vivo NENHUM (de texto, de arte ou de vídeo) sai do quadro.
   const runArquivado = (await deps.cardsVivos(card.runId)) === 0 ? await deps.arquivarRun(card.runId) : false;
   const quadro: QuadroFechado = { cardsArquivados, postsCancelados, runArquivado };

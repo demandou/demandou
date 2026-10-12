@@ -116,6 +116,27 @@ export function naoFazPelaPonte(post: Pick<Post, "mediaType">, platform: string)
 }
 
 /** As mídias da peça, na ordem em que a rede vai recebê-las, ainda sem URL pública. */
+/**
+ * O STORY DE IMAGEM NA DIMENSÃO CERTA também por esta conexão (11/10): a
+ * Meta direta já entregava a arte em 9:16 (app/api/media/ig, arte-do-story.ts),
+ * mas aqui ia a arte do feed e a rede cortava título e texto. Vídeo passa
+ * como está; se a leitura falhar, vai a fonte de sempre.
+ */
+async function fonteNoFormato(fonte: string, post: Pick<Post, "mediaType">, platform: string, formato: FormatoDeDestino): Promise<string> {
+  if (formato !== "story" || post.mediaType === "video" || (platform !== "instagram" && platform !== "facebook")) return fonte;
+  try {
+    const { lerMidia } = await import("@/lib/media/storage");
+    const { arteParaStory } = await import("@/lib/media/arte-do-story");
+    const bruto = fonte.startsWith("data:") ? Buffer.from(fonte.slice(fonte.indexOf(",") + 1), "base64") : await lerMidia(fonte);
+    if (!bruto) return fonte;
+    const r = await arteParaStory(bruto);
+    return r.ajustada ? `data:${r.mime};base64,${r.buffer.toString("base64")}` : fonte;
+  } catch (e) {
+    console.warn("[blotato] a arte do story não foi ajustada para 9:16:", e instanceof Error ? e.message : e);
+    return fonte;
+  }
+}
+
 export function fontesDaPeca(
   post: Pick<Post, "imageUrl" | "mediaType">,
   platform: string,
@@ -524,7 +545,7 @@ export async function publicarPeloBlotato(
     const fontes = fontesDaPeca(post, conta.platform, formato);
     const midias: string[] = [];
     for (let i = 0; i < fontes.length; i++) {
-      midias.push(await urlPublicaDaMidia(fontes[i], `demandou-${post.id}-${i}`));
+      midias.push(await urlPublicaDaMidia(await fonteNoFormato(fontes[i], post, conta.platform, formato), `demandou-${post.id}-${i}`));
     }
 
     let urlDoArtigo: string | null = null;
