@@ -20031,3 +20031,8 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 - 12/10 01h30 Provas do enquadramento no artefato (versão 13): WhatsApp em pé, OBS deitado, Ygor; vídeos completos editados, artes sem saldo no Google. Esperando o Bruno aprovar para ENQUADRAMENTO_ADAPTATIVO=1. Projeto de teste devolvido a sob-medida-graficos.
 - 12/10 ~02h10 PUBLICADO 7da38ee+3acf5a1 (app e worker): CORTE DE CUSTO das imagens aprovado (uma geração por arte no 4:5, os outros formatos encaixados sem cortar; 2 tentativas; uma volta no mesmo estilo; volta extra do ajuste só com AJUSTE_VOLTA_EXTRA=1). RECORTE (só projeto de teste): cabeça por fora alta (29%) e corpo grande, janela 560+ x 800+, revisão 'texto-escondido', borda do alfa encolhida 1,5 px. Provas 1 (WhatsApp do Bruno) e 3 (Ygor) refeitas em série.
 - 12/10 03h30 Provas refeitas com o enquadramento novo DE VERDADE (6802b05: o projeto ia a cada bloco do completo; antes a chave nunca ligava) e a PalavraAtrasDaCabeca no kit (revisão reprova palavra ilegível): vídeos 1 e 3 no artefato (versão 14). Esperando o Bruno aprovar para ENQUADRAMENTO_ADAPTATIVO=1. Projeto de teste devolvido a sob-medida-graficos.
+
+## 12/10 ~09h40: ENQUADRAMENTO NOVO PARA TODOS e fim da conversa (estado em docs/estado-1210.md)
+
+- ENQUADRAMENTO_ADAPTATIVO=1 no Railway (Bruno aprovou as provas; worker reiniciado SUCCESS).
+- Estado completo, regras novas, custos e a lista do que está aberto: docs/estado-1210.md. Começar a próxima conversa por ele.
