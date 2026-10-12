@@ -171,6 +171,9 @@ export async function completoAvancado(
       mkdirSync(pastaDoBloco, { recursive: true });
       const pedidoDoBloco = {
         chave: `${pedido.chave ?? "completo"}#b${k + 1}`,
+        // o projeto vai a cada bloco (12/10): sem ele, as chaves por projeto (o enquadramento novo) nunca ligavam no completo
+        projectId: pedido.projectId ?? null,
+        videoJobId: pedido.videoJobId ?? null,
         sourceUrl: "fala-limpa",
         // um quarto de quadro antes da borda (como o trecho na grade): o quadro da borda entra
         // neste bloco e não no anterior, e a soma dos blocos é a fala inteira, quadro a quadro
