@@ -77,7 +77,7 @@ import { FalhaDaPublicacao, LinhaDaPublicacaoRecolhida, chaveDoPostQueFalhou } f
 import { TRADUCAO_DOS_CODIGOS, chamadoDaFalha, codigoDaFalha, motivoDaRedeNaFrase } from "@/lib/publish/codigos";
 import { avisoDoEloNoQuadro } from "@/lib/media/elo-da-campanha";
 import { abrirChamado as abrirJanelaDeChamado } from "@/lib/suporte/abrir-chamado";
-import { SemanaDoQuadro, proximaPeca, type DiaDaSemana, type PecaDoDia, type EstadoDaPeca, type PortaDoDia } from "@/components/content/semana-do-quadro";
+import { SemanaDoQuadro, VisorDeMidia, proximaPeca, type DiaDaSemana, type MidiaDaPeca, type PecaDoDia, type EstadoDaPeca, type PortaDoDia } from "@/components/content/semana-do-quadro";
 import { JanelaDoConteudoPronto } from "@/components/posts/janela-do-conteudo-pronto";
 import { fraseDaRecorrencia, type Recorrencia } from "@/lib/posts/conteudo-pronto";
 import { andamentoDosDias } from "@/lib/pipeline/andamento-dos-dias";
@@ -871,6 +871,9 @@ function SocialPostPreview({
    */
   conta?: { platform: string; displayName: string | null; accountType: string; avatarUrl?: string | null } | null;
 }) {
+  // A ARTE INTEIRA (12/10, o Bruno: "as artes nos posts não dá para clicar e ver inteira, então não sei
+  // como vai ficar"): a prévia mostra a peça sem corte, e o clique abre o visor do quadro.
+  const [ampliada, setAmpliada] = useState<MidiaDaPeca | null>(null);
   const isLinkedIn = platform === "linkedin";
   const isTwitter = platform === "twitter";
   const isYouTube = platform === "youtube";
@@ -1027,23 +1030,27 @@ function SocialPostPreview({
             return (
               <div className="flex gap-1 rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                 {laminas.map((src, i) => (
-                  <img key={i} src={src} alt={`Lâmina ${i + 1}`} className="flex-1 min-w-0 object-cover" style={{ maxHeight: 200 }} />
+                  <button key={i} type="button" onClick={() => setAmpliada({ tipo: "carrossel", urls: laminas })} className="flex-1 min-w-0 cursor-zoom-in" aria-label={`Ver a lâmina ${i + 1} inteira`}>
+                    <img src={src} alt={`Lâmina ${i + 1}`} className="w-full object-contain" style={{ maxHeight: 200, background: "var(--bg-elevated)" }} />
+                  </button>
                 ))}
               </div>
             );
           }
           return (
-            <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            <button type="button" onClick={() => setAmpliada({ tipo: "imagem", urls: [imageUrl] })} className="block w-full rounded-lg overflow-hidden cursor-zoom-in" style={{ border: "1px solid var(--border)", background: "var(--bg-elevated)" }} aria-label="Ver a arte inteira">
               <img
                 src={imageUrl}
                 alt="Mídia do post"
-                className="w-full object-cover"
-                style={{ maxHeight: 260 }}
+                className="w-full object-contain"
+                style={{ maxHeight: 360 }}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
-            </div>
+            </button>
           );
         })()}
+
+        {ampliada && <VisorDeMidia midia={ampliada} titulo="A arte como vai sair" onFechar={() => setAmpliada(null)} />}
 
         {/* No media notice */}
         {!imageUrl && (
@@ -4939,7 +4946,12 @@ export function ContentManager({ projectId, projectName, initialCards, activeRun
   );
   // Algo andando: um vídeo refeito, ou uma peça pedida em produção (a campanha
   // que outra aba pediu, ou a que continua depois de recarregar a página).
-  const algoAndando = Object.values(andamento).some((a) => a.fase === "video") || haProjetoAcontecendo(pecasPedidasDaSemana);
+  // O QUADRO NÃO FICA COM A ARTE VELHA (12/10, o teste do Bruno): o ajuste pedido no chat e a arte
+  // gerada depois da escolha também mantêm a releitura, mesmo com o card já fechado.
+  const ajusteAndando =
+    cards.some((c) => pedidoEmCurso(c.metadata as Parameters<typeof pedidoEmCurso>[0])) ||
+    postsSemana.some((p) => esperaDaPeca([{ imageUrl: p.imageUrl, metadata: p.metadata }])?.estado === "gerando");
+  const algoAndando = Object.values(andamento).some((a) => a.fase === "video") || haProjetoAcontecendo(pecasPedidasDaSemana) || ajusteAndando;
 
   // Real-time polling while pipeline is running
   useEffect(() => {

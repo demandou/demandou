@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Check, Clock, Loader2, Plus, AlertCircle, X, Building2, UserRound, Archive, ChevronLeft, ChevronRight, Maximize2, Play, Scissors, Eye, Palette, RefreshCw, Video, Lightbulb, FileUp } from "lucide-react";
@@ -796,12 +797,13 @@ export function VisorDeMidia({ midia, titulo, onFechar }: { midia: MidiaDaPeca; 
     return () => window.removeEventListener("keydown", tecla);
   }, [midia.tipo, urls.length, onFechar]);
 
-  return (
+  // FORA DE QUALQUER JANELA (12/10): aberto de dentro do card, o visor ficava preso a ela; vai para o body, acima do card.
+  return createPortal(
     <div
       data-visor
       role="dialog"
       aria-label={`Mídia de ${titulo}`}
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4"
       // Fundo opaco e SEM desfoque (30/09). O `backdrop-filter` obrigava o
       // navegador a refazer o desfoque da tela inteira a cada quadro do vídeo
       // por cima: medido no Gestor, o corte derrubava 179 a 262 de 360 quadros
@@ -858,7 +860,8 @@ export function VisorDeMidia({ midia, titulo, onFechar }: { midia: MidiaDaPeca; 
         )}
         <p className="max-w-2xl text-center text-xs text-white/70">{titulo}</p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

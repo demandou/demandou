@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Mic, Square, ThumbsDown, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
+import { NivelDoAudio } from "@/components/ui/nivel-do-audio";
 import { cn } from "@/lib/utils";
 import { NOMES_DAS_REDES } from "@/lib/posts/estado";
 import { CATEGORIAS_DE_REPROVACAO, validarMotivo, type CategoriaDeReprovacao, type EstadoDaReprovacao } from "@/lib/credits/reprovacao";
@@ -48,6 +49,8 @@ export function JanelaDeReprovacao({
   const [ocupado, setOcupado] = useState(false);
   const [gravando, setGravando] = useState(false);
   const [transcrevendo, setTranscrevendo] = useState(false);
+  // O stream da gravação, para as barras do volume (12/10).
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const gravador = useRef<MediaRecorder | null>(null);
   const pedacos = useRef<Blob[]>([]);
   const desmontado = useRef(false);
@@ -100,6 +103,7 @@ export function JanelaDeReprovacao({
         stream.getTracks().forEach((t) => t.stop());
         if (desmontado.current) return;
         setGravando(false);
+        setStream(null);
         const audio = new Blob(pedacos.current, { type: rec.mimeType || "audio/webm" });
         setTranscrevendo(true);
         try {
@@ -115,6 +119,7 @@ export function JanelaDeReprovacao({
       };
       gravador.current = rec;
       rec.start();
+      setStream(stream);
       setGravando(true);
     } catch {
       toast.error("Não consegui usar o microfone. Escreva o motivo.");
@@ -243,7 +248,7 @@ export function JanelaDeReprovacao({
                   className="h-10 w-10 shrink-0 inline-flex items-center justify-center rounded-xl border disabled:opacity-50"
                   style={gravando ? { background: "#dc2626", borderColor: "#dc2626", color: "#fff" } : { borderColor: "#f97316", color: "#f97316" }}
                 >
-                  {transcrevendo ? <Loader2 className="h-4 w-4 animate-spin" /> : gravando ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  {transcrevendo ? <Loader2 className="h-4 w-4 animate-spin" /> : gravando ? stream ? <NivelDoAudio stream={stream} /> : <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </button>
               </div>
               {classe === "gosto" && (
