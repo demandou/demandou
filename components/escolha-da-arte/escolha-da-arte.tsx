@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import { Loader2, X } from "lucide-react";
 import { ModelosDosPosts } from "@/components/estilo-dos-posts/modelos-dos-posts";
@@ -33,6 +34,12 @@ export function EscolhaDaArte({
   const [usarMateriais, setUsarMateriais] = useState(true);
   const [todas, setTodas] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  // FORA DO CARD (11/10, o teste do Bruno): dentro do cartão animado do quadro a
+  // janela ficava presa na largura dele (um "linguição") e piscava a cada
+  // redesenho do cartão. Ela vai direto para o body, e nenhum clique ou toque
+  // dentro dela chega ao cartão.
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
   // O infográfico não tem modelo a escolher: sai nas cores e na letra da marca.
   const modelo = formato === "infographic" ? { mestre: true } : modelos["1"];
 
@@ -56,10 +63,24 @@ export function EscolhaDaArte({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Escolher a arte" onClick={aoFechar}>
+  if (!montado) return null;
+  const parar = (e: { stopPropagation: () => void }) => e.stopPropagation();
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Escolher a arte"
+      onClick={(e) => {
+        e.stopPropagation();
+        aoFechar();
+      }}
+      onPointerDown={parar}
+      onMouseDown={parar}
+      onKeyDown={parar}
+    >
       <div
-        className="max-h-[92vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-t-2xl border p-4 sm:rounded-2xl sm:p-5"
+        className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-5"
         style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -109,6 +130,7 @@ export function EscolhaDaArte({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
