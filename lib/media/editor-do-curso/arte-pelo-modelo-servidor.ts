@@ -508,6 +508,86 @@ export async function arteNoEstiloComFrase(o: {
   );
 }
 
+/**
+ * O AJUSTE DA ARTE PELO CHAT NO MESMO ESTILO (12/10, o pedido do Bruno que
+ * saiu errado: "troca a minha foto pela que acabei de subir nos materiais,
+ * diminui um pouco, faz um efeito de luz, e um recorte de papel com o globo no
+ * canto de cima à direita"). O chat refazia pelo caminho antigo, lia "papel"
+ * como "estilo de colagem" e trocava o estilo sozinho. Agora a peça com estilo
+ * gravado é refeita NELE: o pedido vira direção de arte (pedido-da-arte.ts), a
+ * pessoa sai da foto mais nova dos materiais quando foi isso que ele pediu, com
+ * a escala e a luz pedidas, e o JEV confere se cada item apareceu (uma segunda
+ * volta só com o que faltou). Devolve a arte por rede e o que não saiu.
+ */
+export async function refazerNoEstiloComPedido(o: {
+  projectId: string;
+  posts: Array<{ id: string; platform: string; runId: string | null; dayOfWeek: number | null; metadata: unknown; content: string | null; mediaType: string | null }>;
+  pedido: string;
+  nicho: string | null;
+}): Promise<{ porRede: Record<string, string>; modelo: string; itens: string[]; faltaram: string[]; fotoNova: boolean }> {
+  const base = o.posts.find((p) => estiloGravadoNoPost(p.metadata)) ?? o.posts[0];
+  const modelo = estiloGravadoNoPost(base?.metadata);
+  const estilo = modelo ? promptDeEstiloDoModelo(modelo) : null;
+  if (!base || !modelo || !estilo) throw new Error("a peça não tem estilo gravado");
+  const meta = (base.metadata ?? {}) as { frase?: string; slides?: unknown; infografico?: unknown; videoJobId?: string };
+  const tipo = base.mediaType === "carousel" || base.mediaType === "infographic" ? base.mediaType : "image";
+  const frase = typeof meta.frase === "string" && meta.frase.trim() ? meta.frase.trim() : null;
+  const { reescreverPedidoDaArte, itensQueFaltaram } = await import("@/lib/media/editor-do-curso/pedido-da-arte");
+  const reescrito = await reescreverPedidoDaArte({ pedido: o.pedido, frase, estilo: estilo.nomeDoEstilo, formato: tipo, projectId: o.projectId, runId: base.runId });
+  const direcao = reescrito?.direcao ?? o.pedido;
+  const itens = reescrito?.itens ?? [];
+
+  // A pessoa: a foto que ele acabou de subir nos materiais, quando pediu; senão a da gravação.
+  let recorteDaPessoa: string | null = null;
+  let fotoNova = false;
+  if (reescrito?.fotoNovaDosMateriais && estilo.pessoa) {
+    const foto = await prisma.materialDoCliente.findFirst({ where: { projectId: o.projectId, tipo: "foto", status: "pronto" }, orderBy: { createdAt: "desc" }, select: { id: true, url: true, recorteUrl: true } }).catch(() => null);
+    if (foto) {
+      const { recorteDaPessoaParaOEstilo } = await import("@/lib/media/capa-pela-ia");
+      recorteDaPessoa = await recorteDaPessoaParaOEstilo(modelo, { quadroUrl: foto.url, recorteUrl: foto.recorteUrl, chave: `materiais/${foto.id}/recorte-para-arte.png` }).catch(() => null);
+      fotoNova = Boolean(recorteDaPessoa);
+    }
+  }
+  const doVideo = await falaEFotoDoVideo(meta.videoJobId ?? null, Boolean(estilo.pessoa) && !recorteDaPessoa);
+  const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
+  const { desenharPelaIa, noMesmoEstilo } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
+  const marca = await marcaDaArte(o.projectId, { runId: base.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(o.posts), fotosDoPost: fotosGravadasNosPosts(o.posts) });
+  const redes = [...new Set(o.posts.map((p) => p.platform))];
+  const desenhar = (ajuste: string) =>
+    noMesmoEstilo(
+      () =>
+        desenharPelaIa({
+          projectId: o.projectId,
+          runId: base.runId,
+          modelo,
+          mediaType: tipo,
+          redes,
+          frase,
+          slides: Array.isArray(meta.slides) ? (meta.slides as string[]) : null,
+          infografico: (meta.infografico as import("@/lib/media/infographic").ConteudoDoInfografico | undefined) ?? null,
+          textoDoPost: base.content,
+          dia: base.dayOfWeek,
+          nicho: o.nicho,
+          marca,
+          fontesDosNumeros: fontesDoPost(base.metadata),
+          ...doVideo,
+          ...(recorteDaPessoa ? { recorteDaPessoa } : {}),
+          ajuste,
+          pessoa: reescrito?.pessoa ?? null,
+        }),
+      { tentativas: TENTATIVAS_NO_ESTILO, rotulo: `ajuste pelo chat ${base.id} no ${modelo}` }
+    );
+  let porRede = await desenhar(direcao);
+  const principal = () => porRede[redes[0]]?.split("|")[0] ?? Object.values(porRede)[0]?.split("|")[0] ?? "";
+  let faltaram = (await itensQueFaltaram({ arte: principal(), itens, projectId: o.projectId, runId: base.runId })) ?? [];
+  if (faltaram.length) {
+    // Uma volta a mais, só com o que faltou na frente.
+    porRede = await desenhar(`${direcao} MOST IMPORTANT, it was missing last time: ${faltaram.join("; ")}.`);
+    faltaram = (await itensQueFaltaram({ arte: principal(), itens: faltaram, projectId: o.projectId, runId: base.runId })) ?? [];
+  }
+  return { porRede, modelo, itens, faltaram, fotoNova };
+}
+
 /** O estilo gravado no post (o modelo do curso ou a opção sob medida da semana), ou null. */
 export function estiloGravadoNoPost(meta: unknown): string | null {
   const m = (meta ?? {}) as { arteNoModelo?: { modelo?: unknown } };

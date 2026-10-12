@@ -221,14 +221,14 @@ const dataUrl = (b: Buffer) => `data:image/png;base64,${b.toString("base64")}`;
  * A pessoa pronta para colar: o recorte cortado na caixa, no tamanho do lugar,
  * só a parte que fica dentro da peça. Null sem pessoa visível.
  */
-export async function pessoaNoLugar(recorte: Buffer, o: { W: number; H: number; g: GeometriaDoRecorte; topoAlvo: number }): Promise<{ png: Buffer; left: number; top: number; width: number; height: number } | null> {
+export async function pessoaNoLugar(recorte: Buffer, o: { W: number; H: number; g: GeometriaDoRecorte; topoAlvo: number; escala?: number | null }): Promise<{ png: Buffer; left: number; top: number; width: number; height: number } | null> {
   const { data, info } = await sharp(recorte).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const alfa = new Uint8Array(info.width * info.height);
   for (let i = 0; i < alfa.length; i++) alfa[i] = data[i * info.channels + (info.channels - 1)];
   const caixa = caixaDoAlfa(alfa, info.width, info.height);
   if (!caixa) return null;
   const cabeca = cabecaDoRecorte(alfa, info.width, caixa);
-  const lugar = lugarDaPessoa(o, caixa, cabeca);
+  const lugar = escalarPelaBase(lugarDaPessoa(o, caixa, cabeca), o.escala);
   if (lugar.width < 2 || lugar.height < 2) return null;
   const inteira = await sharp(recorte)
     .ensureAlpha()
@@ -247,6 +247,45 @@ export async function pessoaNoLugar(recorte: Buffer, o: { W: number; H: number; 
     .png()
     .toBuffer();
   return { png, left: x0, top: y0, width: x1 - x0, height: y1 - y0 };
+}
+
+/**
+ * A PESSOA MAIOR OU MENOR A PEDIDO (12/10, o ajuste do Bruno: "diminui um
+ * pouco"): a escala vale em volta da BASE e do centro, para a pessoa nunca
+ * flutuar no meio da peça. Sem escala (ou 1), o lugar de sempre. Puro.
+ */
+export function escalarPelaBase<T extends { left: number; top: number; width: number; height: number }>(lugar: T, escala: number | null | undefined): T {
+  const e = typeof escala === "number" && Number.isFinite(escala) ? Math.min(1.25, Math.max(0.55, escala)) : 1;
+  if (e === 1) return lugar;
+  const width = Math.round(lugar.width * e);
+  const height = Math.round(lugar.height * e);
+  return { ...lugar, width, height, left: Math.round(lugar.left + (lugar.width - width) / 2), top: Math.round(lugar.top + (lugar.height - height)) };
+}
+
+/** A LUZ ATRÁS DA PESSOA (12/10): a silhueta dela em branco, ampliada e desfocada, como um contraluz suave. */
+async function luzAtrasDa(pessoa: { png: Buffer; width: number; height: number; left: number; top: number }, W: number, H: number): Promise<{ png: Buffer; left: number; top: number; width: number; height: number } | null> {
+  try {
+    const margem = Math.round(Math.max(pessoa.width, pessoa.height) * 0.12);
+    const largura = pessoa.width + 2 * margem;
+    const altura = pessoa.height + 2 * margem;
+    const alfa = await sharp(pessoa.png).ensureAlpha().extractChannel(3).toBuffer();
+    const silhueta = await sharp({ create: { width: pessoa.width, height: pessoa.height, channels: 3, background: { r: 255, g: 246, b: 230 } } })
+      .joinChannel(alfa)
+      .png()
+      .toBuffer();
+    const png = await sharp({ create: { width: largura, height: altura, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: silhueta, left: margem, top: margem }])
+      .blur(Math.max(8, margem * 0.6))
+      .png()
+      .toBuffer();
+    const left = pessoa.left - margem;
+    const top = pessoa.top - margem;
+    if (left + largura < 0 || top + altura < 0 || left > W || top > H) return null;
+    return { png, left, top, width: largura, height: altura };
+  } catch (e) {
+    console.warn(`[recorte-com-letreiro] a luz atrás da pessoa não entrou: ${e instanceof Error ? e.message : e}`);
+    return null;
+  }
 }
 
 /** A faixa do letreiro na imagem do fundo (em cinza reduzido, rápido). */
@@ -274,6 +313,9 @@ export async function comporRecorteComLetreiro(p: {
   cores: CoresDaPeca;
   largura?: number;
   altura?: number;
+  /** O pedido do cliente no refazer (12/10): a pessoa maior ou menor (0,55 a 1,25) e a luz atrás dela. */
+  escala?: number | null;
+  luz?: boolean;
 }): Promise<Buffer> {
   const meta = await sharp(p.fundo).metadata();
   const W = p.largura ?? meta.width ?? 1080;
@@ -282,10 +324,12 @@ export async function comporRecorteComLetreiro(p: {
   const fundoPng = await sharp(p.fundo).resize(W, H, { fit: "cover" }).png().toBuffer();
   const achada = p.palavraEmCodigo ? g.faixa : await faixaNoFundo(fundoPng);
   const topoAlvo = topoDaCabecaNaFaixa(g, achada);
-  const pessoa = p.recorte ? await pessoaNoLugar(p.recorte, { W, H, g, topoAlvo }).catch((e) => {
+  const pessoa = p.recorte ? await pessoaNoLugar(p.recorte, { W, H, g, topoAlvo, escala: p.escala }).catch((e) => {
     console.warn(`[recorte-com-letreiro] o recorte da pessoa não entrou: ${e instanceof Error ? e.message : e}`);
     return null;
   }) : null;
+
+  const luz = p.luz && pessoa ? await luzAtrasDa(pessoa, W, H) : null;
 
   const f = await fontesDaArte();
   const curto = Math.min(W, H);
@@ -316,6 +360,7 @@ export async function comporRecorteComLetreiro(p: {
             <span style={{ fontFamily: "Anton", fontSize: corpoDaPalavra, lineHeight: 1, color: p.cores.titulo }}>{palavra}</span>
           </div>
         )}
+        {luz && <img src={dataUrl(luz.png)} width={luz.width} height={luz.height} style={{ position: "absolute", left: luz.left, top: luz.top, opacity: 0.6 }} />}
         {pessoa && <img src={dataUrl(pessoa.png)} width={pessoa.width} height={pessoa.height} style={{ position: "absolute", left: pessoa.left, top: pessoa.top }} />}
         <div style={{ position: "absolute", left: sombra.left, top: sombra.top, width: sombra.width, height: sombra.height, display: "flex", backgroundImage: sombra.fundo }} />
         <div

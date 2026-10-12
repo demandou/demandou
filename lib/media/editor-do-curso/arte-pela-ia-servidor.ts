@@ -76,6 +76,14 @@ export type PecaPelaIa = {
   recorteDaPessoa?: string | null;
   /** Os números de pesquisa aprovados para esta peça, com a fonte (o `fontesDosNumeros` do post, 11/10). */
   fontesDosNumeros?: FonteDoNumero[] | null;
+  /**
+   * O PEDIDO DO CLIENTE NO REFAZER (12/10), já reescrito pela nossa IA como
+   * direção de arte (lib/media/editor-do-curso/pedido-da-arte.ts): vai ao
+   * prompt de cada peça, sem sair do estilo, das cores nem do texto.
+   */
+  ajuste?: string | null;
+  /** A pessoa colada a pedido (12/10): maior ou menor, e com luz atrás. */
+  pessoa?: { escala?: number | null; luz?: boolean } | null;
 };
 
 /**
@@ -134,7 +142,7 @@ export async function pecaDeFrase(
     nicho: p.nicho,
     pagina: o.pagina,
     trecho: trechoDaPeca(p, o.texto),
-    ajuste: o.ajuste ?? null,
+    ajuste: o.ajuste ?? p.ajuste ?? null,
   });
   const arte = await produzirArtePorRede({
     redes: o.redes,
@@ -284,7 +292,7 @@ export async function pecaDoRecorte(
     nicho: p.nicho,
     trecho: trechoDaPeca(p, o.texto),
     pagina: o.pagina ?? null,
-    ajuste: o.ajuste ?? null,
+    ajuste: o.ajuste ?? p.ajuste ?? null,
   };
   // O layout por proporção vai junto do pedido: a mesma geometria em que o código cola a pessoa.
   const comLayout = (ordem: typeof ORDEM_PRINCIPAL, comPalavra: boolean) => async (prompt: string, proporcao: ProporcaoPedida) =>
@@ -317,7 +325,7 @@ export async function pecaDoRecorte(
   }
   const porRede: Record<string, string> = {};
   for (const [rede, uri] of Object.entries(camada.porRede)) {
-    const jpeg = await comporRecorteComLetreiro({ fundo: bytesDoDataUri(uri), recorte, frase: o.texto, palavraEmCodigo, cores });
+    const jpeg = await comporRecorteComLetreiro({ fundo: bytesDoDataUri(uri), recorte, frase: o.texto, palavraEmCodigo, cores, escala: p.pessoa?.escala ?? null, luz: Boolean(p.pessoa?.luz) });
     porRede[rede] = `data:image/jpeg;base64,${jpeg.toString("base64")}`;
   }
   return porRede;

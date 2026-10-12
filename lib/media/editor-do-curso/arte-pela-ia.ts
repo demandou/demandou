@@ -363,7 +363,7 @@ export function promptDaArteNoModelo(e: EntradaDaArte): string {
     `AVOID: ${s.evitar} ${linhaDaPessoa(s)}${frasePedeEquipamento(texto) ? "" : " No camera, microphone, ring light, tripod, phone on a stand or recording studio."} No empty boxes, empty frames, empty windows or placeholder panels: every shape is filled with the scene or with solid color. No real brand logos or app icons (Instagram, TikTok, YouTube, Facebook, WhatsApp and the like), even when the speaker names them: use plain generic shapes. No long dash.`,
   ];
   if (e.ajuste?.trim()) {
-    linhas.push("", `CLIENT'S ADJUSTMENT (apply it without leaving the style, the colors or the exact text above): ${citar(curto(e.ajuste, 300))}`);
+    linhas.push("", `CLIENT'S ADJUSTMENT (apply it without leaving the style, the colors or the exact text above): ${citar(curto(e.ajuste, 900))}`);
   }
   if (e.pagina && e.pagina.total > 1) {
     linhas.push(
@@ -571,7 +571,7 @@ export function promptDoFundoDoRecorte(e: {
     "",
     `AVOID: ${s.evitar} ${linhaDaPessoa(s)}${frasePedeEquipamento(e.frase) ? "" : " No camera, microphone, ring light, tripod or recording studio."} No real brand logos or app icons. No empty boxes or placeholder panels besides the stage. No long dash.`,
   ];
-  if (e.ajuste?.trim()) linhas.push("", `CLIENT'S ADJUSTMENT (apply it to the background without leaving the style, the colors or the layout): ${citar(curto(e.ajuste, 300))}`);
+  if (e.ajuste?.trim()) linhas.push("", `CLIENT'S ADJUSTMENT (apply it to the background without leaving the style, the colors or the layout): ${citar(curto(e.ajuste, 900))}`);
   if (e.pagina && e.pagina.total > 1) linhas.push("", `CAROUSEL: slide ${e.pagina.i} of ${e.pagina.total}; same visual language as the other slides; no page numbers, dots or arrows.`);
   return linhas.join("\n");
 }

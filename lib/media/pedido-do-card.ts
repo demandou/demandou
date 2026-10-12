@@ -622,9 +622,13 @@ export async function executarPedido(ctx: Contexto): Promise<void> {
         for (const chave of pedido.etapas.map((e) => e.chave).filter((c) => c === "arte" || c.startsWith("lamina-"))) await marcar(chave, "falhou", "sem arte no dia");
       } else {
         try {
-          const r = ehCarrossel
-            ? await refazerCarrossel({ card, daDiana, posts, acao: arte, ctx, laminasAtuais, marcar })
-            : await refazerArteUnica({ daDiana, posts, acao: arte, marcar, formato: formatoDaPecaDoDia });
+          // A PEÇA COM ESTILO GRAVADO (12/10) é refeita NELE, com o pedido reescrito; nunca pelo caminho antigo.
+          const { estiloGravadoNoPost } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
+          const r = posts.some((p) => estiloGravadoNoPost(p.metadata))
+            ? await refazerNoEstiloDoCard({ daDiana, posts, acao: arte, marcar, chaves: pedido.etapas.map((e) => e.chave).filter((c) => c === "arte" || c.startsWith("lamina-")) })
+            : ehCarrossel
+              ? await refazerCarrossel({ card, daDiana, posts, acao: arte, ctx, laminasAtuais, marcar })
+              : await refazerArteUnica({ daDiana, posts, acao: arte, marcar, formato: formatoDaPecaDoDia });
           frases.push(r);
         } catch (e) {
           if (ehIdentidadeNaoAprovada(e) || (e instanceof Error && e.message.startsWith(MENSAGEM_AGUARDANDO))) {
@@ -1015,6 +1019,51 @@ async function refazerCarrossel(o: {
   const intercalacao = descreverIntercalacao(alvo.map((i) => plano[i]));
   const oQueMudou = contarOQueMudou(acao, decidido, mudou, intercalacao ? [`com ${intercalacao}`] : []);
   return fraseDoCarrosselRefeito({ total, alvo, feitas, oQueMudou });
+}
+
+/**
+ * O AJUSTE DA ARTE NO ESTILO GRAVADO (12/10): a peça do Recorte, da Maquete,
+ * dos Gráficos ou de um modelo do curso é refeita no MESMO estilo, com o
+ * pedido do cliente reescrito pela nossa IA e conferido item a item
+ * (refazerNoEstiloComPedido). Todas as redes do dia recebem a arte nova.
+ */
+async function refazerNoEstiloDoCard(o: {
+  daDiana: CardComProjeto;
+  posts: PostDoDia[];
+  acao: Extract<AcaoDoPedido, { tipo: "arte" }>;
+  marcar: (chave: string, estado: EtapaDoPedido["estado"], detalhe?: string) => Promise<void>;
+  chaves: string[];
+}): Promise<string> {
+  for (const c of o.chaves) await o.marcar(c, "fazendo");
+  const { runId, dayOfWeek } = o.daDiana;
+  // O card de uma rede só refaz o dia inteiro: a mesma arte em todas as redes do dia.
+  const doDia = await prisma.post.findMany({
+    where: { runId, dayOfWeek, mediaType: o.posts[0]?.mediaType, status: { notIn: ["cancelled", "rejected", "published", "publishing"] } },
+    select: { id: true, platform: true, runId: true, dayOfWeek: true, metadata: true, content: true, mediaType: true, imageUrl: true },
+  });
+  const posts = doDia.length ? doDia : o.posts.map((p) => ({ ...p, runId, dayOfWeek }));
+  try {
+    const { refazerNoEstiloComPedido } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
+    const { promptDeEstiloDoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
+    const r = await refazerNoEstiloComPedido({ projectId: o.daDiana.projectId, posts, pedido: o.acao.instrucao, nicho: o.daDiana.project.niche ?? null });
+    const principal = Object.values(r.porRede)[0];
+    if (!principal) throw new Error("a arte não saiu");
+    await prisma.campaignCard.update({ where: { id: o.daDiana.id }, data: { mediaUrl: r.porRede[posts[0].platform] ?? principal } });
+    for (const p of posts) {
+      const nova = r.porRede[p.platform] ?? principal;
+      if (p.imageUrl !== nova) await prisma.post.update({ where: { id: p.id }, data: { imageUrl: nova } });
+    }
+    for (const c of o.chaves) await o.marcar(c, "feito");
+    const nome = promptDeEstiloDoModelo(r.modelo)?.nomeDoEstilo ?? "o mesmo estilo";
+    const foto = r.fotoNova ? ", com a foto nova dos seus materiais" : "";
+    const fez = r.itens.filter((i) => !r.faltaram.includes(i));
+    const partes = [`Refiz a arte no mesmo estilo (${nome})${foto}, seguindo o seu pedido${fez.length ? `: ${fez.join("; ")}` : ""}. Ela já está aqui no card e em todas as redes do dia.`];
+    if (r.faltaram.length) partes.push(`Não consegui deixar: ${r.faltaram.join("; ")}. Me diga se quer que eu tente de outro jeito.`);
+    return partes.join(" ");
+  } catch (e) {
+    for (const c of o.chaves) await o.marcar(c, "falhou", "ficou a anterior");
+    throw e;
+  }
 }
 
 async function refazerArteUnica(o: {
