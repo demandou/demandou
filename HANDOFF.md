@@ -20012,3 +20012,11 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 - REGRA DO PORTÃO (proposta ao Bruno em 11/10 21h20): antes de todo deploy, teste de ponta a ponta curto (~30 s) num modelo do curso (corte e completo) e, quando a mudança tocar o sob medida, num sob medida; reprovou, não publica. Até terça: só conserto, nada novo, sem agentes em paralelo; cada conserto com teste automático que trava o defeito.
 - 21h36 PORTÃO APROVADO (vídeo cmv4il1wo, Arquivo, Ygor 29 s, US$ 2,32): completo, 2 capas, post e infográfico, nenhuma peça em falha. Vídeo e imagens no artefato Provas do editor novo (versão 12) para o Bruno conferir. REGRA NOVA DO BRUNO: quem confere vídeo e arte é ele; Claude não olha quadros, publica no artefato e manda o link. Projeto de teste devolvido a sob-medida-graficos (reserva modelo-manifesto).
 - 21h45 BRUNO APROVOU a edição do Arquivo (vídeo do Ygor). Ele vai rodar 2 testes próprios na plataforma; se der erro, ler logs pelo id do vídeo antes de mexer em código.
+
+## 11/10 ~23h: créditos, backup e o plano da escolha das artes (aguardando o OK do Bruno)
+
+- Créditos: +20.000 na conta bruno.donaire@demandou.com pelo concederCreditos (chave renova-testes-editor-1110); saldo 21.330.
+- BACKUP antes de mexer: ramo backup/editor-aprovado-1110 (commit 21eb082, árvore inteira com o que estava fora do commit) e etiqueta editor-aprovado-1110 (a3b9694), no GitHub. Voltar: git checkout editor-aprovado-1110 (código) e deploy pela cópia limpa.
+- Story: o chat do card não tem ação de formato (só texto, arte, data, rede, pb); a publicação de story existe em via-blotato (metadata.formato=story). Pedido do Bruno não está gravado em lugar nenhum (run apagado ou cancelado).
+- Achado: 27 versões 16:9 dos modelos (worker/modelos/*-16x9) estão fora do git e portanto fora da produção.
+- Backlog no Notion: Demandou 1/5 a 5/5 (story no card; cards da campanha que falhou; artes esperam a escolha; tela da escolha com 4 portas e materiais; plano da semana do Demandou só com a quinta). Plano entregue ao Bruno; nada aplicado.
