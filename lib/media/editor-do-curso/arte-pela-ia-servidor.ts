@@ -485,6 +485,15 @@ export async function desenharPelaIa(p: PecaPelaIa, inj: InjecoesDaArte = {}): P
     }
     return Object.fromEntries(p.redes.map((r) => [r, urls.join("|")]));
   }
+  // A ARTE LIVRE COM A PESSOA (12/10, decisão do Bruno): com foto da pessoa nos materiais, o Nano
+  // Banana Pro recebe a foto e o texto do post e cria a cena inteira, como no Gemini. Sem foto
+  // (ou com ARTE_LIVRE=0), o caminho do estilo de sempre.
+  const { arteLivreLigada, fotoDaPessoaParaArte, arteLivre } = await import("./arte-livre");
+  const textoDoPost = (p.textoDoPost ?? "").trim() || (p.frase ?? "").trim();
+  if (arteLivreLigada() && textoDoPost && !inj.gerar) {
+    const foto = await fotoDaPessoaParaArte(p.projectId).catch(() => null);
+    if (foto) return arteLivre({ projectId: p.projectId, runId: p.runId, redes: p.redes, texto: textoDoPost, ajuste: p.ajuste, foto });
+  }
   const frase = (p.frase ?? "").trim();
   if (!frase) throw new Error("a foto do dia não tem a frase gravada no post");
   return pecaDeFrase(p, { texto: frase, tipo: "post", redes: p.redes, contentType: "image" }, inj);

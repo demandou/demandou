@@ -248,11 +248,14 @@ test("sem o recorte da pessoa a peça sai sem gente (nunca uma pessoa desenhada)
   assert.equal((await pixelsDaPessoa(porRede.instagram)).magenta, 0);
 });
 
-test("nenhum caminho de arte ou capa manda a foto da pessoa à IA de imagem", async () => {
+// 12/10 (decisão do Bruno): a regra caiu para a FOTO DO POST. A arte livre (arte-livre.ts) manda a
+// foto da pessoa ao Nano Banana Pro, como ele faz no Gemini. As capas seguem com o recorte real.
+test("só a arte livre do post manda a foto da pessoa à IA de imagem; as capas seguem com o recorte", async () => {
   const { readFileSync } = await import("node:fs");
   const ler = (f: string) => readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
-  for (const f of ["lib/media/editor-do-curso/arte-pela-ia-servidor.ts", "lib/media/editor-do-curso/arte-pela-ia.ts", "lib/media/capa-pela-ia.ts", "lib/media/capa-do-corte.ts", "lib/media/capas-do-completo.ts"]) {
+  for (const f of ["lib/media/editor-do-curso/arte-pela-ia.ts", "lib/media/capa-pela-ia.ts", "lib/media/capa-do-corte.ts", "lib/media/capas-do-completo.ts"]) {
     const s = ler(f);
     assert.doesNotMatch(s, /gerarComFoto|fotoDaPessoa|attached reference photo/, f);
   }
+  assert.match(ler("lib/media/editor-do-curso/arte-pela-ia-servidor.ts"), /arteLivre\(/);
 });
