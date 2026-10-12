@@ -80,7 +80,7 @@ export function EscolhaDaArte({
       onKeyDown={parar}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-5"
+        className="max-h-[90vh] w-full max-w-5xl space-y-4 overflow-y-auto rounded-2xl border p-4 shadow-2xl sm:p-5"
         style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
         onClick={(e) => e.stopPropagation()}
       >

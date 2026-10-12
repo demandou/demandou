@@ -139,7 +139,15 @@ export function GaleriaDaBiblioteca({
       .catch(() => {});
   }, [ehAdmin, designs, exemplo]);
 
-  const lista = useMemo(() => (designs ? filtrarGaleria(filtrar ? designs.filter(filtrar) : designs, filtro, busca) : []), [designs, filtro, busca, filtrar]);
+  // Na escolha de um post (12/10), o cliente só vê o que dá para escolher vendo: sem prévia, o
+  // cartão vazio não ajuda. O admin gera as prévias na biblioteca de Configurações, onde vê todos.
+  const naEscolha = Boolean(rotuloDoUsar);
+  const lista = useMemo(() => {
+    if (!designs) return [];
+    const base = filtrar ? designs.filter(filtrar) : designs;
+    const visiveis = naEscolha ? base.filter((d) => d.previaUrl || d.doProjeto) : base;
+    return filtrarGaleria(visiveis, filtro, busca);
+  }, [designs, filtro, busca, filtrar, naEscolha]);
   const contagem = useMemo(() => {
     const c: Record<Filtro, number> = { todos: designs?.length ?? 0, video: 0, imagem: 0 };
     for (const d of designs ?? []) c[d.tipo]++;
@@ -349,7 +357,7 @@ export function GaleriaDaBiblioteca({
         </label>
       </div>
 
-      {ehAdmin && pendentes && (
+      {ehAdmin && pendentes && !naEscolha && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs" style={{ borderColor: "var(--border)", background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
           <span>
             <b style={{ color: "var(--text-primary)" }}>Admin:</b> {pendentes.total} {pendentes.total === 1 ? "prévia pendente" : "prévias pendentes"} ({pendentes.porTipo.video} de vídeo, {pendentes.porTipo.imagem} de imagem). Custo estimado: {pendentes.custo.texto}
@@ -386,9 +394,11 @@ export function GaleriaDaBiblioteca({
           {semEscrever ? "Nenhum design com esse filtro." : "Nenhum design com esse filtro. Escreva o seu: ele entra aqui."}
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-          {lista.map((d, i) => (
-            <CartaoDoDesign key={d.id} design={d} posicao={i + 1} usando={usando === d.id} rotuloDoUsar={rotuloDoUsar} aoAbrir={() => setAberto(d)} aoUsar={() => void usar(d)} />
+        // A grade pela largura de quem chama (12/10, o teste do Bruno no popup da escolha da arte):
+        // pela largura da tela, quatro colunas espremiam título, descrição e botão dentro do popup.
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+          {lista.map((d) => (
+            <CartaoDoDesign key={d.id} design={d} ehAdmin={ehAdmin} usando={usando === d.id} rotuloDoUsar={rotuloDoUsar} aoAbrir={() => setAberto(d)} aoUsar={() => void usar(d)} />
           ))}
         </div>
       )}
@@ -422,17 +432,24 @@ function Previa({ design, grande = false }: { design: DesignDaGaleria; grande?: 
   );
 }
 
-function Selos({ design }: { design: DesignDaGaleria }) {
+function Selos({ design, ehAdmin = false, naEscolha = false }: { design: DesignDaGaleria; ehAdmin?: boolean; naEscolha?: boolean }) {
   const selo = "rounded-full px-1.5 py-0.5 text-[10px] font-bold";
   return (
     <div className="flex flex-wrap gap-1">
+      {/* O modelo que já está no projeto (a borda laranja) diz o que é, também na escolha do post (12/10). */}
+      {design.doProjeto && naEscolha && (
+        <span className={selo} style={{ background: "#f97316", color: "#fff" }}>
+          No seu projeto
+        </span>
+      )}
       <span className={selo} style={{ background: "rgba(249,115,22,0.12)", color: "#c2410c" }}>
         {rotuloDeUsos(design.usos)}
       </span>
       <span className={selo} style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
         {ROTULO_DO_TIPO[design.tipo]}
       </span>
-      {design.origem === "cliente" && (
+      {/* "Feito por um cliente" e "Variação" só ajudam a curadoria: o cliente vê só o que é dele (12/10). */}
+      {design.origem === "cliente" && (design.meu || ehAdmin) && (
         <span className={cn(selo, "inline-flex items-center gap-0.5")} style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
           <Users className="h-3 w-3" /> {design.meu ? "Seu pedido" : "Feito por um cliente"}
         </span>
@@ -442,7 +459,7 @@ function Selos({ design }: { design: DesignDaGaleria }) {
           Só no seu projeto
         </span>
       )}
-      {design.agrupadoEmId && (
+      {design.agrupadoEmId && ehAdmin && (
         <span className={selo} style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}>
           Variação
         </span>
@@ -451,35 +468,33 @@ function Selos({ design }: { design: DesignDaGaleria }) {
   );
 }
 
-function CartaoDoDesign({ design, posicao, usando, rotuloDoUsar, aoAbrir, aoUsar }: { design: DesignDaGaleria; posicao: number; usando: boolean; rotuloDoUsar?: string; aoAbrir: () => void; aoUsar: () => void }) {
+function CartaoDoDesign({ design, ehAdmin, usando, rotuloDoUsar, aoAbrir, aoUsar }: { design: DesignDaGaleria; ehAdmin: boolean; usando: boolean; rotuloDoUsar?: string; aoAbrir: () => void; aoUsar: () => void }) {
+  // Sem o número da posição em cima da prévia (12/10): ele cobria o título da arte; a ordem já diz quem é mais usado.
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-lg border" style={{ borderColor: design.doProjeto ? "#f97316" : "var(--border)", background: "var(--bg-surface)" }}>
       <button type="button" onClick={aoAbrir} className="relative block w-full text-left" aria-label={`Abrir ${design.nome}`}>
         <Previa design={design} />
-        <span className="absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: "rgba(0,0,0,0.6)" }}>
-          #{posicao}
-        </span>
       </button>
       <div className="flex flex-1 flex-col gap-1.5 p-2.5">
-        <p className="truncate text-sm font-bold leading-tight" style={{ color: "var(--text-primary)" }} title={design.nome}>
+        <p className="line-clamp-2 text-sm font-bold leading-tight" style={{ color: "var(--text-primary)" }} title={design.nome}>
           {design.nome}
         </p>
-        <p className="line-clamp-2 text-xs" style={{ color: "var(--text-muted)" }}>
+        <p className="line-clamp-3 text-xs" style={{ color: "var(--text-muted)" }}>
           {design.descricao}
         </p>
-        <Selos design={design} />
-        <div className="mt-auto flex items-center gap-2 pt-1">
+        <Selos design={design} ehAdmin={ehAdmin} naEscolha={Boolean(rotuloDoUsar)} />
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
           <button
             type="button"
             onClick={aoUsar}
             disabled={usando}
-            className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold", design.doProjeto && !rotuloDoUsar ? "border" : "bg-orange-500 text-white")}
+            className={cn("inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-bold", design.doProjeto && !rotuloDoUsar ? "border" : "bg-orange-500 text-white")}
             style={design.doProjeto && !rotuloDoUsar ? { borderColor: "#f97316", color: "#f97316" } : undefined}
           >
             {usando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : design.doProjeto && !rotuloDoUsar ? <Check className="h-3.5 w-3.5" /> : null}
             {rotuloDoUsar ?? (design.doProjeto ? "No seu projeto" : "Usar este")}
           </button>
-          <button type="button" onClick={aoAbrir} className="text-xs font-medium underline-offset-2 hover:underline" style={{ color: "var(--text-muted)" }}>
+          <button type="button" onClick={aoAbrir} className="whitespace-nowrap text-xs font-medium underline-offset-2 hover:underline" style={{ color: "var(--text-muted)" }}>
             Ver ficha
           </button>
         </div>
