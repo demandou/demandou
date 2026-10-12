@@ -20036,3 +20036,4 @@ sozinho", Claude como diretor + Remotion + Higgsfield). Tudo abaixo publicado
 
 - ENQUADRAMENTO_ADAPTATIVO=1 no Railway (Bruno aprovou as provas; worker reiniciado SUCCESS).
 - Estado completo, regras novas, custos e a lista do que está aberto: docs/estado-1210.md. Começar a próxima conversa por ele.
+- Wiki: nota nova 'Demandou: a Demandou traz o contexto, o Nano Banana Pro entrega (12/10/2026)' e seção de 12/10 na nota do editor; planner com 4 cards novos. Grafo: graph.json local atualizado (245 páginas, 674 ligações) mas NÃO republicado (a plataforma exige ler a página inteira): publicar segundo-cerebro.html no artefato GKFMshHXmXgGF57CDBuGcG no começo da próxima conversa.
