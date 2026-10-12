@@ -580,7 +580,8 @@ export async function refazerNoEstiloComPedido(o: {
   let porRede = await desenhar(direcao);
   const principal = () => porRede[redes[0]]?.split("|")[0] ?? Object.values(porRede)[0]?.split("|")[0] ?? "";
   let faltaram = (await itensQueFaltaram({ arte: principal(), itens, projectId: o.projectId, runId: base.runId })) ?? [];
-  if (faltaram.length) {
+  // A volta a mais só com a chave (12/10, corte de custo: no máximo 2 imagens por arte).
+  if (faltaram.length && process.env.AJUSTE_VOLTA_EXTRA === "1") {
     // Uma volta a mais, só com o que faltou na frente.
     porRede = await desenhar(`${direcao} MOST IMPORTANT, it was missing last time: ${faltaram.join("; ")}.`);
     faltaram = (await itensQueFaltaram({ arte: principal(), itens: faltaram, projectId: o.projectId, runId: base.runId })) ?? [];

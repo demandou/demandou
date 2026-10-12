@@ -8,6 +8,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import sharp from "sharp";
+// Estes testes contam as chamadas por formato e tentativa (o modo de antes); o corte de custo de 12/10 tem o teste dele.
+process.env.ARTE_UMA_GERACAO = "0";
+process.env.ARTE_TENTATIVAS = "3";
 
 const MARCA = { familia: "editorial", cores: { acento: "#f97316", escuro: "#1e1f22", claro: "#dbdee1", papeis: { fundo: "#1e1f22", titulo: "#dbdee1", destaque: "#f97316" } } } as never;
 const CORES = { fundo: "#1e1f22", titulo: "#dbdee1", destaque: "#f97316" };

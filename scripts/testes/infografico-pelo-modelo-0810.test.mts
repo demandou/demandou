@@ -27,6 +27,9 @@ import { decidirPelaDescricao, textoPedidoNaArte, type conferirArte } from "@/li
 import { medirMargem } from "@/lib/media/margem-de-seguranca";
 import { formatoDaPeca, gruposDeFormato, type ProporcaoPedida } from "@/lib/media/formatos-das-redes";
 import type { MarcaDaArte } from "@/lib/media/arte-com-frase";
+// Estes testes contam as chamadas por formato e tentativa (o modo de antes); o corte de custo de 12/10 tem o teste dele.
+process.env.ARTE_UMA_GERACAO = "0";
+process.env.ARTE_TENTATIVAS = "3";
 
 const CONTEUDO: ConteudoDoInfografico = {
   title: "Conteúdo que vende sem você gravar todo dia",

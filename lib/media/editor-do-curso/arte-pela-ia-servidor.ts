@@ -25,7 +25,8 @@ import { composicaoDaPeca, estiloComoLinguagem, layoutDoFundoDoRecorte, linguage
 export const OPERACAO_DA_ARTE_PELA_IA = "arte-no-modelo-ia";
 
 /** Quantas vezes a peça tenta o ESTILO ESCOLHIDO antes de parar como falha técnica (11/10, a mesma regra do corte). */
-export const TENTATIVAS_NO_ESTILO = 2;
+// Uma volta só (12/10, corte de custo: no máximo 2 imagens por arte, que são as tentativas do produzirArtePorRede).
+export const TENTATIVAS_NO_ESTILO = Math.max(1, Number(process.env.ARTE_VOLTAS_NO_ESTILO ?? 1) || 1);
 
 /**
  * NUNCA TROCAR O ESTILO SOZINHO (11/10, regra do Bruno). Roda o desenho no

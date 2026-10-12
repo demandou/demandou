@@ -121,9 +121,42 @@ function piorRecorte(redes: Array<{ platform: string; formato: FormatoDaRede }>,
   )[0];
 }
 
+/**
+ * UMA GERAÇÃO POR ARTE (12/10, o corte de custo aprovado pelo Bruno): cada formato
+ * era uma imagem nova na IA (o 4:5 do Instagram e o deitado do LinkedIn e do
+ * Facebook), e com as tentativas uma arte chegava a 9 imagens (US$ 1,10). Agora só
+ * o formato principal vai à IA; os outros saem dessa arte inteira e centrada, com o
+ * fundo da própria arte desfocado, sem cortar nada. ARTE_UMA_GERACAO=0 volta ao antigo.
+ */
+export function umaGeracaoPorArte(): boolean {
+  return (process.env.ARTE_UMA_GERACAO ?? "1").trim() !== "0";
+}
+
+/** O grupo que vai à IA: o 4:5 (Instagram) quando houver, senão o de mais redes. Puro. */
+export function grupoPrincipal<T extends { proporcao: string }>(grupos: T[]): T {
+  return grupos.find((g) => g.proporcao === "4:5") ?? grupos[0];
+}
+
+/** A arte inteira no formato de outra rede: centrada e sem corte, com o fundo da própria arte desfocado. */
+async function encaixarSemCortar(dataUri: string, largura: number, altura: number): Promise<string> {
+  const sharp = (await import("sharp")).default;
+  const entrada = Buffer.from(dataUri.slice(dataUri.indexOf(",") + 1), "base64");
+  const fundo = await sharp(entrada).resize(largura, altura, { fit: "cover" }).blur(40).modulate({ brightness: 0.55 }).toBuffer();
+  const frente = await sharp(entrada).resize(largura, altura, { fit: "inside" }).toBuffer();
+  const meta = await sharp(frente).metadata();
+  const jpeg = await sharp(fundo)
+    .composite([{ input: frente, left: Math.round((largura - (meta.width ?? largura)) / 2), top: Math.round((altura - (meta.height ?? altura)) / 2) }])
+    .jpeg({ quality: 92 })
+    .toBuffer();
+  return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+}
+
 export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoDia> {
   const redes = pedido.redes.length ? pedido.redes : ["linkedin"];
-  const grupos = gruposDeFormato(redes, pedido.contentType);
+  const todosOsGrupos = gruposDeFormato(redes, pedido.contentType);
+  const umaSo = umaGeracaoPorArte() && todosOsGrupos.length > 1 && pedido.contentType !== "carousel";
+  const principalDosGrupos = grupoPrincipal(todosOsGrupos);
+  const grupos = umaSo ? [principalDosGrupos] : todosOsGrupos;
   const textoDoModelo = Boolean(pedido.textoDesenhadoPeloModelo);
 
   /**
@@ -155,7 +188,8 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
      * assim mesmo, porque não havia terceira. Cada tentativa leva o motivo da
      * anterior.
      */
-    const TENTATIVAS = 3;
+    // DUAS TENTATIVAS (12/10, corte de custo aprovado pelo Bruno); eram três.
+    const TENTATIVAS = Math.max(1, Number(process.env.ARTE_TENTATIVAS ?? 2) || 2);
     for (let tentativa = 1; tentativa <= TENTATIVAS; tentativa++) {
       const prompt =
         tentativa === 1
@@ -227,6 +261,19 @@ export async function produzirArtePorRede(pedido: PedidoDeArte): Promise<ArteDoD
 
   const porRede: Record<string, string> = Object.assign({}, ...resultados.map((r) => r.porRede));
   const avisos = resultados.flatMap((r) => r.avisos);
+  // Os outros formatos saem da arte do principal, sem nova chamada à IA.
+  if (umaSo) {
+    const base = porRede[principalDosGrupos.redes[0].platform];
+    if (base) {
+      for (const g of todosOsGrupos) {
+        if (g === principalDosGrupos) continue;
+        for (const { platform, formato } of g.redes) {
+          porRede[platform] = await encaixarSemCortar(base, formato.largura, formato.altura);
+        }
+        avisos.push(`${g.redes.map((r) => r.platform).join(", ")}: a mesma arte do ${principalDosGrupos.proporcao}, encaixada em ${g.proporcao} sem cortar (sem nova geração).`);
+      }
+    }
+  }
   const algumaReprovada = resultados.some((r) => r.algumaReprovada);
   return { porRede, principal: artePrincipal(porRede), avisos, algumaReprovada };
 }
