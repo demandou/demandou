@@ -30,13 +30,13 @@
  */
 
 export const CATEGORIAS_DE_REPROVACAO = [
-  { id: "gosto", nome: "Não gostei", classe: "gosto", dica: "Gosto é trabalho novo: o crédito fica e refazer cobra." },
-  { id: "pedi_diferente", nome: "Pedi ou configurei diferente", classe: "gosto", dica: "A peça saiu como estava configurado; mude a configuração e refaça." },
+  { id: "gosto", nome: "Não gostei do resultado", classe: "gosto", dica: "Gosto é trabalho novo: o crédito fica e refazer cobra." },
+  { id: "pedi_diferente", nome: "Quero de outro jeito", classe: "gosto", dica: "A peça saiu como estava configurado; mude a configuração e refaça." },
   { id: "texto_ilegivel", nome: "Palavra cortada ou texto ilegível", classe: "erro", dica: "Conferimos a margem e o texto lido na arte." },
-  { id: "formato_errado", nome: "Formato ou proporção errada", classe: "erro", dica: "Medimos a arte contra o formato da rede." },
-  { id: "dado_inventado", nome: "Número, dado ou fonte inventados ou errados", classe: "erro", dica: "Conferimos cada número e fonte contra a pesquisa e o material." },
-  { id: "conteudo_proprio_inventado", nome: "Conteúdo próprio inventado (vídeo ou post que não existe)", classe: "erro", dica: "Conferimos contra o que está de fato no ar nas suas redes." },
-  { id: "marca_errada", nome: "Marca errada (cores, letra, logo)", classe: "erro", dica: "Conferimos contra a identidade visual aprovada." },
+  { id: "formato_errado", nome: "Formato ou tamanho errado", classe: "erro", dica: "Medimos a arte contra o formato da rede." },
+  { id: "dado_inventado", nome: "Número ou dado que não confere", classe: "erro", dica: "Conferimos cada número e fonte contra a pesquisa e o material." },
+  { id: "conteudo_proprio_inventado", nome: "Mostra algo meu que não existe", classe: "erro", dica: "Conferimos contra o que está de fato no ar nas suas redes." },
+  { id: "marca_errada", nome: "Cores, letra ou logo fora da minha marca", classe: "erro", dica: "Conferimos contra a identidade visual aprovada." },
   { id: "outro", nome: "Outro", classe: "erro", dica: "Descreva o que saiu errado: o admin olha caso a caso." },
 ] as const;
 
@@ -144,6 +144,12 @@ export type EstadoDaReprovacao = {
      */
     carteira?: "plano" | "video";
     referencia?: string | null;
+    /**
+     * O AJUSTE POR FALHA APONTADA QUE SAIU SEM COBRANÇA (12/10, decisão do
+     * Bruno): o crédito "volta na hora" e o pedido vai à auditoria. Se o admin
+     * não reconhecer o erro, este valor é cobrado (uma vez, refId próprio).
+     */
+    pendente?: number;
   } | null;
   /** Créditos de VÍDEO devolvidos pelo admin (o ajuste do vídeo por IA), à parte dos do plano. */
   creditosDeVideo?: number;

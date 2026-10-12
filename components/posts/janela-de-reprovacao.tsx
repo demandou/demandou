@@ -42,6 +42,8 @@ export function JanelaDeReprovacao({
   verbo?: "Reprovar" | "Rejeitar";
 }) {
   const [categoria, setCategoria] = useState<CategoriaDeReprovacao | null>(null);
+  // A declaração do motivo de falha (12/10): sem ela, o botão não segue; volta a zero a cada troca de motivo.
+  const [declarou, setDeclarou] = useState(false);
   const [texto, setTexto] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [gravando, setGravando] = useState(false);
@@ -184,7 +186,7 @@ export function JanelaDeReprovacao({
                   {alvos.length === 1 ? `${verbo} a peça de ${redes[0]}` : `${verbo} ${alvos.length} peças (${redes.join(", ")})`}
                 </h2>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                  {verbo === "Rejeitar" ? "A peça rejeitada não sai mais. " : ""}Toda peça gerada é cobrada. Diga o motivo: erro da plataforma é conferido e, confirmado, devolve os créditos. Gosto mantém o crédito.
+                  {verbo === "Rejeitar" ? "A peça rejeitada não sai mais. " : ""}Diga o motivo: ele nos ajuda a acertar a próxima.
                   {verbo === "Rejeitar" ? " Para mudar a peça em vez de matar, use Pedir ajuste." : ""}
                 </p>
               </div>
@@ -205,13 +207,11 @@ export function JanelaDeReprovacao({
                     className={cn("flex items-start gap-2.5 rounded-xl border px-3 py-2 cursor-pointer transition-colors", ativo ? "border-orange-500/60 bg-orange-500/5" : "hover:bg-[var(--realce-1)]")}
                     style={{ borderColor: ativo ? undefined : "var(--border)" }}
                   >
-                    <input type="radio" name="motivo-da-reprovacao" value={c.id} checked={ativo} onChange={() => setCategoria(c.id)} className="mt-1 accent-orange-500" />
+                    <input type="radio" name="motivo-da-reprovacao" value={c.id} checked={ativo} onChange={() => { setCategoria(c.id); setDeclarou(false); }} className="mt-1 accent-orange-500" />
                     <span className="min-w-0">
+                      {/* Sem a dica de cada motivo (12/10): ela ensinava qual botão sai de graça. */}
                       <span className="block text-sm" style={{ color: "var(--text-primary)" }}>
                         {c.nome}
-                      </span>
-                      <span className="block text-[11px]" style={{ color: "var(--text-muted)" }}>
-                        {c.dica}
                       </span>
                     </span>
                   </label>
@@ -246,15 +246,27 @@ export function JanelaDeReprovacao({
                   {transcrevendo ? <Loader2 className="h-4 w-4 animate-spin" /> : gravando ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </button>
               </div>
-              {classe && (
+              {classe === "gosto" && (
                 <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                  {classe === "gosto" ? "O crédito desta peça fica, e refazer cobra como uma peça nova." : "Vamos conferir contra as provas automáticas. Erro confirmado devolve os créditos na hora; se não confirmar, um admin decide e você recebe a resposta."}
+                  O crédito desta peça fica, e refazer cobra como uma peça nova.
                 </p>
+              )}
+              {/* A DECLARAÇÃO (12/10, decisão do Bruno): o motivo de falha da plataforma vai à auditoria. */}
+              {classe === "erro" && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                    Ao seguir, você declara que o problema apontado está na peça como foi entregue. O pedido fica registrado junto com a peça original e passa pela nossa auditoria.
+                  </p>
+                  <label className="flex items-start gap-2 text-[11px] font-medium" style={{ color: "var(--text-primary)" }}>
+                    <input type="checkbox" className="mt-0.5 accent-orange-500" checked={declarou} onChange={(e) => setDeclarou(e.target.checked)} />
+                    Confirmo que o problema está na peça entregue
+                  </label>
+                </div>
               )}
             </div>
 
             <div className="flex gap-2">
-              <Button variant="destructive" className="flex-1" onClick={() => void reprovar()} loading={ocupado} disabled={!categoria || gravando || transcrevendo}>
+              <Button variant="destructive" className="flex-1" onClick={() => void reprovar()} loading={ocupado} disabled={!categoria || gravando || transcrevendo || (classe === "erro" && !declarou)}>
                 <ThumbsDown className="w-3.5 h-3.5 mr-1" />
                 {alvos.length === 1 ? verbo : `${verbo} ${alvos.length} peças`}
               </Button>

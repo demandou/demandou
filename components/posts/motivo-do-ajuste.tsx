@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,10 +13,14 @@ import type { CategoriaDeReprovacao } from "@/lib/credits/reprovacao";
  * OS BOTÕES DO MOTIVO, DENTRO DO CHAT DO CARD (09/10/2026).
  *
  * O agente perguntou o motivo do ajuste no chat; aqui ficam as respostas
- * rápidas, as MESMAS categorias da janela de reprovação, separadas em gosto
- * (cobra) e erro da plataforma (conferido; confirmado, sai de graça). O custo
- * e o saldo ficam à vista ANTES do clique, e nada é gerado até um deles ser
- * escolhido. "Cancelar" tira o pedido sem gerar e sem cobrar.
+ * rápidas, as MESMAS categorias da janela de reprovação.
+ *
+ * 12/10 (decisão do Bruno): os motivos vêm TODOS JUNTOS, sem "gosto: cobra" e
+ * "erro: sai de graça" à vista, senão todo cliente escolheria erro. O segundo
+ * passo depende do motivo: no gosto, o custo e o saldo aparecem ANTES de gastar
+ * ("Refazer" ou "Deixar como está"); no erro, a declaração de que o problema
+ * está na peça entregue (o pedido vai à auditoria). Nada é gerado até a
+ * confirmação. "Cancelar" tira o pedido sem gerar e sem cobrar.
  */
 export function MotivoDoAjuste({
   cardId,
@@ -42,9 +47,10 @@ export function MotivoDoAjuste({
   const n = (x: number) => x.toLocaleString("pt-BR");
   const unidade = pedido.carteira === "video" ? " de vídeo" : "";
   const cobre = saldo === null ? true : saldoCobre({ creditos: pedido.creditos, saldo, interno });
-  const gosto = BOTOES_DO_MOTIVO.filter((b) => b.classe === "gosto");
-  const erro = BOTOES_DO_MOTIVO.filter((b) => b.classe === "erro");
   const ocupado = escolhendo !== null;
+  // O motivo escolhido, à espera da confirmação (12/10).
+  const [escolhido, setEscolhido] = useState<(typeof BOTOES_DO_MOTIVO)[number] | null>(null);
+  const [declarou, setDeclarou] = useState(false);
 
   const botao = (b: (typeof BOTOES_DO_MOTIVO)[number]) => (
     <button
@@ -52,10 +58,13 @@ export function MotivoDoAjuste({
       type="button"
       data-motivo={b.id}
       disabled={ocupado}
-      onClick={() => aoEscolher(b.id)}
+      onClick={() => {
+        setEscolhido(b);
+        setDeclarou(false);
+      }}
       className={cn(
-        "text-[11px] px-2.5 py-1.5 rounded-full border transition-colors disabled:opacity-50 inline-flex items-center gap-1",
-        b.classe === "gosto" ? "hover:border-orange-500/60 hover:bg-orange-500/5" : "hover:border-sky-500/60 hover:bg-sky-500/5"
+        "text-[11px] px-2.5 py-1.5 rounded-full border transition-colors disabled:opacity-50 inline-flex items-center gap-1 hover:border-orange-500/60 hover:bg-orange-500/5",
+        escolhido?.id === b.id && "border-orange-500/70 bg-orange-500/10"
       )}
       style={{ borderColor: "var(--border)", color: "var(--text-primary)", background: "var(--bg-primary)" }}
     >
@@ -68,7 +77,7 @@ export function MotivoDoAjuste({
     <Descartavel chave={chaveDoAjusteSemSaldo(cardId, pedido.id)}>
       <div className="flex items-start gap-2 rounded-lg border px-2.5 py-2" style={{ borderColor: "rgba(239,68,68,0.35)", background: "rgba(239,68,68,0.05)" }} data-ajuste-sem-saldo>
         <p className="flex-1 text-[11px]" style={{ color: "var(--text-primary)" }}>
-          {semSaldo ?? (pedido.motivoFixo ? "O seu saldo não cobre este ajuste. Compre mais créditos para refazer." : "O seu saldo não cobre este ajuste se for gosto. Compre mais créditos, ou escolha erro da plataforma se o erro foi nosso.")}{" "}
+          {semSaldo ?? "O seu saldo não cobre este ajuste. Compre mais créditos para refazer."}{" "}
           <Link href="/billing?comprar=1" className="font-semibold text-orange-400 hover:underline">
             Comprar créditos
           </Link>
@@ -126,24 +135,18 @@ export function MotivoDoAjuste({
     );
   }
 
+  const custo = (
+    <b style={{ color: "var(--text-primary)" }}>
+      {n(pedido.creditos)} {pedido.creditos === 1 ? "crédito" : "créditos"}
+      {unidade}
+    </b>
+  );
   return (
     <div className="mr-6 rounded-xl border px-3 py-2.5 space-y-2" style={{ borderColor: "rgba(249,115,22,0.35)", background: "var(--bg-elevated)" }} data-motivo-do-ajuste>
       <div className="flex items-start gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
-            Qual o motivo do ajuste?
-          </p>
-          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }} data-custo-do-ajuste>
-            {pedido.resumo ? `Refazer ${pedido.resumo}: ` : ""}
-            <b style={{ color: "var(--text-primary)" }}>
-              {n(pedido.creditos)} {pedido.creditos === 1 ? "crédito" : "créditos"}
-              {unidade}
-            </b>{" "}
-            se for gosto ou pedido diferente.
-            {interno ? " Acesso interno: fica no extrato e não sai do saldo." : saldo !== null ? ` Seu saldo: ${n(saldo)}${unidade}.` : ""}
-            {pedido.aParte ? ` ${pedido.aParte.oQue.charAt(0).toUpperCase()}${pedido.aParte.oQue.slice(1)} cobra à parte (${n(pedido.aParte.creditos)}).` : ""}
-          </p>
-        </div>
+        <p className="flex-1 min-w-0 text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+          O que você quer ajustar nesta peça?
+        </p>
         <button
           type="button"
           onClick={aoCancelar}
@@ -158,18 +161,56 @@ export function MotivoDoAjuste({
         </button>
       </div>
 
-      <div className="space-y-1">
-        <p className="text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-          Gosto: cobra
-        </p>
-        <div className="flex flex-wrap gap-1.5">{gosto.map(botao)}</div>
-      </div>
-      <div className="space-y-1">
-        <p className="text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-          Erro da plataforma: eu confiro; confirmado, sai de graça
-        </p>
-        <div className="flex flex-wrap gap-1.5">{erro.map(botao)}</div>
-      </div>
+      <div className="flex flex-wrap gap-1.5">{BOTOES_DO_MOTIVO.map(botao)}</div>
+
+      {escolhido?.classe === "gosto" && (
+        <div className="space-y-2 rounded-lg border px-2.5 py-2" style={{ borderColor: "var(--border)" }} data-confirmar-gosto>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }} data-custo-do-ajuste>
+            Combinado. Refazer {pedido.resumo || "esta peça"} usa {custo}
+            {interno ? " (acesso interno: fica no extrato e não sai do saldo)" : saldo !== null ? ` (seu saldo: ${n(saldo)}${unidade})` : ""}.
+            {pedido.aParte ? ` ${pedido.aParte.oQue.charAt(0).toUpperCase()}${pedido.aParte.oQue.slice(1)} usa mais ${n(pedido.aParte.creditos)} quando a peça chegar lá.` : ""}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              data-confirmar-ajuste
+              disabled={ocupado}
+              onClick={() => aoEscolher(escolhido.id)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 disabled:opacity-50"
+              style={{ background: "var(--marca-laranja-botao, #c2410c)", color: "#fff" }}
+            >
+              {ocupado && <Loader2 className="w-3 h-3 animate-spin" />}
+              Refazer
+            </button>
+            <button type="button" onClick={aoCancelar} disabled={ocupado} className="text-xs px-3 py-1.5 rounded-full border disabled:opacity-50" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+              Deixar como está
+            </button>
+          </div>
+        </div>
+      )}
+
+      {escolhido?.classe === "erro" && (
+        <div className="space-y-2 rounded-lg border px-2.5 py-2" style={{ borderColor: "var(--border)" }} data-declaracao-do-erro>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            Antes de refazer, uma confirmação: ao seguir, você declara que o problema que apontou está na peça como foi entregue. Todo pedido fica registrado junto com a peça original e passa pela nossa auditoria.
+          </p>
+          <label className="flex items-start gap-2 text-[11px] font-medium" style={{ color: "var(--text-primary)" }}>
+            <input type="checkbox" className="mt-0.5" checked={declarou} onChange={(e) => setDeclarou(e.target.checked)} />
+            Confirmo que o problema está na peça entregue
+          </label>
+          <button
+            type="button"
+            data-confirmar-ajuste
+            disabled={ocupado || !declarou}
+            onClick={() => aoEscolher(escolhido.id)}
+            className="text-xs font-semibold px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 disabled:opacity-50"
+            style={{ background: "var(--marca-laranja-botao, #c2410c)", color: "#fff" }}
+          >
+            {ocupado && <Loader2 className="w-3 h-3 animate-spin" />}
+            Confirmar e refazer
+          </button>
+        </div>
+      )}
 
       {avisoSemSaldo}
     </div>

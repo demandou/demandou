@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@prisma/client";
-import { creditar } from "@/lib/credits";
+import { creditar, debitar } from "@/lib/credits";
 import { creditarVideo, jaCreditado } from "@/lib/credits/video";
 import { custoDeRefazerPeca } from "@/lib/credits/estimativa";
 import { podeUsarProjeto } from "@/lib/equipe/conta";
@@ -9,7 +9,7 @@ import { notificar, type Aviso } from "@/lib/notificacoes";
 import { avisarAdmins, type AvisoAosAdmins } from "@/lib/notificacoes/aviso-aos-admins";
 import { provasDaPeca } from "@/lib/credits/provas-da-peca";
 import { conferirReprovacaoPeloJev, type ConferenciaDaReprovacao, type Perguntador, type ProvasDaPeca } from "@/lib/credits/reprovacao-pelo-jev";
-import { OPERACAO_DA_SOBRA_DO_AJUSTE, refDoAjustePeloAdmin } from "@/lib/credits/ajuste";
+import { OPERACAO_DA_SOBRA_DO_AJUSTE, OPERACAO_DO_AJUSTE, refDoAjustePeloAdmin } from "@/lib/credits/ajuste";
 import { OPERACAO_DO_ESTORNO_DA_EDICAO, creditosDaParteNaoEntregue, refDoEstorno, type AlvoDoEstorno } from "@/lib/credits/estorno-da-edicao";
 import { roteiroPagoNoPrecoAntigo } from "@/lib/media/limits";
 import { chaveDaPecaDoVideo } from "@/lib/posts/peca-do-video";
@@ -81,6 +81,11 @@ export type DepositoDaReprovacao = {
   /** Quanto já voltou por reprovação nas peças desta campanha. */
   jaDevolvidoDaCampanha(p: { runId: string | null; postId: string }): Promise<number>;
   creditar(a: { userId: string; quantidade: number; refId: string; note: string }): Promise<{ duplicado: boolean }>;
+  /**
+   * Cobra o ajuste por falha apontada que saiu sem cobrança, quando a
+   * auditoria (o admin) não reconhece o erro (12/10). Opcional para as provas.
+   */
+  cobrarAjusteNaoConfirmado?(a: { userId: string; quantidade: number; projectId: string; refId: string; note: string }): Promise<{ ok: boolean }>;
   /** O que a fila do vídeo por IA cobrou de fato por esta referência (débito menos estornos), em créditos de vídeo (09/10). */
   cobradoDoVideo?(referencia: string): Promise<number>;
   /** Credita a carteira de VÍDEO, uma vez só por refId (09/10). */
@@ -215,6 +220,15 @@ function depositoPadrao(): DepositoDaReprovacao {
     async creditar(a) {
       const r = await creditar({ userId: a.userId, quantidade: a.quantidade, operation: OPERACAO_DA_DEVOLUCAO, refId: a.refId, note: a.note, unico: true });
       return { duplicado: r.duplicado };
+    },
+    async cobrarAjusteNaoConfirmado(a) {
+      try {
+        await debitar({ userId: a.userId, quantidade: a.quantidade, operation: OPERACAO_DO_AJUSTE, projectId: a.projectId, refId: a.refId, note: a.note });
+        return { ok: true };
+      } catch (e) {
+        console.warn(`[reprovacao] o ajuste não confirmado não foi cobrado (${a.refId}):`, e instanceof Error ? e.message : e);
+        return { ok: false };
+      }
     },
     async cobradoDoVideo(referencia) {
       const [debito, estornos] = await Promise.all([
@@ -481,7 +495,7 @@ export async function reprovarPeca(
       .avisarAdmins({
         chave: `reprovacao:${id}`,
         titulo: doAjuste ? "Ajuste para decidir" : "Reprovação para decidir",
-        texto: `${NOME_DA_CATEGORIA[motivo.categoria]}: ${motivo.texto.slice(0, 140) || "sem texto"}. As provas não confirmaram; decida devolver ou manter.${doAjuste ? " O ajuste já foi refeito e cobrado; devolver inclui o que ele cobrou." : ""}`,
+        texto: `${NOME_DA_CATEGORIA[motivo.categoria]}: ${motivo.texto.slice(0, 140) || "sem texto"}. As provas não confirmaram; decida devolver ou manter.${doAjuste ? " O ajuste já foi refeito: se saiu sem cobrança (em auditoria), manter cobra o ajuste; se foi cobrado, devolver inclui o que ele cobrou." : ""}`,
         link: "/admin/reprovacoes",
         assunto: doAjuste ? "Pedido de ajuste para decidir" : "Reprovação de peça para decidir",
         corpo: `Peça ${peca.id} do projeto ${peca.projectId}, rede ${peca.platform}.\n${doAjuste ? `Pedido de ajuste pelo chat do card: ${args.comoAjuste!.pedido.slice(0, 300)}\n` : ""}Motivo: ${NOME_DA_CATEGORIA[motivo.categoria]}.\nTexto do cliente: ${motivo.texto || "(sem texto)"}.\nConferência: ${conferencia?.detalhe ?? "sem provas"}.\nCusto da peça: ${custoDaPeca} créditos.\n\n/admin/reprovacoes`,
@@ -545,6 +559,22 @@ export async function decidirReprovacaoPeloAdmin(
       }
     }
   }
+  // A AUDITORIA NÃO CONFIRMOU (12/10): o ajuste por falha apontada saiu sem
+  // cobrança na hora (`ajuste.pendente`); mantido pelo admin, ele é cobrado agora.
+  const pendente = Math.max(0, Math.floor(anterior?.ajuste?.pendente ?? 0));
+  let cobradoNaAuditoria = 0;
+  if (args.decisao !== "devolver" && pendente > 0 && anterior?.ajuste && dep.cobrarAjusteNaoConfirmado) {
+    const r = await dep
+      .cobrarAjusteNaoConfirmado({
+        userId: m.userId,
+        quantidade: pendente,
+        projectId: m.projectId,
+        refId: `${m.postId}:ajuste:${anterior.ajuste.id}:auditoria`,
+        note: `Ajuste por falha apontada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) não confirmado na auditoria`,
+      })
+      .catch(() => ({ ok: false }));
+    if (r.ok) cobradoNaAuditoria = pendente;
+  }
   const situacao = args.decisao === "devolver" ? "devolvido" : "mantido";
   const frase =
     args.decisao === "devolver"
@@ -562,6 +592,8 @@ export async function decidirReprovacaoPeloAdmin(
     // O ajuste devolvido É o refazer grátis desta reprovação: não sobra outro.
     ...((doAjuste > 0 || deVideo > 0) && anterior?.ajuste ? { refeitaGratisEm: agora.toISOString(), ajuste: { ...anterior.ajuste, devolvido: (anterior.ajuste.devolvido ?? 0) + doAjuste + deVideo } } : {}),
     ...(deVideo > 0 ? { creditosDeVideo: deVideo } : {}),
+    // A auditoria fechou o pendente (12/10): cobrado quando mantido, perdoado quando devolvido.
+    ...(pendente > 0 && anterior?.ajuste ? { ajuste: { ...anterior.ajuste, pendente: 0, cobrado: (anterior.ajuste.cobrado ?? 0) + cobradoNaAuditoria } } : {}),
   };
   creditos += doAjuste;
   await dep.gravarPeca(peca.id, { status: null, metadata: { ...((peca.metadata as Record<string, unknown> | null) ?? {}), reprovacao: estado } });
@@ -582,13 +614,17 @@ export async function decidirReprovacaoPeloAdmin(
             : deVideo > 0
               ? `Devolvemos ${deVideo.toLocaleString("pt-BR")} créditos de vídeo`
               : "Erro reconhecido: refazer é grátis"
-          : "Reprovação analisada: os créditos ficam",
+          : pendente > 0
+            ? "Auditoria do ajuste concluída"
+            : "Reprovação analisada: os créditos ficam",
       texto:
         situacao === "devolvido"
           ? doAjuste > 0 || deVideo > 0
             ? `Um admin olhou o ajuste que você pediu (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. Os créditos da peça e o que o ajuste cobrou${deVideo > 0 ? ", inclusive os créditos de vídeo," : ""} voltaram ao seu saldo.`
             : `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}) e reconheceu o erro. ${creditos > 0 ? "Os créditos da peça voltaram ao seu saldo. " : ""}Refazer esta peça não cobra.`
-          : `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}), o motivo e as provas, e não viu erro da plataforma${motivoDoAdmin ? `: ${motivoDoAdmin}` : ""}. O crédito fica e refazer cobra como uma peça nova.`,
+          : pendente > 0
+            ? `Conferimos a peça e não encontramos o problema apontado (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()})${motivoDoAdmin ? `: ${motivoDoAdmin}` : ""}. Por isso, este ajuste foi cobrado normalmente${cobradoNaAuditoria > 0 ? ` (${cobradoNaAuditoria.toLocaleString("pt-BR")} créditos)` : ""}. Se algo ainda não estiver certo, me mostre onde que eu olho de novo.`
+            : `Um admin olhou a peça reprovada (${NOME_DA_CATEGORIA[m.categoria].toLowerCase()}), o motivo e as provas, e não viu erro da plataforma${motivoDoAdmin ? `: ${motivoDoAdmin}` : ""}. O crédito fica e refazer cobra como uma peça nova.`,
       // A página do quadro é /live (a /content dava 404 desde 08/10).
       link: `/projects/${m.projectId}/live`,
       chave: chaveDoSinoDaReprovacao(estado, m.postId),

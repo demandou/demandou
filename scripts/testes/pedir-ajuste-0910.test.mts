@@ -341,8 +341,8 @@ test("as frases do ajuste e os botões não têm travessão, e os botões são a
     fraseDoMotivoRecebido({ categoria: "outro", situacao: "em_analise", cobrado: 42, carteira: "plano", cortesia: null, creditosDevolvidos: 0, saldoDepois: 58 }),
   ];
   for (const f of frases) assert.ok(!TRAVESSAO.test(f), f);
-  assert.match(frases[0], /42 créditos/);
-  assert.match(frases[0], /saldo é de 100 créditos/);
+  // 12/10: a pergunta não entrega a regra nem o preço (o preço vem depois do motivo, na tela).
+  assert.doesNotMatch(frases[0], /crédito|gosto|erro|grátis/i);
 });
 
 // ─── o fluxo, com os dublês ───
@@ -356,9 +356,8 @@ test("pedir ajuste não gera nada: guarda o pedido no card e pergunta o motivo c
   assert.equal(m.motivos.size, 0, "nada gravado como motivo");
   assert.equal(m.card.chat.length, 2);
   assert.equal(m.card.chat[0].role, "user");
-  assert.match(m.card.chat[1].content, /motivo do ajuste/);
-  assert.match(m.card.chat[1].content, /42 créditos/);
-  assert.match(m.card.chat[1].content, /100 créditos/);
+  assert.match(m.card.chat[1].content, /o que você quer mudar/);
+  assert.doesNotMatch(m.card.chat[1].content, /créditos/, "o preço aparece na tela depois do motivo, antes de gastar");
 });
 
 test("ajuste com motivo gosto: cobra antes de gerar, a peça não morre, o motivo vira registro de ajuste", async () => {
@@ -381,7 +380,7 @@ test("ajuste com motivo gosto: cobra antes de gerar, a peça não morre, o motiv
   const motivo = [...m.motivos.values()][0];
   assert.equal((motivo.provas as { origem?: string }).origem, "ajuste", "o admin vê que veio de um pedido de ajuste");
   assert.equal(lerPedidoDeAjuste(m.card.metadata), null, "o pedido saiu do card");
-  assert.match(m.card.chat.at(-1)!.content, /Cobrei 42 créditos/);
+  assert.match(m.card.chat.at(-1)!.content, /Usei 42 créditos/);
   assert.ok(!TRAVESSAO.test(r.frase));
 });
 
@@ -412,7 +411,7 @@ test("o refazer grátis de um erro confirmado vale só para ajuste por erro: por
   assert.equal(m.saldo(), 57, "a peça voltou");
   // 1. Ajuste por gosto: cobra, mesmo com o refazer grátis guardado.
   const { pedido } = await pedir(m);
-  assert.match(m.card.chat.at(-1)!.content, /se o motivo for erro da plataforma, este ajuste não cobra/);
+  assert.doesNotMatch(m.card.chat.at(-1)!.content, /erro da plataforma/, "a pergunta não ensina o botão grátis");
   const r = await confirmarMotivoDoAjuste({ cardId: "card1", userId: "dono", pedidoId: pedido.id, categoria: "gosto" }, m.dep);
   assert.ok(r.ok);
   assert.equal(r.cortesia, null, "gosto não usa o refazer grátis");
@@ -516,6 +515,44 @@ test("erro não confirmado: cobra agora, vai ao admin, e o admin que reconhece o
   const deNovo = await decidirReprovacaoPeloAdmin({ admin: { id: "adm", email: "a@b" }, id: r.registrado.reprovacaoId, decisao: "devolver" }, m.depRep);
   assert.equal(deNovo.ok, false);
   assert.equal(m.saldo(), 157);
+});
+
+test("falha apontada e não confirmada pelas provas (12/10): sai sem cobrança na hora, vai à auditoria, e o admin que mantém cobra o ajuste uma vez", async () => {
+  const m = mundo({ saldo: 100, cobrado: 500 });
+  m.dep.naoConfirmados = async () => 0;
+  m.depRep.cobrarAjusteNaoConfirmado = async (a) => {
+    await m.dep.debitar({ userId: a.userId, quantidade: a.quantidade, projectId: a.projectId, refId: a.refId, note: a.note });
+    return { ok: true };
+  };
+  const { pedido } = await pedir(m);
+  const r = await confirmarMotivoDoAjuste({ cardId: "card1", userId: "dono", pedidoId: pedido.id, categoria: "texto_ilegivel", perguntar: jevDeMentira(0.2), usarJev: true }, m.dep);
+  assert.ok(r.ok);
+  assert.equal(r.registrado.situacao, "em_analise");
+  assert.equal(r.cobrado, 0, "o cliente honesto não espera ninguém");
+  assert.equal(m.saldo(), 100);
+  assert.match(m.card.chat.at(-1)!.content, /Você tem razão, essa falha foi nossa/);
+  assert.match(m.card.chat.at(-1)!.content, /auditoria/);
+  assert.ok(!TRAVESSAO.test(m.card.chat.at(-1)!.content));
+  const d = await decidirReprovacaoPeloAdmin({ admin: { id: "adm", email: "a@b" }, id: r.registrado.reprovacaoId, decisao: "manter" }, m.depRep);
+  assert.ok(d.ok);
+  assert.equal(m.saldo(), 58, "a auditoria não confirmou: o ajuste é cobrado");
+  assert.equal(d.estado.ajuste?.pendente, 0);
+  assert.equal(m.avisos.at(-1)!.titulo, "Auditoria do ajuste concluída");
+  assert.match(m.avisos.at(-1)!.texto, /cobrado normalmente \(42 créditos\)/);
+  const deNovo = await decidirReprovacaoPeloAdmin({ admin: { id: "adm", email: "a@b" }, id: r.registrado.reprovacaoId, decisao: "manter" }, m.depRep);
+  assert.equal(deNovo.ok, false);
+  assert.equal(m.saldo(), 58, "uma vez só");
+});
+
+test("conta com pedidos não confirmados demais (12/10): a falha apontada volta a ser cobrada na hora", async () => {
+  const m = mundo({ saldo: 100, cobrado: 500 });
+  m.dep.naoConfirmados = async () => 3;
+  const { pedido } = await pedir(m);
+  const r = await confirmarMotivoDoAjuste({ cardId: "card1", userId: "dono", pedidoId: pedido.id, categoria: "texto_ilegivel", perguntar: jevDeMentira(0.2), usarJev: true }, m.dep);
+  assert.ok(r.ok);
+  assert.equal(r.cobrado, 42);
+  assert.equal(m.saldo(), 58);
+  assert.match(m.card.chat.at(-1)!.content, /passa por auditoria: confirmada a falha, os créditos voltam/);
 });
 
 test("saldo insuficiente bloqueia: gosto sem saldo não cobra, não grava motivo e o pedido continua no card", async () => {

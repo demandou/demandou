@@ -2,11 +2,14 @@ import { prisma } from "@/lib/db/prisma";
 import { creditar, debitar, SaldoInsuficiente } from "@/lib/credits";
 import { saldoDeVideo } from "@/lib/credits/video";
 import { carteiraDeQuemFaz, fraseDeSaldoDoMembro, podeUsarProjeto } from "@/lib/equipe/conta";
-import { cortesiasDeHoje, decidirCortesia, estadoDaPecaParaCortesia } from "@/lib/credits/cortesia";
+import { CORTESIAS_POR_DIA, cortesiasDeHoje, decidirCortesia, estadoDaPecaParaCortesia } from "@/lib/credits/cortesia";
 import { reprovarPeca, type ResultadoDaReprovacao } from "@/lib/credits/reprovacao-servidor";
 import { notificar, type Aviso } from "@/lib/notificacoes";
 import { NOME_DA_CATEGORIA, classeDaCategoria, lerEstadoDaReprovacao, refazerSemCobrar, validarMotivo, type EstadoDaReprovacao } from "@/lib/credits/reprovacao";
 import {
+  JANELA_DOS_NAO_CONFIRMADOS_DIAS,
+  LIMITE_DE_NAO_CONFIRMADOS,
+  MOTIVO_DA_AUDITORIA,
   CHAVE_DO_PEDIDO_DE_AJUSTE,
   INSTRUCAO_DA_ARTE_PELA_LEGENDA,
   OPERACAO_DA_SOBRA_DO_AJUSTE,
@@ -66,6 +69,12 @@ export type DepositoDoAjuste = {
   carteira(userId: string, qual: CarteiraDoAjuste): Promise<{ saldo: number; interno: boolean }>;
   fraseDoMembro(userId: string, conta: { necessario: number; disponivel: number }): Promise<string | null>;
   cortesiasHoje(projectId: string): Promise<number>;
+  /**
+   * Quantos ajustes por falha apontada o admin NÃO reconheceu nos últimos 30
+   * dias (12/10): a partir do limite, a falha apontada volta a ser cobrada na
+   * hora e devolvida só se o admin reconhecer. Opcional para as provas.
+   */
+  naoConfirmados?(userId: string): Promise<number>;
   /** Lança `SaldoInsuficiente` sem cobrar nada quando não dá. */
   debitar(a: { userId: string; quantidade: number; projectId: string; refId: string; note: string; cortesia?: { motivo: string } }): Promise<{ balance: number }>;
   creditar(a: { userId: string; quantidade: number; projectId: string; refId: string; note: string }): Promise<{ duplicado: boolean; balance: number }>;
@@ -114,6 +123,17 @@ function depositoPadrao(): DepositoDoAjuste {
     },
     fraseDoMembro: (userId, conta) => fraseDeSaldoDoMembro(userId, conta),
     cortesiasHoje: (projectId) => cortesiasDeHoje(projectId),
+    async naoConfirmados(userId) {
+      try {
+        const r = await prisma.$queryRawUnsafe<Array<{ n: number }>>(
+          `SELECT count(*)::int AS n FROM motivos_de_reprovacao WHERE "userId" = $1 AND "decididoPor" = 'admin' AND situacao = 'mantido' AND categoria NOT IN ('gosto', 'pedi_diferente') AND "decididaEm" > now() - interval '${JANELA_DOS_NAO_CONFIRMADOS_DIAS} days'`,
+          userId
+        );
+        return r[0]?.n ?? 0;
+      } catch {
+        return 0;
+      }
+    },
     async debitar(a) {
       const r = await debitar({ userId: a.userId, quantidade: a.quantidade, operation: OPERACAO_DO_AJUSTE, projectId: a.projectId, refId: a.refId, note: a.note, cortesia: a.cortesia });
       return { balance: r.balance };
@@ -312,6 +332,24 @@ export async function confirmarMotivoDoAjuste(
     registrado = { reprovacaoId: r.estado.id, categoria: motivo.categoria, situacao: r.estado.situacao, cortesia: cortesia?.motivo ?? null, creditosDevolvidos: r.estado.creditos };
   }
 
+  /**
+   * A FALHA APONTADA SAI SEM COBRANÇA NA HORA (12/10, decisão do Bruno): o
+   * cliente honesto não espera ninguém; o pedido vai à auditoria do admin e,
+   * se ela não confirmar, o ajuste é cobrado depois (`ajuste.pendente`). Vale
+   * dentro do teto de cortesias do dia, no ajuste cobrado aqui (carteira do
+   * plano) e enquanto a conta não juntar pedidos não confirmados; passou
+   * disso, a regra de antes (cobra agora, devolve se o admin reconhecer).
+   */
+  let emAuditoria = false;
+  if (!cortesia && classe === "erro" && registrado.situacao === "em_analise" && pedido.carteira === "plano" && !pedido.cobradoFora && pedido.creditos > 0 && cortesiasHoje < CORTESIAS_POR_DIA) {
+    const recusados = dep.naoConfirmados ? await dep.naoConfirmados(args.userId).catch(() => LIMITE_DE_NAO_CONFIRMADOS) : LIMITE_DE_NAO_CONFIRMADOS;
+    if (recusados < LIMITE_DE_NAO_CONFIRMADOS) {
+      emAuditoria = true;
+      cortesia = { motivo: MOTIVO_DA_AUDITORIA };
+      registrado = { ...registrado, cortesia: MOTIVO_DA_AUDITORIA };
+    }
+  }
+
   // Sem cortesia, o saldo precisa cobrir ANTES de gerar (o erro em análise também cobra agora).
   if (!cortesia && !saldoCobre({ creditos: pedido.creditos, saldo: carteira.saldo, interno: carteira.interno })) return semSaldo(registrado);
 
@@ -348,7 +386,7 @@ export async function confirmarMotivoDoAjuste(
       .gravarReprovacaoDaPeca(pedido.postId, {
         ...estado,
         ...(cortesia ? { refeitaGratisEm: quando(dep) } : {}),
-        ...(doAjuste ? { ajuste: { id: pedido.id, cobrado, devolvido: 0 } } : {}),
+        ...(doAjuste ? { ajuste: { id: pedido.id, cobrado, devolvido: 0, ...(emAuditoria ? { pendente: pedido.creditos } : {}) } } : {}),
       })
       .catch((e) => console.warn("[ajuste] estado da peça não gravado:", e instanceof Error ? e.message : e));
   }
@@ -360,6 +398,7 @@ export async function confirmarMotivoDoAjuste(
     carteira: pedido.carteira,
     cortesia: cortesia?.motivo ?? null,
     creditosDevolvidos: registrado.creditosDevolvidos,
+    creditosDoAjuste: pedido.creditos,
     saldoDepois: carteira.interno ? null : saldoDepois,
     cobradoDepois: !cobraAqui && !cortesia,
   });

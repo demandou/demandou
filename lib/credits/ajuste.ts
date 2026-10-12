@@ -288,15 +288,22 @@ const creditosPorExtenso = (x: number, carteira: CarteiraDoAjuste = "plano") => 
  * geração. Sem travessão.
  */
 export function perguntaDoMotivo(p: { resumo: string; creditos: number; carteira: CarteiraDoAjuste; saldo: number | null; interno?: boolean; aParte?: { creditos: number; oQue: string } | null; aindaGratis?: boolean }): string {
-  const oQue = p.resumo ? `refazer ${p.resumo}` : "fazer esse ajuste";
-  const custo = `Se for gosto ou pedido diferente, ${oQue} custa ${creditosPorExtenso(p.creditos, p.carteira)}${p.interno ? " (acesso interno: fica no extrato e não sai do saldo)" : p.saldo !== null ? `, e o seu saldo é de ${creditosPorExtenso(p.saldo, p.carteira)}` : ""}.`;
-  // O refazer grátis de um erro já confirmado vale só para motivo de erro (09/10).
-  const erro = p.aindaGratis
-    ? "Esta peça tem um refazer grátis por um erro já confirmado: se o motivo for erro da plataforma, este ajuste não cobra."
-    : "Se for erro da plataforma, eu confiro com as provas automáticas: confirmado, os créditos da peça voltam e o ajuste sai de graça; se não confirmar, cobro agora e um admin olha o caso, devolvendo se reconhecer o erro.";
-  const aParte = p.aParte ? ` ${p.aParte.oQue.charAt(0).toUpperCase()}${p.aParte.oQue.slice(1)} cobra à parte, ${creditosPorExtenso(p.aParte.creditos)}, quando a peça chegar lá.` : "";
-  return `Antes de ${oQue}, me diga o motivo do ajuste nos botões abaixo. ${custo} ${erro}${aParte}`;
+  // 12/10 (decisão do Bruno): a pergunta não explica a regra nem o preço. Com
+  // "gosto cobra, erro sai de graça" à vista, todo cliente escolheria erro. O
+  // preço aparece depois do motivo, antes de gastar (components/posts/motivo-do-ajuste.tsx).
+  void p;
+  return "Me conta o que você quer mudar nesta peça que eu cuido do resto.";
 }
+
+/** A falha apontada que saiu sem cobrança e foi à auditoria (12/10): o motivo gravado na linha do extrato. */
+export const MOTIVO_DA_AUDITORIA = "falha apontada, em auditoria";
+/** A partir de quantos pedidos não confirmados (na janela) a falha apontada volta a ser cobrada na hora. */
+export const LIMITE_DE_NAO_CONFIRMADOS = 3;
+export const JANELA_DOS_NAO_CONFIRMADOS_DIAS = 30;
+
+/** A nota da auditoria, abaixo da resposta do ajuste por falha (12/10). Sem travessão. */
+export const NOTA_DA_AUDITORIA =
+  "Como todo ajuste por falha da plataforma, este pedido passa por auditoria, que compara a peça entregue com o problema apontado. Pedidos que não se confirmam voltam a ser cobrados.";
 
 /** Sem saldo: nada foi refeito, e o que fazer. Membro da equipe recebe a frase do dono (vem pronta do servidor). */
 export function fraseSemSaldo(p: { creditos: number; saldo: number; carteira: CarteiraDoAjuste; doMembro?: string | null }): string {
@@ -315,19 +322,24 @@ export function fraseDoMotivoRecebido(p: {
   carteira: CarteiraDoAjuste;
   cortesia: string | null;
   creditosDevolvidos: number;
+  /** O que este ajuste custaria (12/10): a frase diz que ele não sai do saldo. */
+  creditosDoAjuste?: number;
   saldoDepois: number | null;
   /** Quem cobra é outro caminho (o vídeo); a frase não diz número cobrado. */
   cobradoDepois?: boolean;
 }): string {
-  const motivo = `Motivo: ${NOME_DA_CATEGORIA[p.categoria].toLowerCase()}.`;
   const saldo = p.saldoDepois !== null ? ` Seu saldo agora: ${creditosPorExtenso(p.saldoDepois, p.carteira)}.` : "";
-  if (p.cortesia) {
-    const devolvido = p.creditosDevolvidos > 0 ? ` Os ${creditosPorExtenso(p.creditosDevolvidos)} da peça voltaram ao seu saldo.` : "";
-    return `${motivo} ${p.situacao === "devolvido" ? "O erro foi confirmado pelas provas" : "Esta peça tinha um refazer grátis"}: o ajuste sai sem cobrança.${devolvido}${saldo} Estou refazendo agora.`;
+  // A FALHA DA PLATAFORMA (12/10, texto aprovado pelo Bruno): agradece, sem se
+  // desculpar demais, e deixa a auditoria dita com todas as letras.
+  if (p.cortesia && classeDaCategoria(p.categoria) === "erro") {
+    const peca = p.creditosDevolvidos > 0 ? `Os ${creditosPorExtenso(p.creditosDevolvidos)} desta peça já voltaram para a sua conta, e este ajuste não cobra nada.` : p.creditosDoAjuste ? `Os ${creditosPorExtenso(p.creditosDoAjuste, p.carteira)} deste ajuste ficam na sua conta.` : "Este ajuste não cobra nada.";
+    return `Você tem razão, essa falha foi nossa. ${peca} A versão nova está a caminho. Obrigado por apontar: é assim que a Demandou melhora para todo mundo.\n\n${NOTA_DA_AUDITORIA}`;
   }
-  const cobranca = p.cobradoDepois ? "O custo sai da carteira quando o trabalho começar." : `Cobrei ${creditosPorExtenso(p.cobrado, p.carteira)}.${saldo}`;
-  if (classeDaCategoria(p.categoria) === "gosto") return `${motivo} ${cobranca} Estou refazendo agora; o que não sair volta para o seu saldo.`;
-  return `${motivo} As provas automáticas não confirmaram sozinhas o erro, então um admin vai olhar o caso. ${cobranca} Estou refazendo agora; se o admin reconhecer o erro, os créditos voltam.`;
+  if (p.cortesia) return `Combinado: este ajuste não cobra nada.${saldo} Estou refazendo agora.`;
+  const cobranca = p.cobradoDepois ? "O custo sai da carteira quando o trabalho começar." : `Usei ${creditosPorExtenso(p.cobrado, p.carteira)}.${saldo}`;
+  if (classeDaCategoria(p.categoria) === "gosto") return `Combinado. ${cobranca} Estou refazendo agora; o que não sair volta para o seu saldo.`;
+  // A falha apontada cobrada agora (a conta passou do limite de não confirmados, ou o teto do dia).
+  return `Recebi. ${cobranca} Estou refazendo agora. Este pedido passa por auditoria: confirmada a falha, os créditos voltam para a sua conta.`;
 }
 
 /** A frase da devolução do que não saiu, para o chat. */
