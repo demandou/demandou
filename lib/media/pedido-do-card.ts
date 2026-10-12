@@ -1036,12 +1036,16 @@ async function refazerNoEstiloDoCard(o: {
 }): Promise<string> {
   for (const c of o.chaves) await o.marcar(c, "fazendo");
   const { runId, dayOfWeek } = o.daDiana;
+  const { estiloGravadoNoPost } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
+  // A peça é a do post que TEM o estilo (12/10: o card de publicação traz também os posts do
+  // corte de vídeo do dia, e o primeiro da lista era um deles: "a peça não tem estilo gravado").
+  const daArte = o.posts.find((p) => estiloGravadoNoPost(p.metadata)) ?? o.posts[0];
   // O card de uma rede só refaz o dia inteiro: a mesma arte em todas as redes do dia.
   const doDia = await prisma.post.findMany({
-    where: { runId, dayOfWeek, mediaType: o.posts[0]?.mediaType, status: { notIn: ["cancelled", "rejected", "published", "publishing"] } },
+    where: { runId, dayOfWeek, mediaType: daArte?.mediaType, status: { notIn: ["cancelled", "rejected", "published", "publishing"] } },
     select: { id: true, platform: true, runId: true, dayOfWeek: true, metadata: true, content: true, mediaType: true, imageUrl: true },
   });
-  const posts = doDia.length ? doDia : o.posts.map((p) => ({ ...p, runId, dayOfWeek }));
+  const posts = doDia.length ? doDia : o.posts.filter((p) => p.mediaType === daArte?.mediaType).map((p) => ({ ...p, runId, dayOfWeek }));
   try {
     const { refazerNoEstiloComPedido } = await import("@/lib/media/editor-do-curso/arte-pelo-modelo-servidor");
     const { promptDeEstiloDoModelo } = await import("@/lib/media/editor-do-curso/arte-pela-ia");
