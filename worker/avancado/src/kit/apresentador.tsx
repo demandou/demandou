@@ -41,6 +41,29 @@ type Estado = {
 };
 
 const ehCheia = (c: Caixa) => c.x <= 0 && c.y <= 0 && c.l >= LARGURA && c.a >= ALTURA;
+
+/**
+ * O CORPO QUE A GRAVAÇÃO TEM (12/10, o teste do Bruno): do topo da cabeça até
+ * onde a gravação termina, em px da gravação. A escala fixa de 1,15 só servia à
+ * gravação do teste; a gravação do OBS, de busto, saía cortada nos ombros numa
+ * janela pequena e com uma faixa vazia embaixo.
+ */
+const medianaDe = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : 0);
+const TOPO_DA_CABECA_NA_GRAVACAO = DADOS.recorte ? DADOS.recorte.caixa[1] + medianaDe(DADOS.recorte.cabeca.filter(Boolean).map((c) => c!.topo)) : H * 0.2;
+const CORPO_NA_GRAVACAO = Math.max(1, H - TOPO_DA_CABECA_NA_GRAVACAO);
+
+/**
+ * A ESCALA DO RECORTE PELO CORPO, para qualquer gravação: o corpo vai do topo da
+ * cabeça pedido até a base (a da janela, ou a do quadro na tela cheia). Com a
+ * cabeça por fora, ela passa 12% da janela acima da borda; sem, fica 5% abaixo.
+ * Na tela cheia, o topo da cabeça fica a 29% da altura (560 de 1920, a aula 8.2).
+ * Puro (testado pelas provas do roteiro).
+ */
+export function escalaDoRecorte(caixa: Caixa, base: number, cabecaPorFora: boolean, corpo = CORPO_NA_GRAVACAO): number {
+  const alvoDoTopo = ehCheia(caixa) || caixa.a <= 0 ? ALTURA * 0.29 : cabecaPorFora ? caixa.y - caixa.a * 0.12 : caixa.y + caixa.a * 0.05;
+  const e = (base - alvoDoTopo) / corpo;
+  return Math.min(2.4, Math.max(0.7, Number.isFinite(e) ? e : 1.15));
+}
 const cobrir = (c: Caixa) => Math.max(c.l / W, c.a / H);
 
 function resolver(q: QuadroDoApresentador): Estado {
@@ -48,6 +71,24 @@ function resolver(q: QuadroDoApresentador): Estado {
   const cheia = ehCheia(caixa);
   const recorte = Boolean(q.recorte && DADOS.recorte);
   const borda = q.borda ?? !cheia;
+  // Com recorte NO CORTE EM PÉ, a base e a escala são do KIT (12/10): o corpo até a base, qualquer
+  // que seja a gravação; na tela cheia, o corpo chega à base do quadro (sem faixa vazia embaixo).
+  // O completo deitado segue como foi aprovado (escala 1, nativa).
+  const baseDoRecorte = q.base ?? (borda && !cheia && caixa.a > 0 ? caixa.y + caixa.a : ALTURA);
+  if (recorte && ALTURA > LARGURA && (DADOS as { enquadramento?: string }).enquadramento === "adaptativo") {
+    return {
+      caixa,
+      cantos: cantosDaForma(q.forma ?? (cheia ? "reta" : "arredondada"), caixa),
+      borda: borda ? 1 : 0,
+      recorte: 1,
+      cabecaPorFora: q.cabecaPorFora ? 1 : 0,
+      escala: escalaDoRecorte(caixa, baseDoRecorte, Boolean(q.cabecaPorFora)),
+      rosto: q.rosto ?? { x: caixa.x + caixa.l / 2, y: caixa.y + caixa.a * 0.38 },
+      base: baseDoRecorte,
+      acompanhar: Math.min(1, Math.max(0, q.acompanhar ?? 0.6)),
+      inclinacao: q.inclinacao ?? 0,
+    };
+  }
   return {
     caixa,
     cantos: cantosDaForma(q.forma ?? (cheia ? "reta" : "arredondada"), caixa),

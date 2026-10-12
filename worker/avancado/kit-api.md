@@ -18,9 +18,9 @@ Imports permitidos, e só estes: `react`, `remotion`, `@remotion/three`, `three`
   "fundo": "estudio",
   "paralaxe": 1,
   "apresentador": [
-    { "em": "inicio", "recorte": true, "escala": 1.15, "base": 1802, "rosto": { "x": 540, "y": 760 } },
+    { "em": "inicio", "recorte": true, "base": 1802, "rosto": { "x": 540, "y": 760 } },
     { "em": { "palavra": "remete" }, "transicao": 1.5, "recorte": true, "cabecaPorFora": true, "forma": "assimetrica", "borda": true,
-      "caixa": { "x": 70, "y": 1180, "l": 940, "a": 622 }, "escala": 1.15, "base": 1802, "rosto": { "x": 540, "y": 760 } }
+      "caixa": { "x": 70, "y": 1180, "l": 940, "a": 622 }, "base": 1802, "rosto": { "x": 540, "y": 760 } }
   ],
   "legenda": { "topo": 1622, "esquerda": 70, "largura": 940, "tamanho": 50, "alinhar": "center" },
   "cenas": [
@@ -43,7 +43,7 @@ Imports permitidos, e só estes: `react`, `remotion`, `@remotion/three`, `three`
 - `rosto` `{x, y}`: onde o centro do rosto fica no quadro. Padrão: meio da janela, a 38% da altura dela. Sem recorte, a gravação sempre cobre a janela inteira (o rosto vai até onde der).
 - `acompanhar` (0 a 1, padrão 0,6): quanto a janela segue o movimento do rosto. Numa moldura pequena use 1 (o rosto fica sempre no centro).
 - `inclinacao`: graus de perspectiva (aula 8.1: discreta, 4 a 8).
-- `recorte: true` (só quando o corte TEM recorte): a pessoa sem o fundo da gravação, com contorno real. Aí a altura vem de `base` (o y onde a gravação termina, a base do corpo), não de `rosto.y`; `rosto.x` continua valendo. Com moldura, a base padrão é a base da janela. Os números de `base`, topo da cabeça e rosto para a escala 1,15 vêm prontos no pedido (geometria).
+- `recorte: true` (só quando o corte TEM recorte): a pessoa sem o fundo da gravação, com contorno real. Aí a altura vem de `base` (o y onde a gravação termina, a base do corpo), não de `rosto.y`; `rosto.x` continua valendo. Com moldura, a base padrão é a base da janela. NO CORTE EM PÉ, A ESCALA DO RECORTE É DO KIT (12/10): ele mede o corpo que a gravação tem e escala para o corpo ir do topo da cabeça até a base, qualquer que seja a gravação (busto do OBS ou meio corpo do celular); `escala` é ignorada. Os números de `base`, topo da cabeça e rosto vêm prontos no pedido (`geometria.recorte.recomendado`). A JANELA COM RECORTE FICA BAIXA E LARGA: a base dela em 1700 ou mais (1802 é a da aula 8.2), nunca uma janela no meio da tela com faixa vazia embaixo; o portão recusa.
 - `cabecaPorFora: true` (com recorte e moldura): cabeça e ombros passam POR CIMA da borda de cima, pelas máscaras complementares da mesma camada (nada se duplica). É a assinatura da aula 8.2.
 - A moldura que SOBE DO PÉ (aula 8.2): um quadro com `"caixa": {"x": 70, "y": <base>, "l": 940, "a": 0}` e `"borda": false` antes do quadro com a janela inteira; a borda se desenha enquanto sobe.
 

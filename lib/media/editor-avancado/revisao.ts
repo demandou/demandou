@@ -21,12 +21,13 @@ export const TIPOS_DO_DEFEITO = [
   "rotulo-solto",
   "quadro-vazio",
   "recorte-defeituoso",
+  "espaco-vazio",
   "outro",
 ] as const;
 export type TipoDoDefeito = (typeof TIPOS_DO_DEFEITO)[number];
 
 /** Sem o JEV: só o que qualquer pessoa vê reprova. */
-const GRAVES = new Set<TipoDoDefeito>(["texto-cortado", "texto-sobreposto", "texto-no-rosto", "legenda-coberta", "3d-quebrado", "quadro-vazio"]);
+const GRAVES = new Set<TipoDoDefeito>(["texto-cortado", "texto-sobreposto", "texto-no-rosto", "legenda-coberta", "3d-quebrado", "quadro-vazio", "espaco-vazio"]);
 const DA_GRAVACAO = new Set<TipoDoDefeito>(["recorte-defeituoso"]);
 
 export type QuadroParaRevisar = { t: number; base64: string; cenas: string[]; fala: string };
@@ -63,6 +64,7 @@ Liste para cada quadro só os defeitos que se veem:
 - "rotulo-solto": rótulo com linha de chamada apontando para o nada, longe do objeto que nomeia;
 - "quadro-vazio": tela sem pessoa e sem conteúdo, ou de uma cor só;
 - "recorte-defeituoso": contorno da pessoa recortada com halo claro, borda tremida, cabelo ou mão sumindo;
+- "espaco-vazio": a pessoa pequena demais ou cortada nos ombros dentro de uma janela pequena no meio da tela, ou uma faixa vazia grande (mais de um quinto da altura, sem pessoa nem conteúdo), por exemplo embaixo da legenda;
 - "outro": outro defeito visual óbvio.
 Quadro sem defeito não entra na lista. Elemento entrando ou saindo (meio transparente, desfocado de propósito, letras se montando) não é defeito. Descrição curta, em português, sem travessão.`;
 
@@ -75,7 +77,7 @@ const POR_LOTE = 24;
 export function ehDefeitoDoRoteiro(d: { tipo: TipoDoDefeito; descricao: string }): boolean {
   const texto = d.descricao.toLowerCase();
   const daLegenda = d.tipo === "legenda-coberta" || /legenda/.test(texto);
-  const daJanela = /\b(moldura|janela) (da|do) (pessoa|apresentador)/.test(texto);
+  const daJanela = /\b(moldura|janela) (da|do) (pessoa|apresentador)/.test(texto) || d.tipo === "espaco-vazio";
   const elementoDeCena = /\b(painel|card|t[íi]tulo|gr[áa]fico|[íi]cone|r[óo]tulo|maquete|letreiro|palavra)\b/.test(texto);
   return (daLegenda || daJanela) && !elementoDeCena;
 }

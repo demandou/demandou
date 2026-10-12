@@ -4,6 +4,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { extrairTrecho, folhasDosQuadros, limitesDoRender } from "../modelo/editar-no-modelo.mjs";
 import { geometriaDoApresentador, quadroDoFormato } from "./geometria.mjs";
+
+/** O enquadramento pelo corpo da gravação vale para este projeto? (12/10, atrás da chave até a aprovação.) */
+export function enquadramentoAdaptativo(projectId, env = process.env) {
+  if ((env.ENQUADRAMENTO_ADAPTATIVO ?? "").trim() === "1") return true;
+  const lista = (env.ENQUADRAMENTO_ADAPTATIVO_PROJETOS ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return Boolean(projectId && lista.includes(String(projectId)));
+}
 import { cenasNoInstante, conferirArquivos, instantesDaConferencia, nomeDeArquivoValido, segundosDaAncora, TECNICAS } from "./portao.mjs";
 import { portaoDoTsc, rodarIsolado } from "./processo.mjs";
 import { gravarCenas, gravarDados, montarProjeto, referenciaDoKit } from "./projeto.mjs";
@@ -190,7 +197,10 @@ export async function editarAvancado(
   const letra = ["impacto", "moderna", "classica", "amigavel"].includes(pedido.letra) ? pedido.letra : "moderna";
   // O QUADRO (11/10): 1080 × 1920 nos cortes; 1920 × 1080 no completo de gravação deitada (`formato: "16:9"`)
   const quadro = quadroDoFormato(pedido.formato);
-  gravarDados(projeto, { fps: FPS, largura: quadro.largura, altura: quadro.altura, duracao, quadros, cores, letra, palavras, gravacao, rosto, recorte, tecnica });
+  // O ENQUADRAMENTO PELO CORPO DA GRAVAÇÃO (12/10): ligado no projeto de teste (ENQUADRAMENTO_ADAPTATIVO_PROJETOS)
+  // ou em todos (ENQUADRAMENTO_ADAPTATIVO=1), até o Bruno aprovar as provas.
+  const adaptativo = enquadramentoAdaptativo(pedido.projectId);
+  gravarDados(projeto, { fps: FPS, largura: quadro.largura, altura: quadro.altura, duracao, quadros, cores, letra, palavras, gravacao, rosto, recorte, tecnica, enquadramento: adaptativo ? "adaptativo" : "fixo" });
   const kit = referenciaDoKit();
   const contexto = {
     tecnica,
@@ -201,13 +211,13 @@ export async function editarAvancado(
     cores,
     letra,
     temRecorte: Boolean(recorte),
-    geometria: geometriaDoApresentador({ rosto, gravacao, recorte, quadro }),
+    geometria: geometriaDoApresentador({ rosto, gravacao, recorte, quadro, adaptativo }),
     // O completo em blocos (11/10): o bloco anterior (onde o apresentador terminou e as cenas dele), para a edição seguir sem salto
     ...(pedido.continuidade ? { continuidade: pedido.continuidade } : {}),
     ...(pedido.bloco ? { bloco: pedido.bloco } : {}),
   };
   const fala = palavras;
-  const opcoesDoPortao = { palavras, duracao, temRecorte: Boolean(recorte), quadro };
+  const opcoesDoPortao = { palavras, duracao, temRecorte: Boolean(recorte), quadro, adaptativo };
 
   // 6. OS PORTÕES de uma versão do código: estático, tsc, bundle e render de conferência
   let rodadaDosQuadros = 0;

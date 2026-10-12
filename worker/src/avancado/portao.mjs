@@ -263,7 +263,7 @@ const descreverAncora = (a) => (a && typeof a === "object" ? `"${a.palavra}"${a.
  * O roteiro (src/cenas/roteiro.json) contra a fala e o quadro. Devolve os
  * problemas; vazio passa. `arquivos` são os nomes escritos nesta volta.
  */
-export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos, quadro = null }) {
+export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos, quadro = null, adaptativo = false }) {
   const problemas = [];
   // o quadro do corte: 1080 × 1920 em pé (os cortes) ou 1920 × 1080 deitado (o completo, 11/10)
   const QW = Number(quadro?.largura) > 0 ? Number(quadro.largura) : 1080;
@@ -311,6 +311,11 @@ export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquiv
       caixaOk(q.caixa, onde);
       if (q.forma !== undefined && !FORMAS.has(q.forma)) p(`${onde}: forma inválida (${q.forma})`);
       if (q.recorte && !temRecorte) p(`${onde}: este corte não tem recorte com alfa; use recorte: false`);
+      // A JANELA BAIXA DO RECORTE (12/10, o teste do Bruno): janela no meio da tela deixava a pessoa
+      // cortada nos ombros e uma faixa vazia embaixo. No corte em pé, a base dela fica em 1700 ou mais.
+      if (adaptativo && q.recorte && QH > QW && q.caixa && Number(q.caixa.a) > 0 && Number(q.caixa.y) + Number(q.caixa.a) < Math.round(QH * (1700 / 1920))) {
+        p(`${onde}: com recorte, a janela fica baixa e larga: a base dela (y + a) precisa ficar em ${Math.round(QH * (1700 / 1920))} ou mais (1802 é a da aula 8.2), sem faixa vazia embaixo`);
+      }
       if (q.escala !== undefined && !(q.escala >= 0.2 && q.escala <= 4)) p(`${onde}: escala fora de 0,2 a 4`);
       if (q.inclinacao !== undefined && !(Math.abs(q.inclinacao) <= 12)) p(`${onde}: inclinação acima de 12 graus distorce o rosto`);
       if (q.transicao !== undefined && !(q.transicao >= 0.05 && q.transicao <= 3)) p(`${onde}: transição fora de 0,05 a 3 s`);
@@ -354,7 +359,7 @@ export function conferirDitos(codigo, arquivo, palavras) {
  * O portão inteiro sobre os arquivos de uma volta: nomes, lint, roteiro e
  * tempo. `arquivos` é { nome: conteúdo }; o roteiro vem como texto JSON.
  */
-export function conferirArquivos(arquivos, { palavras, duracao, temRecorte, quadro = null }) {
+export function conferirArquivos(arquivos, { palavras, duracao, temRecorte, quadro = null, adaptativo = false }) {
   const problemas = [];
   const nomes = Object.keys(arquivos);
   for (const n of nomes) if (!nomeDeArquivoValido(n)) problemas.push({ arquivo: n, linha: 1, motivo: "nome de arquivo fora do permitido (roteiro.json, comum.tsx, cena-NN.tsx)" });
@@ -368,7 +373,7 @@ export function conferirArquivos(arquivos, { palavras, duracao, temRecorte, quad
       problemas.push({ arquivo: "roteiro.json", linha: 1, motivo: `roteiro.json não é JSON válido: ${e instanceof Error ? e.message : e}` });
     }
   }
-  if (roteiro) problemas.push(...conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos: nomes, quadro }));
+  if (roteiro) problemas.push(...conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquivos: nomes, quadro, adaptativo }));
   for (const n of nomes.filter((x) => x.endsWith(".tsx") && nomeDeArquivoValido(x))) {
     problemas.push(...lintDaCena(arquivos[n], n));
     problemas.push(...conferirDitos(arquivos[n], n, palavras));

@@ -18,7 +18,7 @@ export function quadroDoFormato(formato) {
   return formato === "16:9" ? { largura: 1920, altura: 1080, formato: "16:9" } : { largura: 1080, altura: 1920, formato: "9:16" };
 }
 
-export function geometriaDoApresentador({ rosto, gravacao, recorte, quadro = quadroDoFormato("9:16") }) {
+export function geometriaDoApresentador({ rosto, gravacao, recorte, quadro = quadroDoFormato("9:16"), adaptativo = false }) {
   const W = gravacao.largura;
   const H = gravacao.altura;
   const QW = quadro.largura;
@@ -40,8 +40,12 @@ export function geometriaDoApresentador({ rosto, gravacao, recorte, quadro = qua
   };
   if (recorte) {
     const topoRec = recorte.caixa[1] + mediana(recorte.cabeca.filter(Boolean).map((c) => c.topo));
-    // em pé: escala 1,15 com o topo da cabeça em 560 (aula 8.2); deitado: escala 1 com o topo em 14% da altura
-    const e = deitado ? 1 : 1.15;
+    // deitado: escala 1 com o topo em 14% da altura (como aprovado). EM PÉ (12/10): a escala sai do
+    // CORPO que a gravação tem, para o corpo ir do topo da cabeça em 560 (aula 8.2) até a base 1802,
+    // a mesma conta do kit (escalaDoRecorte): a gravação de busto do OBS sai maior, a de meio corpo
+    // do celular sai menor, e nenhuma deixa faixa vazia embaixo.
+    const corpo = Math.max(1, H - topoRec);
+    const e = deitado ? 1 : adaptativo ? +Math.min(2.4, Math.max(0.7, (1802 - 560) / corpo)).toFixed(3) : 1.15;
     const topoDaCabeca = deitado ? Math.round(QH * 0.14) : 560;
     const base = Math.round(topoDaCabeca - topoRec * e + H * e);
     const numeros = {
@@ -51,7 +55,7 @@ export function geometriaDoApresentador({ rosto, gravacao, recorte, quadro = qua
       rostoY: Math.round(base - H * e + r.y * e),
       queixoY: Math.round(base - H * e + r.queixo * e),
     };
-    saida.recorte = { topoDaCabecaNaGravacao: Math.round(topoRec), ...(deitado ? { comEscala100: numeros } : { comEscala115: numeros }) };
+    saida.recorte = { topoDaCabecaNaGravacao: Math.round(topoRec), ...(deitado ? { comEscala100: numeros } : adaptativo ? { recomendado: numeros } : { comEscala115: numeros }) };
   }
   return saida;
 }
