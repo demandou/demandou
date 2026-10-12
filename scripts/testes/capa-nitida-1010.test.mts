@@ -86,6 +86,18 @@ test("quadro: entre os que servem vence a melhor nota; nenhum serve = null (a ca
   assert.equal(nenhum.descartados.length, 3);
 });
 
+test("quadro: gravação comprimida inteira (WhatsApp 576x1024, nitidez ~30) usa o melhor quadro dela, nunca a Biblioteca (vídeo do Ygor, 11/10)", () => {
+  const caixa = { x: 0.3, y: 0.2, w: 0.32, h: 0.22 };
+  const alvo = { largura: 1280, altura: 720 };
+  const ygor = [cand(1, { nitidez: 29.7, nota: 0.4, caixa }, 576, 1024), cand(2, { nitidez: 35.9, nota: 0.7, caixa }, 576, 1024), cand(3, { nitidez: 31.1, nota: 0.5, caixa }, 576, 1024)];
+  assert.equal(nitido.escolherQuadroNitido(ygor, { alvo }).escolhido?.instante, 2);
+  // abaixo do piso é borrão de verdade: sem foto
+  assert.equal(nitido.escolherQuadroNitido([cand(1, { nitidez: 20, caixa }, 576, 1024)], { alvo }).escolhido, null);
+  // gravação nítida com UM quadro tremido: o tremido nunca entra pela folga
+  const nitida = [cand(1, { nitidez: 30, nota: 2 }), cand(2, { nitidez: 90, piscada: 0.9 })];
+  assert.equal(nitido.escolherQuadroNitido(nitida).escolhido, null);
+});
+
 test("quadro: vários nítidos e diferentes, longe no tempo uns dos outros", () => {
   const cs = [cand(10, { nota: 0.9 }), cand(12, { nota: 0.8 }), cand(40, { nota: 0.7 }), cand(41, { nota: 0.6, piscada: 0.9 }), cand(90, { nota: 0.5 })];
   assert.deepEqual(nitido.escolherVariosNitidos(cs, { quantos: 3, distancia: 8 }).map((c: { instante: number }) => c.instante), [10, 40, 90]);

@@ -56,6 +56,9 @@ export const REGRA_DO_QUADRO = Object.freeze({
   ampliacaoMaxima: 2,
 });
 
+/** O piso de nitidez quando a gravação inteira é comprimida (WhatsApp): abaixo disto é borrão de verdade. */
+export const NITIDEZ_DA_GRAVACAO_COMPRIMIDA = 25;
+
 /**
  * Quanto um quadro precisa ser ampliado para COBRIR o destino (escala
  * uniforme, como `cover`): 1 ou menos é redução. Pura.
@@ -111,10 +114,20 @@ export function escolherQuadroNitido(candidatos, opcoes = {}) {
   }
   // GRAVAÇÃO PEQUENA (11/10, WhatsApp do Bruno): quando a ÚNICA recusa é a ampliação, todos os quadros
   // da gravação ampliam igual; vale o melhor quadro nítido até 3x, em vez de capa sem a pessoa.
-  if (!escolhido && opcoes.alvo) {
+  // GRAVAÇÃO COMPRIMIDA (11/10 noite, vídeo do Ygor 576x1024): quando NENHUM quadro com rosto passa da
+  // nitidez mínima, a gravação inteira é assim (não é um quadro tremido); vale o mais nítido dela acima
+  // do piso. Sem isso a capa caía na foto da Biblioteca, que pode ser outra pessoa.
+  if (!escolhido) {
     const regra = opcoes.regra ?? REGRA_DO_QUADRO;
+    const nitidezes = (candidatos ?? []).filter((c) => c?.medida?.caixa).map((c) => Number(c.medida.nitidez) || 0);
+    const gravacaoMole = nitidezes.length > 0 && Math.max(...nitidezes) < regra.nitidezMinima;
+    const frouxa = {
+      ...regra,
+      ...(opcoes.alvo ? { ampliacaoMaxima: Math.max(regra.ampliacaoMaxima, 3) } : {}),
+      ...(gravacaoMole ? { nitidezMinima: Math.min(regra.nitidezMinima, NITIDEZ_DA_GRAVACAO_COMPRIMIDA) } : {}),
+    };
     for (const c of candidatos ?? []) {
-      const a = avaliarQuadro(c, { ...opcoes, regra: { ...regra, ampliacaoMaxima: Math.max(regra.ampliacaoMaxima, 3) } });
+      const a = avaliarQuadro(c, { ...opcoes, regra: frouxa });
       if (a.ok && (!escolhido || notaComNitidez(c.medida) > notaComNitidez(escolhido.medida))) escolhido = c;
     }
   }

@@ -247,9 +247,13 @@ export function promptDoInfografico(e: EntradaDoPrompt): string {
       `VISUAL STYLE (mandatory; wherever this prompt says icon or illustration, draw it in this style): ${lg.nome}. ${curto(lg.desenho, 420)}`,
       `ILLUSTRATIONS: ${curto(lg.elemento, 520)} The hero visual is the main concrete thing of the text drawn this way; each module gets its own small piece in the same rendering (one object of that module's idea), not an icon.`,
       `STYLE TYPOGRAPHY: ${curto(lg.tipografia, 220)}`,
-      `STYLE AVOID: ${curto(lg.evitar, 300)}`
+      `STYLE AVOID: ${curto(lg.evitar, 300)}`,
+      // 11/10 noite (Arquivo): a "foto de arquivo" do estilo saía com um homem e o revisor reprovava a arte por ter pessoa.
+      `PICTURES: any photograph, picture or image the style asks for shows an object, document or place of the subject, NEVER a person, face, hand or silhouette.`
     );
   }
+  // 11/10 noite: a IA escreveu "module module module" na arte (o nome da parte do layout virou texto).
+  linhas.push(`LABELS: the words of this prompt (module, title, subtitle, hero, layout, strip) are instructions, never text in the image; only the texts given below appear.`);
   linhas.push(
     "",
     `BRAND IDENTITY (approved by the client, use exactly):`,

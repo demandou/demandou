@@ -430,7 +430,8 @@ export function linguagemDoInfografico(s: PromptDeEstilo): { nome: string; desen
     // o estilo diz o seu elemento de infográfico, sem gente (11/10, o padre).
     elemento: semTravessao(s.elementoNoInfografico ?? s.elementoVisual),
     tipografia: semTravessao(s.tipografia),
-    evitar: semTravessao(`${s.evitar}${s.pessoa ? " No people, faces or silhouettes in the infographic." : ""}`),
+    // Sempre: a conferência do infográfico reprova qualquer pessoa, também nos estilos sem apresentador (o Arquivo, 11/10 noite).
+    evitar: semTravessao(`${s.evitar} No people, faces or silhouettes in the infographic.`),
   };
 }
 
