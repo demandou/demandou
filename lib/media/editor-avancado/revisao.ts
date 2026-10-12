@@ -22,12 +22,13 @@ export const TIPOS_DO_DEFEITO = [
   "quadro-vazio",
   "recorte-defeituoso",
   "espaco-vazio",
+  "texto-escondido",
   "outro",
 ] as const;
 export type TipoDoDefeito = (typeof TIPOS_DO_DEFEITO)[number];
 
 /** Sem o JEV: só o que qualquer pessoa vê reprova. */
-const GRAVES = new Set<TipoDoDefeito>(["texto-cortado", "texto-sobreposto", "texto-no-rosto", "legenda-coberta", "3d-quebrado", "quadro-vazio", "espaco-vazio"]);
+const GRAVES = new Set<TipoDoDefeito>(["texto-cortado", "texto-sobreposto", "texto-no-rosto", "legenda-coberta", "3d-quebrado", "quadro-vazio", "espaco-vazio", "texto-escondido"]);
 const DA_GRAVACAO = new Set<TipoDoDefeito>(["recorte-defeituoso"]);
 
 export type QuadroParaRevisar = { t: number; base64: string; cenas: string[]; fala: string };
@@ -64,6 +65,7 @@ Liste para cada quadro só os defeitos que se veem:
 - "rotulo-solto": rótulo com linha de chamada apontando para o nada, longe do objeto que nomeia;
 - "quadro-vazio": tela sem pessoa e sem conteúdo, ou de uma cor só;
 - "recorte-defeituoso": contorno da pessoa recortada com halo claro, borda tremida, cabelo ou mão sumindo;
+- "texto-escondido": número, cartão, título ou palavra escondido em parte atrás da pessoa, atrás da cabeça ou atrás da borda da janela dela, ou cortado na borda de cima da janela; SÓ a palavra gigante de fundo (o letreiro atrás da cabeça, legível) é proposital;
 - "espaco-vazio": a pessoa pequena demais ou cortada nos ombros dentro de uma janela pequena no meio da tela, ou uma faixa vazia grande (mais de um quinto da altura, sem pessoa nem conteúdo), por exemplo embaixo da legenda;
 - "outro": outro defeito visual óbvio.
 Quadro sem defeito não entra na lista. Elemento entrando ou saindo (meio transparente, desfocado de propósito, letras se montando) não é defeito. Descrição curta, em português, sem travessão.`;

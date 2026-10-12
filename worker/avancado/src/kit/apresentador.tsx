@@ -51,6 +51,8 @@ const ehCheia = (c: Caixa) => c.x <= 0 && c.y <= 0 && c.l >= LARGURA && c.a >= A
 const medianaDe = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : 0);
 const TOPO_DA_CABECA_NA_GRAVACAO = DADOS.recorte ? DADOS.recorte.caixa[1] + medianaDe(DADOS.recorte.cabeca.filter(Boolean).map((c) => c!.topo)) : H * 0.2;
 const CORPO_NA_GRAVACAO = Math.max(1, H - TOPO_DA_CABECA_NA_GRAVACAO);
+/** O enquadramento novo (12/10), ligado pelo pedido do trabalho: só no projeto de teste até a aprovação. */
+const ADAPTATIVO = (DADOS as { enquadramento?: string }).enquadramento === "adaptativo";
 
 /**
  * A ESCALA DO RECORTE PELO CORPO, para qualquer gravação: o corpo vai do topo da
@@ -60,7 +62,9 @@ const CORPO_NA_GRAVACAO = Math.max(1, H - TOPO_DA_CABECA_NA_GRAVACAO);
  * Puro (testado pelas provas do roteiro).
  */
 export function escalaDoRecorte(caixa: Caixa, base: number, cabecaPorFora: boolean, corpo = CORPO_NA_GRAVACAO): number {
-  const alvoDoTopo = ehCheia(caixa) || caixa.a <= 0 ? ALTURA * 0.29 : cabecaPorFora ? caixa.y - caixa.a * 0.12 : caixa.y + caixa.a * 0.05;
+  // A cabeça por fora é a da aula 8.2: alta (29% da altura) e o corpo grande saindo da janela (12/10, prova:
+  // com a cabeça só 12% acima da janela a pessoa ficava pequena numa tira baixa e o topo da tela vazio).
+  const alvoDoTopo = ehCheia(caixa) || caixa.a <= 0 || cabecaPorFora ? ALTURA * 0.29 : caixa.y + caixa.a * 0.05;
   const e = (base - alvoDoTopo) / corpo;
   return Math.min(2.4, Math.max(0.7, Number.isFinite(e) ? e : 1.15));
 }
@@ -75,7 +79,7 @@ function resolver(q: QuadroDoApresentador): Estado {
   // que seja a gravação; na tela cheia, o corpo chega à base do quadro (sem faixa vazia embaixo).
   // O completo deitado segue como foi aprovado (escala 1, nativa).
   const baseDoRecorte = q.base ?? (borda && !cheia && caixa.a > 0 ? caixa.y + caixa.a : ALTURA);
-  if (recorte && ALTURA > LARGURA && (DADOS as { enquadramento?: string }).enquadramento === "adaptativo") {
+  if (recorte && ALTURA > LARGURA && ADAPTATIVO) {
     return {
       caixa,
       cantos: cantosDaForma(q.forma ?? (cheia ? "reta" : "arredondada"), caixa),
@@ -338,7 +342,7 @@ export const CamadaDoApresentador: React.FC<{ desenho: Desenho }> = ({ desenho }
       {opAlfa > 0.001 && R ? (
         <>
           <AbsoluteFill style={{ clipPath: cheia ? undefined : `path("${caminhoDentro}")`, opacity: opAlfa, ...(cheia ? { WebkitMaskImage: desbotarBase, maskImage: desbotarBase } : {}) }}>
-            <OffthreadVideo src={staticFile("alfa.webm")} transparent muted style={{ ...estiloAlfa, maxWidth: "none" }} />
+            <OffthreadVideo src={staticFile("alfa.webm")} transparent muted style={{ ...estiloAlfa, maxWidth: "none", ...(ADAPTATIVO ? { filter: "url(#kit-borda-do-recorte)" } : {}) }} />
           </AbsoluteFill>
           {/* fora da janela: só acima da borda de cima (cabeça e ombros), com a base desbotada */}
           {!cheia && e.cabecaPorFora > 0.001 ? (
@@ -350,8 +354,19 @@ export const CamadaDoApresentador: React.FC<{ desenho: Desenho }> = ({ desenho }
                 maskImage: desbotarBase,
               }}
             >
-              <OffthreadVideo src={staticFile("alfa.webm")} transparent muted style={{ ...estiloAlfa, maxWidth: "none" }} />
+              <OffthreadVideo src={staticFile("alfa.webm")} transparent muted style={{ ...estiloAlfa, maxWidth: "none", ...(ADAPTATIVO ? { filter: "url(#kit-borda-do-recorte)" } : {}) }} />
             </AbsoluteFill>
+          ) : null}
+          {/* A BORDA DO RECORTE ENCOLHIDA (12/10): a gravação pequena do WhatsApp deixava um halo claro
+              em volta do cabelo; o alfa perde 1,5 px e a cor fica só onde o alfa encolhido manda. */}
+          {ADAPTATIVO ? (
+            <svg width={0} height={0} style={{ position: "absolute" }} aria-hidden>
+              <filter id="kit-borda-do-recorte" colorInterpolationFilters="sRGB">
+                <feMorphology in="SourceAlpha" operator="erode" radius={1.5} result="alfa" />
+                <feGaussianBlur in="alfa" stdDeviation={0.6} result="suave" />
+                <feComposite in="SourceGraphic" in2="suave" operator="in" />
+              </filter>
+            </svg>
           ) : null}
         </>
       ) : null}

@@ -316,6 +316,10 @@ export function conferirRoteiro(roteiro, { palavras, duracao, temRecorte, arquiv
       if (adaptativo && q.recorte && QH > QW && q.caixa && Number(q.caixa.a) > 0 && Number(q.caixa.y) + Number(q.caixa.a) < Math.round(QH * (1700 / 1920))) {
         p(`${onde}: com recorte, a janela fica baixa e larga: a base dela (y + a) precisa ficar em ${Math.round(QH * (1700 / 1920))} ou mais (1802 é a da aula 8.2), sem faixa vazia embaixo`);
       }
+      // ...e não vira uma tira: altura de 560 ou mais (a da aula 8.2 é 622), largura de 800 ou mais.
+      if (adaptativo && q.recorte && QH > QW && q.caixa && Number(q.caixa.a) > 0 && (Number(q.caixa.a) < 560 || Number(q.caixa.l) < 800)) {
+        p(`${onde}: com recorte, a janela precisa de altura 560 ou mais e largura 800 ou mais (a da aula 8.2: l 940, a 622); uma tira baixa deixa a pessoa pequena`);
+      }
       if (q.escala !== undefined && !(q.escala >= 0.2 && q.escala <= 4)) p(`${onde}: escala fora de 0,2 a 4`);
       if (q.inclinacao !== undefined && !(Math.abs(q.inclinacao) <= 12)) p(`${onde}: inclinação acima de 12 graus distorce o rosto`);
       if (q.transicao !== undefined && !(q.transicao >= 0.05 && q.transicao <= 3)) p(`${onde}: transição fora de 0,05 a 3 s`);
