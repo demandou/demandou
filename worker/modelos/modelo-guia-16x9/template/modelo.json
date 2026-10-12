@@ -1,0 +1,18 @@
+{
+  "formato": "16:9",
+  "variante": { "de": "modelo-guia", "formato": "16:9" },
+  "imagens": true,
+  "blocos": {
+    "assinatura": [
+      "mapa",
+      "print"
+    ]
+  },
+  "palavraPorPalavra": [
+    "abertura",
+    "frase",
+    "pergunta",
+    "cta"
+  ],
+  "conferir": { "cobertura": 0.5, "vao": 8, "parado": 6, "segundosPorMomento": 10 }
+}

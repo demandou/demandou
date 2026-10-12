@@ -1,0 +1,548 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 30.96,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Dr. Tiago Moura",
+    "area": "Harmonização facial"
+  },
+  "sfx": true,
+  "cortesEm": [
+    4.07,
+    9.37,
+    16.74,
+    23.89,
+    28.29
+  ],
+  "momentos": [
+    {
+      "tipo": "manchete",
+      "de": 0.0,
+      "ate": 4.07,
+      "linhas": [
+        "Toxina botulínica",
+        "≠ preenchimento"
+      ],
+      "sub": "não são a mesma coisa",
+      "simboloEm": 2.5
+    },
+    {
+      "tipo": "mapa",
+      "de": 4.07,
+      "ate": 9.37,
+      "lado": "esquerda",
+      "rotulo": "Toxina botulínica",
+      "titulo": "Relaxa o músculo",
+      "nota": "suaviza as rugas de expressão",
+      "efeito": {
+        "tipo": "relaxar",
+        "em": 6.33,
+        "inicioEm": 5.26
+      },
+      "areas": [
+        {
+          "area": "testa",
+          "em": 8.91
+        }
+      ]
+    },
+    {
+      "tipo": "mapa",
+      "de": 9.37,
+      "ate": 16.74,
+      "lado": "direita",
+      "rotulo": "Preenchimento",
+      "titulo": "Repõe volume",
+      "nota": "com ácido hialurônico",
+      "efeito": {
+        "tipo": "volume",
+        "em": 12.42
+      },
+      "areas": [
+        {
+          "area": "labios",
+          "em": 13.41
+        },
+        {
+          "area": "olheiras",
+          "em": 14.49
+        },
+        {
+          "area": "contorno",
+          "em": 15.45
+        }
+      ]
+    },
+    {
+      "tipo": "comparacao",
+      "de": 16.74,
+      "ate": 23.89,
+      "titulo": "Duração do efeito",
+      "escala": {
+        "ate": 18,
+        "passo": 3
+      },
+      "lados": [
+        {
+          "rotulo": "Toxina",
+          "texto": "4 a 6 meses",
+          "em": 17.44,
+          "faixa": {
+            "de": 4,
+            "ate": 6,
+            "em": 18.6,
+            "emFim": 19.32
+          },
+          "areas": [
+            "testa"
+          ]
+        },
+        {
+          "rotulo": "Preenchimento",
+          "texto": "6 meses",
+          "em": 20.09,
+          "faixa": {
+            "de": 6,
+            "ate": 18,
+            "em": 21.95,
+            "emFim": 23.38
+          },
+          "textos": {
+            "sobre": "em média",
+            "fim": "1 ano e meio"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "manchete",
+      "de": 23.89,
+      "ate": 28.29,
+      "linhas": [
+        "avaliação com um",
+        "profissional habilitado"
+      ],
+      "enfase": "profissional habilitado",
+      "abre": "Antes de qualquer procedimento,",
+      "seloEm": 27.78
+    },
+    {
+      "tipo": "cta",
+      "de": 28.29,
+      "ate": 30.96,
+      "texto": "Siga para mais dicas",
+      "icone": "seguir",
+      "iconeEm": 29.29
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {},
+  "palavras": [
+    {
+      "em": 0.33,
+      "ate": 0.52,
+      "w": "Toxina"
+    },
+    {
+      "em": 0.52,
+      "ate": 1.36,
+      "w": "botulínica"
+    },
+    {
+      "em": 1.36,
+      "ate": 1.44,
+      "w": "e"
+    },
+    {
+      "em": 1.44,
+      "ate": 2.5,
+      "w": "preenchimento"
+    },
+    {
+      "em": 2.5,
+      "ate": 2.84,
+      "w": "não"
+    },
+    {
+      "em": 2.84,
+      "ate": 3.18,
+      "w": "são"
+    },
+    {
+      "em": 3.18,
+      "ate": 3.26,
+      "w": "a"
+    },
+    {
+      "em": 3.26,
+      "ate": 3.68,
+      "w": "mesma"
+    },
+    {
+      "em": 3.68,
+      "ate": 4.07,
+      "w": "coisa"
+    },
+    {
+      "em": 4.13,
+      "ate": 4.19,
+      "w": "A"
+    },
+    {
+      "em": 4.16,
+      "ate": 4.62,
+      "w": "toxina"
+    },
+    {
+      "em": 4.62,
+      "ate": 5.17,
+      "w": "relaxa"
+    },
+    {
+      "em": 5.17,
+      "ate": 5.26,
+      "w": "o"
+    },
+    {
+      "em": 5.26,
+      "ate": 6.03,
+      "w": "músculo"
+    },
+    {
+      "em": 6.03,
+      "ate": 6.27,
+      "w": "e"
+    },
+    {
+      "em": 6.33,
+      "ate": 6.67,
+      "w": "suaviza"
+    },
+    {
+      "em": 6.67,
+      "ate": 6.83,
+      "w": "as"
+    },
+    {
+      "em": 6.83,
+      "ate": 7.23,
+      "w": "rugas"
+    },
+    {
+      "em": 7.23,
+      "ate": 7.39,
+      "w": "de"
+    },
+    {
+      "em": 7.39,
+      "ate": 8.27,
+      "w": "expressão,"
+    },
+    {
+      "em": 8.48,
+      "ate": 8.62,
+      "w": "como"
+    },
+    {
+      "em": 8.62,
+      "ate": 8.79,
+      "w": "as"
+    },
+    {
+      "em": 8.79,
+      "ate": 8.96,
+      "w": "da"
+    },
+    {
+      "em": 8.96,
+      "ate": 9.37,
+      "w": "testa,"
+    },
+    {
+      "em": 9.43,
+      "ate": 9.49,
+      "w": "O"
+    },
+    {
+      "em": 9.46,
+      "ate": 10.3,
+      "w": "preenchimento"
+    },
+    {
+      "em": 10.3,
+      "ate": 10.51,
+      "w": "com"
+    },
+    {
+      "em": 10.51,
+      "ate": 10.94,
+      "w": "ácido"
+    },
+    {
+      "em": 10.94,
+      "ate": 11.98,
+      "w": "hialurônico"
+    },
+    {
+      "em": 11.98,
+      "ate": 12.47,
+      "w": "repõe"
+    },
+    {
+      "em": 12.47,
+      "ate": 13.11,
+      "w": "volume."
+    },
+    {
+      "em": 13.36,
+      "ate": 13.46,
+      "w": "nos"
+    },
+    {
+      "em": 13.46,
+      "ate": 14.32,
+      "w": "lábios,"
+    },
+    {
+      "em": 14.32,
+      "ate": 14.54,
+      "w": "nas"
+    },
+    {
+      "em": 14.54,
+      "ate": 15.32,
+      "w": "olheiras"
+    },
+    {
+      "em": 15.32,
+      "ate": 15.38,
+      "w": "ou"
+    },
+    {
+      "em": 15.34,
+      "ate": 15.5,
+      "w": "no"
+    },
+    {
+      "em": 15.5,
+      "ate": 16.19,
+      "w": "contorno"
+    },
+    {
+      "em": 16.19,
+      "ate": 16.36,
+      "w": "do"
+    },
+    {
+      "em": 16.36,
+      "ate": 16.74,
+      "w": "rosto"
+    },
+    {
+      "em": 16.79,
+      "ate": 16.85,
+      "w": "O"
+    },
+    {
+      "em": 16.82,
+      "ate": 17.3,
+      "w": "efeito"
+    },
+    {
+      "em": 17.3,
+      "ate": 17.49,
+      "w": "da"
+    },
+    {
+      "em": 17.49,
+      "ate": 18.07,
+      "w": "toxina"
+    },
+    {
+      "em": 18.07,
+      "ate": 18.49,
+      "w": "dura"
+    },
+    {
+      "em": 18.49,
+      "ate": 18.65,
+      "w": "de"
+    },
+    {
+      "em": 18.65,
+      "ate": 18.94,
+      "w": "4"
+    },
+    {
+      "em": 18.94,
+      "ate": 19.03,
+      "w": "a"
+    },
+    {
+      "em": 19.03,
+      "ate": 19.32,
+      "w": "6"
+    },
+    {
+      "em": 19.32,
+      "ate": 19.86,
+      "w": "meses"
+    },
+    {
+      "em": 20.09,
+      "ate": 20.15,
+      "w": "o"
+    },
+    {
+      "em": 20.12,
+      "ate": 20.18,
+      "w": "do"
+    },
+    {
+      "em": 20.15,
+      "ate": 21.35,
+      "w": "preenchimento"
+    },
+    {
+      "em": 21.35,
+      "ate": 21.41,
+      "w": "em"
+    },
+    {
+      "em": 21.37,
+      "ate": 21.84,
+      "w": "média"
+    },
+    {
+      "em": 21.84,
+      "ate": 22,
+      "w": "de"
+    },
+    {
+      "em": 22,
+      "ate": 22.32,
+      "w": "seis"
+    },
+    {
+      "em": 22.32,
+      "ate": 22.73,
+      "w": "meses"
+    },
+    {
+      "em": 22.73,
+      "ate": 22.93,
+      "w": "a"
+    },
+    {
+      "em": 22.93,
+      "ate": 23.06,
+      "w": "um"
+    },
+    {
+      "em": 23.06,
+      "ate": 23.38,
+      "w": "ano"
+    },
+    {
+      "em": 23.38,
+      "ate": 23.48,
+      "w": "e"
+    },
+    {
+      "em": 23.48,
+      "ate": 23.89,
+      "w": "meio"
+    },
+    {
+      "em": 23.98,
+      "ate": 24.17,
+      "w": "Antes"
+    },
+    {
+      "em": 24.17,
+      "ate": 24.3,
+      "w": "de"
+    },
+    {
+      "em": 24.3,
+      "ate": 24.95,
+      "w": "qualquer"
+    },
+    {
+      "em": 24.95,
+      "ate": 25.94,
+      "w": "procedimento,"
+    },
+    {
+      "em": 25.94,
+      "ate": 26.59,
+      "w": "avaliação"
+    },
+    {
+      "em": 26.59,
+      "ate": 26.78,
+      "w": "com"
+    },
+    {
+      "em": 26.78,
+      "ate": 26.91,
+      "w": "um"
+    },
+    {
+      "em": 26.91,
+      "ate": 27.65,
+      "w": "profissional"
+    },
+    {
+      "em": 27.65,
+      "ate": 28.29,
+      "w": "habilitado"
+    },
+    {
+      "em": 28.39,
+      "ate": 28.45,
+      "w": "Me"
+    },
+    {
+      "em": 28.41,
+      "ate": 28.64,
+      "w": "segue"
+    },
+    {
+      "em": 28.64,
+      "ate": 28.8,
+      "w": "para"
+    },
+    {
+      "em": 28.8,
+      "ate": 29.02,
+      "w": "mais"
+    },
+    {
+      "em": 29.02,
+      "ate": 29.29,
+      "w": "dicas"
+    },
+    {
+      "em": 29.29,
+      "ate": 29.39,
+      "w": "de"
+    },
+    {
+      "em": 29.39,
+      "ate": 30.41,
+      "w": "harmonização."
+    }
+  ]
+}

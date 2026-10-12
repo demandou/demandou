@@ -1,0 +1,547 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 29.4,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.36,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Dr. Rafael Moura",
+    "area": "Direito do Consumidor"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.6,
+    4.69,
+    6.63,
+    10.13,
+    10.98,
+    14.81,
+    18.68,
+    19.28,
+    22.2,
+    23.39,
+    26.09
+  ],
+  "momentos": [
+    {
+      "tipo": "gancho",
+      "de": 0.0,
+      "ate": 2.6,
+      "rotulo": "Direito do consumidor",
+      "linhas": [
+        "Comprou pela",
+        "internet e",
+        "se arrependeu?"
+      ],
+      "enfase": 2
+    },
+    {
+      "tipo": "numero",
+      "de": 2.6,
+      "ate": 6.63,
+      "valor": 7,
+      "em": 3.08,
+      "sufixo": "dias",
+      "rotulo": "para devolver",
+      "rotuloEm": 3.76,
+      "marcadores": 7,
+      "legenda": true
+    },
+    {
+      "tipo": "citacao",
+      "de": 6.63,
+      "ate": 10.22,
+      "fonte": "Lei nº 8.078/1990 · CDC",
+      "titulo": "Art. 49",
+      "texto": "O consumidor pode desistir do contrato, no prazo de 7 dias a contar de sua assinatura ou do ato de recebimento do produto ou serviço…",
+      "grifo": "no prazo de 7 dias",
+      "grifoEm": 8.7
+    },
+    {
+      "tipo": "lista",
+      "de": 10.98,
+      "ate": 22.26,
+      "rotulo": "Funciona assim",
+      "itens": [
+        {
+          "em": 11.25,
+          "texto": "O prazo conta a partir da chegada do produto",
+          "icone": "caixa"
+        },
+        {
+          "em": 15.1,
+          "texto": "A loja devolve tudo, inclusive o frete",
+          "icone": "retorno"
+        },
+        {
+          "em": 18.98,
+          "texto": "Peça por escrito e guarde o protocolo",
+          "icone": "documento"
+        }
+      ]
+    },
+    {
+      "tipo": "contraste",
+      "de": 22.25,
+      "ate": 26.18,
+      "pergunta": "A loja se recusou?",
+      "conector": "ou",
+      "opcoes": [
+        {
+          "em": 24.4,
+          "texto": "Procon"
+        },
+        {
+          "em": 25.55,
+          "texto": "Advogado"
+        }
+      ],
+      "legenda": true
+    },
+    {
+      "tipo": "cta",
+      "de": 26.09,
+      "ate": 29.4,
+      "texto": "Salve este vídeo",
+      "legenda": true,
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [
+    {
+      "de": 2.6,
+      "ate": 4.75
+    },
+    {
+      "de": 22.24,
+      "ate": 23.46
+    },
+    {
+      "de": 24.4,
+      "ate": 27.31
+    }
+  ],
+  "correcoes": {
+    "PROCON": "Procon"
+  },
+  "palavras": [
+    {
+      "em": 0.28,
+      "ate": 0.57,
+      "w": "Comprou"
+    },
+    {
+      "em": 0.57,
+      "ate": 0.9,
+      "w": "pela"
+    },
+    {
+      "em": 0.9,
+      "ate": 1.59,
+      "w": "internet"
+    },
+    {
+      "em": 1.59,
+      "ate": 1.68,
+      "w": "e"
+    },
+    {
+      "em": 1.68,
+      "ate": 1.85,
+      "w": "se"
+    },
+    {
+      "em": 1.85,
+      "ate": 2.6,
+      "w": "arrependeu?"
+    },
+    {
+      "em": 2.69,
+      "ate": 2.9,
+      "w": "você"
+    },
+    {
+      "em": 2.9,
+      "ate": 3.13,
+      "w": "tem"
+    },
+    {
+      "em": 3.13,
+      "ate": 3.44,
+      "w": "sete"
+    },
+    {
+      "em": 3.44,
+      "ate": 3.76,
+      "w": "dias"
+    },
+    {
+      "em": 3.76,
+      "ate": 4.07,
+      "w": "para"
+    },
+    {
+      "em": 4.07,
+      "ate": 4.69,
+      "w": "devolver."
+    },
+    {
+      "em": 4.76,
+      "ate": 4.82,
+      "w": "e"
+    },
+    {
+      "em": 4.79,
+      "ate": 4.96,
+      "w": "não"
+    },
+    {
+      "em": 4.96,
+      "ate": 5.5,
+      "w": "precisa"
+    },
+    {
+      "em": 5.5,
+      "ate": 6.1,
+      "w": "explicar"
+    },
+    {
+      "em": 6.1,
+      "ate": 6.17,
+      "w": "o"
+    },
+    {
+      "em": 6.17,
+      "ate": 6.63,
+      "w": "motivo."
+    },
+    {
+      "em": 6.74,
+      "ate": 6.9,
+      "w": "Está"
+    },
+    {
+      "em": 6.9,
+      "ate": 7.1,
+      "w": "no"
+    },
+    {
+      "em": 7.1,
+      "ate": 7.48,
+      "w": "artigo"
+    },
+    {
+      "em": 7.48,
+      "ate": 7.95,
+      "w": "49"
+    },
+    {
+      "em": 7.95,
+      "ate": 8.39,
+      "w": "do"
+    },
+    {
+      "em": 8.39,
+      "ate": 8.78,
+      "w": "Código"
+    },
+    {
+      "em": 8.78,
+      "ate": 8.92,
+      "w": "de"
+    },
+    {
+      "em": 8.92,
+      "ate": 9.32,
+      "w": "Defesa"
+    },
+    {
+      "em": 9.32,
+      "ate": 9.48,
+      "w": "do"
+    },
+    {
+      "em": 9.48,
+      "ate": 10.13,
+      "w": "Consumidor"
+    },
+    {
+      "em": 10.22,
+      "ate": 10.62,
+      "w": "Funciona"
+    },
+    {
+      "em": 10.62,
+      "ate": 10.98,
+      "w": "assim:"
+    },
+    {
+      "em": 11.72,
+      "ate": 11.78,
+      "w": "O"
+    },
+    {
+      "em": 11.75,
+      "ate": 12.07,
+      "w": "prazo"
+    },
+    {
+      "em": 12.07,
+      "ate": 12.54,
+      "w": "conta"
+    },
+    {
+      "em": 12.54,
+      "ate": 12.6,
+      "w": "a"
+    },
+    {
+      "em": 12.58,
+      "ate": 13.1,
+      "w": "partir"
+    },
+    {
+      "em": 13.1,
+      "ate": 13.28,
+      "w": "do"
+    },
+    {
+      "em": 13.28,
+      "ate": 13.59,
+      "w": "dia"
+    },
+    {
+      "em": 13.59,
+      "ate": 13.75,
+      "w": "em"
+    },
+    {
+      "em": 13.75,
+      "ate": 13.91,
+      "w": "que"
+    },
+    {
+      "em": 13.91,
+      "ate": 13.98,
+      "w": "o"
+    },
+    {
+      "em": 13.98,
+      "ate": 14.48,
+      "w": "produto"
+    },
+    {
+      "em": 14.48,
+      "ate": 14.81,
+      "w": "chega"
+    },
+    {
+      "em": 14.9,
+      "ate": 15.51,
+      "w": "2."
+    },
+    {
+      "em": 15.82,
+      "ate": 15.88,
+      "w": "A"
+    },
+    {
+      "em": 15.85,
+      "ate": 16.09,
+      "w": "loja"
+    },
+    {
+      "em": 16.09,
+      "ate": 16.84,
+      "w": "devolve"
+    },
+    {
+      "em": 16.84,
+      "ate": 17.45,
+      "w": "tudo,"
+    },
+    {
+      "em": 17.45,
+      "ate": 18.03,
+      "w": "inclusive"
+    },
+    {
+      "em": 18.03,
+      "ate": 18.11,
+      "w": "o"
+    },
+    {
+      "em": 18.11,
+      "ate": 18.55,
+      "w": "frete"
+    },
+    {
+      "em": 18.78,
+      "ate": 19.28,
+      "w": "3."
+    },
+    {
+      "em": 19.38,
+      "ate": 19.58,
+      "w": "peça"
+    },
+    {
+      "em": 19.58,
+      "ate": 20.06,
+      "w": "sempre"
+    },
+    {
+      "em": 20.06,
+      "ate": 20.3,
+      "w": "por"
+    },
+    {
+      "em": 20.3,
+      "ate": 20.94,
+      "w": "escrito"
+    },
+    {
+      "em": 20.94,
+      "ate": 21,
+      "w": "e"
+    },
+    {
+      "em": 20.96,
+      "ate": 21.33,
+      "w": "guarde"
+    },
+    {
+      "em": 21.33,
+      "ate": 21.39,
+      "w": "o"
+    },
+    {
+      "em": 21.39,
+      "ate": 22.2,
+      "w": "protocolo."
+    },
+    {
+      "em": 22.26,
+      "ate": 22.32,
+      "w": "A"
+    },
+    {
+      "em": 22.29,
+      "ate": 22.57,
+      "w": "loja"
+    },
+    {
+      "em": 22.57,
+      "ate": 22.76,
+      "w": "se"
+    },
+    {
+      "em": 22.76,
+      "ate": 23.39,
+      "w": "recusou"
+    },
+    {
+      "em": 23.49,
+      "ate": 23.55,
+      "w": "Aí"
+    },
+    {
+      "em": 23.51,
+      "ate": 23.73,
+      "w": "já"
+    },
+    {
+      "em": 23.73,
+      "ate": 23.88,
+      "w": "é"
+    },
+    {
+      "em": 23.88,
+      "ate": 24.18,
+      "w": "caso"
+    },
+    {
+      "em": 24.18,
+      "ate": 24.33,
+      "w": "de"
+    },
+    {
+      "em": 24.33,
+      "ate": 25.15,
+      "w": "PROCON,"
+    },
+    {
+      "em": 25.15,
+      "ate": 25.21,
+      "w": "ou"
+    },
+    {
+      "em": 25.17,
+      "ate": 25.35,
+      "w": "de"
+    },
+    {
+      "em": 25.35,
+      "ate": 26.09,
+      "w": "advogado"
+    },
+    {
+      "em": 26.18,
+      "ate": 26.37,
+      "w": "Salva"
+    },
+    {
+      "em": 26.37,
+      "ate": 26.62,
+      "w": "esse"
+    },
+    {
+      "em": 26.62,
+      "ate": 27.31,
+      "w": "vídeo,"
+    },
+    {
+      "em": 27.31,
+      "ate": 27.57,
+      "w": "porque"
+    },
+    {
+      "em": 27.57,
+      "ate": 27.68,
+      "w": "um"
+    },
+    {
+      "em": 27.68,
+      "ate": 27.83,
+      "w": "dia"
+    },
+    {
+      "em": 27.83,
+      "ate": 28.1,
+      "w": "você"
+    },
+    {
+      "em": 28.1,
+      "ate": 28.29,
+      "w": "vai"
+    },
+    {
+      "em": 28.29,
+      "ate": 28.89,
+      "w": "precisar."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+// Larguras dos caracteres da Recursive (eixo Casual 1, sem Mono), em milésimos do corpo, tiradas da
+// própria fonte. A Recursive Sans tem a mesma largura em todos os pesos (300 a 1000), então uma
+// tabela serve para títulos (900), textos (720–800) e rótulos (860).
+// Servem para medir o texto antes de desenhar: escolher o corpo que cabe e quebrar as linhas sem
+// depender do navegador (o resultado é igual em qualquer máquina e em qualquer quadro).
+export const CARACTERES = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ÀÁÂÃÄÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜàáâãäçèéêëìíîïñòóôõöùúûüºª°–—“”‘’…•·×÷€£¡¿₿";
+export const RECURSIVE = [300, 350, 600, 600, 600, 600, 600, 350, 400, 400, 600, 600, 350, 450, 350, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 350, 350, 600, 600, 600, 600, 1050, 650, 600, 600, 650, 550, 550, 650, 650, 500, 500, 600, 550, 800, 650, 650, 600, 650, 600, 600, 600, 650, 650, 950, 600, 650, 600, 450, 600, 450, 600, 600, 350, 600, 600, 500, 600, 600, 400, 600, 600, 350, 350, 600, 350, 850, 600, 600, 600, 600, 450, 550, 500, 600, 600, 800, 600, 600, 550, 550, 300, 550, 600, 650, 650, 650, 650, 650, 600, 550, 550, 550, 550, 500, 500, 500, 500, 650, 650, 650, 650, 650, 650, 650, 650, 650, 650, 600, 600, 600, 600, 600, 500, 600, 600, 600, 600, 350, 350, 350, 350, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 350, 350, 800, 600, 350, 600, 600, 600, 600, 350, 600, 600];

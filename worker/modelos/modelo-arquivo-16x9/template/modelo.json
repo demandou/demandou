@@ -1,0 +1,7 @@
+{
+  "formato": "16:9",
+  "variante": { "de": "modelo-arquivo", "formato": "16:9" },
+  "blocos": { "assinatura": ["ficha", "linha", "pessoas"] },
+  "palavraPorPalavra": ["linha"],
+  "conferir": { "cobertura": 0.5, "vao": 8, "parado": 6, "segundosPorMomento": 10 }
+}

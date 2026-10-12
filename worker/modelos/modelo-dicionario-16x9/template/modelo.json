@@ -1,0 +1,22 @@
+{
+  "formato": "16:9",
+  "variante": {
+    "de": "modelo-dicionario",
+    "formato": "16:9"
+  },
+  "blocos": {
+    "assinatura": [
+      "verbete",
+      "remissao"
+    ]
+  },
+  "palavraPorPalavra": [
+    "remissao"
+  ],
+  "conferir": {
+    "cobertura": 0.5,
+    "vao": 8,
+    "parado": 6,
+    "segundosPorMomento": 10
+  }
+}

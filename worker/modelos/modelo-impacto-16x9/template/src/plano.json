@@ -1,0 +1,490 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 24.24,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 700,
+    "altura": 312
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Personal trainer"
+  },
+  "sfx": true,
+  "cortesEm": [
+    10.53,
+    14.18,
+    16.15,
+    21.32
+  ],
+  "momentos": [
+    {
+      "tipo": "gancho",
+      "de": 0,
+      "ate": 3.0,
+      "itens": [
+        {
+          "em": 0.31,
+          "texto": "Você não"
+        },
+        {
+          "em": 0.74,
+          "texto": "precisa de"
+        },
+        {
+          "em": 1.45,
+          "texto": "1 hora de",
+          "destaque": true
+        },
+        {
+          "em": 2.17,
+          "texto": "academia"
+        }
+      ]
+    },
+    {
+      "tipo": "numero",
+      "de": 3.0,
+      "ate": 5.5,
+      "valor": 20,
+      "em": 3.62,
+      "rotulo": "min",
+      "complemento": {
+        "em": 4.54,
+        "texto": "bem feitos"
+      }
+    },
+    {
+      "tipo": "circuito",
+      "de": 6.6,
+      "ate": 16.16,
+      "rotulo": "Treino de 20 min",
+      "titulo": {
+        "em": 6.69,
+        "texto": "4 exercícios"
+      },
+      "intervalo": {
+        "trabalho": 40,
+        "descanso": 20,
+        "em": 7.94,
+        "descansoEm": 9.07
+      },
+      "itens": [
+        {
+          "em": 10.62,
+          "texto": "Agachamento"
+        },
+        {
+          "em": 11.7,
+          "texto": "Flexão"
+        },
+        {
+          "em": 12.68,
+          "texto": "Prancha"
+        },
+        {
+          "em": 13.53,
+          "texto": "Polichinelo"
+        }
+      ],
+      "voltas": {
+        "em": 14.54,
+        "valor": "4",
+        "texto": "voltas"
+      },
+      "fimEm": 15.64
+    },
+    {
+      "tipo": "virada",
+      "de": 16.16,
+      "ate": 21.32,
+      "rotulo": "O segredo",
+      "nao": {
+        "em": 16.61,
+        "prefixo": "não é o",
+        "linhas": [
+          "treino",
+          "perfeito"
+        ]
+      },
+      "grifoEm": 18.32,
+      "sim": [
+        {
+          "em": 18.37,
+          "texto": "o treino"
+        },
+        {
+          "em": 18.67,
+          "texto": "que você"
+        },
+        {
+          "em": 19.53,
+          "texto": "repete",
+          "destaque": true
+        }
+      ],
+      "selo": {
+        "em": 20.06,
+        "texto": "3x por semana"
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 21.32,
+      "ate": 24.24,
+      "texto": "Manda pra quem não tem tempo",
+      "destaque": "tempo",
+      "itens": [
+        {
+          "em": 21.42,
+          "texto": "Manda"
+        },
+        {
+          "em": 21.92,
+          "texto": "pra quem"
+        },
+        {
+          "em": 23.05,
+          "texto": "não tem"
+        },
+        {
+          "em": 23.29,
+          "texto": "tempo",
+          "destaque": true
+        }
+      ]
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "Prensha": "prancha"
+  },
+  "palavras": [
+    {
+      "em": 0.31,
+      "ate": 0.39,
+      "w": "Você"
+    },
+    {
+      "em": 0.39,
+      "ate": 0.74,
+      "w": "não"
+    },
+    {
+      "em": 0.74,
+      "ate": 1.26,
+      "w": "precisa"
+    },
+    {
+      "em": 1.26,
+      "ate": 1.45,
+      "w": "de"
+    },
+    {
+      "em": 1.45,
+      "ate": 1.66,
+      "w": "uma"
+    },
+    {
+      "em": 1.66,
+      "ate": 1.98,
+      "w": "hora"
+    },
+    {
+      "em": 1.98,
+      "ate": 2.17,
+      "w": "de"
+    },
+    {
+      "em": 2.17,
+      "ate": 2.8,
+      "w": "academia."
+    },
+    {
+      "em": 3.02,
+      "ate": 3.38,
+      "w": "precisa"
+    },
+    {
+      "em": 3.38,
+      "ate": 3.62,
+      "w": "de"
+    },
+    {
+      "em": 3.62,
+      "ate": 4,
+      "w": "20"
+    },
+    {
+      "em": 4,
+      "ate": 4.54,
+      "w": "minutos"
+    },
+    {
+      "em": 4.54,
+      "ate": 4.78,
+      "w": "bem"
+    },
+    {
+      "em": 4.78,
+      "ate": 5.26,
+      "w": "feitos."
+    },
+    {
+      "em": 5.55,
+      "ate": 5.79,
+      "w": "Anota"
+    },
+    {
+      "em": 5.79,
+      "ate": 5.85,
+      "w": "o"
+    },
+    {
+      "em": 5.83,
+      "ate": 6.34,
+      "w": "treino."
+    },
+    {
+      "em": 6.69,
+      "ate": 6.75,
+      "w": "4"
+    },
+    {
+      "em": 6.71,
+      "ate": 7.94,
+      "w": "exercícios,"
+    },
+    {
+      "em": 7.94,
+      "ate": 8.04,
+      "w": "40"
+    },
+    {
+      "em": 8.04,
+      "ate": 8.67,
+      "w": "segundos"
+    },
+    {
+      "em": 8.67,
+      "ate": 9.07,
+      "w": "cada,"
+    },
+    {
+      "em": 9.07,
+      "ate": 9.48,
+      "w": "20"
+    },
+    {
+      "em": 9.48,
+      "ate": 9.61,
+      "w": "de"
+    },
+    {
+      "em": 9.61,
+      "ate": 10.37,
+      "w": "descanso."
+    },
+    {
+      "em": 10.61,
+      "ate": 11.47,
+      "w": "agachamento,"
+    },
+    {
+      "em": 11.72,
+      "ate": 12.37,
+      "w": "flexão,"
+    },
+    {
+      "em": 12.7,
+      "ate": 13.28,
+      "w": "Prensha"
+    },
+    {
+      "em": 13.52,
+      "ate": 14.18,
+      "w": "Polichinelo."
+    },
+    {
+      "em": 14.27,
+      "ate": 14.54,
+      "w": "Repete"
+    },
+    {
+      "em": 14.54,
+      "ate": 15,
+      "w": "quatro"
+    },
+    {
+      "em": 15,
+      "ate": 15.47,
+      "w": "voltas"
+    },
+    {
+      "em": 15.47,
+      "ate": 15.64,
+      "w": "e"
+    },
+    {
+      "em": 15.64,
+      "ate": 16.15,
+      "w": "acabou."
+    },
+    {
+      "em": 16.21,
+      "ate": 16.27,
+      "w": "O"
+    },
+    {
+      "em": 16.24,
+      "ate": 16.61,
+      "w": "segredo"
+    },
+    {
+      "em": 16.61,
+      "ate": 16.89,
+      "w": "não"
+    },
+    {
+      "em": 16.89,
+      "ate": 17.03,
+      "w": "é"
+    },
+    {
+      "em": 17.03,
+      "ate": 17.1,
+      "w": "o"
+    },
+    {
+      "em": 17.1,
+      "ate": 17.55,
+      "w": "treino"
+    },
+    {
+      "em": 17.55,
+      "ate": 18.14,
+      "w": "perfeito."
+    },
+    {
+      "em": 18.32,
+      "ate": 18.38,
+      "w": "É"
+    },
+    {
+      "em": 18.37,
+      "ate": 18.43,
+      "w": "o"
+    },
+    {
+      "em": 18.4,
+      "ate": 18.67,
+      "w": "treino"
+    },
+    {
+      "em": 18.67,
+      "ate": 18.87,
+      "w": "que"
+    },
+    {
+      "em": 18.87,
+      "ate": 19.16,
+      "w": "você"
+    },
+    {
+      "em": 19.16,
+      "ate": 19.53,
+      "w": "consegue"
+    },
+    {
+      "em": 19.53,
+      "ate": 20.06,
+      "w": "repetir"
+    },
+    {
+      "em": 20.06,
+      "ate": 20.31,
+      "w": "três"
+    },
+    {
+      "em": 20.31,
+      "ate": 20.73,
+      "w": "vezes"
+    },
+    {
+      "em": 20.73,
+      "ate": 20.9,
+      "w": "por"
+    },
+    {
+      "em": 20.9,
+      "ate": 21.32,
+      "w": "semana."
+    },
+    {
+      "em": 21.42,
+      "ate": 21.48,
+      "w": "Manda"
+    },
+    {
+      "em": 21.45,
+      "ate": 21.73,
+      "w": "esse"
+    },
+    {
+      "em": 21.73,
+      "ate": 21.92,
+      "w": "vídeo"
+    },
+    {
+      "em": 21.92,
+      "ate": 22.11,
+      "w": "para"
+    },
+    {
+      "em": 22.11,
+      "ate": 22.3,
+      "w": "quem"
+    },
+    {
+      "em": 22.3,
+      "ate": 22.49,
+      "w": "vive"
+    },
+    {
+      "em": 22.49,
+      "ate": 22.82,
+      "w": "dizendo"
+    },
+    {
+      "em": 22.82,
+      "ate": 23.05,
+      "w": "que"
+    },
+    {
+      "em": 23.05,
+      "ate": 23.15,
+      "w": "não"
+    },
+    {
+      "em": 23.15,
+      "ate": 23.29,
+      "w": "tem"
+    },
+    {
+      "em": 23.29,
+      "ate": 23.58,
+      "w": "tempo."
+    }
+  ]
+}

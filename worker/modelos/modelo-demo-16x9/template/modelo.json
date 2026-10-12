@@ -1,0 +1,8 @@
+{
+  "formato": "16:9",
+  "variante": { "de": "modelo-demo", "formato": "16:9" },
+  "imagens": true,
+  "blocos": { "assinatura": ["tela", "imagem", "abertura"] },
+  "palavraPorPalavra": ["legenda"],
+  "conferir": { "cobertura": 0.5, "vao": 8, "parado": 6, "segundosPorMomento": 10 }
+}

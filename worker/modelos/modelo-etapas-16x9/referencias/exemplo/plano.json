@@ -1,0 +1,603 @@
+{
+ "video": "base.mp4",
+ "fps": 25,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 18.04,
+ "videoAltura": 1080,
+ "rosto": {
+  "x": 0.5,
+  "y": 0.38,
+  "quadro": {
+   "largura": 1920,
+   "altura": 1080
+  }
+ },
+ "zona": {
+  "topo": 640,
+  "altura": 368
+ },
+ "marca": {
+  "nome": "",
+  "area": ""
+ },
+ "sfx": false,
+ "cortesEm": [
+  2,
+  4.5,
+  7.1,
+  10.24,
+  10.75,
+  12.62,
+  16.07
+ ],
+ "momentos": [
+  {
+   "tipo": "abertura",
+   "de": 0,
+   "ate": 2.09,
+   "texto": "Prompt perfeito",
+   "sub": "Em 4 peças",
+   "etapas": 4,
+   "icone": "comentar"
+  },
+  {
+   "tipo": "etapa",
+   "de": 2.09,
+   "ate": 4.6,
+   "rotulo": "Papel",
+   "telas": [
+    {
+     "imagem": {
+      "id": "nutricionista"
+     },
+     "em": 2.09,
+     "rolar": [
+      0,
+      0.12
+     ]
+    },
+    {
+     "imagem": {
+      "id": "nutricionista"
+     },
+     "em": 2.55,
+     "rolar": [
+      0.3,
+      0.4
+     ]
+    },
+    {
+     "imagem": {
+      "id": "nutricionista"
+     },
+     "em": 3.1,
+     "rolar": [
+      0.55,
+      0.7
+     ]
+    },
+    {
+     "imagem": {
+      "id": "ia"
+     },
+     "em": 3.65,
+     "rolar": [
+      0.05,
+      0.2
+     ]
+    }
+   ]
+  },
+  {
+   "tipo": "etapa",
+   "de": 4.6,
+   "ate": 7.2,
+   "rotulo": "Tarefa",
+   "telas": [
+    {
+     "imagem": {
+      "id": "cardapio"
+     },
+     "em": 4.6,
+     "rolar": [
+      0,
+      0.1
+     ]
+    },
+    {
+     "imagem": {
+      "id": "cardapio"
+     },
+     "em": 5.15,
+     "rolar": [
+      0.3,
+      0.42
+     ]
+    },
+    {
+     "imagem": {
+      "id": "cardapio"
+     },
+     "em": 5.75,
+     "rolar": [
+      0.55,
+      0.68
+     ]
+    },
+    {
+     "imagem": {
+      "id": "cardapio"
+     },
+     "em": 6.4,
+     "rolar": [
+      0.75,
+      0.9
+     ]
+    }
+   ]
+  },
+  {
+   "tipo": "etapa",
+   "de": 7.2,
+   "ate": 10.33,
+   "rotulo": "Contexto",
+   "telas": [
+    {
+     "imagem": {
+      "id": "vegetarianismo"
+     },
+     "em": 7.2,
+     "rolar": [
+      0,
+      0.1
+     ]
+    },
+    {
+     "imagem": {
+      "id": "vegetarianismo"
+     },
+     "em": 7.75,
+     "rolar": [
+      0.3,
+      0.4
+     ]
+    },
+    {
+     "imagem": {
+      "id": "vegetarianismo"
+     },
+     "em": 8.3,
+     "rolar": [
+      0.55,
+      0.7
+     ]
+    },
+    {
+     "imagem": {
+      "id": "musculacao"
+     },
+     "em": 9.2,
+     "rolar": [
+      0,
+      0.1
+     ]
+    },
+    {
+     "imagem": {
+      "id": "musculacao"
+     },
+     "em": 9.7,
+     "rolar": [
+      0.35,
+      0.5
+     ]
+    }
+   ]
+  },
+  {
+   "tipo": "etapa",
+   "de": 10.33,
+   "ate": 12.72,
+   "rotulo": "Formato",
+   "telas": [
+    {
+     "imagem": {
+      "id": "tabela"
+     },
+     "em": 10.33,
+     "rolar": [
+      0,
+      0.1
+     ]
+    },
+    {
+     "imagem": {
+      "id": "tabela"
+     },
+     "em": 10.85,
+     "rolar": [
+      0.1,
+      0.25
+     ]
+    },
+    {
+     "imagem": {
+      "id": "caloria"
+     },
+     "em": 11.45,
+     "rolar": [
+      0.1,
+      0.2
+     ]
+    },
+    {
+     "imagem": {
+      "id": "caloria"
+     },
+     "em": 12,
+     "rolar": [
+      0.4,
+      0.55
+     ]
+    }
+   ]
+  },
+  {
+   "tipo": "grade",
+   "de": 12.72,
+   "ate": 16.16,
+   "telas": [
+    {
+     "imagem": {
+      "id": "nutricionista"
+     },
+     "rolar": [
+      0.05,
+      0.05
+     ]
+    },
+    {
+     "imagem": {
+      "id": "cardapio"
+     },
+     "rolar": [
+      0.3,
+      0.3
+     ]
+    },
+    {
+     "imagem": {
+      "id": "vegetarianismo"
+     },
+     "rolar": [
+      0.4,
+      0.4
+     ]
+    },
+    {
+     "imagem": {
+      "id": "tabela"
+     },
+     "rolar": [
+      0.1,
+      0.1
+     ]
+    }
+   ]
+  },
+  {
+   "tipo": "cta",
+   "de": 16.16,
+   "ate": 18.04,
+   "texto": "Salva e testa agora",
+   "icone": "salvar"
+  }
+ ],
+ "semLegenda": [],
+ "correcoes": {
+  "haja": "aja",
+  "Com o texto": "Contexto"
+ },
+ "palavras": [
+  {
+   "em": 0.1,
+   "ate": 0.32,
+   "w": "Monta"
+  },
+  {
+   "em": 0.32,
+   "ate": 0.38,
+   "w": "o"
+  },
+  {
+   "em": 0.38,
+   "ate": 0.87,
+   "w": "prompt"
+  },
+  {
+   "em": 0.87,
+   "ate": 1.12,
+   "w": "em"
+  },
+  {
+   "em": 1.12,
+   "ate": 1.52,
+   "w": "quatro"
+  },
+  {
+   "em": 1.52,
+   "ate": 2,
+   "w": "peças."
+  },
+  {
+   "em": 2.09,
+   "ate": 2.71,
+   "w": "papel"
+  },
+  {
+   "em": 3,
+   "ate": 3.1,
+   "w": "haja"
+  },
+  {
+   "em": 3.1,
+   "ate": 3.4,
+   "w": "como"
+  },
+  {
+   "em": 3.4,
+   "ate": 3.55,
+   "w": "um"
+  },
+  {
+   "em": 3.55,
+   "ate": 4.5,
+   "w": "nutricionista."
+  },
+  {
+   "em": 4.6,
+   "ate": 5.26,
+   "w": "tarefa"
+  },
+  {
+   "em": 5.58,
+   "ate": 5.74,
+   "w": "Monte"
+  },
+  {
+   "em": 5.74,
+   "ate": 5.9,
+   "w": "um"
+  },
+  {
+   "em": 5.9,
+   "ate": 6.52,
+   "w": "cardápio"
+  },
+  {
+   "em": 6.52,
+   "ate": 6.66,
+   "w": "da"
+  },
+  {
+   "em": 6.66,
+   "ate": 7.1,
+   "w": "semana."
+  },
+  {
+   "em": 7.2,
+   "ate": 7.26,
+   "w": "Com"
+  },
+  {
+   "em": 7.22,
+   "ate": 7.28,
+   "w": "o"
+  },
+  {
+   "em": 7.26,
+   "ate": 7.62,
+   "w": "texto."
+  },
+  {
+   "em": 8.2,
+   "ate": 8.3,
+   "w": "Sou"
+  },
+  {
+   "em": 8.3,
+   "ate": 9.15,
+   "w": "vegetariano"
+  },
+  {
+   "em": 9.15,
+   "ate": 9.31,
+   "w": "e"
+  },
+  {
+   "em": 9.31,
+   "ate": 9.5,
+   "w": "treino"
+  },
+  {
+   "em": 9.5,
+   "ate": 9.6,
+   "w": "de"
+  },
+  {
+   "em": 9.6,
+   "ate": 10.07,
+   "w": "manhã."
+  },
+  {
+   "em": 10.33,
+   "ate": 10.74,
+   "w": "Formato."
+  },
+  {
+   "em": 10.84,
+   "ate": 10.9,
+   "w": "em"
+  },
+  {
+   "em": 10.86,
+   "ate": 11.4,
+   "w": "tabela"
+  },
+  {
+   "em": 11.4,
+   "ate": 11.7,
+   "w": "com"
+  },
+  {
+   "em": 11.7,
+   "ate": 11.87,
+   "w": "as"
+  },
+  {
+   "em": 11.87,
+   "ate": 12.62,
+   "w": "calorias."
+  },
+  {
+   "em": 12.72,
+   "ate": 12.78,
+   "w": "Com"
+  },
+  {
+   "em": 12.75,
+   "ate": 13.22,
+   "w": "essas"
+  },
+  {
+   "em": 13.22,
+   "ate": 13.57,
+   "w": "quatro"
+  },
+  {
+   "em": 13.57,
+   "ate": 14.18,
+   "w": "peças,"
+  },
+  {
+   "em": 14.18,
+   "ate": 14.25,
+   "w": "a"
+  },
+  {
+   "em": 14.25,
+   "ate": 14.84,
+   "w": "resposta"
+  },
+  {
+   "em": 14.84,
+   "ate": 15.14,
+   "w": "muda"
+  },
+  {
+   "em": 15.14,
+   "ate": 16.07,
+   "w": "completamente."
+  },
+  {
+   "em": 16.16,
+   "ate": 16.33,
+   "w": "Salva"
+  },
+  {
+   "em": 16.33,
+   "ate": 16.4,
+   "w": "e"
+  },
+  {
+   "em": 16.4,
+   "ate": 16.8,
+   "w": "testa"
+  },
+  {
+   "em": 16.8,
+   "ate": 17.37,
+   "w": "agora."
+  }
+ ],
+ "imagens": {
+  "nutricionista": {
+   "arquivo": "img/nutricionista.jpg",
+   "largura": 1280,
+   "altura": 3000,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "nutricionista"
+  },
+  "cardapio": {
+   "arquivo": "img/cardapio.jpg",
+   "largura": 1280,
+   "altura": 3000,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "cardapio"
+  },
+  "vegetarianismo": {
+   "arquivo": "img/vegetarianismo.jpg",
+   "largura": 1280,
+   "altura": 3000,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "vegetarianismo"
+  },
+  "musculacao": {
+   "arquivo": "img/musculacao.jpg",
+   "largura": 1280,
+   "altura": 3000,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "musculacao"
+  },
+  "tabela": {
+   "arquivo": "img/tabela.jpg",
+   "largura": 1280,
+   "altura": 3000,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "tabela"
+  },
+  "caloria": {
+   "arquivo": "img/caloria.jpg",
+   "largura": 1280,
+   "altura": 3000,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "caloria"
+  },
+  "ia": {
+   "arquivo": "img/ia.jpg",
+   "largura": 1280,
+   "altura": 3000,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "ia"
+  }
+ }
+}

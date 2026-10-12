@@ -1,0 +1,467 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 16.96,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 360
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Plantas"
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.27,
+    9.32,
+    14.39
+  ],
+  "momentos": [
+    {
+      "tipo": "capa",
+      "de": 0,
+      "ate": 2.27,
+      "linhas": [
+        "3 erros que",
+        "matam a sua",
+        "planta"
+      ],
+      "destaque": "planta",
+      "indice": 3
+    },
+    {
+      "tipo": "figura",
+      "de": 2.27,
+      "ate": 4.85,
+      "vista": "vaso",
+      "numero": 1,
+      "rotulo": "Erro nº 1",
+      "titulo": [
+        "Regar",
+        "demais"
+      ],
+      "acoes": [
+        {
+          "em": 2.39,
+          "acao": "regar"
+        },
+        {
+          "em": 2.75,
+          "acao": "encharcar"
+        },
+        {
+          "em": 3.6,
+          "acao": "apodrecer"
+        }
+      ],
+      "etiquetas": [
+        {
+          "em": 3.62,
+          "alvo": "raiz",
+          "texto": "apodrece a raiz",
+          "erro": true
+        }
+      ]
+    },
+    {
+      "tipo": "figura",
+      "de": 4.85,
+      "ate": 6.4,
+      "vista": "janela",
+      "numero": 2,
+      "rotulo": "Erro nº 2",
+      "titulo": [
+        "Longe",
+        "da luz"
+      ],
+      "acoes": [
+        {
+          "em": 5.32,
+          "acao": "afastar"
+        },
+        {
+          "em": 5.96,
+          "acao": "amarelar"
+        }
+      ],
+      "etiquetas": [
+        {
+          "em": 5.84,
+          "alvo": "regua",
+          "texto": "longe"
+        }
+      ]
+    },
+    {
+      "tipo": "figura",
+      "de": 6.4,
+      "ate": 9.32,
+      "vista": "vaso",
+      "numero": 3,
+      "rotulo": "Erro nº 3",
+      "titulo": [
+        "Vaso",
+        "sem furo"
+      ],
+      "acoes": [
+        {
+          "em": 7.1,
+          "acao": "semFuro"
+        },
+        {
+          "em": 8.05,
+          "acao": "acumular"
+        },
+        {
+          "em": 8.95,
+          "acao": "furo"
+        }
+      ],
+      "etiquetas": [
+        {
+          "em": 7.12,
+          "alvo": "furo",
+          "texto": "sem furo",
+          "erro": true
+        },
+        {
+          "em": 8.3,
+          "alvo": "agua",
+          "texto": "água no fundo",
+          "erro": true
+        }
+      ]
+    },
+    {
+      "tipo": "figura",
+      "de": 9.32,
+      "ate": 14.43,
+      "vista": "terra",
+      "rotulo": "Antes de regar",
+      "titulo": [
+        "Enfia o dedo",
+        "na terra"
+      ],
+      "acoes": [
+        {
+          "em": 10.44,
+          "acao": "dedo"
+        },
+        {
+          "em": 12.14,
+          "acao": "umida"
+        },
+        {
+          "em": 13.42,
+          "acao": "esperar",
+          "texto": "+1 dia"
+        }
+      ],
+      "etiquetas": [
+        {
+          "em": 12.85,
+          "alvo": "umida",
+          "texto": "úmida"
+        }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "de": 14.43,
+      "ate": 16.96,
+      "texto": "Salva e me segue pra mais dicas de plantas",
+      "linhas": [
+        "Salva e",
+        "me segue",
+        "pra mais dicas de plantas"
+      ],
+      "icones": [
+        {
+          "em": 14.48,
+          "icone": "salvar"
+        },
+        {
+          "em": 14.77,
+          "icone": "seguir"
+        }
+      ]
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "para mais": "pra mais"
+  },
+  "palavras": [
+    {
+      "em": 0.29,
+      "ate": 0.35,
+      "w": "3"
+    },
+    {
+      "em": 0.32,
+      "ate": 0.69,
+      "w": "erros"
+    },
+    {
+      "em": 0.69,
+      "ate": 0.96,
+      "w": "que"
+    },
+    {
+      "em": 0.96,
+      "ate": 1.41,
+      "w": "matam"
+    },
+    {
+      "em": 1.41,
+      "ate": 1.47,
+      "w": "a"
+    },
+    {
+      "em": 1.46,
+      "ate": 1.72,
+      "w": "sua"
+    },
+    {
+      "em": 1.72,
+      "ate": 2.27,
+      "w": "planta"
+    },
+    {
+      "em": 2.39,
+      "ate": 2.69,
+      "w": "regar"
+    },
+    {
+      "em": 2.69,
+      "ate": 3.46,
+      "w": "demais,"
+    },
+    {
+      "em": 3.46,
+      "ate": 3.6,
+      "w": "que"
+    },
+    {
+      "em": 3.6,
+      "ate": 4.21,
+      "w": "apodrece"
+    },
+    {
+      "em": 4.21,
+      "ate": 4.29,
+      "w": "a"
+    },
+    {
+      "em": 4.29,
+      "ate": 4.63,
+      "w": "raiz,"
+    },
+    {
+      "em": 4.95,
+      "ate": 5.32,
+      "w": "deixar"
+    },
+    {
+      "em": 5.32,
+      "ate": 5.79,
+      "w": "longe"
+    },
+    {
+      "em": 5.79,
+      "ate": 5.96,
+      "w": "da"
+    },
+    {
+      "em": 5.96,
+      "ate": 6.28,
+      "w": "luz"
+    },
+    {
+      "em": 6.45,
+      "ate": 6.51,
+      "w": "e"
+    },
+    {
+      "em": 6.48,
+      "ate": 6.74,
+      "w": "usar"
+    },
+    {
+      "em": 6.74,
+      "ate": 7.09,
+      "w": "vaso"
+    },
+    {
+      "em": 7.09,
+      "ate": 7.37,
+      "w": "sem"
+    },
+    {
+      "em": 7.37,
+      "ate": 7.95,
+      "w": "furo,"
+    },
+    {
+      "em": 7.95,
+      "ate": 8.05,
+      "w": "que"
+    },
+    {
+      "em": 8.05,
+      "ate": 8.52,
+      "w": "acumula"
+    },
+    {
+      "em": 8.52,
+      "ate": 8.94,
+      "w": "água"
+    },
+    {
+      "em": 8.94,
+      "ate": 9,
+      "w": "no"
+    },
+    {
+      "em": 8.99,
+      "ate": 9.32,
+      "w": "fundo."
+    },
+    {
+      "em": 9.42,
+      "ate": 9.61,
+      "w": "Antes"
+    },
+    {
+      "em": 9.61,
+      "ate": 9.76,
+      "w": "de"
+    },
+    {
+      "em": 9.76,
+      "ate": 10.44,
+      "w": "regar,"
+    },
+    {
+      "em": 10.44,
+      "ate": 10.73,
+      "w": "enfia"
+    },
+    {
+      "em": 10.73,
+      "ate": 10.81,
+      "w": "o"
+    },
+    {
+      "em": 10.81,
+      "ate": 11.14,
+      "w": "dedo"
+    },
+    {
+      "em": 11.14,
+      "ate": 11.32,
+      "w": "na"
+    },
+    {
+      "em": 11.32,
+      "ate": 11.75,
+      "w": "terra."
+    },
+    {
+      "em": 12.05,
+      "ate": 12.14,
+      "w": "Se"
+    },
+    {
+      "em": 12.14,
+      "ate": 12.35,
+      "w": "ainda"
+    },
+    {
+      "em": 12.35,
+      "ate": 12.85,
+      "w": "estiver"
+    },
+    {
+      "em": 12.85,
+      "ate": 13.42,
+      "w": "úmida,"
+    },
+    {
+      "em": 13.42,
+      "ate": 13.82,
+      "w": "espera"
+    },
+    {
+      "em": 13.82,
+      "ate": 14.08,
+      "w": "mais"
+    },
+    {
+      "em": 14.08,
+      "ate": 14.21,
+      "w": "um"
+    },
+    {
+      "em": 14.21,
+      "ate": 14.39,
+      "w": "dia"
+    },
+    {
+      "em": 14.48,
+      "ate": 14.6,
+      "w": "Salva"
+    },
+    {
+      "em": 14.6,
+      "ate": 14.66,
+      "w": "e"
+    },
+    {
+      "em": 14.66,
+      "ate": 14.77,
+      "w": "me"
+    },
+    {
+      "em": 14.77,
+      "ate": 15.08,
+      "w": "segue"
+    },
+    {
+      "em": 15.08,
+      "ate": 15.34,
+      "w": "para"
+    },
+    {
+      "em": 15.34,
+      "ate": 15.59,
+      "w": "mais"
+    },
+    {
+      "em": 15.59,
+      "ate": 15.95,
+      "w": "dicas"
+    },
+    {
+      "em": 15.95,
+      "ate": 16.02,
+      "w": "de"
+    },
+    {
+      "em": 16.02,
+      "ate": 16.71,
+      "w": "plantas."
+    }
+  ]
+}

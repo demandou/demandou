@@ -1,0 +1,30 @@
+{
+  "name": "modelo-laboratorio",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "remotion studio",
+    "preparar": "node scripts/preparar.mjs",
+    "cortar": "node scripts/cortar.mjs",
+    "stills": "node scripts/stills.mjs",
+    "render": "node scripts/render.mjs",
+    "legendas": "node scripts/legendas.mjs"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.527",
+    "@remotion/cli": "4.0.527",
+    "@remotion/google-fonts": "4.0.527",
+    "@remotion/install-whisper-cpp": "4.0.527",
+    "@remotion/media": "4.0.527",
+    "@remotion/renderer": "4.0.527",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.527",
+    "esbuild": "0.28.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7",
+    "typescript": "5.9.3"
+  }
+}

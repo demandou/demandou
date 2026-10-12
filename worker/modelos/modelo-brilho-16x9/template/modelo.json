@@ -1,0 +1,7 @@
+{
+  "formato": "16:9",
+  "variante": { "de": "modelo-brilho", "formato": "16:9" },
+  "blocos": { "assinatura": ["truque", "amostras"] },
+  "palavraPorPalavra": ["destaque"],
+  "conferir": { "cobertura": 0.5, "vao": 8, "parado": 6, "segundosPorMomento": 10 }
+}

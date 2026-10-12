@@ -1,0 +1,399 @@
+{
+ "video": "base.mp4",
+ "fps": 25,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 15.76,
+ "videoAltura": 1080,
+ "rosto": {
+  "x": 0.5,
+  "y": 0.38,
+  "quadro": {
+   "largura": 1920,
+   "altura": 1080
+  }
+ },
+ "zona": {
+  "topo": 640,
+  "altura": 368
+ },
+ "marca": {
+  "nome": "",
+  "area": ""
+ },
+ "sfx": true,
+ "cortesEm": [
+  6.06,
+  10.77,
+  12.38,
+  14.37
+ ],
+ "momentos": [
+  {
+   "tipo": "abertura",
+   "de": 0.0,
+   "ate": 2.0,
+   "texto": "Para gravar vídeo bom com o celular",
+   "destaque": "vídeo bom",
+   "em": 0.09
+  },
+  {
+   "tipo": "kit",
+   "de": 2.0,
+   "ate": 14.4,
+   "lugaresEm": 2.45,
+   "afastarEm": 12.45,
+   "total": "Tudo junto custa menos que uma câmera",
+   "totalEm": 13.0,
+   "itens": [
+    {
+     "nome": "Tripé",
+     "em": 4.29,
+     "detalhe": "para a imagem não tremer",
+     "detalheEm": 5.06,
+     "imagem": {
+      "id": "tripe"
+     }
+    },
+    {
+     "nome": "Microfone de lapela",
+     "em": 6.29,
+     "detalhe": "o som importa mais que a imagem",
+     "detalheEm": 7.83,
+     "imagem": {
+      "id": "microfone"
+     }
+    },
+    {
+     "nome": "Luz de frente",
+     "em": 9.81,
+     "imagem": {
+      "id": "luz"
+     }
+    },
+    {
+     "nome": "Controle remoto",
+     "em": 10.88,
+     "detalhe": "Bluetooth",
+     "detalheEm": 11.8,
+     "imagem": {
+      "id": "controle"
+     }
+    }
+   ]
+  },
+  {
+   "tipo": "cta",
+   "de": 14.45,
+   "ate": 15.76,
+   "texto": "Salva essa lista",
+   "icone": "salvar",
+   "em": 14.47
+  }
+ ],
+ "semLegenda": [],
+ "correcoes": {},
+ "palavras": [
+  {
+   "em": 0.09,
+   "ate": 0.16,
+   "w": "Para"
+  },
+  {
+   "em": 0.16,
+   "ate": 0.6,
+   "w": "gravar"
+  },
+  {
+   "em": 0.6,
+   "ate": 0.94,
+   "w": "vídeo"
+  },
+  {
+   "em": 0.94,
+   "ate": 1.17,
+   "w": "bom"
+  },
+  {
+   "em": 1.17,
+   "ate": 1.33,
+   "w": "com"
+  },
+  {
+   "em": 1.33,
+   "ate": 1.4,
+   "w": "o"
+  },
+  {
+   "em": 1.4,
+   "ate": 2.1,
+   "w": "celular,"
+  },
+  {
+   "em": 2.1,
+   "ate": 2.36,
+   "w": "você"
+  },
+  {
+   "em": 2.36,
+   "ate": 2.57,
+   "w": "só"
+  },
+  {
+   "em": 2.57,
+   "ate": 3.04,
+   "w": "precisa"
+  },
+  {
+   "em": 3.04,
+   "ate": 3.14,
+   "w": "de"
+  },
+  {
+   "em": 3.14,
+   "ate": 3.53,
+   "w": "quatro"
+  },
+  {
+   "em": 3.53,
+   "ate": 3.96,
+   "w": "coisas:"
+  },
+  {
+   "em": 4.27,
+   "ate": 4.33,
+   "w": "um"
+  },
+  {
+   "em": 4.29,
+   "ate": 5.06,
+   "w": "tripé"
+  },
+  {
+   "em": 5.06,
+   "ate": 5.14,
+   "w": "para"
+  },
+  {
+   "em": 5.14,
+   "ate": 5.2,
+   "w": "a"
+  },
+  {
+   "em": 5.19,
+   "ate": 5.52,
+   "w": "imagem"
+  },
+  {
+   "em": 5.52,
+   "ate": 5.74,
+   "w": "não"
+  },
+  {
+   "em": 5.74,
+   "ate": 6.06,
+   "w": "tremer."
+  },
+  {
+   "em": 6.16,
+   "ate": 6.29,
+   "w": "Um"
+  },
+  {
+   "em": 6.29,
+   "ate": 6.8,
+   "w": "microfone"
+  },
+  {
+   "em": 6.81,
+   "ate": 6.93,
+   "w": "de"
+  },
+  {
+   "em": 6.93,
+   "ate": 7.32,
+   "w": "lapela,"
+  },
+  {
+   "em": 7.58,
+   "ate": 7.83,
+   "w": "porque"
+  },
+  {
+   "em": 7.83,
+   "ate": 7.96,
+   "w": "o"
+  },
+  {
+   "em": 7.96,
+   "ate": 8.08,
+   "w": "som"
+  },
+  {
+   "em": 8.08,
+   "ate": 8.46,
+   "w": "importa"
+  },
+  {
+   "em": 8.46,
+   "ate": 8.58,
+   "w": "mais"
+  },
+  {
+   "em": 8.58,
+   "ate": 8.71,
+   "w": "que"
+  },
+  {
+   "em": 8.71,
+   "ate": 8.83,
+   "w": "a"
+  },
+  {
+   "em": 8.83,
+   "ate": 9.21,
+   "w": "imagem,"
+  },
+  {
+   "em": 9.71,
+   "ate": 9.81,
+   "w": "uma"
+  },
+  {
+   "em": 9.81,
+   "ate": 10.12,
+   "w": "luz"
+  },
+  {
+   "em": 10.12,
+   "ate": 10.31,
+   "w": "de"
+  },
+  {
+   "em": 10.31,
+   "ate": 10.77,
+   "w": "frente,"
+  },
+  {
+   "em": 10.83,
+   "ate": 10.89,
+   "w": "e"
+  },
+  {
+   "em": 10.86,
+   "ate": 10.92,
+   "w": "um"
+  },
+  {
+   "em": 10.88,
+   "ate": 11.4,
+   "w": "controle"
+  },
+  {
+   "em": 11.4,
+   "ate": 11.8,
+   "w": "remoto"
+  },
+  {
+   "em": 11.8,
+   "ate": 12.38,
+   "w": "Bluetooth."
+  },
+  {
+   "em": 12.49,
+   "ate": 12.55,
+   "w": "Tudo"
+  },
+  {
+   "em": 12.54,
+   "ate": 12.87,
+   "w": "junto"
+  },
+  {
+   "em": 12.87,
+   "ate": 13.25,
+   "w": "custa"
+  },
+  {
+   "em": 13.25,
+   "ate": 13.52,
+   "w": "menos"
+  },
+  {
+   "em": 13.52,
+   "ate": 13.74,
+   "w": "que"
+  },
+  {
+   "em": 13.74,
+   "ate": 13.95,
+   "w": "uma"
+  },
+  {
+   "em": 13.95,
+   "ate": 14.37,
+   "w": "câmera."
+  },
+  {
+   "em": 14.47,
+   "ate": 14.63,
+   "w": "Salva"
+  },
+  {
+   "em": 14.63,
+   "ate": 14.92,
+   "w": "essa"
+  },
+  {
+   "em": 14.92,
+   "ate": 15.31,
+   "w": "lista."
+  }
+ ],
+ "imagens": {
+  "tripe": {
+   "arquivo": "img/tripe.jpg",
+   "largura": 1382,
+   "altura": 1600,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "tripé"
+  },
+  "microfone": {
+   "arquivo": "img/microfone.jpg",
+   "largura": 500,
+   "altura": 500,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "microfone de lapela"
+  },
+  "luz": {
+   "arquivo": "img/luz.png",
+   "largura": 256,
+   "altura": 256,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": true,
+   "palavra": "luz de frente"
+  },
+  "controle": {
+   "arquivo": "img/controle.jpg",
+   "largura": 554,
+   "altura": 1600,
+   "foco": {
+    "x": 0.5,
+    "y": 0.2
+   },
+   "transparente": false,
+   "palavra": "controle remoto"
+  }
+ }
+}

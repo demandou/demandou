@@ -1,0 +1,708 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 19.28,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Prof. Tiago",
+    "area": "Espanhol"
+  },
+  "sfx": true,
+  "cortesEm": [
+    3.33,
+    7.1,
+    10.46,
+    13.53,
+    16.1
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 3.33,
+      "texto": "palavras / em espanhol",
+      "destaque": "enganam",
+      "rotulo": "Falsos amigos · ES → PT",
+      "numero": {
+        "em": 0.1,
+        "texto": "3"
+      },
+      "subtitulo": "que enganam todo brasileiro"
+    },
+    {
+      "tipo": "verbete",
+      "de": 3.33,
+      "ate": 7.1,
+      "palavra": {
+        "em": 3.41,
+        "texto": "exquisito",
+        "silabas": "ex·qui·si·to"
+      },
+      "classe": "adj.",
+      "pronuncia": "eks-ki-SÍ-to",
+      "parece": {
+        "em": 4.6,
+        "texto": "esquisito",
+        "glosa": "estranho",
+        "riscaEm": 5.25,
+        "idioma": "PT"
+      },
+      "significa": {
+        "em": 6.38,
+        "texto": "delicioso",
+        "extra": "requintado",
+        "viraEm": 5.85
+      },
+      "carimbo": {
+        "em": 6.62,
+        "texto": "Falso amigo"
+      },
+      "vizinhos": {
+        "antes": [
+          {
+            "palavra": "experto",
+            "classe": "adj.",
+            "def": "especialista"
+          },
+          {
+            "palavra": "expirar",
+            "classe": "v.",
+            "def": "expirar"
+          },
+          {
+            "palavra": "explanada",
+            "classe": "s.f.",
+            "def": "esplanada"
+          },
+          {
+            "palavra": "explicación",
+            "classe": "s.f.",
+            "def": "explicação"
+          },
+          {
+            "palavra": "explicar",
+            "classe": "v.",
+            "def": "explicar"
+          },
+          {
+            "palavra": "explorar",
+            "classe": "v.",
+            "def": "explorar"
+          },
+          {
+            "palavra": "explosión",
+            "classe": "s.f.",
+            "def": "explosão"
+          },
+          {
+            "palavra": "exponer",
+            "classe": "v.",
+            "def": "expor"
+          },
+          {
+            "palavra": "exportar",
+            "classe": "v.",
+            "def": "exportar"
+          },
+          {
+            "palavra": "expresar",
+            "classe": "v.",
+            "def": "expressar"
+          },
+          {
+            "palavra": "exprimir",
+            "classe": "v.",
+            "def": "espremer"
+          },
+          {
+            "palavra": "expulsar",
+            "classe": "v.",
+            "def": "expulsar"
+          },
+          {
+            "palavra": "exquisitez",
+            "classe": "s.f.",
+            "def": "requinte"
+          }
+        ],
+        "depois": [
+          {
+            "palavra": "éxtasis",
+            "classe": "s.m.",
+            "def": "êxtase"
+          },
+          {
+            "palavra": "extender",
+            "classe": "v.",
+            "def": "estender"
+          },
+          {
+            "palavra": "exterior",
+            "classe": "adj.",
+            "def": "exterior"
+          },
+          {
+            "palavra": "extinguir",
+            "classe": "v.",
+            "def": "apagar"
+          },
+          {
+            "palavra": "extranjero",
+            "classe": "adj.",
+            "def": "estrangeiro"
+          },
+          {
+            "palavra": "extrañar",
+            "classe": "v.",
+            "def": "sentir falta"
+          },
+          {
+            "palavra": "extraño",
+            "classe": "adj.",
+            "def": "estranho"
+          }
+        ]
+      },
+      "idioma": "ES"
+    },
+    {
+      "tipo": "verbete",
+      "de": 7.1,
+      "ate": 10.46,
+      "palavra": {
+        "em": 7.2,
+        "texto": "embarazada",
+        "silabas": "em·ba·ra·za·da"
+      },
+      "classe": "adj.",
+      "pronuncia": "em-ba-ra-SSA-da",
+      "parece": {
+        "em": 8.53,
+        "texto": "embaraçada",
+        "glosa": "envergonhada",
+        "riscaEm": 9.12,
+        "idioma": "PT"
+      },
+      "significa": {
+        "em": 9.66,
+        "texto": "grávida",
+        "viraEm": 9.3
+      },
+      "carimbo": {
+        "em": 9.98,
+        "texto": "Falso amigo"
+      },
+      "vizinhos": {
+        "antes": [
+          {
+            "palavra": "embadurnar",
+            "classe": "v.",
+            "def": "besuntar"
+          },
+          {
+            "palavra": "embajada",
+            "classe": "s.f.",
+            "def": "embaixada"
+          },
+          {
+            "palavra": "embajador",
+            "classe": "s.m.",
+            "def": "embaixador"
+          },
+          {
+            "palavra": "embalaje",
+            "classe": "s.m.",
+            "def": "embalagem"
+          },
+          {
+            "palavra": "embalar",
+            "classe": "v.",
+            "def": "embalar"
+          },
+          {
+            "palavra": "embaldosar",
+            "classe": "v.",
+            "def": "ladrilhar"
+          },
+          {
+            "palavra": "embalsamar",
+            "classe": "v.",
+            "def": "embalsamar"
+          },
+          {
+            "palavra": "embalse",
+            "classe": "s.m.",
+            "def": "represa"
+          }
+        ],
+        "depois": [
+          {
+            "palavra": "embarazo",
+            "classe": "s.m.",
+            "def": "gravidez"
+          },
+          {
+            "palavra": "embarazoso",
+            "classe": "adj.",
+            "def": "constrangedor"
+          },
+          {
+            "palavra": "embarcar",
+            "classe": "v.",
+            "def": "embarcar"
+          },
+          {
+            "palavra": "embargo",
+            "classe": "s.m.",
+            "def": "embargo"
+          }
+        ]
+      },
+      "idioma": "ES"
+    },
+    {
+      "tipo": "verbete",
+      "de": 10.46,
+      "ate": 13.53,
+      "palavra": {
+        "em": 10.55,
+        "texto": "polvo",
+        "silabas": "pol·vo"
+      },
+      "classe": "s.m.",
+      "pronuncia": "PÔL-bo",
+      "parece": {
+        "em": 11.07,
+        "texto": "polvo",
+        "glosa": "o animal",
+        "figura": "polvo",
+        "riscaEm": 12.1,
+        "idioma": "PT"
+      },
+      "significa": {
+        "em": 12.92,
+        "texto": "poeira",
+        "extra": "pó",
+        "figura": "poeira",
+        "viraEm": 12.45
+      },
+      "carimbo": {
+        "em": 13.05,
+        "texto": "Falso amigo"
+      },
+      "vizinhos": {
+        "antes": [
+          {
+            "palavra": "polaco",
+            "classe": "adj.",
+            "def": "polonês"
+          },
+          {
+            "palavra": "polar",
+            "classe": "adj.",
+            "def": "polar"
+          },
+          {
+            "palavra": "polea",
+            "classe": "s.f.",
+            "def": "polia"
+          },
+          {
+            "palavra": "polémica",
+            "classe": "s.f.",
+            "def": "polêmica"
+          },
+          {
+            "palavra": "polen",
+            "classe": "s.m.",
+            "def": "pólen"
+          },
+          {
+            "palavra": "policía",
+            "classe": "s.f.",
+            "def": "polícia"
+          },
+          {
+            "palavra": "polilla",
+            "classe": "s.f.",
+            "def": "traça"
+          },
+          {
+            "palavra": "política",
+            "classe": "s.f.",
+            "def": "política"
+          },
+          {
+            "palavra": "póliza",
+            "classe": "s.f.",
+            "def": "apólice"
+          },
+          {
+            "palavra": "pollo",
+            "classe": "s.m.",
+            "def": "frango"
+          },
+          {
+            "palavra": "polo",
+            "classe": "s.m.",
+            "def": "polo"
+          },
+          {
+            "palavra": "polvera",
+            "classe": "s.f.",
+            "def": "estojo de pó"
+          }
+        ],
+        "depois": [
+          {
+            "palavra": "pólvora",
+            "classe": "s.f.",
+            "def": "pólvora"
+          },
+          {
+            "palavra": "polvoriento",
+            "classe": "adj.",
+            "def": "empoeirado"
+          },
+          {
+            "palavra": "pomada",
+            "classe": "s.f.",
+            "def": "pomada"
+          },
+          {
+            "palavra": "pomelo",
+            "classe": "s.m.",
+            "def": "toranja"
+          }
+        ]
+      },
+      "idioma": "ES"
+    },
+    {
+      "tipo": "remissao",
+      "de": 13.53,
+      "ate": 16.1,
+      "rotulo": {
+        "em": 13.6,
+        "texto": "O polvo, em espanhol"
+      },
+      "figura": {
+        "nome": "polvo",
+        "em": 13.75
+      },
+      "palavra": {
+        "em": 15.28,
+        "texto": "pulpo",
+        "silabas": "pul·po"
+      },
+      "classe": "s.m.",
+      "pronuncia": "PUL-po",
+      "definicao": {
+        "em": 15.55,
+        "texto": "polvo (o animal)"
+      },
+      "vizinhos": {
+        "antes": [
+          {
+            "palavra": "pulga",
+            "classe": "s.f.",
+            "def": "pulga"
+          },
+          {
+            "palavra": "pulgar",
+            "classe": "s.m.",
+            "def": "polegar"
+          },
+          {
+            "palavra": "pulir",
+            "classe": "v.",
+            "def": "polir"
+          },
+          {
+            "palavra": "pulmón",
+            "classe": "s.m.",
+            "def": "pulmão"
+          },
+          {
+            "palavra": "pulpa",
+            "classe": "s.f.",
+            "def": "polpa"
+          },
+          {
+            "palavra": "púlpito",
+            "classe": "s.m.",
+            "def": "púlpito"
+          }
+        ],
+        "depois": [
+          {
+            "palavra": "pulsar",
+            "classe": "v.",
+            "def": "pulsar, apertar"
+          },
+          {
+            "palavra": "pulsera",
+            "classe": "s.f.",
+            "def": "pulseira"
+          },
+          {
+            "palavra": "pulso",
+            "classe": "s.m.",
+            "def": "pulso"
+          },
+          {
+            "palavra": "puma",
+            "classe": "s.m.",
+            "def": "puma"
+          }
+        ]
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 16.1,
+      "ate": 19.28,
+      "chamada": "Salva",
+      "texto": "pra não passar vergonha / na próxima viagem.",
+      "icone": "salvar",
+      "destaque": "vergonha"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {
+    "Esquisito": "Exquisito",
+    "Embaraçada": "Embarazada",
+    "para": "pra"
+  },
+  "palavras": [
+    {
+      "em": 0.1,
+      "ate": 0.25,
+      "w": "Três"
+    },
+    {
+      "em": 0.25,
+      "ate": 0.81,
+      "w": "palavras"
+    },
+    {
+      "em": 0.81,
+      "ate": 0.94,
+      "w": "em"
+    },
+    {
+      "em": 0.94,
+      "ate": 1.52,
+      "w": "espanhol"
+    },
+    {
+      "em": 1.52,
+      "ate": 1.7,
+      "w": "que"
+    },
+    {
+      "em": 1.7,
+      "ate": 2.14,
+      "w": "enganam"
+    },
+    {
+      "em": 2.14,
+      "ate": 2.49,
+      "w": "todo"
+    },
+    {
+      "em": 2.49,
+      "ate": 3.33,
+      "w": "brasileiro"
+    },
+    {
+      "em": 3.41,
+      "ate": 4.13,
+      "w": "Esquisito"
+    },
+    {
+      "em": 4.13,
+      "ate": 4.42,
+      "w": "não"
+    },
+    {
+      "em": 4.42,
+      "ate": 4.6,
+      "w": "é"
+    },
+    {
+      "em": 4.6,
+      "ate": 5.63,
+      "w": "esquisito,"
+    },
+    {
+      "em": 5.63,
+      "ate": 5.96,
+      "w": "quer"
+    },
+    {
+      "em": 5.96,
+      "ate": 6.38,
+      "w": "dizer"
+    },
+    {
+      "em": 6.38,
+      "ate": 7.1,
+      "w": "delicioso."
+    },
+    {
+      "em": 7.2,
+      "ate": 8.04,
+      "w": "Embaraçada"
+    },
+    {
+      "em": 8.04,
+      "ate": 8.37,
+      "w": "não"
+    },
+    {
+      "em": 8.37,
+      "ate": 8.53,
+      "w": "é"
+    },
+    {
+      "em": 8.53,
+      "ate": 9.46,
+      "w": "embaraçada."
+    },
+    {
+      "em": 9.64,
+      "ate": 9.7,
+      "w": "é"
+    },
+    {
+      "em": 9.66,
+      "ate": 10.29,
+      "w": "grávida."
+    },
+    {
+      "em": 10.52,
+      "ate": 10.58,
+      "w": "E"
+    },
+    {
+      "em": 10.55,
+      "ate": 11.07,
+      "w": "polvo"
+    },
+    {
+      "em": 11.07,
+      "ate": 11.46,
+      "w": "não"
+    },
+    {
+      "em": 11.46,
+      "ate": 11.68,
+      "w": "é"
+    },
+    {
+      "em": 11.68,
+      "ate": 11.79,
+      "w": "o"
+    },
+    {
+      "em": 11.79,
+      "ate": 12.46,
+      "w": "animal."
+    },
+    {
+      "em": 12.69,
+      "ate": 12.92,
+      "w": "É"
+    },
+    {
+      "em": 12.92,
+      "ate": 13.53,
+      "w": "poeira."
+    },
+    {
+      "em": 13.59,
+      "ate": 13.65,
+      "w": "O"
+    },
+    {
+      "em": 13.62,
+      "ate": 14.03,
+      "w": "polvo,"
+    },
+    {
+      "em": 14.03,
+      "ate": 14.18,
+      "w": "em"
+    },
+    {
+      "em": 14.18,
+      "ate": 14.97,
+      "w": "espanhol,"
+    },
+    {
+      "em": 14.97,
+      "ate": 15.28,
+      "w": "é"
+    },
+    {
+      "em": 15.28,
+      "ate": 15.91,
+      "w": "pulpo."
+    },
+    {
+      "em": 16.18,
+      "ate": 16.31,
+      "w": "Salva"
+    },
+    {
+      "em": 16.31,
+      "ate": 16.55,
+      "w": "para"
+    },
+    {
+      "em": 16.55,
+      "ate": 16.8,
+      "w": "não"
+    },
+    {
+      "em": 16.8,
+      "ate": 17.23,
+      "w": "passar"
+    },
+    {
+      "em": 17.23,
+      "ate": 17.7,
+      "w": "vergonha"
+    },
+    {
+      "em": 17.7,
+      "ate": 17.88,
+      "w": "na"
+    },
+    {
+      "em": 17.88,
+      "ate": 18.24,
+      "w": "próxima"
+    },
+    {
+      "em": 18.24,
+      "ate": 18.56,
+      "w": "viagem."
+    }
+  ]
+}

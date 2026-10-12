@@ -1,0 +1,392 @@
+{
+  "video": "base.mp4",
+  "fps": 25,
+  "largura": 1920,
+  "altura": 1080,
+  "duracao": 20.76,
+  "videoAltura": 1080,
+  "rosto": {
+    "x": 0.5,
+    "y": 0.38,
+    "quadro": {
+      "largura": 1920,
+      "altura": 1080
+    }
+  },
+  "zona": {
+    "topo": 640,
+    "altura": 368
+  },
+  "marca": {
+    "nome": "Tiago",
+    "area": "Carreira"
+  },
+  "documento": {
+    "titulo": "Rafael Lima",
+    "subtitulo": "Analista comercial",
+    "extras": [
+      {
+        "titulo": "Formação",
+        "linhas": [
+          "Administração · 2020"
+        ]
+      },
+      {
+        "titulo": "Competências",
+        "linhas": [
+          "Negociação · CRM · Excel"
+        ]
+      }
+    ]
+  },
+  "sfx": true,
+  "cortesEm": [
+    2.4,
+    3.98,
+    7.81,
+    10.41,
+    15.65,
+    18.23
+  ],
+  "momentos": [
+    {
+      "tipo": "abertura",
+      "de": 0,
+      "ate": 2.44,
+      "rotulo": "Revisão de currículo",
+      "linhas": [
+        "Três erros que",
+        "derrubam o seu",
+        "currículo"
+      ],
+      "circulo": "Três",
+      "sublinhado": "derrubam",
+      "texto": "Três erros que derrubam o seu currículo"
+    },
+    {
+      "tipo": "paginas",
+      "de": 2.44,
+      "ate": 4.0,
+      "erro": 1,
+      "resumo": "2 páginas",
+      "total": 3,
+      "ideal": 2,
+      "xEm": 2.87,
+      "nota": {
+        "texto": "máx. 2 páginas",
+        "em": 3.3
+      }
+    },
+    {
+      "tipo": "riscar",
+      "de": 4.0,
+      "ate": 7.85,
+      "erro": 2,
+      "resumo": "Objetivo",
+      "secao": "Objetivo",
+      "frase": "Busco crescer na empresa.",
+      "riscoEm": 7.25,
+      "nota": {
+        "texto": "genérico",
+        "em": 4.6
+      }
+    },
+    {
+      "tipo": "marcar",
+      "de": 7.85,
+      "ate": 10.46,
+      "erro": 3,
+      "resumo": "Resultados",
+      "secao": "Experiência",
+      "subtitulo": "Vendedor · 2021 a 2024",
+      "linhas": [
+        {
+          "texto": "Responsável pelas vendas",
+          "em": 7.95
+        },
+        {
+          "texto": "Atendimento ao cliente",
+          "em": 8.08
+        },
+        {
+          "texto": "Emissão de relatórios",
+          "em": 8.21
+        }
+      ],
+      "nota": {
+        "texto": "tarefas",
+        "em": 8.25
+      },
+      "pergunta": {
+        "texto": "resultados?",
+        "em": 9.3
+      }
+    },
+    {
+      "tipo": "reescrever",
+      "de": 10.46,
+      "ate": 15.7,
+      "antes": "Responsável pelas vendas",
+      "depois": "Aumentei as vendas em 20%",
+      "destaque": "20%",
+      "aceitaEm": 15.25
+    },
+    {
+      "tipo": "cronometro",
+      "de": 15.7,
+      "ate": 18.3,
+      "frase": "Recrutador lê em segundos",
+      "voltaEm": 17.3,
+      "fim": {
+        "texto": "Facilita.",
+        "em": 17.56
+      }
+    },
+    {
+      "tipo": "cta",
+      "de": 18.3,
+      "ate": 20.76,
+      "texto": "Salva e revisa o seu hoje.",
+      "icone": "salvar"
+    }
+  ],
+  "semLegenda": [],
+  "correcoes": {},
+  "palavras": [
+    {
+      "em": 0.1,
+      "ate": 0.22,
+      "w": "Três"
+    },
+    {
+      "em": 0.22,
+      "ate": 0.54,
+      "w": "erros"
+    },
+    {
+      "em": 0.54,
+      "ate": 0.76,
+      "w": "que"
+    },
+    {
+      "em": 0.76,
+      "ate": 1.24,
+      "w": "derrubam"
+    },
+    {
+      "em": 1.24,
+      "ate": 1.3,
+      "w": "o"
+    },
+    {
+      "em": 1.3,
+      "ate": 1.49,
+      "w": "seu"
+    },
+    {
+      "em": 1.49,
+      "ate": 2.2,
+      "w": "currículo."
+    },
+    {
+      "em": 2.49,
+      "ate": 2.68,
+      "w": "Mais"
+    },
+    {
+      "em": 2.68,
+      "ate": 2.87,
+      "w": "de"
+    },
+    {
+      "em": 2.87,
+      "ate": 3.25,
+      "w": "duas"
+    },
+    {
+      "em": 3.25,
+      "ate": 3.98,
+      "w": "páginas"
+    },
+    {
+      "em": 4.05,
+      "ate": 4.11,
+      "w": "Um"
+    },
+    {
+      "em": 4.08,
+      "ate": 4.6,
+      "w": "objetivo"
+    },
+    {
+      "em": 4.6,
+      "ate": 5.43,
+      "w": "genérico,"
+    },
+    {
+      "em": 5.43,
+      "ate": 5.7,
+      "w": "tipo"
+    },
+    {
+      "em": 5.7,
+      "ate": 6.18,
+      "w": "\"busco"
+    },
+    {
+      "em": 6.18,
+      "ate": 6.74,
+      "w": "crescer"
+    },
+    {
+      "em": 6.74,
+      "ate": 6.92,
+      "w": "na"
+    },
+    {
+      "em": 6.92,
+      "ate": 7.81,
+      "w": "empresa\"."
+    },
+    {
+      "em": 7.88,
+      "ate": 7.94,
+      "w": "e"
+    },
+    {
+      "em": 7.91,
+      "ate": 8.25,
+      "w": "listar"
+    },
+    {
+      "em": 8.25,
+      "ate": 8.81,
+      "w": "tarefas"
+    },
+    {
+      "em": 8.81,
+      "ate": 8.9,
+      "w": "em"
+    },
+    {
+      "em": 8.9,
+      "ate": 9.13,
+      "w": "vez"
+    },
+    {
+      "em": 9.13,
+      "ate": 9.28,
+      "w": "de"
+    },
+    {
+      "em": 9.28,
+      "ate": 10.11,
+      "w": "resultados."
+    },
+    {
+      "em": 10.51,
+      "ate": 10.75,
+      "w": "Troca"
+    },
+    {
+      "em": 10.75,
+      "ate": 11.65,
+      "w": "responsável"
+    },
+    {
+      "em": 11.65,
+      "ate": 12.04,
+      "w": "pelas"
+    },
+    {
+      "em": 12.04,
+      "ate": 12.89,
+      "w": "vendas"
+    },
+    {
+      "em": 12.89,
+      "ate": 13.14,
+      "w": "por"
+    },
+    {
+      "em": 13.43,
+      "ate": 13.81,
+      "w": "aumentei"
+    },
+    {
+      "em": 13.81,
+      "ate": 13.96,
+      "w": "as"
+    },
+    {
+      "em": 13.96,
+      "ate": 14.5,
+      "w": "vendas"
+    },
+    {
+      "em": 14.5,
+      "ate": 14.68,
+      "w": "em"
+    },
+    {
+      "em": 14.68,
+      "ate": 15.65,
+      "w": "20%."
+    },
+    {
+      "em": 15.74,
+      "ate": 16.22,
+      "w": "Recrutador"
+    },
+    {
+      "em": 16.22,
+      "ate": 16.41,
+      "w": "lê"
+    },
+    {
+      "em": 16.41,
+      "ate": 16.54,
+      "w": "em"
+    },
+    {
+      "em": 16.54,
+      "ate": 17.53,
+      "w": "segundos."
+    },
+    {
+      "em": 17.56,
+      "ate": 18.09,
+      "w": "Facilita."
+    },
+    {
+      "em": 18.34,
+      "ate": 18.54,
+      "w": "Salva"
+    },
+    {
+      "em": 18.54,
+      "ate": 18.62,
+      "w": "e"
+    },
+    {
+      "em": 18.62,
+      "ate": 19.09,
+      "w": "revisa"
+    },
+    {
+      "em": 19.09,
+      "ate": 19.25,
+      "w": "o"
+    },
+    {
+      "em": 19.25,
+      "ate": 19.41,
+      "w": "seu"
+    },
+    {
+      "em": 19.41,
+      "ate": 20,
+      "w": "hoje."
+    }
+  ]
+}

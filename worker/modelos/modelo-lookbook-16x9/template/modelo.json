@@ -1,0 +1,15 @@
+{
+  "formato": "16:9",
+  "variante": { "de": "modelo-lookbook", "formato": "16:9" },
+  "blocos": {
+    "assinatura": [
+      "peca",
+      "colagem"
+    ]
+  },
+  "palavraPorPalavra": [
+    "capa",
+    "colagem"
+  ],
+  "conferir": { "cobertura": 0.5, "vao": 8, "parado": 6, "segundosPorMomento": 10 }
+}

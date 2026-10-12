@@ -1,0 +1,336 @@
+{
+ "video": "base.mp4",
+ "fps": 25,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 14.84,
+ "videoAltura": 1080,
+ "rosto": {
+  "x": 0.5,
+  "y": 0.36,
+  "quadro": {
+   "largura": 1920,
+   "altura": 1080
+  }
+ },
+ "zona": {
+  "topo": 640,
+  "altura": 368
+ },
+ "marca": {
+  "nome": "",
+  "area": ""
+ },
+ "sfx": true,
+ "cortesEm": [
+  4.25,
+  6.48,
+  8.73,
+  11.29
+ ],
+ "momentos": [
+  {
+   "tipo": "abertura",
+   "de": 0.05,
+   "ate": 0.98,
+   "texto": "Tênis de corrida",
+   "destaque": "corrida",
+   "em": 0.1
+  },
+  {
+   "tipo": "etiqueta",
+   "de": 0.98,
+   "ate": 14.84,
+   "titulo": "Barato, médio ou caro?",
+   "tituloEm": 1.0,
+   "unidade": "R$",
+   "degraus": [
+    {
+     "rotulo": "Barato",
+     "preco": 200,
+     "em": 0.99,
+     "texto": "Amortecimento básico",
+     "textoEm": 5.15,
+     "imagem": {
+      "id": "tenis1"
+     },
+     "vale": 0.4,
+     "valeEm": 6.01
+    },
+    {
+     "rotulo": "Médio",
+     "preco": 600,
+     "em": 1.77,
+     "texto": "Espuma mais leve",
+     "textoEm": 7.49,
+     "imagem": {
+      "id": "tenis2"
+     },
+     "vale": 0.82,
+     "valeEm": 8.23
+    },
+    {
+     "rotulo": "Caro",
+     "preco": 1500,
+     "em": 2.53,
+     "texto": "Placa de carbono",
+     "textoEm": 10.06,
+     "imagem": {
+      "id": "tenis3"
+     },
+     "vale": 0.3,
+     "valeEm": 10.48
+    }
+   ],
+   "medidor": {
+    "rotulo": "Vale a pena?"
+   },
+   "selo": {
+    "degrau": 1,
+    "texto": "Melhor custo-benefício",
+    "em": 13.45,
+    "vale": 0.95,
+    "valeEm": 12.67
+   }
+  }
+ ],
+ "semLegenda": [],
+ "correcoes": {},
+ "palavras": [
+  {
+   "em": 0.1,
+   "ate": 0.22,
+   "w": "Tênis"
+  },
+  {
+   "em": 0.22,
+   "ate": 0.36,
+   "w": "de"
+  },
+  {
+   "em": 0.36,
+   "ate": 0.85,
+   "w": "corrida"
+  },
+  {
+   "em": 0.85,
+   "ate": 0.99,
+   "w": "de"
+  },
+  {
+   "em": 0.99,
+   "ate": 1.77,
+   "w": "200,"
+  },
+  {
+   "em": 1.77,
+   "ate": 2.41,
+   "w": "600"
+  },
+  {
+   "em": 2.41,
+   "ate": 2.53,
+   "w": "e"
+  },
+  {
+   "em": 2.53,
+   "ate": 3.58,
+   "w": "1.500"
+  },
+  {
+   "em": 3.58,
+   "ate": 4.19,
+   "w": "reais."
+  },
+  {
+   "em": 4.31,
+   "ate": 4.37,
+   "w": "O"
+  },
+  {
+   "em": 4.34,
+   "ate": 4.4,
+   "w": "de"
+  },
+  {
+   "em": 4.36,
+   "ate": 4.95,
+   "w": "200"
+  },
+  {
+   "em": 4.95,
+   "ate": 5.15,
+   "w": "tem"
+  },
+  {
+   "em": 5.15,
+   "ate": 6.01,
+   "w": "amortecimento"
+  },
+  {
+   "em": 6.01,
+   "ate": 6.48,
+   "w": "básico"
+  },
+  {
+   "em": 6.54,
+   "ate": 6.6,
+   "w": "O"
+  },
+  {
+   "em": 6.57,
+   "ate": 6.63,
+   "w": "de"
+  },
+  {
+   "em": 6.6,
+   "ate": 7.27,
+   "w": "600"
+  },
+  {
+   "em": 7.27,
+   "ate": 7.49,
+   "w": "tem"
+  },
+  {
+   "em": 7.49,
+   "ate": 7.93,
+   "w": "espuma"
+  },
+  {
+   "em": 7.93,
+   "ate": 8.23,
+   "w": "mais"
+  },
+  {
+   "em": 8.23,
+   "ate": 8.73,
+   "w": "leve,"
+  },
+  {
+   "em": 8.79,
+   "ate": 8.85,
+   "w": "O"
+  },
+  {
+   "em": 8.82,
+   "ate": 8.88,
+   "w": "de"
+  },
+  {
+   "em": 8.85,
+   "ate": 9.73,
+   "w": "1500"
+  },
+  {
+   "em": 9.73,
+   "ate": 10.06,
+   "w": "tem"
+  },
+  {
+   "em": 10.06,
+   "ate": 10.33,
+   "w": "placa"
+  },
+  {
+   "em": 10.33,
+   "ate": 10.48,
+   "w": "de"
+  },
+  {
+   "em": 10.48,
+   "ate": 11.2,
+   "w": "carbono,"
+  },
+  {
+   "em": 11.38,
+   "ate": 11.44,
+   "w": "Para"
+  },
+  {
+   "em": 11.4,
+   "ate": 11.59,
+   "w": "quem"
+  },
+  {
+   "em": 11.59,
+   "ate": 11.84,
+   "w": "está"
+  },
+  {
+   "em": 11.84,
+   "ate": 12.48,
+   "w": "começando,"
+  },
+  {
+   "em": 12.48,
+   "ate": 12.54,
+   "w": "o"
+  },
+  {
+   "em": 12.54,
+   "ate": 12.67,
+   "w": "do"
+  },
+  {
+   "em": 12.67,
+   "ate": 12.94,
+   "w": "meio"
+  },
+  {
+   "em": 12.94,
+   "ate": 13.08,
+   "w": "é"
+  },
+  {
+   "em": 13.08,
+   "ate": 13.14,
+   "w": "o"
+  },
+  {
+   "em": 13.11,
+   "ate": 13.45,
+   "w": "melhor"
+  },
+  {
+   "em": 13.45,
+   "ate": 14.39,
+   "w": "custo-benefício."
+  }
+ ],
+ "imagens": {
+  "tenis1": {
+   "arquivo": "img/tenis1.png",
+   "largura": 1600,
+   "altura": 654,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": true,
+   "palavra": "tênis de 200"
+  },
+  "tenis2": {
+   "arquivo": "img/tenis2.png",
+   "largura": 1600,
+   "altura": 740,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": true,
+   "palavra": "tênis de 600"
+  },
+  "tenis3": {
+   "arquivo": "img/tenis3.png",
+   "largura": 1600,
+   "altura": 826,
+   "foco": {
+    "x": 0.5,
+    "y": 0.5
+   },
+   "transparente": true,
+   "palavra": "tênis de 1.500"
+  }
+ }
+}

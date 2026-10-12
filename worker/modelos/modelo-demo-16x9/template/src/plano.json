@@ -1,0 +1,403 @@
+{
+ "video": "base.mp4",
+ "fps": 25,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 14.4,
+ "videoAltura": 1080,
+ "rosto": {
+  "x": 0.5,
+  "y": 0.38,
+  "quadro": {
+   "largura": 1920,
+   "altura": 1080
+  }
+ },
+ "zona": {
+  "topo": 640,
+  "altura": 368
+ },
+ "marca": {
+  "nome": "Tiago",
+  "area": "Design"
+ },
+ "sfx": false,
+ "cortesEm": [
+  3.31,
+  5.18,
+  6.94,
+  11.75
+ ],
+ "momentos": [
+  {
+   "tipo": "abertura",
+   "de": 0,
+   "ate": 3.31,
+   "texto": "Venda mais com o seu site",
+   "legenda": true
+  },
+  {
+   "tipo": "imagem",
+   "de": 0,
+   "ate": 3.31,
+   "imagem": {
+    "id": "saida"
+   },
+   "efeito": "aproximar",
+   "legenda": true
+  },
+  {
+   "tipo": "tela",
+   "de": 3.31,
+   "ate": 5.18,
+   "layout": "split",
+   "captura": "pao",
+   "proporcao": 3.281,
+   "legenda": true,
+   "ini": {
+    "x": 0.5,
+    "y": 0.075,
+    "zoom": 1.35
+   },
+   "fim": {
+    "x": 0.5,
+    "y": 0.105,
+    "zoom": 1.35
+   },
+   "cursor": [
+    {
+     "x": 0.5,
+     "y": 0.09,
+     "em": 3.5
+    },
+    {
+     "x": 0.42,
+     "y": 0.12,
+     "em": 4.6
+    }
+   ]
+  },
+  {
+   "tipo": "tela",
+   "de": 5.18,
+   "ate": 6.94,
+   "layout": "cheio",
+   "captura": "loja",
+   "proporcao": 1.016,
+   "legenda": true,
+   "ini": {
+    "x": 0.4,
+    "y": 0.3,
+    "zoom": 1.9
+   },
+   "fim": {
+    "x": 0.4,
+    "y": 0.72,
+    "zoom": 1.9
+   },
+   "cursor": [
+    {
+     "x": 0.62,
+     "y": 0.45,
+     "em": 5.5
+    },
+    {
+     "x": 0.6,
+     "y": 0.62,
+     "em": 6.2
+    }
+   ]
+  },
+  {
+   "tipo": "tela",
+   "de": 6.94,
+   "ate": 9.0,
+   "layout": "split",
+   "captura": "exemplo",
+   "proporcao": 2.031,
+   "legenda": true,
+   "ini": {
+    "x": 0.47,
+    "y": 0.13,
+    "zoom": 1.15
+   },
+   "fim": {
+    "x": 0.45,
+    "y": 0.14,
+    "zoom": 1.3
+   },
+   "cursor": [
+    {
+     "x": 0.3,
+     "y": 0.14,
+     "em": 7.5
+    },
+    {
+     "x": 0.6,
+     "y": 0.14,
+     "em": 8.4
+    }
+   ]
+  },
+  {
+   "tipo": "tela",
+   "de": 9.0,
+   "ate": 11.75,
+   "layout": "split",
+   "captura": "exemplo",
+   "proporcao": 2.031,
+   "legenda": true,
+   "ini": {
+    "x": 0.45,
+    "y": 0.14,
+    "zoom": 1.3
+   },
+   "fim": {
+    "x": 0.3,
+    "y": 0.2,
+    "zoom": 1.6
+   },
+   "cursor": [
+    {
+     "x": 0.5,
+     "y": 0.17,
+     "em": 9.0
+    },
+    {
+     "x": 0.16,
+     "y": 0.214,
+     "em": 9.9,
+     "clique": true
+    },
+    {
+     "x": 0.2,
+     "y": 0.2,
+     "em": 11.0
+    }
+   ]
+  },
+  {
+   "tipo": "cta",
+   "de": 11.75,
+   "ate": 14.4,
+   "texto": "Salva e revisa a sua página hoje",
+   "icone": "salvar",
+   "legenda": true
+  }
+ ],
+ "semLegenda": [],
+ "correcoes": {
+  "Contraste": "contraste",
+  "Forte.": "forte."
+ },
+ "palavras": [
+  {
+   "em": 0.32,
+   "ate": 0.42,
+   "w": "Três"
+  },
+  {
+   "em": 0.42,
+   "ate": 0.84,
+   "w": "erros"
+  },
+  {
+   "em": 0.84,
+   "ate": 1.19,
+   "w": "que"
+  },
+  {
+   "em": 1.19,
+   "ate": 1.52,
+   "w": "fazem"
+  },
+  {
+   "em": 1.52,
+   "ate": 1.62,
+   "w": "o"
+  },
+  {
+   "em": 1.62,
+   "ate": 2.19,
+   "w": "cliente"
+  },
+  {
+   "em": 2.19,
+   "ate": 2.53,
+   "w": "sair"
+  },
+  {
+   "em": 2.53,
+   "ate": 2.7,
+   "w": "do"
+  },
+  {
+   "em": 2.7,
+   "ate": 2.95,
+   "w": "seu"
+  },
+  {
+   "em": 2.95,
+   "ate": 3.31,
+   "w": "site"
+  },
+  {
+   "em": 3.41,
+   "ate": 3.67,
+   "w": "Texto"
+  },
+  {
+   "em": 3.67,
+   "ate": 4.08,
+   "w": "demais"
+  },
+  {
+   "em": 4.08,
+   "ate": 4.25,
+   "w": "na"
+  },
+  {
+   "em": 4.25,
+   "ate": 4.87,
+   "w": "primeira"
+  },
+  {
+   "em": 4.87,
+   "ate": 5.18,
+   "w": "tela."
+  },
+  {
+   "em": 5.27,
+   "ate": 5.56,
+   "w": "Botão"
+  },
+  {
+   "em": 5.56,
+   "ate": 5.72,
+   "w": "de"
+  },
+  {
+   "em": 5.72,
+   "ate": 6.3,
+   "w": "compra"
+  },
+  {
+   "em": 6.3,
+   "ate": 6.94,
+   "w": "escondido."
+  },
+  {
+   "em": 7.07,
+   "ate": 7.32,
+   "w": "Coloca"
+  },
+  {
+   "em": 7.32,
+   "ate": 7.38,
+   "w": "a"
+  },
+  {
+   "em": 7.36,
+   "ate": 7.96,
+   "w": "promessa"
+  },
+  {
+   "em": 7.96,
+   "ate": 8.11,
+   "w": "em"
+  },
+  {
+   "em": 8.11,
+   "ate": 8.34,
+   "w": "uma"
+  },
+  {
+   "em": 8.34,
+   "ate": 8.75,
+   "w": "frase:"
+  },
+  {
+   "em": 8.99,
+   "ate": 9.05,
+   "w": "o"
+  },
+  {
+   "em": 9.02,
+   "ate": 9.43,
+   "w": "botão"
+  },
+  {
+   "em": 9.43,
+   "ate": 9.77,
+   "w": "logo"
+  },
+  {
+   "em": 9.77,
+   "ate": 10.42,
+   "w": "abaixo"
+  },
+  {
+   "em": 10.43,
+   "ate": 10.49,
+   "w": "e"
+  },
+  {
+   "em": 10.46,
+   "ate": 11.29,
+   "w": "Contraste"
+  },
+  {
+   "em": 11.29,
+   "ate": 11.75,
+   "w": "Forte."
+  },
+  {
+   "em": 11.85,
+   "ate": 12.03,
+   "w": "Salva"
+  },
+  {
+   "em": 12.03,
+   "ate": 12.1,
+   "w": "e"
+  },
+  {
+   "em": 12.1,
+   "ate": 12.58,
+   "w": "revisa"
+  },
+  {
+   "em": 12.58,
+   "ate": 12.64,
+   "w": "a"
+  },
+  {
+   "em": 12.63,
+   "ate": 12.86,
+   "w": "sua"
+  },
+  {
+   "em": 12.86,
+   "ate": 13.4,
+   "w": "página"
+  },
+  {
+   "em": 13.4,
+   "ate": 13.77,
+   "w": "hoje."
+  }
+ ],
+ "imagens": {
+  "saida": {
+   "arquivo": "img/saida.jpg",
+   "largura": 1024,
+   "altura": 612,
+   "foco": {
+    "x": 0.62,
+    "y": 0.5
+   },
+   "transparente": false,
+   "palavra": "cliente saindo"
+  }
+ }
+}
