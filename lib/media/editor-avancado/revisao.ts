@@ -65,7 +65,7 @@ Liste para cada quadro só os defeitos que se veem:
 - "rotulo-solto": rótulo com linha de chamada apontando para o nada, longe do objeto que nomeia;
 - "quadro-vazio": tela sem pessoa e sem conteúdo, ou de uma cor só;
 - "recorte-defeituoso": contorno da pessoa recortada com halo claro, borda tremida, cabelo ou mão sumindo;
-- "texto-escondido": número, cartão, título ou palavra escondido em parte atrás da pessoa, atrás da cabeça ou atrás da borda da janela dela, ou cortado na borda de cima da janela; SÓ a palavra gigante de fundo (o letreiro atrás da cabeça, legível) é proposital;
+- "texto-escondido": número, cartão, título ou palavra escondido em parte atrás da pessoa, atrás da cabeça ou atrás da borda da janela dela, ou cortado na borda de cima da janela; SÓ a palavra gigante de fundo (o letreiro atrás da cabeça) é proposital, e só quando a cabeça cobre o PÉ das letras e a palavra se lê inteira; a cabeça cobrindo o meio das letras (a palavra ilegível) é "texto-escondido";
 - "espaco-vazio": a pessoa pequena demais ou cortada nos ombros dentro de uma janela pequena no meio da tela, ou uma faixa vazia grande (mais de um quinto da altura, sem pessoa nem conteúdo), por exemplo embaixo da legenda;
 - "outro": outro defeito visual óbvio.
 Quadro sem defeito não entra na lista. Elemento entrando ou saindo (meio transparente, desfocado de propósito, letras se montando) não é defeito. Descrição curta, em português, sem travessão.`;

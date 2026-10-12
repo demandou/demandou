@@ -15,6 +15,7 @@ export type { Apresentador } from "./apresentador";
 export { caminhoDaMoldura, cantosDaForma, recuarMoldura, cruzam } from "./moldura";
 export type { Caixa, Forma, Cantos } from "./moldura";
 export { Letreiro, TituloQueCabe, useTamanhoQueCabe, medirTexto } from "./texto";
+export { PalavraAtrasDaCabeca } from "./palavra-atras";
 export { Icone, ICONES } from "./Icone";
 export type { NomeDoIcone } from "./Icone";
 export { Cartao, Traco, LinhaEntre } from "./Cartao";
