@@ -69,6 +69,8 @@ export async function artesAguardandoIdentidade(projectId: string, opcoes?: { in
     take: 80,
   });
   return posts
+    // A arte que espera a ESCOLHA do cliente (11/10, escolha-da-arte.ts) só sai pela escolha, nunca pelo "Aprovar e gerar".
+    .filter((p) => (p.metadata as { esperaEscolha?: unknown } | null)?.esperaEscolha !== true)
     .filter((p) => opcoes?.incluirGerando || esperaDaIdentidade({ imageUrl: null, metadata: p.metadata })?.estado !== "gerando")
     .map((p) => ({ postId: p.id, runId: p.runId, dayOfWeek: p.dayOfWeek, platform: p.platform, mediaType: p.mediaType ?? "image" }));
 }
@@ -197,7 +199,9 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
   const estiloVisual = direcao?.styleHint ?? posts[0].imagePrompt ?? "";
   // A marca lida AGORA: letra e papéis recém-aprovados, e a trava aberta.
   // As fotos que a pessoa escolheu para o post (08/10, material próprio) entram também quando a arte sai depois.
-  const marca = await marcaDaArte(args.projectId, { runId, fotosDoPost: fotosGravadasNosPosts(posts) });
+  // O modelo escolhido no card (11/10, a escolha da arte) manda na arte, como na montagem da campanha.
+  const { modeloGravadoNosPosts } = await import("@/lib/estilo-dos-posts/tipos");
+  const marca = await marcaDaArte(args.projectId, { runId, fotosDoPost: fotosGravadasNosPosts(posts), modeloDoPost: modeloGravadoNosPosts(posts) });
   const ctx = { projectId: args.projectId, runId, operation: "campanha_imagem" };
 
   let principal: string | undefined;
@@ -293,18 +297,22 @@ async function gerarGrupo(args: { projectId: string; userId: string }, grupo: Ar
   if (!principal && !Object.keys(porRede).length) throw new Error("a arte não saiu");
 
   // Cobra só depois de a arte existir (o fecho da campanha cobrou só o texto).
-  try {
-    await debitar({
-      userId: args.userId,
-      quantidade: custoDaMidia(base.mediaType, laminas),
-      operation: "arte_apos_identidade",
-      projectId: args.projectId,
-      refId: `${base.postId}:${Date.now()}`,
-      note: "Arte gerada depois de o cliente aprovar a identidade visual",
-    });
-  } catch (e) {
-    if (e instanceof SaldoInsuficiente) throw new Error("o saldo acabou no meio");
-    throw e;
+  // A arte da semana do vídeo escolhida no card (11/10) já veio no pacote do vídeo: não cobra de novo.
+  const jaPaga = posts.some((p) => (p.metadata as { arteNoPacote?: unknown } | null)?.arteNoPacote === true);
+  if (!jaPaga) {
+    try {
+      await debitar({
+        userId: args.userId,
+        quantidade: custoDaMidia(base.mediaType, laminas),
+        operation: "arte_apos_identidade",
+        projectId: args.projectId,
+        refId: `${base.postId}:${Date.now()}`,
+        note: "Arte gerada depois de o cliente aprovar a identidade visual",
+      });
+    } catch (e) {
+      if (e instanceof SaldoInsuficiente) throw new Error("o saldo acabou no meio");
+      throw e;
+    }
   }
 
   let gravadas = 0;
@@ -359,6 +367,22 @@ export async function iniciarGeracaoDasArtes(args: { projectId: string; userId: 
     grupos,
     frase: grupos.length === 1 ? "1 arte está sendo gerada e cai no quadro em alguns minutos." : `${grupos.length} artes estão sendo geradas e caem no quadro em alguns minutos.`,
   };
+}
+
+/**
+ * AS ARTES ESCOLHIDAS NO CARD (11/10, escolha-da-arte.ts): os grupos só dos
+ * posts que acabaram de receber a escolha, marcados "gerando". Sem a trava da
+ * identidade nem do saldo: escolher é aprovar, e a arte da semana do vídeo já
+ * veio no pacote. O desenho é o `gerarGruposMarcados` de sempre.
+ */
+export async function iniciarGeracaoDasEscolhidas(projectId: string, postIds: string[]): Promise<ArteAguardando[][]> {
+  const posts = await prisma.post.findMany({
+    where: { id: { in: postIds }, projectId, imageUrl: null, mediaType: { in: GERA_ARTE }, status: { in: PENDENTE } },
+    select: { id: true, runId: true, dayOfWeek: true, platform: true, mediaType: true },
+  });
+  const grupos = agruparPorDia(posts.map((p) => ({ postId: p.id, runId: p.runId, dayOfWeek: p.dayOfWeek, platform: p.platform, mediaType: p.mediaType ?? "image" })));
+  for (const g of grupos) await marcarGrupoGerando(projectId, g);
+  return grupos;
 }
 
 /** O SEGUNDO PASSO: desenha os grupos já marcados, dois de cada vez. Falha vira motivo gravado, nunca "fazendo" eterno. */

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Check, Clock, Loader2, Plus, AlertCircle, X, Building2, UserRound, Archive, ChevronLeft, ChevronRight, Maximize2, Play, Scissors, Eye, Palette, RefreshCw, Video, Lightbulb, FileUp } from "lucide-react";
 import { ROTULO_DO_BOTAO_ESCOLHER, type EsperaDaIdentidade } from "@/lib/modelos-de-arte/espera-da-identidade";
+import { EscolhaDaArte } from "@/components/escolha-da-arte/escolha-da-arte";
 import type { EsperaDoCorte } from "@/lib/media/espera-do-corte";
 import { cn } from "@/lib/utils";
 import { RedeIcone } from "@/components/social/rede-icone";
@@ -503,7 +504,8 @@ function SeloDaRede({ plataforma, contas }: { plataforma: string; contas: Destin
  * aprovação, diz que a arte está sendo feita; se a geração falhar, diz o
  * motivo e oferece "Tentar de novo".
  */
-function AvisoDaIdentidade({ espera, projectId, onTentarArte }: { espera: EsperaDaIdentidade; projectId?: string; onTentarArte?: () => void }) {
+function AvisoDaIdentidade({ espera, projectId, onTentarArte, tipoDaPeca }: { espera: EsperaDaIdentidade; projectId?: string; onTentarArte?: () => void; tipoDaPeca?: string }) {
+  const [escolhendo, setEscolhendo] = useState(false);
   if (espera.estado === "gerando") return null;
   const falhou = espera.estado === "falhou";
   // DESCARTÁVEL (07/10): a frase sai e o botão fica (modo recolher). O
@@ -522,6 +524,15 @@ function AvisoDaIdentidade({ espera, projectId, onTentarArte }: { espera: Espera
       >
         <RefreshCw className="h-3 w-3" /> Tentar de novo
       </button>
+    ) : projectId && espera.escolha && espera.postId ? (
+      // A ESCOLHA DA ARTE (11/10): a arte espera a pessoa dizer como quer, aqui mesmo no card.
+      <button
+        type="button"
+        onClick={() => setEscolhendo(true)}
+        className="flex w-full items-center justify-center gap-1 rounded-md bg-orange-500 px-2 py-1 text-[10.5px] font-semibold text-white hover:bg-orange-600"
+      >
+        Escolher a arte <ChevronRight className="h-3 w-3" />
+      </button>
     ) : projectId ? (
       <Link
         href={`/projects/${projectId}/settings?aba=modelos`}
@@ -531,6 +542,7 @@ function AvisoDaIdentidade({ espera, projectId, onTentarArte }: { espera: Espera
       </Link>
     ) : null;
   return (
+    <>
     <Descartavel
       chave={chave}
       modo={botao ? "recolher" : "sumir"}
@@ -546,13 +558,17 @@ function AvisoDaIdentidade({ espera, projectId, onTentarArte }: { espera: Espera
         <div className="flex items-start gap-1">
           <p className="flex flex-1 items-start gap-1 text-[10px] leading-snug" style={{ color: falhou ? "#f87171" : "var(--text-muted)" }}>
             {falhou ? <AlertCircle className="mt-[1px] h-3 w-3 shrink-0" /> : <Palette className="mt-[1px] h-3 w-3 shrink-0 text-amber-400" />}
-            <span>{falhou ? `A arte não saiu: ${espera.motivo ?? "a geração falhou"}. Nada foi cobrado.` : "Aguardando o estilo dos posts: escreva como quer ou escolha um da biblioteca. Nada é gasto antes disso."}</span>
+            <span>{falhou ? `A arte não saiu: ${espera.motivo ?? "a geração falhou"}. Nada foi cobrado.` : espera.escolha ? "Esta arte espera a sua escolha: siga o design do vídeo, um modelo da biblioteca ou crie o seu. Nada é gasto antes disso." : "Aguardando o estilo dos posts: escreva como quer ou escolha um da biblioteca. Nada é gasto antes disso."}</span>
           </p>
           <BotaoDescartar compacto className="-my-1 -mr-1" />
         </div>
         {botao}
       </div>
     </Descartavel>
+    {escolhendo && projectId && espera.postId && (
+      <EscolhaDaArte projectId={projectId} postId={espera.postId} tipoDaPeca={tipoDaPeca ?? ""} aoFechar={() => setEscolhendo(false)} />
+    )}
+    </>
   );
 }
 
@@ -682,7 +698,7 @@ function CartaoDaPeca({ p, onAbrir, onVerMidia, onArquivar, onCancelar, projectI
           </span>
         </span>
       </button>
-      {p.identidade && <AvisoDaIdentidade espera={p.identidade} projectId={projectId} onTentarArte={onTentarArte} />}
+      {p.identidade && <AvisoDaIdentidade espera={p.identidade} projectId={projectId} onTentarArte={onTentarArte} tipoDaPeca={p.tipo} />}
       {/* ARQUIVAR A PEÇA QUE FALHOU, aqui mesmo (01/10, pedido do Bruno: "os
           posts que falham, eu não consigo arquivar, preciso conseguir, para
           limpar o gestor"). Fica fora do botão que abre o card: botão dentro

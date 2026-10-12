@@ -13,6 +13,7 @@ import { avisoDoRecuo } from "@/lib/media/aviso-da-arte";
 import { fotoDaPeca, metadataDaFoto } from "@/lib/media/foto-da-peca";
 import { fraseCompleta, fraseGarantida, mancheteCurta, pareceTruncada, problemaDaFrase, TETO_DA_FRASE } from "@/lib/media/frase-da-arte";
 import { conferirArte } from "@/lib/media/conferencia-da-arte";
+import { escolhaDaArteLigada, TEXTO_ESPERANDO_ESCOLHA } from "@/lib/media/escolha-da-arte";
 import { MENSAGEM_AGUARDANDO } from "@/lib/modelos-de-arte/identidade";
 import { tipoGeraArte } from "@/lib/modelos-de-arte/espera-da-identidade";
 import type { FormatoDaRede } from "@/lib/media/formatos-das-redes";
@@ -787,8 +788,15 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
     const marcaDoDia = tipoGeraArte(formato) ? await marcaDaArte(video.projectId, { runId: run.id, modeloDoPost: escolhaDaArte.modeloDoPost, fotosDoPost: escolhaDaArte.fotos }) : null;
     // Gravado no post: o refazer do chat do card parte do mesmo modelo e das mesmas fotos.
     const doModelo = { ...(escolhaDaArte.modeloDoPost ? { modeloDoPost: escolhaDaArte.modeloDoPost } : {}), ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) };
-    const aguardandoIdentidade = Boolean(marcaDoDia && marcaDoDia.identidadeAprovada === false);
-    const TEXTO_AGUARDANDO = `${MENSAGEM_AGUARDANDO}: escreva como quer o estilo dos posts ou escolha um da biblioteca em Configurações (aba Estilo dos posts). Nenhum crédito de imagem foi gasto; a arte sai depois da escolha.`;
+    // A ARTE ESPERA A ESCOLHA DO CLIENTE (11/10, lib/media/escolha-da-arte.ts):
+    // com a chave ligada, toda peça com arte do dia de vídeo nasce esperando,
+    // pelo mesmo caminho da espera da identidade, e só sai depois da escolha.
+    const esperaEscolha = escolhaDaArteLigada() && tipoGeraArte(formato);
+    const aguardandoIdentidade = Boolean(marcaDoDia && marcaDoDia.identidadeAprovada === false) || esperaEscolha;
+    const marcaDaEspera = esperaEscolha ? { aguardandoIdentidade: true, esperaEscolha: true } : { aguardandoIdentidade: true };
+    const TEXTO_AGUARDANDO = esperaEscolha
+      ? TEXTO_ESPERANDO_ESCOLHA
+      : `${MENSAGEM_AGUARDANDO}: escreva como quer o estilo dos posts ou escolha um da biblioteca em Configurações (aba Estilo dos posts). Nenhum crédito de imagem foi gasto; a arte sai depois da escolha.`;
     /** O card da Diana: o aviso do recuo para o desenho em código vem antes do conteúdo. */
     const conteudoDaDiana = (texto: string, manchetes: string[]) => {
       const aviso = avisoDoRecuo(manchetes);
@@ -918,10 +926,10 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
         const noModelo = aguardandoIdentidade ? null : pecasNoModelo({ formato: "image", redes: [principal, ...outras], frase });
         if (aguardandoIdentidade) {
           // As fotos escolhidas ficam no post (08/10): a arte que sai depois da aprovação usa as mesmas.
-          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "image", imageUrl: null, extra: { frase, ...marcaDaEspera, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
-          await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\nImagem com a frase: "${frase}"`, mediaType: "image", mediaUrl: null, postId, extra: { rede: principal, frase, aguardandoIdentidade: true } });
-          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "image", imageUrl: null, extra: { frase, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
+          await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\nImagem com a frase: "${frase}"`, mediaType: "image", mediaUrl: null, postId, extra: { rede: principal, frase, ...marcaDaEspera } });
+          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "image", imageUrl: null, extra: { frase, ...marcaDaEspera, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
         } else if (noModelo) {
           // A ARTE PELO MODELO DO CURSO (10/10): o post nasce sem arte e "o squad
           // está fazendo"; a frase vai ao template do modelo no lote da semana.
@@ -1003,10 +1011,10 @@ export async function escreverSemanaDoVideo(videoJobId: string): Promise<{ escri
         const listaDasFrases = `Carrossel de ${frases.length} lâminas:\n${frases.map((f, i) => `${i + 1}. ${f}`).join("\n")}`;
         const noModelo = aguardandoIdentidade ? null : pecasNoModelo({ formato: "carousel", redes: [principal, ...outras], slides: frases });
         if (aguardandoIdentidade) {
-          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
+          const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, ...marcaDaEspera, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } });
           await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
-          await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\n${listaDasFrases}`, mediaType: "carousel", mediaUrl: null, postId, extra: { rede: principal, slides: frases, aguardandoIdentidade: true } });
-          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, aguardandoIdentidade: true, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
+          await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}\n\n${listaDasFrases}`, mediaType: "carousel", mediaUrl: null, postId, extra: { rede: principal, slides: frases, ...marcaDaEspera } });
+          await levarParaAsOutras(postId, legenda, () => ({ mediaType: "carousel", imageUrl: null, extra: { carrossel: true, slides: frases, ...marcaDaEspera, ...metadataDasFotosEscolhidas(escolhaDaArte.fotos) } }));
         } else if (noModelo) {
           // A CAPA E AS LÂMINAS PELO MODELO DO CURSO (10/10): a mesma série do
           // template, todas em 4:5, no lote da semana; o post nasce "fazendo".
@@ -1054,12 +1062,12 @@ Esta legenda acompanha um INFOGRÁFICO com os dados do briefing (se o briefing n
             { ajustar: semTopo }
           )
         );
-        const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: null, extra: { aguardandoIdentidade: true } });
+        const postId = await criarPost({ platform: principal, socialAccountId: contaDe(principal), content: legenda, mediaType: "infographic", imageUrl: null, extra: { ...marcaDaEspera } });
         await gravarCard(redator, { content: legenda, mediaType: "text", postId, extra: { rede: principal } });
         await gravarCard(AGENTES.diana, { content: `${TEXTO_AGUARDANDO}
 
-Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", mediaUrl: null, postId, extra: { rede: principal, aguardandoIdentidade: true } });
-        await levarParaAsOutras(postId, legenda, () => ({ mediaType: "infographic", imageUrl: null, extra: { aguardandoIdentidade: true } }));
+Infográfico com os dados do briefing do Roberto.`, mediaType: "infographic", mediaUrl: null, postId, extra: { rede: principal, ...marcaDaEspera } });
+        await levarParaAsOutras(postId, legenda, () => ({ mediaType: "infographic", imageUrl: null, extra: { ...marcaDaEspera } }));
       } else if (formato === "infographic") {
         const legendaEscrita = await limpar(
           await aberturas.escrever(

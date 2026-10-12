@@ -123,6 +123,8 @@ export interface EsperaDaIdentidade {
    * estilo dos posts": a leva nova, depois de a aprovação cair, volta a explicar.
    */
   lote?: string;
+  /** A espera é pela ESCOLHA da arte no card (11/10, lib/media/escolha-da-arte.ts), e não pela identidade. */
+  escolha?: boolean;
 }
 
 /** Depois disto sem terminar, a geração conta como falha: o cliente ganha o "Tentar de novo" em vez de um "fazendo" eterno. */
@@ -149,9 +151,11 @@ export function esperaDaIdentidade(post: { id?: string; runId?: string | null; i
     if (Number.isNaN(desde) || passou) return { estado: "falhou", motivo: "a geração não terminou no tempo esperado", ...ocorrencia(m.gerandoArte.desde) };
     return { estado: "gerando" };
   }
+  // A escolha da arte (11/10): o card abre as portas, e o post é a referência do pedido.
+  const escolha = (m as { esperaEscolha?: unknown }).esperaEscolha === true ? { escolha: true, ...(post.id ? { postId: post.id } : {}) } : {};
   // O lote (07/10), só quando a tela mandou o id: a campanha, o vídeo ou o post.
-  if (!post.id) return { estado: "aguardando" };
-  return { estado: "aguardando", lote: post.runId || (typeof m.videoJobId === "string" && m.videoJobId) || post.id };
+  if (!post.id) return { estado: "aguardando", ...escolha };
+  return { estado: "aguardando", lote: post.runId || (typeof m.videoJobId === "string" && m.videoJobId) || post.id, ...escolha };
 }
 
 /**

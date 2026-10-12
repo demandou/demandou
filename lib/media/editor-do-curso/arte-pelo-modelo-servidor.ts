@@ -577,7 +577,8 @@ async function desenharGrupoNoEstilo(projectId: string, posts: PostDaReserva[], 
   const mediaType = tipo === "carousel" && refazer ? "image" : tipo;
   const { marcaDaArte } = await import("@/lib/media/arte-com-frase");
   const { desenharPelaIa, noMesmoEstilo } = await import("@/lib/media/editor-do-curso/arte-pela-ia-servidor");
-  const marca = await marcaDaArte(projectId, { runId: base.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(posts) });
+  // As fotos gravadas no post (11/10, a escolha da arte): "sem meus materiais" grava a lista vazia e a Biblioteca não entra.
+  const marca = await marcaDaArte(projectId, { runId: base.runId ?? undefined, modeloDoPost: modeloGravadoNosPosts(posts), fotosDoPost: fotosGravadasNosPosts(posts) });
   const doVideo = await falaEFotoDoVideo(meta.videoJobId, Boolean(promptDeEstiloDoModelo(modelo)?.pessoa));
   // O refazer que parou (11/10) não guarda a frase velha: a peça sai da legenda nova do post.
   let frase = typeof meta.frase === "string" && meta.frase.trim() ? meta.frase : null;
